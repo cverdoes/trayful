@@ -1,4 +1,5 @@
 {
   "extends": "./tsconfig.base.json",
-  "include": ["packages/*/src", "scripts", "vitest.config.ts"]
+  "include": ["packages/*/src", "scripts", "vitest.config.ts", "playwright.config.ts"],
+  "exclude": ["packages/app"]
 }

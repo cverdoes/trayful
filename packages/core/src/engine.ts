@@ -1,15 +1,18 @@
 import { applyCommand, type Command } from './commands.js';
 import type { Catalog, TableState } from './state.js';
 
+/** A history step: a command, or a whole-table replacement such as a reset. */
+export type HistoryStep = Command | { type: 'replace' };
+
 export interface HistoryEntry {
-  command: Command;
+  command: HistoryStep;
   /** State before the command, used for undo. */
   before: TableState;
 }
 
 export type Listener = (
   state: TableState,
-  change: { kind: 'apply' | 'undo' | 'redo'; command: Command },
+  change: { kind: 'apply' | 'undo' | 'redo'; command: HistoryStep },
 ) => void;
 
 /**
@@ -46,6 +49,17 @@ export class TableEngine {
     return this.current;
   }
 
+  /** Replaces the whole table (for example a reset to a fresh table) as one undoable step. */
+  replace(state: TableState): TableState {
+    const command: HistoryStep = { type: 'replace' };
+    this.past.push({ command, before: this.current });
+    if (this.past.length > this.historyLimit) this.past.shift();
+    this.future = [];
+    this.current = state;
+    this.emit('apply', command);
+    return this.current;
+  }
+
   get canUndo(): boolean {
     return this.past.length > 0;
   }
@@ -73,7 +87,7 @@ export class TableEngine {
   }
 
   /** Commands applied so far, oldest first (undone commands excluded). */
-  get history(): readonly Command[] {
+  get history(): readonly HistoryStep[] {
     return this.past.map((e) => e.command);
   }
 
@@ -82,7 +96,7 @@ export class TableEngine {
     return () => this.listeners.delete(listener);
   }
 
-  private emit(kind: 'apply' | 'undo' | 'redo', command: Command): void {
+  private emit(kind: 'apply' | 'undo' | 'redo', command: HistoryStep): void {
     for (const listener of this.listeners) listener(this.current, { kind, command });
   }
 }

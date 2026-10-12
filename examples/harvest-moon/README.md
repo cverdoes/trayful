@@ -11,8 +11,11 @@ A small worker-placement and card-market game that uses every Trayful file kind.
 | `data/actions.csv`     | Card data in a spreadsheet-friendly form                                        |
 | `setups/2-player.yaml` | Placing, shuffling and dealing at the start of a game                           |
 
-Check it with:
+Check it, then play it (after `pnpm build`):
 
 ```sh
 pnpm trayful validate examples/harvest-moon
+pnpm trayful play examples/harvest-moon
 ```
+
+Played tables are saved in `tables/`, which git ignores.

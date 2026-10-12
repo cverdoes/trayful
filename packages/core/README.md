@@ -5,6 +5,8 @@ The table engine: state, commands, undo and seeded randomness. It has no UI or f
 - `createTable(project, { name, seed })` spawns every inventory component; decks become face-down stacks.
 - `applyCommand(state, command, catalog)` returns a new state for one of: `move`, `flip`, `rotate`, `stack`, `draw`, `shuffle`, `roll`, `setValue`, `lock`. Invalid commands throw `CommandError` and change nothing.
 - `TableEngine` wraps a state with undo, redo, a command history and change listeners.
+- `replace(state)` on the engine swaps in a whole new table (a reset) as one undoable step.
+- `ClientMessage` and `ServerMessage` in `protocol.ts` are the WebSocket messages between the browser and the server.
 - `toTableFile` and `fromTableFile` convert to and from the saved JSON form, checking stack consistency on load.
 
 Shuffles and rolls draw from a random state stored in the table, so the same seed and commands always give the same result.

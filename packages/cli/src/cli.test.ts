@@ -33,6 +33,18 @@ describe('trayful CLI', () => {
     expect(r.err).toContain('trayful.yaml  error  File not found.');
   });
 
+  it('rejects bad play options', async () => {
+    expect((await capture(['play', '--port', 'abc'])).err).toContain(
+      '--port needs a whole number.',
+    );
+    expect((await capture(['play', '--frob'])).code).toBe(2);
+  });
+
+  it('reports project errors when playing a broken folder', async () => {
+    const r = await capture(['play', fileURLToPath(new URL('.', import.meta.url)), '--no-open']);
+    expect(r.code).toBe(1);
+  });
+
   it('shows help and rejects unknown commands', async () => {
     expect((await capture([])).out).toContain('Usage: trayful');
     expect((await capture(['frobnicate'])).code).toBe(2);
