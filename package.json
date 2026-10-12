@@ -1,0 +1,34 @@
+{
+  "name": "trayful-monorepo",
+  "private": true,
+  "description": "Trayful: a boardgame prototyping table with a declarative component format and MCP support.",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "trayful": "tsx packages/cli/src/main.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p .",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "generate": "tsx scripts/generate.ts",
+    "check:generated": "tsx scripts/generate.ts --check",
+    "validate:examples": "tsx scripts/validate-examples.ts",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm check:generated && pnpm validate:examples"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@trayful/core": "workspace:*",
+    "@trayful/formats": "workspace:*",
+    "@types/node": "^22.19.0",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

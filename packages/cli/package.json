@@ -1,0 +1,14 @@
+{
+  "name": "trayful",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@trayful/core": "workspace:*",
+    "@trayful/formats": "workspace:*",
+    "tsx": "^4.23.15"
+  }
+}

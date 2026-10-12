@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/library.schema.json
+kind: library
+types:
+  - id: main-board
+    base: board
+    name: Farm board
+    size: [600, 400]
+    front:
+      layers:
+        - { image: assets/board.svg }
+    snap:
+      - id: market
+        grid: { origin: [85, 70], cols: 5, rows: 1, cell: [70, 95] }
+        accepts: [action-card]
+      - id: fields
+        grid: { origin: [100, 220], cols: 4, rows: 2, cell: [40, 40] }
+        accepts: [worker]
+      - id: score-track
+        points: [[20, 380], [40, 380], [60, 380], [80, 380], [100, 380]]
+        accepts: [score-marker]
+
+  - id: worker
+    base: meeple
+    size: 16
+    fields:
+      color: { enum: [red, green] }
+    fill: '{{color}}'
+
+  - id: score-marker
+    base: token
+    shape: disc
+    size: 12
+    fields:
+      color: { enum: [red, green] }
+    fill: '{{color}}'
+
+  - id: coins
+    base: counter
+    size: [30, 20]
+    range: [0, 99]
+
+  - id: d6
+    base: die
+    size: 16
+    faces: [1, 2, 3, 4, 5, 6]

@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Setup",
+  "$defs": {
+    "Setup": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "setup",
+          "description": "Marks this file as a setup."
+        },
+        "name": {
+          "description": "Display name. Default: the file name.",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SetupStep"
+          },
+          "description": "Run in order on an empty table."
+        }
+      },
+      "required": [
+        "kind",
+        "steps"
+      ],
+      "additionalProperties": false,
+      "title": "Trayful setup",
+      "description": "A scripted starting layout that a table can be reset to."
+    },
+    "SetupStep": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PlaceStep"
+        },
+        {
+          "$ref": "#/$defs/DealStep"
+        },
+        {
+          "$ref": "#/$defs/ShuffleStep"
+        }
+      ],
+      "description": "One setup instruction. The first key (`place`, `deal` or `shuffle`) decides the kind."
+    },
+    "PlaceStep": {
+      "type": "object",
+      "properties": {
+        "place": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "deck": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "deck"
+              ],
+              "additionalProperties": false
+            }
+          ],
+          "description": "A component type id (places every component of that type), a component id, or `{ deck: <name> }`."
+        },
+        "at": {
+          "$ref": "#/$defs/Target"
+        },
+        "face": {
+          "description": "Turn face up or down.",
+          "type": "string",
+          "enum": [
+            "up",
+            "down"
+          ]
+        },
+        "rot": {
+          "description": "Rotation in degrees.",
+          "type": "number"
+        },
+        "shuffle": {
+          "description": "Shuffle a deck after placing it.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "place",
+        "at"
+      ],
+      "additionalProperties": false,
+      "description": "Put components or a deck somewhere on the table."
+    },
+    "Target": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Vec2"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Where something goes: an `[x, y]` table position, or a snap target as `type/target` or `type/target/index` (e.g. `main-board/market/2`)."
+    },
+    "Vec2": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "An `[x, y]` pair in millimetres."
+    },
+    "DealStep": {
+      "type": "object",
+      "properties": {
+        "deal": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "description": "Deck name."
+            },
+            "to": {
+              "description": "A snap target fills its spots in order; a position stacks the cards.",
+              "$ref": "#/$defs/Target"
+            },
+            "count": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991,
+              "description": "Number of cards to deal."
+            },
+            "face": {
+              "type": "string",
+              "enum": [
+                "up",
+                "down"
+              ]
+            }
+          },
+          "required": [
+            "from",
+            "to",
+            "count"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "deal"
+      ],
+      "additionalProperties": false,
+      "description": "Deal cards from the top of a deck."
+    },
+    "ShuffleStep": {
+      "type": "object",
+      "properties": {
+        "shuffle": {
+          "type": "string",
+          "description": "Deck name."
+        }
+      },
+      "required": [
+        "shuffle"
+      ],
+      "additionalProperties": false,
+      "description": "Shuffle a deck."
+    }
+  },
+  "$id": "https://github.com/cverdoes/trayful/blob/main/packages/formats/schema/setup.schema.json"
+}

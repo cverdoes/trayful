@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Manifest",
+  "$defs": {
+    "Manifest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the prototype."
+        },
+        "format": {
+          "type": "string",
+          "const": "trayful/1",
+          "description": "File format version. Currently always `trayful/1`."
+        },
+        "version": {
+          "description": "Your own version label for the prototype, e.g. `0.3`.",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "units": {
+          "description": "Unit for all sizes and positions. Only `mm` for now.",
+          "type": "string",
+          "const": "mm"
+        },
+        "libraries": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Library files to load, as paths or glob patterns relative to the project folder."
+        },
+        "inventory": {
+          "type": "string",
+          "description": "Path to the inventory file."
+        },
+        "setups": {
+          "description": "Setup files, as paths or globs. Default `[\"setups/*.yaml\"]`.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "format",
+        "libraries",
+        "inventory"
+      ],
+      "additionalProperties": false,
+      "title": "Trayful project manifest",
+      "description": "The `trayful.yaml` file at the root of a project folder."
+    }
+  },
+  "$id": "https://github.com/cverdoes/trayful/blob/main/packages/formats/schema/manifest.schema.json"
+}
