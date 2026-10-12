@@ -7,10 +7,14 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@trayful/core": "workspace:*",
     "@trayful/formats": "workspace:*",
     "@trayful/server": "workspace:*",
     "open": "^11.0.4",
     "tsx": "^4.23.15"
+  },
+  "bin": {
+    "trayful": "bin/trayful.js"
   }
 }

@@ -1,41 +1,11 @@
-import { expect, test, type Page } from '@playwright/test';
-import type { Piece, Stack, TableState } from '@trayful/core';
+import { expect, test } from '@playwright/test';
+import type { Piece, Stack } from '@trayful/core';
+import { DECK, drag, freshTable, openTable, table } from './helpers.js';
 
-declare global {
-  // The test hook the app installs; see packages/app/src/App.tsx.
-  interface Window {
-    __trayful?: {
-      store: { getState(): { status: string; selection: string[] } };
-      worldToScreen(x: number, y: number): { x: number; y: number };
-    };
-  }
-}
-
-const DECK = 'deck:actions';
-
-async function table(page: Page): Promise<TableState> {
-  const response = await page.request.get('/api/table');
-  return (await response.json()) as TableState;
-}
-
-/** Screen position of a table point, in millimetres. */
-async function screen(page: Page, x: number, y: number) {
-  return page.evaluate(([x, y]) => window.__trayful!.worldToScreen(x!, y!), [x, y]);
-}
-
-async function drag(page: Page, from: [number, number], to: [number, number]) {
-  const a = await screen(page, ...from);
-  const b = await screen(page, ...to);
-  await page.mouse.move(a.x, a.y);
-  await page.mouse.down();
-  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 5 });
-  await page.mouse.move(b.x, b.y, { steps: 5 });
-  await page.mouse.up();
-}
+test.beforeEach(async ({ baseURL }) => freshTable(baseURL!));
 
 test('plays a hand: draw, flip, undo, shuffle and restack', async ({ page }) => {
-  await page.goto('/');
-  await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
+  await openTable(page);
   await expect(page.locator('.toolbar')).toContainText('Harvest Moon');
 
   const deck = (await table(page)).objects[DECK] as Stack;

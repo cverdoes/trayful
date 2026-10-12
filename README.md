@@ -2,7 +2,7 @@
 
 Trayful is a boardgame prototyping table. You describe your components (cards, boards, tokens, meeples, dice, counters) in plain YAML files, and Trayful lays them out on a table where people and AI agents can drag, flip, rotate, stack and shuffle them.
 
-> **Status: Milestone 1 (first playable table).** You can open a prototype on a table in your browser and play it: drag, flip, rotate, stack, draw, shuffle, roll and undo, with every change saved to disk. Snapping arrives in Milestone 2 and MCP support in Milestone 3. See the [roadmap](#roadmap).
+> **Status: Milestone 3 (MCP).** You can open a prototype on a table in your browser and play it, and an AI agent such as Claude can play on the same table over MCP while you watch. Snapping (Milestone 2) comes next. See the [roadmap](#roadmap).
 
 ## Quick start
 
@@ -39,6 +39,46 @@ The table is saved to `tables/table-1.json` inside the project folder as you pla
 | `--port <n>`          | Use another port than 4317                           |
 | `--no-open`           | Do not open a browser window                         |
 
+## Let an agent play
+
+Trayful is an [MCP](https://modelcontextprotocol.io) server, so agents such as Claude Code or Claude Desktop can read the table and play on it. Their moves show up live in your browser, with a note saying what they did, and share the undo history with you.
+
+The simplest way: start the table, then point the agent at it over HTTP.
+
+```sh
+pnpm trayful play examples/harvest-moon
+claude mcp add --transport http trayful http://127.0.0.1:4317/mcp   # in another terminal, once
+```
+
+Then ask Claude something like "shuffle the action deck, deal three cards to two players and play a round". It starts with `describe_table`, which lists every pile and piece with its position.
+
+For clients that start MCP servers themselves (stdio), run `trayful mcp`. It joins the table that `trayful play` has open, or opens the table itself so you can watch at http://127.0.0.1:4317:
+
+```sh
+claude mcp add trayful -- node /path/to/trayful/packages/cli/bin/trayful.js mcp /path/to/trayful/examples/harvest-moon
+```
+
+In Claude Desktop the same goes in `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "trayful": {
+      "command": "node",
+      "args": ["/path/to/trayful/packages/cli/bin/trayful.js", "mcp", "/path/to/my-game"]
+    }
+  }
+}
+```
+
+| Tools                                                                                       | What they do                                      |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `describe_table`, `query_objects`, `snapshot`                                               | Read the table as text or JSON, or as a PNG image |
+| `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `shuffle`, `roll`, `set_counter`, `lock` | Play, the same moves people make                  |
+| `undo`, `redo`, `get_history`, `reset_table`                                                | Shared history, and a fresh table                 |
+
+Face-down cards stay hidden from the agent unless it asks with `reveal: true`. `snapshot` needs the table open in a browser, since the browser draws the picture. Resources give the full table state, the project, each component type and the file format schemas.
+
 ## Make your own prototype
 
 A prototype is a folder:
@@ -69,7 +109,7 @@ The validator points at the exact file, line and column of each problem. Every k
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
 | [`packages/formats`](packages/formats)           | File format schemas (Zod), YAML loader and validator, generated JSON Schemas                       |
 | [`packages/core`](packages/core)                 | Table state, commands (move, flip, rotate, stack, draw, shuffle, roll), undo and seeded randomness |
-| [`packages/server`](packages/server)             | Local server: one table per project, WebSocket sync, saves to `tables/`                            |
+| [`packages/server`](packages/server)             | Local server: one table per project, WebSocket sync, MCP, saves to `tables/`                       |
 | [`packages/app`](packages/app)                   | Browser table (React and Konva)                                                                    |
 | [`packages/cli`](packages/cli)                   | The `trayful` command line                                                                         |
 | [`examples/harvest-moon`](examples/harvest-moon) | Sample prototype that uses every file kind; validated in CI                                        |
@@ -84,7 +124,7 @@ The validator points at the exact file, line and column of each problem. Every k
 | `pnpm dev`               | Table server plus the app with hot reload at http://localhost:5173       |
 | `pnpm build`             | Build the browser app (needed before `trayful play`)                     |
 | `pnpm test`              | Run all unit tests (Vitest)                                              |
-| `pnpm test:e2e`          | Play a hand in a real browser (Playwright); run `pnpm build` first       |
+| `pnpm test:e2e`          | Play in a real browser, by hand and as an agent; run `pnpm build` first  |
 | `pnpm test:watch`        | Re-run tests on change                                                   |
 | `pnpm typecheck`         | Type-check every package                                                 |
 | `pnpm lint`              | ESLint and Prettier check                                                |
@@ -99,11 +139,11 @@ When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generat
 
 ## Roadmap
 
-| Milestone                          | Scope                                                                                                         |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 0. Foundations                     | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
-| **1. First playable table** (this) | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
-| 2. Components and snapping         | Boards with snap grids, meeples, dice, counters, layouts                                                      |
-| 3. MCP                             | Agents read and play tables over the Model Context Protocol                                                   |
-| 4. Projects and authoring          | Several projects and tables, setups, live reload, CSV, print-and-play, HOWTO guides                           |
-| 5. Multiplayer                     | Remote playtesters, hidden hands                                                                              |
+| Milestone                  | Scope                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 0. Foundations             | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
+| 1. First playable table    | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
+| 2. Components and snapping | Boards with snap grids, meeples, dice, counters, layouts                                                      |
+| **3. MCP** (this)          | Agents read and play tables over the Model Context Protocol                                                   |
+| 4. Projects and authoring  | Several projects and tables, setups, live reload, CSV, print-and-play, HOWTO guides                           |
+| 5. Multiplayer             | Remote playtesters, hidden hands                                                                              |

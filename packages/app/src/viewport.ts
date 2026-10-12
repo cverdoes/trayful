@@ -4,13 +4,16 @@ import { useStore } from './store';
 
 export const MIN_SCALE = 0.2;
 export const MAX_SCALE = 12;
-const TOOLBAR = 56;
+export const TOOLBAR_HEIGHT = 56;
 const MARGIN = 32;
 
-/** Zooms and pans so every object on the table is in view. */
-export function fitToTable(table: TableState, types: Types, width: number, height: number): void {
+/** The rectangle `[x0, y0, x1, y1]` in mm that holds every object, or nothing for an empty table. */
+export function tableBounds(
+  table: TableState,
+  types: Types,
+): [number, number, number, number] | undefined {
   const objects = topLevel(table);
-  if (objects.length === 0) return;
+  if (objects.length === 0) return undefined;
   let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
   for (const o of objects) {
     const b = bounds(table, types, o);
@@ -19,14 +22,22 @@ export function fitToTable(table: TableState, types: Types, width: number, heigh
     x1 = Math.max(x1, b.x + b.w);
     y1 = Math.max(y1, b.y + b.h);
   }
+  return [x0, y0, x1, y1];
+}
+
+/** Zooms and pans so every object on the table is in view. */
+export function fitToTable(table: TableState, types: Types, width: number, height: number): void {
+  const box = tableBounds(table, types);
+  if (!box) return;
+  const [x0, y0, x1, y1] = box;
   const availW = width - 2 * MARGIN;
-  const availH = height - TOOLBAR - 2 * MARGIN;
+  const availH = height - TOOLBAR_HEIGHT - 2 * MARGIN;
   const scale = clamp(Math.min(availW / (x1 - x0), availH / (y1 - y0)), MIN_SCALE, MAX_SCALE);
   useStore.setState({
     viewport: {
       scale,
       x: MARGIN + (availW - (x1 - x0) * scale) / 2 - x0 * scale,
-      y: TOOLBAR + MARGIN + (availH - (y1 - y0) * scale) / 2 - y0 * scale,
+      y: TOOLBAR_HEIGHT + MARGIN + (availH - (y1 - y0) * scale) / 2 - y0 * scale,
     },
   });
 }

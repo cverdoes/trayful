@@ -5,6 +5,8 @@ const port = 4399;
 export default defineConfig({
   testDir: 'e2e',
   timeout: 30_000,
+  // Tests share one server and table, so they run one at a time.
+  workers: 1,
   use: { baseURL: `http://127.0.0.1:${port}`, viewport: { width: 1280, height: 800 } },
   // Each run plays on a fresh copy of the example project.
   webServer: {
