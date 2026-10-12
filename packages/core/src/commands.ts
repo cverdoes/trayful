@@ -1,4 +1,4 @@
-import { PRIMITIVE_INFO, type Vec2 } from '@trayful/formats';
+import { PRIMITIVE_INFO, type Vec2 } from '@trayful/formats/browser';
 import { nextInt, shuffled } from './rng.js';
 import type { Catalog, Piece, Stack, TableObject, TableState } from './state.js';
 

@@ -6,10 +6,10 @@ import {
   formatPath,
   type ComponentType,
   type PieceObject,
-  type ResolvedProject,
   type StackObject,
   type Vec2,
-} from '@trayful/formats';
+} from '@trayful/formats/browser';
+import type { ResolvedProject } from '@trayful/formats';
 import { seedState } from './rng.js';
 
 export type Piece = PieceObject;

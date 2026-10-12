@@ -9,6 +9,8 @@
   "dependencies": {
     "@trayful/core": "workspace:*",
     "@trayful/formats": "workspace:*",
+    "@trayful/server": "workspace:*",
+    "open": "^11.0.4",
     "tsx": "^4.23.15"
   }
 }

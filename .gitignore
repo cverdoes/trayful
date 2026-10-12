@@ -3,3 +3,6 @@ dist/
 *.tsbuildinfo
 coverage/
 .DS_Store
+examples/*/tables/
+test-results/
+playwright-report/
