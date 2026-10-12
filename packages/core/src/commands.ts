@@ -17,6 +17,11 @@ export type Command =
   | { type: 'stack'; ids: string[]; onto: string }
   /** Take cards off the top of a stack to a position. Several cards land as a new stack. */
   | { type: 'draw'; from: string; count?: number; to: Vec2; face?: 'up' | 'down' }
+  /**
+   * Deal cards from the top of a stack, one at a time to each position in turn, for
+   * `count` rounds. Cards dealt to the same position form a pile.
+   */
+  | { type: 'deal'; from: string; to: Vec2[]; count?: number; face?: 'up' | 'down' }
   | { type: 'shuffle'; id: string }
   | { type: 'roll'; id: string }
   /** Set a counter's number or a die's face. */
@@ -45,6 +50,9 @@ export function applyCommand(state: TableState, command: Command, catalog: Catal
       break;
     case 'draw':
       tx.draw(command.from, command.count ?? 1, command.to, command.face);
+      break;
+    case 'deal':
+      tx.deal(command.from, command.to, command.count ?? 1, command.face);
       break;
     case 'shuffle':
       tx.shuffle(command.id);
@@ -275,6 +283,53 @@ class Transaction {
         this.update(this.get(pieceId) as Piece, { parent: stackId, z: 0 });
     }
     this.setStackItems(stack, remaining);
+  }
+
+  deal(fromId: string, spots: Vec2[], rounds: number, face?: 'up' | 'down'): void {
+    if (!Array.isArray(spots) || spots.length === 0)
+      throw new CommandError('Give at least one position to deal to.');
+    if (!Number.isInteger(rounds) || rounds < 1)
+      throw new CommandError('"count" must be a whole number of at least 1.');
+    const stack = this.stackObject(fromId);
+    const total = rounds * spots.length;
+    if (total > stack.items.length) {
+      throw new CommandError(
+        `"${fromId}" holds ${stack.items.length} cards; dealing ${rounds} to ${spots.length} ` +
+          `${spots.length === 1 ? 'position' : 'positions'} needs ${total}.`,
+      );
+    }
+    // Cards come off the top (the end of `items`) and land bottom first on each pile.
+    const order = stack.items.slice(stack.items.length - total).reverse();
+    const piles: string[][] = spots.map(() => []);
+    order.forEach((id, i) => piles[i % spots.length]!.push(id));
+    let z = this.topZ();
+    piles.forEach((pile, i) => {
+      const pos = spots[i]!;
+      for (const pieceId of pile) {
+        const piece = this.get(pieceId) as Piece;
+        this.update(piece, {
+          parent: undefined,
+          pos,
+          rot: stack.rot,
+          z: z++,
+          face: face ?? piece.face,
+        });
+      }
+      if (pile.length > 1) {
+        const stackId = this.newStackId();
+        this.objects[stackId] = {
+          kind: 'stack',
+          id: stackId,
+          pos,
+          rot: stack.rot,
+          z: z++,
+          items: pile,
+        };
+        for (const pieceId of pile)
+          this.update(this.get(pieceId) as Piece, { parent: stackId, z: 0 });
+      }
+    });
+    this.setStackItems(stack, stack.items.slice(0, stack.items.length - total));
   }
 
   /** Updates a stack's items, dissolving it when one or no pieces remain. */

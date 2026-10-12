@@ -1,4 +1,5 @@
 import type { ProjectView, ServerMessage } from '@trayful/core';
+import { snapshotTable } from './snapshot';
 import { useStore } from './store';
 
 /** Connects to the Trayful server, loading the project and keeping the table in sync. Reconnects on loss. */
@@ -27,7 +28,19 @@ function open(attempt: number): void {
     });
   });
   socket.addEventListener('message', (event) => {
-    useStore.getState().receive(JSON.parse(String(event.data)) as ServerMessage);
+    const message = JSON.parse(String(event.data)) as ServerMessage;
+    if (message.type === 'snapshot-request') {
+      // An agent asked to see the table.
+      try {
+        socket.send(JSON.stringify({ type: 'snapshot', id: message.id, png: snapshotTable() }));
+      } catch (err) {
+        socket.send(
+          JSON.stringify({ type: 'snapshot', id: message.id, error: (err as Error).message }),
+        );
+      }
+      return;
+    }
+    useStore.getState().receive(message);
   });
   socket.addEventListener('close', () => {
     useStore.setState({ status: 'offline', send: () => {} });

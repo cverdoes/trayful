@@ -153,3 +153,20 @@ button:disabled {
 .help td {
   padding: 4px 0;
 }
+
+.activity {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  max-width: calc(100% - 32px);
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bar);
+  border: 1px solid var(--accent);
+  z-index: 20;
+}
+
+.activity strong {
+  color: var(--accent);
+  margin-right: 6px;
+}

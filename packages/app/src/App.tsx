@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { selectionActions } from './actions';
 import { useStore } from './store';
 import { Table } from './Table';
-import { fitToTable, zoomAt } from './viewport';
+import { fitToTable, tableBounds, TOOLBAR_HEIGHT, zoomAt } from './viewport';
 
 export function App() {
   useKeyboard();
@@ -13,6 +13,7 @@ export function App() {
       <Table />
       <Toolbar />
       <ErrorToast />
+      <AgentActivity />
       {helpOpen && <Help />}
     </>
   );
@@ -21,6 +22,20 @@ export function App() {
 function fit() {
   const { table, view } = useStore.getState();
   if (table && view) fitToTable(table, view.types, window.innerWidth, window.innerHeight);
+}
+
+/** Zooms out when an agent puts something where the people watching cannot see it. */
+function keepTableInView() {
+  const { table, view, viewport: v } = useStore.getState();
+  const box = table && view && tableBounds(table, view.types);
+  if (!box) return;
+  const [x0, y0, x1, y1] = box;
+  const outside =
+    v.x + x0 * v.scale < 0 ||
+    v.y + y0 * v.scale < TOOLBAR_HEIGHT ||
+    v.x + x1 * v.scale > window.innerWidth ||
+    v.y + y1 * v.scale > window.innerHeight;
+  if (outside) fit();
 }
 
 function zoom(factor: number) {
@@ -116,6 +131,25 @@ function Button({
     >
       {label}
     </button>
+  );
+}
+
+/** Says what an agent just did, so people watching can follow along. */
+function AgentActivity() {
+  const activity = useStore((s) => s.activity);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (!activity) return;
+    setVisible(true);
+    keepTableInView();
+    const timer = setTimeout(() => setVisible(false), 5000);
+    return () => clearTimeout(timer);
+  }, [activity]);
+  if (!activity || !visible) return null;
+  return (
+    <div className="activity" role="status">
+      <strong>Agent</strong> {activity.text}
+    </div>
   );
 }
 

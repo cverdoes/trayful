@@ -9,7 +9,8 @@ The browser table, built with React, [react-konva](https://konvajs.org/docs/reac
 | `src/Table.tsx`            | The canvas: dragging, drawing from piles, stacking, panning, zooming |
 | `src/render/Component.tsx` | Draws one component's face from its layers                           |
 | `src/actions.ts`           | What the toolbar and keys can do with the selection                  |
-| `src/App.tsx`              | Toolbar, keyboard shortcuts, help and error messages                 |
+| `src/App.tsx`              | Toolbar, keyboard shortcuts, help, errors and agent activity         |
+| `src/snapshot.ts`          | Draws the whole table to a PNG when an agent asks for a snapshot     |
 
 Units on the canvas are millimetres; the viewport scales them to pixels.
 

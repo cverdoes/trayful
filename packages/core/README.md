@@ -3,8 +3,9 @@
 The table engine: state, commands, undo and seeded randomness. It has no UI or file system code, so the browser app, the MCP server and tests all share it.
 
 - `createTable(project, { name, seed })` spawns every inventory component; decks become face-down stacks.
-- `applyCommand(state, command, catalog)` returns a new state for one of: `move`, `flip`, `rotate`, `stack`, `draw`, `shuffle`, `roll`, `setValue`, `lock`. Invalid commands throw `CommandError` and change nothing.
+- `applyCommand(state, command, catalog)` returns a new state for one of: `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `shuffle`, `roll`, `setValue`, `lock`. Invalid commands throw `CommandError` and change nothing.
 - `TableEngine` wraps a state with undo, redo, a command history and change listeners.
+- `describeTable` and `queryObjects` in `describe.ts` give agents a text or JSON view of the table. Face-down cards stay hidden unless asked with `reveal`.
 - `replace(state)` on the engine swaps in a whole new table (a reset) as one undoable step.
 - `ClientMessage` and `ServerMessage` in `protocol.ts` are the WebSocket messages between the browser and the server.
 - `toTableFile` and `fromTableFile` convert to and from the saved JSON form, checking stack consistency on load.

@@ -3,8 +3,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { ClientMessage, ServerMessage } from '@trayful/core';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyReply } from 'fastify';
+import { createMcpServer } from './mcp.js';
 import { TableSession } from './session.js';
 
 export const DEFAULT_PORT = 4317;
@@ -50,6 +52,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   app.get('/api/health', async () => ({
     ok: true,
     project: session.project.manifest.name,
+    projectDir: session.project.dir,
     table: session.tableName,
   }));
   app.get('/api/project', async () => session.view());
@@ -100,11 +103,36 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     socket.on('close', unsubscribe);
   });
 
+  // MCP over Streamable HTTP, stateless: each request gets its own server object,
+  // all sharing the one table session.
+  let url = '';
+  app.post('/mcp', async (request, reply) => {
+    if (!isLocalOrigin(request.headers.origin)) {
+      return reply.code(403).send({ error: 'Origin not allowed' });
+    }
+    const mcp = createMcpServer(session, { url });
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+    reply.hijack();
+    reply.raw.on('close', () => {
+      void transport.close();
+      void mcp.close();
+    });
+    await mcp.connect(transport);
+    await transport.handleRequest(request.raw, reply.raw, request.body);
+  });
+  const notAllowed = async (_req: unknown, reply: FastifyReply) =>
+    reply.code(405).header('allow', 'POST').send({ error: 'Use POST for MCP requests.' });
+  app.get('/mcp', notAllowed);
+  app.delete('/mcp', notAllowed);
+
   const address = await app.listen({
     port: options.port ?? DEFAULT_PORT,
     host: options.host ?? '127.0.0.1',
   });
-  const url = address;
+  url = address;
 
   return {
     url,

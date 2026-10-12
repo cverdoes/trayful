@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Circle, Group, Layer, Rect, Stage, Text } from 'react-konva';
 import { Component } from './render/Component';
 import { dropTarget, facePiece, sizeOf, topLevel, type Types } from './render/geometry';
+import { setSnapshotStage } from './snapshot';
 import { useStore } from './store';
 import { fitToTable, zoomAt } from './viewport';
 
@@ -179,6 +180,7 @@ export function Table() {
 
   return (
     <Stage
+      ref={setSnapshotStage}
       width={size.width}
       height={size.height}
       x={viewport.x}

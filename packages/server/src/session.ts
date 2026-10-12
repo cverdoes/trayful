@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
@@ -6,6 +7,7 @@ import {
   fromTableFile,
   TableEngine,
   toTableFile,
+  type Activity,
   type ClientMessage,
   type ProjectView,
   type ServerMessage,
@@ -14,6 +16,9 @@ import {
 import { formatDiagnostic, loadProject, type ResolvedProject } from '@trayful/formats';
 
 export class ProjectLoadError extends Error {}
+
+/** A snapshot could not be taken, usually because no browser has the table open. */
+export class SnapshotError extends Error {}
 
 const TABLE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -27,6 +32,11 @@ export class TableSession {
   private listeners = new Set<(message: ServerMessage) => void>();
   private saveTimer: NodeJS.Timeout | undefined;
   private saving: Promise<void> = Promise.resolve();
+  private activity: Activity | undefined;
+  private snapshots = new Map<
+    string,
+    { resolve: (png: Buffer) => void; reject: (err: Error) => void; timer: NodeJS.Timeout }
+  >();
 
   private constructor(
     readonly project: ResolvedProject,
@@ -106,7 +116,52 @@ export class TableSession {
       revision: this.revision,
       canUndo: this.engine.canUndo,
       canRedo: this.engine.canRedo,
+      ...(this.activity ? { activity: this.activity } : {}),
     };
+  }
+
+  /** Makes a change on behalf of an agent, labelled so people watching see what it did. */
+  asAgent<T>(text: string, change: () => T): T {
+    this.activity = { by: 'agent', text };
+    try {
+      return change();
+    } finally {
+      this.activity = undefined;
+    }
+  }
+
+  /** Number of browsers (or other clients) watching the table. */
+  get watchers(): number {
+    return this.listeners.size;
+  }
+
+  /** Asks a watching browser to render the whole table, and resolves with the PNG. */
+  requestSnapshot(timeoutMs = 10_000): Promise<Buffer> {
+    if (this.listeners.size === 0) {
+      return Promise.reject(
+        new SnapshotError(
+          'No browser has the table open, so there is nothing to take a picture with.',
+        ),
+      );
+    }
+    const id = randomUUID();
+    return new Promise<Buffer>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.snapshots.delete(id);
+        reject(new SnapshotError('The browser did not send a picture of the table in time.'));
+      }, timeoutMs);
+      this.snapshots.set(id, { resolve, reject, timer });
+      this.broadcast({ type: 'snapshot-request', id });
+    });
+  }
+
+  private answerSnapshot(id: string, png?: string, error?: string): void {
+    const pending = this.snapshots.get(id);
+    if (!pending) return; // Another browser answered first, or it timed out.
+    this.snapshots.delete(id);
+    clearTimeout(pending.timer);
+    if (png) pending.resolve(Buffer.from(png, 'base64'));
+    else pending.reject(new SnapshotError(error ?? 'The browser could not draw the table.'));
   }
 
   /** Applies a client message. Returns an error message for the sender only, or nothing on success. */
@@ -126,9 +181,10 @@ export class TableSession {
           this.engine.redo();
           return undefined;
         case 'reset':
-          this.engine.replace(
-            createTable(this.project, { name: this.tableName, seed: message.seed }),
-          );
+          this.reset(message.seed);
+          return undefined;
+        case 'snapshot':
+          this.answerSnapshot(message.id, message.png, message.error);
           return undefined;
         default:
           return {
@@ -146,6 +202,11 @@ export class TableSession {
         requestId: message.type === 'command' ? message.requestId : undefined,
       };
     }
+  }
+
+  /** Replaces the table with a fresh one from the project files, as one undoable step. */
+  reset(seed?: number): void {
+    this.engine.replace(createTable(this.project, { name: this.tableName, seed }));
   }
 
   subscribe(listener: (message: ServerMessage) => void): () => void {
@@ -177,6 +238,8 @@ export class TableSession {
   }
 
   async close(): Promise<void> {
+    for (const [id] of this.snapshots)
+      this.answerSnapshot(id, undefined, 'The server is stopping.');
     await this.save();
     this.listeners.clear();
   }

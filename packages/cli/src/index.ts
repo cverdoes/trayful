@@ -3,6 +3,7 @@ import path from 'node:path';
 import { formatDiagnostic, hasErrors, loadProject } from '@trayful/formats';
 import { DEFAULT_PORT, defaultAppDir, ProjectLoadError, startServer } from '@trayful/server';
 import open from 'open';
+import { mcp } from './mcp.js';
 
 const HELP = `Usage: trayful <command> [options]
 
@@ -12,6 +13,9 @@ Commands:
                            --port <n>      port for the local server (default ${DEFAULT_PORT})
                            --seed <n>      shuffle seed for a new table
                            --no-open       do not open a browser window
+  mcp [project-dir]        Let an AI agent play the table over MCP (stdio). Shares the table
+                           with \`trayful play\` if it is running; same options as play.
+                           Agents can also connect over HTTP at http://127.0.0.1:${DEFAULT_PORT}/mcp.
   validate <project-dir>   Check a project folder and report problems with file and line.
                            Add --json for machine-readable output.
   help                     Show this message.
@@ -25,6 +29,16 @@ export async function run(args: string[], out = console.log, err = console.error
       return validate(rest, out, err);
     case 'play':
       return play(rest, out, err);
+    case 'mcp': {
+      const options = parsePlayArgs(rest);
+      if (typeof options === 'string') {
+        err(
+          `${options}\nUsage: trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>]`,
+        );
+        return 2;
+      }
+      return mcp(options, err);
+    }
     case undefined:
     case 'help':
     case '--help':

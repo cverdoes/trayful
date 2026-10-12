@@ -14,6 +14,8 @@ interface TrayfulStore {
   selection: string[];
   /** The latest error from the server, shown briefly. */
   error?: { message: string; at: number };
+  /** The latest change an agent made, shown briefly to people watching. */
+  activity?: { text: string; at: number };
   /** Bumped when the server rejects a change, so the canvas redraws from server state. */
   redrawKey: number;
   shiftDown: boolean;
@@ -41,6 +43,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
   send: () => {},
   command: (command) => get().send({ type: 'command', command }),
   receive: (message) => {
+    if (message.type === 'snapshot-request') return;
     if (message.type === 'error') {
       set((s) => ({
         error: { message: message.message, at: Date.now() },
@@ -55,6 +58,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       revision: message.revision,
       canUndo: message.canUndo,
       canRedo: message.canRedo,
+      ...(message.activity ? { activity: { text: message.activity.text, at: Date.now() } } : {}),
       // Drop selected ids that vanished or went into a stack.
       selection: s.selection.filter((id) => {
         const o = objects[id];

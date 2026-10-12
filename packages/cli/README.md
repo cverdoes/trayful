@@ -4,6 +4,7 @@ The `trayful` command line. From the repo root:
 
 ```sh
 pnpm trayful play examples/harvest-moon              # open the table in your browser
+pnpm trayful mcp examples/harvest-moon               # MCP server on stdio, for agents
 pnpm trayful validate examples/harvest-moon          # human-readable report
 pnpm trayful validate examples/harvest-moon --json   # for tools and agents
 ```
@@ -16,6 +17,10 @@ pnpm trayful validate examples/harvest-moon --json   # for tools and agents
 | `--seed <n>`     | Shuffle seed for a new table                            |
 | `--port <n>`     | Port for the server (default 4317)                      |
 | `--no-open`      | Do not open a browser window                            |
+
+`mcp [project-dir]` takes the same options. It speaks MCP on stdin and stdout. If `trayful play` already has the project open on that port, it relays to that table; otherwise it opens the table itself, so people can watch at the printed address. Messages for people go to stderr.
+
+`bin/trayful.js` runs the CLI from source without `pnpm`, for MCP client configs: `node /path/to/trayful/packages/cli/bin/trayful.js mcp /path/to/project`.
 
 With `TRAYFUL_SMOKE_TEST=1` set, `play` starts, checks that the app is served, and exits; CI uses this.
 

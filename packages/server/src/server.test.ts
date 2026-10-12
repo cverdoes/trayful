@@ -60,7 +60,12 @@ const DECK = 'deck:actions';
 describe('server', () => {
   it('serves health, project view and table state', async () => {
     const health = await (await fetch(`${server.url}/api/health`)).json();
-    expect(health).toEqual({ ok: true, project: 'Harvest Moon', table: 'table-1' });
+    expect(health).toEqual({
+      ok: true,
+      project: 'Harvest Moon',
+      projectDir: dir,
+      table: 'table-1',
+    });
     const view = (await (await fetch(`${server.url}/api/project`)).json()) as {
       types: Record<string, { source?: unknown }>;
     };
