@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/setup.schema.json
+kind: setup
+name: Two players
+steps:
+  - place: main-board
+    at: [0, 0]
+  - place: { deck: actions }
+    at: [650, 40]
+    shuffle: true
+    face: down
+  - deal: { from: actions, to: main-board/market, count: 5, face: up }
+  - place: worker
+    at: [100, 450]
+  - place: score-marker.red
+    at: main-board/score-track/0
+  - place: score-marker.green
+    at: main-board/score-track/0

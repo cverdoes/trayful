@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Table",
+  "$defs": {
+    "Table": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "const": "trayful/1",
+          "description": "File format version, `trayful/1`."
+        },
+        "table": {
+          "type": "string",
+          "description": "Table name."
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991,
+          "description": "Seed the table was created with."
+        },
+        "rng": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991,
+          "description": "Current random generator state, so shuffles and rolls replay exactly."
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/PieceObject"
+              },
+              {
+                "$ref": "#/$defs/StackObject"
+              }
+            ]
+          },
+          "description": "Every piece and stack, sorted by id."
+        }
+      },
+      "required": [
+        "format",
+        "table",
+        "seed",
+        "rng",
+        "objects"
+      ],
+      "additionalProperties": false,
+      "title": "Trayful table state",
+      "description": "A saved table. Written by Trayful; not meant to be edited by hand."
+    },
+    "PieceObject": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "piece",
+          "description": "Marks a single piece."
+        },
+        "id": {
+          "type": "string",
+          "description": "Stable component id from the inventory."
+        },
+        "type": {
+          "type": "string",
+          "description": "Component type id."
+        },
+        "data": {
+          "description": "Field values of this component.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "pos": {
+          "description": "Centre position on the table, in millimetres.",
+          "$ref": "#/$defs/Vec2"
+        },
+        "rot": {
+          "type": "number",
+          "description": "Rotation in degrees."
+        },
+        "face": {
+          "type": "string",
+          "enum": [
+            "up",
+            "down"
+          ],
+          "description": "Which side is up."
+        },
+        "z": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991,
+          "description": "Draw order; higher is on top."
+        },
+        "locked": {
+          "description": "Locked pieces ignore moves from the UI.",
+          "type": "boolean"
+        },
+        "value": {
+          "description": "Current value of a counter or the face shown by a die.",
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "parent": {
+          "description": "Id of the stack holding this piece. Its `pos` is then unused.",
+          "type": "string"
+        },
+        "snap": {
+          "description": "Snap spot the piece sits in, as `pieceId/target/index`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "type",
+        "pos",
+        "rot",
+        "face",
+        "z"
+      ],
+      "additionalProperties": false,
+      "description": "One component on the table."
+    },
+    "Vec2": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "An `[x, y]` pair in millimetres."
+    },
+    "StackObject": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "stack",
+          "description": "Marks a stack."
+        },
+        "id": {
+          "type": "string",
+          "description": "`deck:<name>` for decks from the inventory, `stack:<n>` for stacks made on the table."
+        },
+        "name": {
+          "description": "Deck name, when the stack came from one.",
+          "type": "string"
+        },
+        "pos": {
+          "description": "Centre position on the table, in millimetres.",
+          "$ref": "#/$defs/Vec2"
+        },
+        "rot": {
+          "type": "number",
+          "description": "Rotation in degrees."
+        },
+        "z": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991,
+          "description": "Draw order; higher is on top."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Piece ids from bottom to top."
+        },
+        "locked": {
+          "description": "Locked stacks ignore moves from the UI.",
+          "type": "boolean"
+        },
+        "snap": {
+          "description": "Snap spot the stack sits in, as `pieceId/target/index`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "pos",
+        "rot",
+        "z",
+        "items"
+      ],
+      "additionalProperties": false,
+      "description": "An ordered pile of pieces, such as a deck."
+    }
+  },
+  "$id": "https://github.com/cverdoes/trayful/blob/main/packages/formats/schema/table.schema.json"
+}

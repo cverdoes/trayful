@@ -1,0 +1,15 @@
+{
+  "name": "@trayful/formats",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "csv-parse": "^7.0.3",
+    "fast-glob": "^3.3.3",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.6"
+  }
+}

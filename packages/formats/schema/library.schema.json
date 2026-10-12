@@ -1,0 +1,581 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Library",
+  "$defs": {
+    "Library": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "library",
+          "description": "Marks this file as a library."
+        },
+        "palette": {
+          "description": "Named colours usable anywhere a colour is expected.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ComponentType"
+          },
+          "description": "Component types defined in this file."
+        }
+      },
+      "required": [
+        "kind",
+        "types"
+      ],
+      "additionalProperties": false,
+      "title": "Trayful library",
+      "description": "Defines component types: their primitive, size, data fields and faces."
+    },
+    "ComponentType": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "description": "Unique id of the type within the project. Referenced from the inventory and setups."
+        },
+        "base": {
+          "type": "string",
+          "enum": [
+            "card",
+            "board",
+            "tile",
+            "token",
+            "meeple",
+            "die",
+            "counter",
+            "zone"
+          ],
+          "description": "The built-in primitive this type behaves like."
+        },
+        "name": {
+          "description": "Display name. Default: the id.",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "size": {
+          "description": "Physical size in millimetres.",
+          "$ref": "#/$defs/Size"
+        },
+        "shape": {
+          "description": "Outline for tokens, meeples and tiles. Default `rect` (`meeple` for meeples).",
+          "type": "string",
+          "enum": [
+            "rect",
+            "circle",
+            "ellipse",
+            "hex",
+            "triangle",
+            "meeple",
+            "cube",
+            "disc"
+          ]
+        },
+        "corner": {
+          "description": "Corner radius in millimetres, for rectangular shapes.",
+          "type": "number",
+          "minimum": 0
+        },
+        "fill": {
+          "description": "Shorthand for `front.fill`.",
+          "$ref": "#/$defs/Color"
+        },
+        "fields": {
+          "description": "Per-component data, filled by the inventory and usable as `{{field}}` in faces.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Field"
+          }
+        },
+        "front": {
+          "description": "The face-up side.",
+          "$ref": "#/$defs/Face"
+        },
+        "back": {
+          "description": "The face-down side. Only for two-sided primitives (card, tile, token).",
+          "$ref": "#/$defs/Face"
+        },
+        "rotationStep": {
+          "description": "Degrees per rotate step. Default 90.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 360
+        },
+        "snap": {
+          "description": "Snap targets. Only for boards, tiles and zones.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SnapTarget"
+          }
+        },
+        "range": {
+          "description": "`[min, max]` for counters. Default `[0, 99]`.",
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "faces": {
+          "description": "Die faces, e.g. `[1, 2, 3, 4, 5, 6]`. Only for dice. Default six faces 1 to 6.",
+          "minItems": 2,
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        }
+      },
+      "required": [
+        "id",
+        "base",
+        "size"
+      ],
+      "additionalProperties": false,
+      "description": "A kind of component: what it is, its data fields and how it looks."
+    },
+    "Size": {
+      "anyOf": [
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      ],
+      "description": "A size in millimetres: one number for square or round pieces, or `[width, height]`."
+    },
+    "Color": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A CSS colour (`\"#d94b3d\"`, `\"white\"`), a name from the library `palette`, or a `{{field}}` template that resolves to one."
+    },
+    "Field": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^(string|int|number|bool|image|color)\\??$",
+          "description": "Shorthand: a field type name, with a trailing `?` when the field is optional."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Field type. Defaults to `string`, or `enum` when `enum` is given.",
+              "type": "string",
+              "enum": [
+                "string",
+                "int",
+                "number",
+                "bool",
+                "image",
+                "color"
+              ]
+            },
+            "enum": {
+              "description": "Allowed values. Inventory rows must use one of these.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "number"
+                ]
+              }
+            },
+            "default": {
+              "description": "Value used when a row leaves the field out.",
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            },
+            "optional": {
+              "description": "When true, rows may leave the field out without a default.",
+              "type": "boolean"
+            },
+            "description": {
+              "description": "What the field means; shown in the editor and to agents.",
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Full field definition."
+        }
+      ],
+      "description": "A data field on a component type, filled per component by the inventory. Either a shorthand string such as `\"int\"` or `\"image?\"`, or an object."
+    },
+    "Face": {
+      "type": "object",
+      "properties": {
+        "fill": {
+          "description": "Background colour of the face.",
+          "$ref": "#/$defs/Color"
+        },
+        "stroke": {
+          "description": "Outline colour.",
+          "$ref": "#/$defs/Color"
+        },
+        "layers": {
+          "description": "Drawn in order, so later layers sit on top.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Layer"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "How one side of a component looks."
+    },
+    "Layer": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TextLayer"
+        },
+        {
+          "$ref": "#/$defs/ImageLayer"
+        },
+        {
+          "$ref": "#/$defs/ShapeLayer"
+        }
+      ],
+      "description": "One drawing step on a face. Exactly one of `text`, `image` or `shape` decides the kind."
+    },
+    "TextLayer": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "description": "The text to draw. Supports `{{field}}` placeholders.",
+          "$ref": "#/$defs/Template"
+        },
+        "at": {
+          "description": "Position of the layer's anchor, from the face's top-left corner. Default `[0, 0]`.",
+          "$ref": "#/$defs/Vec2"
+        },
+        "rotate": {
+          "description": "Rotation in degrees, clockwise.",
+          "type": "number"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "when": {
+          "description": "Only draw this layer when the template resolves to a non-empty value other than `false` or `0`.",
+          "$ref": "#/$defs/Template"
+        },
+        "width": {
+          "description": "Wrap width in millimetres. Default: no wrapping.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "align": {
+          "description": "Horizontal alignment around `at`. Default `left`.",
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        "valign": {
+          "description": "Vertical alignment around `at`. Default `top`.",
+          "type": "string",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ]
+        },
+        "font": {
+          "type": "object",
+          "properties": {
+            "size": {
+              "description": "Font size in points. Default 10.",
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "weight": {
+              "description": "Default `normal`.",
+              "type": "string",
+              "enum": [
+                "normal",
+                "bold"
+              ]
+            },
+            "family": {
+              "description": "CSS font family. Default is the app's sans-serif.",
+              "type": "string"
+            },
+            "style": {
+              "type": "string",
+              "enum": [
+                "normal",
+                "italic"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "color": {
+          "description": "Text colour. Default black.",
+          "$ref": "#/$defs/Color"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false,
+      "description": "Draws text."
+    },
+    "Template": {
+      "type": "string",
+      "description": "Text that may contain `{{field}}` placeholders, filled in from each component's data."
+    },
+    "Vec2": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "An `[x, y]` pair in millimetres."
+    },
+    "ImageLayer": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "description": "Path to an image or SVG, relative to the project folder, or a `{{field}}` of type `image`.",
+          "$ref": "#/$defs/Template"
+        },
+        "at": {
+          "description": "Position of the layer's anchor, from the face's top-left corner. Default `[0, 0]`.",
+          "$ref": "#/$defs/Vec2"
+        },
+        "rotate": {
+          "description": "Rotation in degrees, clockwise.",
+          "type": "number"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "when": {
+          "description": "Only draw this layer when the template resolves to a non-empty value other than `false` or `0`.",
+          "$ref": "#/$defs/Template"
+        },
+        "size": {
+          "description": "Drawn size. Default: the whole face.",
+          "$ref": "#/$defs/Size"
+        },
+        "fit": {
+          "description": "How the image fills `size`. Default `cover`.",
+          "type": "string",
+          "enum": [
+            "cover",
+            "contain",
+            "stretch"
+          ]
+        }
+      },
+      "required": [
+        "image"
+      ],
+      "additionalProperties": false,
+      "description": "Draws an image file."
+    },
+    "ShapeLayer": {
+      "type": "object",
+      "properties": {
+        "shape": {
+          "type": "string",
+          "enum": [
+            "rect",
+            "circle",
+            "ellipse",
+            "hex",
+            "triangle",
+            "meeple",
+            "cube",
+            "disc"
+          ],
+          "description": "The shape to draw."
+        },
+        "at": {
+          "description": "Position of the layer's anchor, from the face's top-left corner. Default `[0, 0]`.",
+          "$ref": "#/$defs/Vec2"
+        },
+        "rotate": {
+          "description": "Rotation in degrees, clockwise.",
+          "type": "number"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "when": {
+          "description": "Only draw this layer when the template resolves to a non-empty value other than `false` or `0`.",
+          "$ref": "#/$defs/Template"
+        },
+        "size": {
+          "description": "Bounding size. Use this or `r`.",
+          "$ref": "#/$defs/Size"
+        },
+        "r": {
+          "description": "Radius, for circles and hexes. `at` is then the centre.",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "fill": {
+          "$ref": "#/$defs/Color"
+        },
+        "stroke": {
+          "$ref": "#/$defs/Color"
+        },
+        "strokeWidth": {
+          "description": "Outline width in millimetres.",
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "shape"
+      ],
+      "additionalProperties": false,
+      "description": "Draws a filled or outlined shape."
+    },
+    "SnapTarget": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "description": "Name of the snap target, used in setups and by agents as `type/target/index`."
+        },
+        "accepts": {
+          "description": "Type ids or primitive names that may snap here. Default: anything.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "grid": {
+          "description": "A regular grid of spots, numbered left to right, then top to bottom, from 0.",
+          "type": "object",
+          "properties": {
+            "origin": {
+              "description": "Centre of the first cell.",
+              "$ref": "#/$defs/Vec2"
+            },
+            "cols": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "rows": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "cell": {
+              "description": "Distance between cell centres.",
+              "$ref": "#/$defs/Size"
+            }
+          },
+          "required": [
+            "origin",
+            "cols",
+            "rows",
+            "cell"
+          ],
+          "additionalProperties": false
+        },
+        "points": {
+          "description": "An ordered list of spots, such as a score track.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Vec2"
+          }
+        },
+        "area": {
+          "description": "A free area: pieces snap inside it but keep their own position.",
+          "type": "object",
+          "properties": {
+            "at": {
+              "description": "Top-left corner.",
+              "$ref": "#/$defs/Vec2"
+            },
+            "size": {
+              "$ref": "#/$defs/Size"
+            }
+          },
+          "required": [
+            "at",
+            "size"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "description": "Where pieces snap on a board, tile or zone. Give exactly one of `grid`, `points` or `area`."
+    }
+  },
+  "$id": "https://github.com/cverdoes/trayful/blob/main/packages/formats/schema/library.schema.json"
+}

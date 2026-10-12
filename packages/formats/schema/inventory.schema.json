@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Inventory",
+  "$defs": {
+    "Inventory": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "inventory",
+          "description": "Marks this file as an inventory."
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryEntry"
+          },
+          "description": "Everything in the box."
+        }
+      },
+      "required": [
+        "kind",
+        "components"
+      ],
+      "additionalProperties": false,
+      "title": "Trayful inventory",
+      "description": "The physical contents of the box: which components exist and how many."
+    },
+    "InventoryEntry": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Component type id from a library."
+        },
+        "count": {
+          "description": "Copies of each design in this entry. Default 1.",
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "deck": {
+          "description": "Group these components into a named deck that spawns as one stack.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        },
+        "data": {
+          "description": "Field values shared by every component in this entry.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
+        "items": {
+          "description": "One row per design, each with its own field values.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InventoryRow"
+          }
+        },
+        "from": {
+          "description": "CSV file with one row per design. The header row names the fields; a `count` column is allowed.",
+          "type": "string"
+        },
+        "each": {
+          "description": "Make one design per combination of these field values, e.g. `{ color: [red, blue] }`.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "A group of components of one type. Use at most one of `items`, `from` or `each`; with none, the entry is one design."
+    },
+    "InventoryRow": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean"
+        ]
+      },
+      "description": "Field values for one design. Keys are the type's fields, plus optional `count` (copies, default 1) and `id` (a stable id prefix)."
+    }
+  },
+  "$id": "https://github.com/cverdoes/trayful/blob/main/packages/formats/schema/inventory.schema.json"
+}

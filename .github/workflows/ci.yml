@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm check:generated
+      - run: pnpm validate:examples
+
+  # Runs the README's quick-start commands on a clean checkout, without caches,
+  # so the getting-started instructions cannot drift from reality.
+  readme-quickstart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable
+      - name: Run quick-start commands from README.md
+        run: |
+          sed -n '/<!-- quickstart:start -->/,/<!-- quickstart:end -->/p' README.md \
+            | sed -n '/^```sh$/,/^```$/p' | grep -v '^```' > quickstart.sh
+          echo "Running:"; cat quickstart.sh
+          test -s quickstart.sh
+          bash -euxo pipefail quickstart.sh
