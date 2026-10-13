@@ -1,9 +1,20 @@
-import type { Piece, Stack, TableObject, TableState } from '@trayful/core';
+import {
+  accepts,
+  allSpots,
+  ridersOf,
+  snapFor,
+  stackOffsets,
+  type Piece,
+  type SnapSpot,
+  type Stack,
+  type TableObject,
+  type TableState,
+} from '@trayful/core';
 import type Konva from 'konva';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Circle, Group, Layer, Rect, Stage, Text } from 'react-konva';
 import { Component } from './render/Component';
-import { dropTarget, facePiece, sizeOf, topLevel, type Types } from './render/geometry';
+import { dropTarget, facePiece, pieceSize, sizeOf, topLevel, type Types } from './render/geometry';
 import { setSnapshotStage } from './snapshot';
 import { useStore } from './store';
 import { fitToTable, zoomAt } from './viewport';
@@ -12,6 +23,11 @@ type Vec = [number, number];
 
 /** Below this distance in millimetres a drag counts as a click. */
 const CLICK_SLOP = 0.8;
+
+/** How close in millimetres a dropped piece must be to a spot to snap into it. */
+function snapRadius(size: [number, number]): number {
+  return Math.max(8, Math.min(size[0], size[1]) / 2);
+}
 
 export function Table() {
   const view = useStore((s) => s.view);
@@ -24,6 +40,8 @@ export function Table() {
 
   const nodes = useRef(new Map<string, Konva.Group>());
   const dragStart = useRef(new Map<string, Vec>());
+  /** Pieces snapped onto a dragged object, which follow it. */
+  const riderStart = useRef(new Map<string, Vec>());
   const [marquee, setMarquee] = useState<{ from: Vec; to: Vec } | undefined>();
   const fitted = useRef(false);
 
@@ -49,14 +67,47 @@ export function Table() {
 
   const ids = (id: string) => (selected.has(id) ? selection : [id]);
 
+  /** Starts showing where the dragged object could snap. */
+  const showSpots = (object: TableObject, ignore: ReadonlySet<string>) => {
+    const piece = facePiece(table, object);
+    const type = piece && types[piece.type];
+    const spots = allSpots(table, types).filter((s) => !ignore.has(s.owner) && accepts(s, type));
+    useStore.setState({
+      snapHint: spots.length ? { spots, size: pieceSize(table, types, object) } : undefined,
+    });
+  };
+
+  /** The spot a drop at `point` snaps to. Groups only snap into free areas. */
+  const snapAt = (object: TableObject, point: Vec, ignore: ReadonlySet<string>, group: boolean) => {
+    const piece = facePiece(table, object);
+    const type = piece && types[piece.type];
+    const size = pieceSize(table, types, object);
+    const spot = snapFor(table, types, type, point, snapRadius(size), ignore);
+    return spot && (spot.area || !group) ? spot : undefined;
+  };
+
+  const highlight = (spot: SnapSpot | undefined) => {
+    const hint = useStore.getState().snapHint;
+    if (hint && hint.active !== spot?.ref)
+      useStore.setState({ snapHint: { ...hint, active: spot?.ref } });
+  };
+
+  const dragging = () => new Set([...dragStart.current.keys(), ...riderStart.current.keys()]);
+
   const onDragStart = (id: string) => {
     const state = useStore.getState();
     if (!state.selection.includes(id)) state.select([id]);
     dragStart.current.clear();
+    riderStart.current.clear();
     for (const other of ids(id).length > 1 && selected.has(id) ? selection : [id]) {
       const o = table.objects[other];
       if (o) dragStart.current.set(other, [o.pos[0], o.pos[1]]);
     }
+    for (const rider of ridersOf(table.objects, dragStart.current.keys())) {
+      const o = table.objects[rider];
+      if (o && !dragStart.current.has(rider)) riderStart.current.set(rider, [o.pos[0], o.pos[1]]);
+    }
+    showSpots(table.objects[id]!, dragging());
   };
 
   const onDragMove = (id: string, node: Konva.Group) => {
@@ -64,27 +115,40 @@ export function Table() {
     if (!start) return;
     const dx = node.x() - start[0];
     const dy = node.y() - start[1];
-    for (const [other, pos] of dragStart.current) {
+    for (const [other, pos] of [...dragStart.current, ...riderStart.current]) {
       if (other !== id) nodes.current.get(other)?.position({ x: pos[0] + dx, y: pos[1] + dy });
     }
+    const point: Vec = [node.x(), node.y()];
+    const moved = [...dragStart.current.keys()];
+    const onPile = dropTarget(table, types, moved, point);
+    highlight(onPile ? undefined : snapAt(table.objects[id]!, point, dragging(), moved.length > 1));
   };
 
   const onDragEnd = (id: string, node: Konva.Group) => {
     const start = dragStart.current.get(id);
     const moved = [...dragStart.current.keys()];
+    const ignore = dragging();
+    const riders = [...riderStart.current.keys()];
     dragStart.current.clear();
+    riderStart.current.clear();
+    useStore.setState({ snapHint: undefined });
     if (!start) return;
     const by: Vec = [node.x() - start[0], node.y() - start[1]];
     if (Math.hypot(by[0], by[1]) < CLICK_SLOP) {
-      restore(moved);
+      restore([...moved, ...riders]);
       return;
     }
     const point: Vec = [start[0] + by[0], start[1] + by[1]];
     const target = dropTarget(table, types, moved, point);
     const ordered = moved.sort((a, b) => table.objects[a]!.z - table.objects[b]!.z);
     const command = useStore.getState().command;
-    if (target) command({ type: 'stack', ids: ordered, onto: target.id });
-    else command({ type: 'move', ids: ordered, by });
+    if (target) {
+      command({ type: 'stack', ids: ordered, onto: target.id });
+      return;
+    }
+    const spot = snapAt(table.objects[id]!, point, ignore, moved.length > 1);
+    if (spot && !spot.area) command({ type: 'move', ids: [id], to: spot.ref });
+    else command({ type: 'move', ids: ordered, by, ...(spot ? { into: spot.ref } : {}) });
   };
 
   const restore = (moved: string[]) => {
@@ -94,29 +158,52 @@ export function Table() {
     }
   };
 
-  /** Dragging the top card off a stack draws it; dropping it on a pile stacks it there. */
-  const onDrawEnd = (stack: Stack, node: Konva.Group) => {
-    const offset: Vec = [node.x(), node.y()];
-    if (Math.hypot(offset[0], offset[1]) < CLICK_SLOP) {
-      node.position({ x: 0, y: 0 });
+  /** Where a card dragged out of a stack is, given its position inside the stack's group. */
+  const fromStack = (stack: Stack, local: Vec): Vec => {
+    const rad = (stack.rot * Math.PI) / 180;
+    return [
+      stack.pos[0] + local[0] * Math.cos(rad) - local[1] * Math.sin(rad),
+      stack.pos[1] + local[0] * Math.sin(rad) + local[1] * Math.cos(rad),
+    ];
+  };
+
+  const onDrawStart = (stack: Stack) => {
+    useStore.getState().select([]);
+    showSpots(stack, new Set([stack.id]));
+  };
+
+  const onDrawMove = (stack: Stack, node: Konva.Group) => {
+    const point = fromStack(stack, [node.x(), node.y()]);
+    const onPile = dropTarget(table, types, [stack.id], point);
+    highlight(onPile ? undefined : snapAt(stack, point, new Set([stack.id]), false));
+  };
+
+  /**
+   * Dragging a card off a stack draws it (or, from a fan or spread, takes that
+   * card); dropping it on a pile stacks it there, and near a spot snaps it in.
+   */
+  const onDrawEnd = (stack: Stack, pieceId: string, node: Konva.Group, home: Vec) => {
+    useStore.setState({ snapHint: undefined });
+    const local: Vec = [node.x(), node.y()];
+    if (Math.hypot(local[0] - home[0], local[1] - home[1]) < CLICK_SLOP) {
+      node.position({ x: home[0], y: home[1] });
       useStore.getState().select([stack.id], useStore.getState().shiftDown ? 'toggle' : 'replace');
       return;
     }
-    const rad = (stack.rot * Math.PI) / 180;
-    const point: Vec = [
-      stack.pos[0] + offset[0] * Math.cos(rad) - offset[1] * Math.sin(rad),
-      stack.pos[1] + offset[0] * Math.sin(rad) + offset[1] * Math.cos(rad),
-    ];
-    const top = stack.items.at(-1)!;
+    const point = fromStack(stack, local);
     const target = dropTarget(table, types, [stack.id], point);
     const { command, select } = useStore.getState();
     if (target?.id === stack.id) {
-      node.position({ x: 0, y: 0 });
+      node.position({ x: home[0], y: home[1] });
       return;
     }
-    command({ type: 'draw', from: stack.id, to: point });
-    if (target) command({ type: 'stack', ids: [top], onto: target.id });
-    else select([top]);
+    const spot = target ? undefined : snapAt(stack, point, new Set([stack.id]), false);
+    const to = spot && !spot.area ? spot.ref : point;
+    if (pieceId === stack.items.at(-1) && !stack.layout)
+      command({ type: 'draw', from: stack.id, to });
+    else command({ type: 'take', id: pieceId, to });
+    if (target) command({ type: 'stack', ids: [pieceId], onto: target.id });
+    else select([pieceId]);
   };
 
   // --- Clicks and the stage ---------------------------------------------------
@@ -222,7 +309,9 @@ export function Table() {
               onDragStart={() => onDragStart(object.id)}
               onDragMove={(node) => onDragMove(object.id, node)}
               onDragEnd={(node) => onDragEnd(object.id, node)}
-              onDrawEnd={(node) => onDrawEnd(object, node)}
+              onDrawStart={() => onDrawStart(object)}
+              onDrawMove={(node) => onDrawMove(object, node)}
+              onDrawEnd={(pieceId, node, home) => onDrawEnd(object, pieceId, node, home)}
               {...handlers}
             />
           ) : (
@@ -239,6 +328,7 @@ export function Table() {
             />
           );
         })}
+        <SnapHints />
         {marquee && (
           <Rect
             x={Math.min(marquee.from[0], marquee.to[0])}
@@ -322,21 +412,95 @@ function StackView({
   selected,
   wholeStack,
   register,
+  onDrawStart,
+  onDrawMove,
   onDrawEnd,
   ...events
 }: ObjectViewProps & {
   stack: Stack;
   table: TableState;
   wholeStack: boolean;
-  onDrawEnd: (node: Konva.Group) => void;
+  onDrawStart: () => void;
+  onDrawMove: (node: Konva.Group) => void;
+  onDrawEnd: (pieceId: string, node: Konva.Group, home: Vec) => void;
 }) {
   const top = facePiece(table, stack);
   const type = top && types[top.type];
   if (!top || !type) return null;
   const [w, h] = sizeOf(type);
-  const depth = Math.min(stack.items.length - 1, 4);
-  const second = table.objects[stack.items.at(-2) ?? ''] as Piece | undefined;
   const drawable = !wholeStack && !stack.locked;
+
+  /** A card that can be dragged out of the stack, starting from `home` inside the stack. */
+  const card = (piece: Piece, home: Vec, show = true) => {
+    const pieceType = types[piece.type];
+    if (!pieceType) return null;
+    return (
+      <Group
+        key={piece.id}
+        x={home[0]}
+        y={home[1]}
+        draggable={drawable}
+        visible={show}
+        onDragStart={(e) => {
+          e.cancelBubble = true;
+          e.currentTarget.moveToTop();
+          onDrawStart();
+        }}
+        onDragMove={(e) => {
+          e.cancelBubble = true;
+          onDrawMove(e.currentTarget as Konva.Group);
+        }}
+        onDragEnd={(e) => {
+          e.cancelBubble = true;
+          onDrawEnd(piece.id, e.currentTarget as Konva.Group, home);
+        }}
+      >
+        <Component piece={piece} type={pieceType} palette={palette} selected={selected} />
+      </Group>
+    );
+  };
+
+  let body: React.ReactNode;
+  let badge: Vec = [w / 2 - 1, -h / 2 + 1];
+  if (stack.layout) {
+    // A fan or spread: every card shows and any of them can be taken.
+    const offsets = stackOffsets(stack.layout, stack.items.length, [w, h]);
+    body = stack.items.map((id, i) => {
+      const piece = table.objects[id];
+      return piece?.kind === 'piece' ? card(piece, offsets[i]!) : null;
+    });
+    badge = [offsets.at(-1)![0] + w / 2 - 1, -h / 2 + 1];
+  } else {
+    const depth = Math.min(stack.items.length - 1, 4);
+    const second = table.objects[stack.items.at(-2) ?? ''] as Piece | undefined;
+    body = (
+      <>
+        {/* Edges of the cards underneath, so a stack reads as a pile. */}
+        {Array.from({ length: depth }, (_, i) => (
+          <Rect
+            key={i}
+            x={-w / 2 + (depth - i) * 0.6}
+            y={-h / 2 + (depth - i) * 0.6}
+            width={w}
+            height={h}
+            cornerRadius={type.corner ?? 0}
+            fill="#e6e0d4"
+            stroke="#8a8072"
+            strokeWidth={0.25}
+            listening={false}
+          />
+        ))}
+        {/* While the top card is dragged away, the next one shows underneath. */}
+        {second && types[second.type] && (
+          <Group listening={false}>
+            <Component piece={second} type={types[second.type]!} palette={palette} />
+          </Group>
+        )}
+        {card(top, [0, 0])}
+      </>
+    );
+  }
+
   return (
     <Group
       ref={register}
@@ -356,45 +520,8 @@ function StackView({
       onMouseEnter={(e) => setCursor(e, stack.locked ? 'default' : 'grab')}
       onMouseLeave={(e) => setCursor(e, 'default')}
     >
-      {/* Edges of the cards underneath, so a stack reads as a pile. */}
-      {Array.from({ length: depth }, (_, i) => (
-        <Rect
-          key={i}
-          x={-w / 2 + (depth - i) * 0.6}
-          y={-h / 2 + (depth - i) * 0.6}
-          width={w}
-          height={h}
-          cornerRadius={type.corner ?? 0}
-          fill="#e6e0d4"
-          stroke="#8a8072"
-          strokeWidth={0.25}
-          listening={false}
-        />
-      ))}
-      {/* While the top card is dragged away, the next one shows underneath. */}
-      {second && types[second.type] && (
-        <Group listening={false}>
-          <Component piece={second} type={types[second.type]!} palette={palette} />
-        </Group>
-      )}
-      <Group
-        key={top.id}
-        draggable={drawable}
-        onDragStart={(e) => {
-          e.cancelBubble = true;
-          useStore.getState().select([]);
-        }}
-        onDragMove={(e) => {
-          e.cancelBubble = true;
-        }}
-        onDragEnd={(e) => {
-          e.cancelBubble = true;
-          onDrawEnd(e.currentTarget as Konva.Group);
-        }}
-      >
-        <Component piece={top} type={type} palette={palette} selected={selected} />
-      </Group>
-      <Group x={w / 2 - 1} y={-h / 2 + 1} listening={false}>
+      {body}
+      <Group x={badge[0]} y={badge[1]} listening={false}>
         <Circle radius={5.5} fill="#2e3440" stroke="white" strokeWidth={0.4} />
         <Text
           text={String(stack.items.length)}
@@ -409,6 +536,37 @@ function StackView({
           fill="white"
         />
       </Group>
+    </Group>
+  );
+}
+
+/** Outlines where the dragged piece could snap, with the spot it would snap to filled in. */
+function SnapHints() {
+  const hint = useStore((s) => s.snapHint);
+  const scale = useStore((s) => s.viewport.scale);
+  if (!hint) return null;
+  const [w, h] = hint.size;
+  return (
+    <Group listening={false}>
+      {hint.spots.map((spot) => {
+        const active = spot.ref === hint.active;
+        const [sw, sh] = spot.area ?? [w, h];
+        return (
+          <Group key={spot.ref} x={spot.pos[0]} y={spot.pos[1]} rotation={spot.rot}>
+            <Rect
+              x={-sw / 2}
+              y={-sh / 2}
+              width={sw}
+              height={sh}
+              cornerRadius={Math.min(sw, sh) / 8}
+              stroke="#2f81f7"
+              strokeWidth={(active ? 2.5 : 1.5) / scale}
+              dash={active ? undefined : [6 / scale, 4 / scale]}
+              fill={active ? 'rgba(47,129,247,0.25)' : 'rgba(47,129,247,0.06)'}
+            />
+          </Group>
+        );
+      })}
     </Group>
   );
 }

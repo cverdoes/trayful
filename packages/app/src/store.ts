@@ -1,4 +1,11 @@
-import type { ClientMessage, Command, ProjectView, ServerMessage, TableState } from '@trayful/core';
+import type {
+  ClientMessage,
+  Command,
+  ProjectView,
+  ServerMessage,
+  SnapSpot,
+  TableState,
+} from '@trayful/core';
 import { create } from 'zustand';
 
 export type ConnectionStatus = 'connecting' | 'online' | 'offline';
@@ -20,6 +27,8 @@ interface TrayfulStore {
   redrawKey: number;
   shiftDown: boolean;
   helpOpen: boolean;
+  /** While dragging: the snap spots the dragged piece could go to, and the one it would snap to. */
+  snapHint?: { spots: SnapSpot[]; size: [number, number]; active?: string };
   /** Screen position of the table origin and pixels per millimetre. */
   viewport: { x: number; y: number; scale: number };
 

@@ -10,6 +10,9 @@ export interface Actions {
   shuffle?: () => void;
   roll?: () => void;
   draw?: () => void;
+  /** Cycles the selected stacks through pile, fan and spread. */
+  layout?: () => void;
+  layoutLabel: 'Fan' | 'Spread' | 'Pile';
   lock?: () => void;
   increment?: () => void;
   decrement?: () => void;
@@ -19,7 +22,7 @@ export interface Actions {
 /** Works out which actions apply to the selected objects. Each action sends one command per kind of object. */
 export function selectionActions(): Actions {
   const { table, view, selection, command } = useStore.getState();
-  const none: Actions = { lockLabel: 'Lock' };
+  const none: Actions = { lockLabel: 'Lock', layoutLabel: 'Fan' };
   if (!table || !view || selection.length === 0) return none;
   const objects = selection
     .map((id) => table.objects[id])
@@ -35,6 +38,8 @@ export function selectionActions(): Actions {
   const dice = objects.filter((o) => o.kind === 'piece' && base(o) === 'die');
   const counters = objects.filter((o) => o.kind === 'piece' && base(o) === 'counter');
   const allLocked = objects.every((o) => o.locked);
+  const current = stacks[0]?.kind === 'stack' ? (stacks[0].layout ?? 'pile') : 'pile';
+  const next = ({ pile: 'fan', fan: 'spread', spread: 'pile' } as const)[current];
 
   const each = (list: TableObject[], make: (o: TableObject) => Command) => () => {
     for (const o of list) command(make(o));
@@ -67,6 +72,10 @@ export function selectionActions(): Actions {
             command({ type: 'draw', from: stack.id, to: [stack.pos[0] + w + 4, stack.pos[1]] });
           }
         : undefined,
+    layout: stacks.length
+      ? each(stacks, (o) => ({ type: 'layout', id: o.id, layout: next }))
+      : undefined,
+    layoutLabel: next === 'fan' ? 'Fan' : next === 'spread' ? 'Spread' : 'Pile',
     lock: () => command({ type: 'lock', ids, locked: !allLocked }),
     increment: counters.length ? step(1) : undefined,
     decrement: counters.length ? step(-1) : undefined,

@@ -54,6 +54,7 @@ An ordered pile of pieces, such as a deck.
 | `items` | list of text | yes | Piece ids from bottom to top. |
 | `locked` | true or false |  | Locked stacks ignore moves from the UI. |
 | `snap` | text |  | Snap spot the stack sits in, as `pieceId/target/index`. |
+| `layout` | `"pile"`, `"fan"`, `"spread"` |  | How the pieces lie: `pile` (default) shows only the top, `fan` overlaps them in a row, `spread` lays them side by side. |
 
 ## Example
 
@@ -64,26 +65,21 @@ A fresh table for Harvest Moon, with most objects left out:
   "format": "trayful/1",
   "table": "playtest-1",
   "seed": 81723,
-  "rng": 81723,
+  "rng": -695695144,
   "objects": [
     {
       "kind": "stack",
       "id": "deck:actions",
       "name": "actions",
-      "pos": [31.5, 44],
+      "pos": [350, -130],
       "rot": 0,
-      "z": 0,
+      "z": 18,
       "items": [
-        "action-card.storm",
-        "action-card.market-day.2",
-        "action-card.market-day.1",
         "action-card.plough.2",
-        "action-card.plough.1",
-        "action-card.raid.2",
-        "action-card.raid.1",
-        "action-card.harvest.3",
         "action-card.harvest.2",
-        "action-card.harvest.1"
+        "action-card.raid.2",
+        "action-card.storm",
+        "action-card.harvest.3"
       ]
     },
     {
@@ -96,21 +92,22 @@ A fresh table for Harvest Moon, with most objects left out:
         "suit": "green",
         "text": "Gain 2 grain."
       },
-      "pos": [0, 0],
+      "pos": [-145, -130],
       "rot": 0,
-      "face": "down",
-      "z": 0,
-      "parent": "deck:actions"
+      "face": "up",
+      "z": 20,
+      "snap": "main-board/market/1"
     },
     {
       "kind": "piece",
       "id": "coins",
       "type": "coins",
-      "pos": [392, 10],
+      "pos": [210, 50],
       "rot": 0,
       "face": "up",
-      "z": 13,
-      "value": 0
+      "z": 36,
+      "value": 0,
+      "snap": "main-board/supply"
     }
     …
   ]

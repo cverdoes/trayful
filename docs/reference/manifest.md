@@ -16,6 +16,7 @@ Every project folder has a `trayful.yaml` at its root. It names the prototype an
 | `libraries` | list of text | yes | Library files to load, as paths or glob patterns relative to the project folder. |
 | `inventory` | text | yes | Path to the inventory file. |
 | `setups` | list of text |  | Setup files, as paths or globs. Default `["setups/*.yaml"]`. |
+| `setup` | text |  | Setup a new table starts from, by file name without `.yaml` (e.g. `2-player`). Default: everything laid out in rows. |
 
 ## Example
 
@@ -29,4 +30,5 @@ description: A small worker-placement and card-market sample used to exercise ev
 units: mm
 libraries: [library/*.yaml]
 inventory: inventory.yaml
+setup: 2-player
 ```

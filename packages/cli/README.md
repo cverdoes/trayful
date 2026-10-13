@@ -11,12 +11,13 @@ pnpm trayful validate examples/harvest-moon --json   # for tools and agents
 
 `play [project-dir]` loads the project (default: the current folder), starts the local server at http://127.0.0.1:4317 and opens your browser. It needs the browser app built once with `pnpm build`. Options:
 
-| Option           | What it does                                            |
-| ---------------- | ------------------------------------------------------- |
-| `--table <name>` | Open or create `tables/<name>.json` (default `table-1`) |
-| `--seed <n>`     | Shuffle seed for a new table                            |
-| `--port <n>`     | Port for the server (default 4317)                      |
-| `--no-open`      | Do not open a browser window                            |
+| Option           | What it does                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------- |
+| `--table <name>` | Open or create `tables/<name>.json` (default `table-1`)                                     |
+| `--seed <n>`     | Shuffle seed for a new table                                                                |
+| `--setup <name>` | Setup for a new table (default: the manifest's `setup`; `none` lays everything out in rows) |
+| `--port <n>`     | Port for the server (default 4317)                                                          |
+| `--no-open`      | Do not open a browser window                                                                |
 
 `mcp [project-dir]` takes the same options. It speaks MCP on stdin and stdout. If `trayful play` already has the project open on that port, it relays to that table; otherwise it opens the table itself, so people can watch at the printed address. Messages for people go to stderr.
 

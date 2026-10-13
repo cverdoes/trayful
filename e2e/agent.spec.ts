@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import type { Stack } from '@trayful/core';
 import { agent, DECK, freshTable, openTable, table } from './helpers.js';
 
-test.beforeEach(async ({ baseURL }) => freshTable(baseURL!));
+test.beforeEach(async ({ baseURL }) => freshTable(baseURL!, false));
 
 test('an agent deals and plays a round while a person watches', async ({ page, baseURL }) => {
   await openTable(page);

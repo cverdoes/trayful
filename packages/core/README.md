@@ -2,8 +2,10 @@
 
 The table engine: state, commands, undo and seeded randomness. It has no UI or file system code, so the browser app, the MCP server and tests all share it.
 
-- `createTable(project, { name, seed })` spawns every inventory component; decks become face-down stacks.
-- `applyCommand(state, command, catalog)` returns a new state for one of: `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `shuffle`, `roll`, `setValue`, `lock`. Invalid commands throw `CommandError` and change nothing.
+- `createTable(project, { name, seed, setup })` spawns every inventory component (decks become face-down stacks), then runs the setup: the one named, else the manifest's `setup`; `setup: false` skips it. Components the setup leaves out wait in rows below it. Setup steps run through the same commands as play, in `setup.ts`; a bad step throws `SetupError` naming the step.
+- `applyCommand(state, command, catalog)` returns a new state for one of: `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `setValue`, `lock`. Invalid commands throw `CommandError` and change nothing.
+- `move`, `draw`, `deal` and `take` go to a position or to a snap target: `owner/target/index` for one spot, `owner/target` for its free spots in order (or its free area). Snapped pieces remember their spot in `snap`, and ride along when the piece that holds the spot moves or rotates.
+- `snap.ts` resolves snap targets (`resolveSpots`, `allSpots`) and finds where a dropped piece snaps (`snapFor`); `layout.ts` gives the geometry of fanned and spread-out stacks.
 - `TableEngine` wraps a state with undo, redo, a command history and change listeners.
 - `describeTable` and `queryObjects` in `describe.ts` give agents a text or JSON view of the table. Face-down cards stay hidden unless asked with `reveal`.
 - `replace(state)` on the engine swaps in a whole new table (a reset) as one undoable step.

@@ -2,7 +2,7 @@
   <rect width="600" height="400" fill="#efe6cf"/>
   <g font-family="sans-serif" fill="#5b4a2f">
     <text x="20" y="20" font-size="13" font-weight="bold">Harvest Moon</text>
-    <text x="440" y="20" font-size="9">Market: buy a card for its cost</text>
+    <text x="53" y="132" font-size="10">Market: buy a card for its cost</text>
     <text x="60" y="160" font-size="10">Fields: place a worker to plant</text>
     <text x="440" y="172" font-size="10">Supply</text>
     <text x="20" y="342" font-size="10">Score</text>
