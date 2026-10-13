@@ -10,7 +10,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { createMcpServer } from './mcp.js';
 import { startServer, type RunningServer } from './server.js';
-import { TableSession } from './session.js';
+import type { TableSession } from './session.js';
+import { Workspace } from './workspace.js';
 
 const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
 const DECK = 'deck:actions';
@@ -29,41 +30,54 @@ async function call(client: Client, name: string, args: Record<string, unknown> 
 }
 
 describe('MCP tools', () => {
+  let workspace: Workspace;
   let session: TableSession;
   let client: Client;
 
   beforeEach(async () => {
-    session = await TableSession.open(await scratchProject(), 'table-1', { seed: 3 });
+    workspace = await Workspace.open(await scratchProject(), { seed: 3, watch: false });
+    session = workspace.active;
     const [a, b] = InMemoryTransport.createLinkedPair();
-    await createMcpServer(session).connect(a);
+    await createMcpServer(workspace).connect(a);
     client = new Client({ name: 'test', version: '0' });
     await client.connect(b);
   });
-  afterEach(() => session.close());
+  afterEach(() => workspace.close());
 
   it('lists the play, query and history tools', async () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual(
       [
+        'add_asset',
+        'create_project',
         'deal',
+        'delete_table',
         'describe_table',
         'draw',
+        'duplicate_table',
         'flip',
         'get_history',
         'layout',
+        'list_projects',
         'lock',
         'move',
+        'open_table',
         'query_objects',
         'redo',
+        'remove_type',
+        'render_component',
         'reset_table',
         'roll',
         'rotate',
         'set_counter',
+        'set_inventory',
         'shuffle',
         'snapshot',
         'stack',
         'take',
         'undo',
+        'upsert_type',
+        'validate_project',
       ].sort(),
     );
   });
@@ -147,14 +161,67 @@ describe('MCP tools', () => {
   it('serves table state, project and component types as resources', async () => {
     const { resources } = await client.listResources();
     const uris = resources.map((r) => r.uri);
-    expect(uris).toContain('trayful://table/table-1/state');
+    const id = path.basename(session.project.dir);
+    expect(uris).toContain(`trayful://project/${id}/tables/table-1/state`);
+    expect(uris).toContain('trayful://docs');
     expect(uris).toContain(
       `trayful://project/${path.basename(session.project.dir)}/types/action-card`,
     );
-    const state = await client.readResource({ uri: 'trayful://table/table-1/state' });
+    const state = await client.readResource({
+      uri: `trayful://project/${id}/tables/table-1/state`,
+    });
     expect(
       JSON.parse((state.contents[0] as { text: string }).text).objects[DECK].items,
     ).toHaveLength(5);
+  });
+
+  it('opens, duplicates and deletes tables', async () => {
+    const opened = await call(client, 'open_table', { table: 'empty', setup: false });
+    expect(opened.text).toMatch(/^Created table "empty"/);
+    expect(workspace.active.tableName).toBe('empty');
+    expect((await call(client, 'duplicate_table', { to: 'copy' })).isError).toBeFalsy();
+    const list = JSON.parse((await call(client, 'list_projects')).text);
+    expect(list.active.table).toBe('empty');
+    expect(list.projects[0].tables).toEqual(['copy', 'empty', 'table-1']);
+    expect((await call(client, 'delete_table', { table: 'empty' })).text).toMatch(/open another/);
+    expect((await call(client, 'delete_table', { table: 'copy' })).isError).toBeFalsy();
+    expect((await call(client, 'create_project', { name: 'X' })).text).toMatch(
+      /folder of projects/,
+    );
+    expect((await call(client, 'validate_project')).text).toMatch(/loads cleanly/);
+  });
+
+  it('designs a component type and puts it in the box', async () => {
+    const added = await call(client, 'upsert_type', {
+      definition: {
+        id: 'event-card',
+        base: 'card',
+        size: [63, 88],
+        fields: { title: 'string' },
+        front: { fill: '#ffffff', layers: [{ text: '{{title}}', at: [5, 5] }] },
+      },
+    });
+    expect(added.text).toMatch(/Added type "event-card" in library\/cards\.yaml/);
+    const box = await call(client, 'set_inventory', {
+      type: 'event-card',
+      entries: [{ deck: 'events', items: [{ title: 'Storm', count: 2 }, { title: 'Feast' }] }],
+    });
+    expect(box.text).toMatch(/3 "event-card" components/);
+    expect((session.engine.state.objects['deck:events'] as Stack).items).toHaveLength(3);
+
+    const broken = await call(client, 'upsert_type', {
+      definition: { id: 'event-card', base: 'card', size: [63, 88] },
+    });
+    expect(broken.isError).toBe(true);
+    expect(broken.text).toMatch(/would break the project/);
+  });
+
+  it('serves the docs to agents', async () => {
+    const index = await client.readResource({ uri: 'trayful://docs' });
+    const text = (index.contents[0] as { text: string }).text;
+    expect(text).toContain('howto/');
+    const page = await client.readResource({ uri: 'trayful://docs/reference/library.md' });
+    expect((page.contents[0] as { text: string }).text).toContain('# Library');
   });
 
   it('says why a snapshot is not possible without a browser', async () => {
@@ -202,6 +269,27 @@ describe('MCP over HTTP', () => {
     expect(snap.content[0]).toMatchObject({ type: 'image', mimeType: 'image/png' });
     expect(Buffer.from(snap.content[0]!.data!, 'base64').toString()).toBe('png!');
 
+    await client.close();
+    browser.close();
+  });
+
+  it('asks the browser to draw a component type', async () => {
+    const browser = new WebSocket(server.url.replace('http', 'ws') + '/ws');
+    const requests: unknown[] = [];
+    browser.on('message', (data) => {
+      const message = JSON.parse(String(data)) as ServerMessage;
+      if (message.type === 'render-request') {
+        requests.push(message.component);
+        browser.send(JSON.stringify({ type: 'snapshot', id: message.id, png: 'cG5nIQ==' }));
+      }
+    });
+    await new Promise((resolve) => browser.once('open', resolve));
+    const client = new Client({ name: 'test', version: '0' });
+    await client.connect(new StreamableHTTPClientTransport(new URL(`${server.url}/mcp`)));
+    const picture = await call(client, 'render_component', { type: 'worker', face: 'up' });
+    expect(picture.content[0]).toMatchObject({ type: 'image', mimeType: 'image/png' });
+    expect(requests).toEqual([{ type: 'worker', data: { color: 'red' }, face: 'up' }]);
+    expect((await call(client, 'render_component', { type: 'nope' })).isError).toBe(true);
     await client.close();
     browser.close();
   });

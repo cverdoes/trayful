@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useStore } from '../store';
 
 const cache = new Map<string, HTMLImageElement>();
 const pending = new Map<string, Promise<HTMLImageElement>>();
@@ -20,11 +21,21 @@ function load(src: string): Promise<HTMLImageElement> {
   return promise;
 }
 
-/** Loads a project image by its path inside the project folder. */
+/** Resolves when every image requested so far has loaded (or failed). */
+export async function imagesSettled(): Promise<void> {
+  await Promise.allSettled([...pending.values()]);
+}
+
+/**
+ * Loads a project image by its path inside the project folder. The project's
+ * version is part of the address, so an edited image shows up after a reload.
+ */
 export function useProjectImage(path: string | undefined): HTMLImageElement | undefined {
-  const src = path
-    ? `/project-files/${path.split('/').map(encodeURIComponent).join('/')}`
-    : undefined;
+  const view = useStore((s) => s.view);
+  const src =
+    path && view
+      ? `/project-files/${encodeURIComponent(view.project)}/${path.split('/').map(encodeURIComponent).join('/')}?v=${view.version}`
+      : undefined;
   const [image, setImage] = useState(() => (src ? cache.get(src) : undefined));
   useEffect(() => {
     if (!src) return;

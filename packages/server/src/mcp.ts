@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import {
@@ -12,7 +11,9 @@ import {
 } from '@trayful/core';
 import { toJsonSchemas } from '@trayful/formats';
 import { z } from 'zod';
-import type { TableSession } from './session.js';
+import { addAsset, removeType, setInventory, upsertType } from './authoring.js';
+import { docFiles, docsIndex, readDoc } from './docs.js';
+import type { Workspace } from './workspace.js';
 
 export interface McpOptions {
   /** Where people can watch the table, mentioned to the agent. */
@@ -39,47 +40,50 @@ const Target = z
   .describe('A position `[x, y]` in mm, or a snap target such as `main-board/market/2`.');
 
 /**
- * Builds an MCP server for one open table. Agents get the same commands as the
- * browser, so their moves show up live for anyone watching and share one undo history.
+ * Builds an MCP server for a workspace. Play tools act on the active table (the one
+ * Trayful opened, or the last one an agent opened with open_table). Agents get the
+ * same commands as the browser, so their moves show up live for anyone watching
+ * and share one undo history. Authoring tools edit the project files, which every
+ * open table picks up at once.
  */
-export function createMcpServer(session: TableSession, options: McpOptions = {}): McpServer {
-  const project = session.project;
-  const projectId = path.basename(project.dir);
-  const tableUri = `trayful://table/${session.tableName}`;
+export function createMcpServer(workspace: Workspace, options: McpOptions = {}): McpServer {
+  const active = workspace.active;
   const server = new McpServer(
     { name: 'trayful', version: '0.0.0' },
     {
       instructions: [
-        `Trayful is a tabletop for boardgame prototypes. This server controls the table "${session.tableName}" of the project "${project.manifest.name}"${options.url ? `, which people can watch at ${options.url}` : ''}.`,
-        'Start with describe_table. Positions are piece centres in millimetres, y grows downwards. Stacks (piles and decks) hold cards bottom to top; draw and deal take from the top.',
+        `Trayful is a tabletop for boardgame prototypes. The active table is "${active.tableName}" of the project "${active.project.manifest.name}" (${active.projectId})${options.url ? `; people can watch at ${options.url}` : ''}. list_projects shows every project and table; open_table switches.`,
+        'To play, start with describe_table. Positions are piece centres in millimetres, y grows downwards. Stacks (piles and decks) hold cards bottom to top; draw and deal take from the top.',
         'Boards declare snap targets (card slots, action spaces, tracks). Use them as `to` in move, draw and deal, e.g. `main-board/fields/3`; pieces in a spot ride along when the board moves.',
         'Face-down cards are hidden: their fields and the order of piles only show with reveal: true, which is like peeking, so only use it when the game allows.',
+        'To design components, read trayful://docs (HOWTO guides and the format reference), then use upsert_type, set_inventory and add_asset; render_component shows a type as people will see it. Edits are checked and undone if they would break the project.',
         'Every change goes into the same undo history as the people at the table. Trayful does not know the rules; you bring them.',
       ].join('\n'),
     },
   );
-  const types = project.types;
-  const engine = session.engine;
+  const session = () => workspace.active;
+  const engine = () => workspace.active.engine;
+  const types = () => workspace.active.project.types;
 
   /** Runs commands for the agent and reports which objects changed. */
   const play = (activity: string, commands: Command[]): CallToolResult => {
-    const before = engine.state;
+    const before = engine().state;
     try {
       // Try every command first, so a tool call changes all or nothing.
-      commands.reduce((state, command) => applyCommand(state, command, types), before);
+      commands.reduce((state, command) => applyCommand(state, command, types()), before);
     } catch (err) {
       return failure(err);
     }
-    session.asAgent(activity, () => {
-      for (const command of commands) engine.dispatch(command);
+    session().asAgent(activity, () => {
+      for (const command of commands) engine().dispatch(command);
     });
-    return text(changes(before, engine.state));
+    return text(changes(before, engine().state));
   };
 
   const changes = (before: TableState, after: TableState): string => {
     const changed = Object.values(after.objects)
       .filter((o) => before.objects[o.id] !== o && !(o.kind === 'piece' && o.parent))
-      .map((o) => summarize(after, types, o));
+      .map((o) => summarize(after, types(), o));
     const removed = Object.keys(before.objects).filter((id) => !after.objects[id]);
     return JSON.stringify({ changed, ...(removed.length ? { removed } : {}) });
   };
@@ -95,7 +99,7 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
       inputSchema: { reveal: z.boolean().optional().describe('Also show face-down cards.') },
       annotations: { readOnlyHint: true },
     },
-    ({ reveal }) => text(describeTable(engine.state, types, { reveal })),
+    ({ reveal }) => text(describeTable(engine().state, types(), { reveal })),
   );
 
   server.registerTool(
@@ -122,7 +126,7 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
     },
     (query) => {
       try {
-        return text(JSON.stringify(queryObjects(engine.state, types, query)));
+        return text(JSON.stringify(queryObjects(engine().state, types(), query)));
       } catch (err) {
         return failure(err);
       }
@@ -139,7 +143,7 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
     },
     async () => {
       try {
-        const png = await session.requestSnapshot();
+        const png = await session().requestSnapshot();
         return {
           content: [{ type: 'image', data: png.toString('base64'), mimeType: 'image/png' }],
         };
@@ -158,7 +162,7 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
       inputSchema: { limit: z.int().positive().optional().describe('How many. Default 20.') },
       annotations: { readOnlyHint: true },
     },
-    ({ limit }) => text(JSON.stringify(engine.history.slice(-(limit ?? 20)))),
+    ({ limit }) => text(JSON.stringify(engine().history.slice(-(limit ?? 20)))),
   );
 
   // --- Playing ----------------------------------------------------------------
@@ -257,7 +261,7 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
       let places = 0;
       try {
         for (const t of targets as (string | [number, number])[]) {
-          places += typeof t === 'string' ? resolveSpots(engine.state, types, t).length : 1;
+          places += typeof t === 'string' ? resolveSpots(engine().state, types(), t).length : 1;
         }
       } catch (err) {
         return failure(err);
@@ -352,10 +356,10 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
       description: 'Undo the last change, whoever made it.',
     },
     () => {
-      const before = engine.state;
-      if (!session.asAgent('undid the last change', () => engine.undo()))
+      const before = engine().state;
+      if (!session().asAgent('undid the last change', () => engine().undo()))
         return text('Nothing to undo.');
-      return text(changes(before, engine.state));
+      return text(changes(before, engine().state));
     },
   );
 
@@ -363,9 +367,10 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
     'redo',
     { title: 'Redo', description: 'Redo the last undone change.' },
     () => {
-      const before = engine.state;
-      if (!session.asAgent('redid a change', () => engine.redo())) return text('Nothing to redo.');
-      return text(changes(before, engine.state));
+      const before = engine().state;
+      if (!session().asAgent('redid a change', () => engine().redo()))
+        return text('Nothing to redo.');
+      return text(changes(before, engine().state));
     },
   );
 
@@ -381,102 +386,461 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
           .union([z.string(), z.literal(false)])
           .optional()
           .describe(
-            `Setup to start from${Object.keys(project.setups).length ? ` (${Object.keys(project.setups).join(', ')})` : ''}, or false for everything straight out of the box.`,
+            `Setup to start from${Object.keys(active.project.setups).length ? ` (${Object.keys(active.project.setups).join(', ')})` : ''}, or false for everything straight out of the box.`,
           ),
       },
       annotations: { destructiveHint: true },
     },
     ({ seed, setup }) => {
       try {
-        session.asAgent('started a new table', () => session.reset(seed, setup));
+        session().asAgent('started a new table', () => session().reset(seed, setup));
       } catch (err) {
         return failure(err);
       }
-      return text(describeTable(engine.state, types));
+      return text(describeTable(engine().state, types()));
+    },
+  );
+
+  // --- Projects and tables ----------------------------------------------------
+
+  const tableName = z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9-]*$/)
+    .describe('Table name: lowercase letters, digits and dashes, such as `playtest-2`.');
+  const projectParam = z
+    .string()
+    .optional()
+    .describe('Project id from list_projects. Default: the project of the active table.');
+
+  server.registerTool(
+    'list_projects',
+    {
+      title: 'List projects and tables',
+      description:
+        'Every project in the workspace with its tables, any problems in its files, and which table is active.',
+      annotations: { readOnlyHint: true },
+    },
+    async () =>
+      text(
+        JSON.stringify({
+          active: { project: session().projectId, table: session().tableName },
+          projects: await Promise.all(
+            workspace.projects().map(async (entry) => ({
+              id: entry.id,
+              name: entry.project?.manifest.name ?? entry.id,
+              tables: entry.project ? await workspace.tables(entry.id) : [],
+              ...(entry.problems.length ? { problems: entry.problems } : {}),
+            })),
+          ),
+        }),
+      ),
+  );
+
+  server.registerTool(
+    'open_table',
+    {
+      title: 'Open a table',
+      description:
+        'Make a table the active one that play tools act on. A table that does not exist yet is created from the project files and its default setup.',
+      inputSchema: {
+        project: projectParam,
+        table: tableName,
+        setup: z
+          .union([z.string(), z.literal(false)])
+          .optional()
+          .describe('For a new table: the setup to start from, or false for none.'),
+        seed: z.int().optional().describe('For a new table: seed for repeatable shuffles.'),
+      },
+    },
+    async ({ project, table, setup, seed }) => {
+      try {
+        const projectId = project ?? session().projectId;
+        const existed = (await workspace.tables(projectId)).includes(table);
+        workspace.active = await workspace.table(projectId, table, { setup, seed });
+        const intro = `${existed ? 'Opened' : 'Created'} table "${table}" of ${projectId}.`;
+        return text(`${intro}\n\n${describeTable(engine().state, types())}`);
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'duplicate_table',
+    {
+      title: 'Duplicate a table',
+      description:
+        'Copy a table under a new name, to branch a game or keep a position. Does not change the active table.',
+      inputSchema: {
+        project: projectParam,
+        from: tableName.optional().describe('Table to copy. Default: the active table.'),
+        to: tableName,
+      },
+    },
+    async ({ project, from, to }) => {
+      try {
+        const projectId = project ?? session().projectId;
+        await workspace.duplicateTable(projectId, from ?? session().tableName, to);
+        return text(`Copied to table "${to}". Open it with open_table.`);
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'delete_table',
+    {
+      title: 'Delete a table',
+      description: 'Delete a saved table for good. The active table cannot be deleted.',
+      inputSchema: { project: projectParam, table: tableName },
+      annotations: { destructiveHint: true },
+    },
+    async ({ project, table }) => {
+      try {
+        await workspace.deleteTable(project ?? session().projectId, table);
+        return text(`Deleted table "${table}".`);
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'create_project',
+    {
+      title: 'Create a project',
+      description:
+        'Start a new prototype from the starter template (a card type, a deck and a token), in a new folder of the workspace. Only when Trayful was started on a folder of projects.',
+      inputSchema: { name: z.string().min(1).describe('Name of the game, such as "Moon Market".') },
+    },
+    async ({ name }) => {
+      try {
+        const entry = await workspace.createProject(name);
+        return text(
+          `Created project "${entry.id}" in ${entry.dir}. Open a table on it with open_table { project: "${entry.id}", table: "table-1" }.`,
+        );
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'validate_project',
+    {
+      title: 'Check a project',
+      description:
+        'Reload a project from its files and report any problems with file, line and column. Use after editing files directly.',
+      inputSchema: { project: projectParam },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ project }) => {
+      try {
+        const projectId = project ?? session().projectId;
+        const problems = await workspace.reload(projectId);
+        if (problems.length) return text(`Problems:\n${problems.join('\n')}`);
+        const p = workspace.project(projectId);
+        return text(
+          `${p.manifest.name} loads cleanly: ${Object.keys(p.types).length} types, ${p.components.length} components, ${Object.keys(p.decks).length} decks, ${Object.keys(p.setups).length} setups.`,
+        );
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  // --- Authoring ------------------------------------------------------------------
+
+  const authored = (summary: string): CallToolResult =>
+    text(
+      `${summary} Open tables show the change already. Use render_component to see a type, or snapshot to see the table.`,
+    );
+
+  server.registerTool(
+    'upsert_type',
+    {
+      title: 'Add or change a component type',
+      description:
+        'Add a component type to the project library, or replace the type with the same id. The definition follows the library format (see trayful://docs/reference/library.md): id, base primitive, size in mm, fields, and front/back faces made of layers.',
+      inputSchema: {
+        project: projectParam,
+        definition: z
+          .record(z.string(), z.unknown())
+          .describe(
+            'The type, e.g. { "id": "event-card", "base": "card", "size": [63, 88], "fields": { "title": "string" }, "front": { "fill": "#fff", "layers": [{ "text": "{{title}}", "at": [5, 5] }] } }.',
+          ),
+        file: z
+          .string()
+          .optional()
+          .describe('Library file for a new type. Default: next to types of the same primitive.'),
+      },
+    },
+    async ({ project, definition, file }) => {
+      try {
+        const projectId = project ?? session().projectId;
+        const result = await upsertType(workspace, projectId, definition, file);
+        return authored(
+          `${result.created ? 'Added' : 'Updated'} type "${String(definition.id)}" in ${result.file}.${result.created ? ' Add components of it with set_inventory.' : ''}`,
+        );
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'remove_type',
+    {
+      title: 'Remove a component type',
+      description:
+        'Remove a component type from the library. Take its components out of the inventory with set_inventory first.',
+      inputSchema: { project: projectParam, type: z.string() },
+      annotations: { destructiveHint: true },
+    },
+    async ({ project, type }) => {
+      try {
+        const result = await removeType(workspace, project ?? session().projectId, type);
+        return authored(`Removed type "${type}" from ${result.file}.`);
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'set_inventory',
+    {
+      title: 'Set what is in the box',
+      description:
+        'Replace the inventory entries for one component type. Each entry is like an inventory entry without `type`: { count, deck, data, items: [rows], from: "data/file.csv", each: {...} } (see trayful://docs/reference/inventory.md). An empty list takes the type out of the box. New components appear on open tables.',
+      inputSchema: {
+        project: projectParam,
+        type: z.string().describe('Component type id.'),
+        entries: z
+          .array(z.record(z.string(), z.unknown()))
+          .describe(
+            'For example [{ "deck": "events", "items": [{ "title": "Storm", "count": 2 }, { "title": "Feast" }] }].',
+          ),
+      },
+    },
+    async ({ project, type, entries }) => {
+      try {
+        const result = await setInventory(workspace, project ?? session().projectId, type, entries);
+        return authored(
+          `The box now holds ${count(result.count, `"${type}" component`)} (${result.file}).`,
+        );
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'add_asset',
+    {
+      title: 'Add an image or data file',
+      description:
+        'Write an SVG, PNG, JPEG, GIF, WebP or CSV file into the project, for use in faces (`image` layers) or as card data (`from` in the inventory). SVG and CSV can be given as text, anything as base64. Replaces a file with the same path.',
+      inputSchema: {
+        project: projectParam,
+        path: z.string().describe('Path inside the project folder, such as `assets/storm.svg`.'),
+        text: z.string().optional().describe('File contents as text (SVG or CSV).'),
+        base64: z.string().optional().describe('File contents as base64 (images).'),
+      },
+    },
+    async ({ project, path: file, text: body, base64 }) => {
+      try {
+        const result = await addAsset(workspace, project ?? session().projectId, file, {
+          text: body,
+          base64,
+        });
+        return authored(`Wrote ${result.file} (${result.bytes} bytes).`);
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'render_component',
+    {
+      title: 'Picture of a component',
+      description:
+        'A PNG of one component type, front and back side by side, drawn by the browser exactly as on the table. Give field values to fill its `{{field}}` placeholders. Needs the table open in a browser.',
+      inputSchema: {
+        type: z.string().describe('Component type id of the active project.'),
+        data: z
+          .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
+          .optional()
+          .describe('Field values. Default: those of the first component of this type.'),
+        face: z.enum(['up', 'down', 'both']).optional().describe('Default both.'),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ type, data, face }) => {
+      try {
+        if (!types()[type]) throw new Error(`There is no type "${type}" in this project.`);
+        const sample = session().project.components.find((c) => c.type === type)?.data;
+        const png = await session().requestRender({ type, data: data ?? sample, face });
+        return {
+          content: [{ type: 'image', data: png.toString('base64'), mimeType: 'image/png' }],
+        };
+      } catch (err) {
+        return failure(err);
+      }
     },
   );
 
   // --- Resources ----------------------------------------------------------------
 
+  const json = (uri: URL, value: unknown) => ({
+    contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify(value) }],
+  });
+  const variable = (value: string | string[]) => String(Array.isArray(value) ? value[0] : value);
+
   server.registerResource(
-    'table-state',
-    `${tableUri}/state`,
+    'projects',
+    'trayful://projects',
     {
-      title: 'Table state',
-      description: 'Everything on the table as JSON, including face-down cards.',
+      title: 'Projects',
+      description: 'Every project in the workspace, with its tables.',
       mimeType: 'application/json',
     },
-    (uri) => ({
-      contents: [
-        { uri: uri.href, mimeType: 'application/json', text: JSON.stringify(engine.state) },
-      ],
+    async (uri) =>
+      json(
+        uri,
+        await Promise.all(
+          workspace.projects().map(async (e) => ({
+            id: e.id,
+            name: e.project?.manifest.name ?? e.id,
+            tables: e.project ? await workspace.tables(e.id) : [],
+            problems: e.problems,
+          })),
+        ),
+      ),
+  );
+
+  const tableResources = (suffix: string) => ({
+    list: async () => ({
+      resources: (
+        await Promise.all(
+          workspace
+            .projects()
+            .filter((e) => e.project)
+            .map(async (e) =>
+              (await workspace.tables(e.id)).map((t) => ({
+                uri: `trayful://project/${e.id}/tables/${t}/${suffix}`,
+                name: `${e.id}/${t} ${suffix}`,
+              })),
+            ),
+        )
+      ).flat(),
     }),
+  });
+
+  server.registerResource(
+    'table-state',
+    new ResourceTemplate(
+      'trayful://project/{project}/tables/{table}/state',
+      tableResources('state'),
+    ),
+    {
+      title: 'Table state',
+      description: 'Everything on a table as JSON, including face-down cards.',
+      mimeType: 'application/json',
+    },
+    async (uri, vars) => {
+      const s = await workspace.table(variable(vars.project!), variable(vars.table!), {
+        create: false,
+      });
+      return json(uri, s.engine.state);
+    },
   );
 
   server.registerResource(
     'table-snapshot',
-    `${tableUri}/snapshot.png`,
+    new ResourceTemplate(
+      'trayful://project/{project}/tables/{table}/snapshot.png',
+      tableResources('snapshot.png'),
+    ),
     {
-      title: 'Picture of the table',
-      description: 'A PNG of the whole table. Needs the table open in a browser.',
+      title: 'Picture of a table',
+      description: 'A PNG of a whole table. Needs that table open in a browser.',
       mimeType: 'image/png',
     },
-    async (uri) => ({
-      contents: [
-        {
-          uri: uri.href,
-          mimeType: 'image/png',
-          blob: (await session.requestSnapshot()).toString('base64'),
-        },
-      ],
-    }),
+    async (uri, vars) => {
+      const s = await workspace.table(variable(vars.project!), variable(vars.table!), {
+        create: false,
+      });
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: 'image/png',
+            blob: (await s.requestSnapshot()).toString('base64'),
+          },
+        ],
+      };
+    },
   );
 
   server.registerResource(
     'project-manifest',
-    `trayful://project/${projectId}/manifest`,
-    {
-      title: 'Project',
-      description: 'The project manifest, its component types, decks and what is in the box.',
-      mimeType: 'application/json',
-    },
-    (uri) => ({
-      contents: [
-        {
-          uri: uri.href,
-          mimeType: 'application/json',
-          text: JSON.stringify({
-            manifest: project.manifest,
-            types: Object.keys(types),
-            decks: project.decks,
-            components: project.components.map((c) => ({ id: c.id, type: c.type, deck: c.deck })),
-          }),
-        },
-      ],
-    }),
-  );
-
-  server.registerResource(
-    'component-type',
-    new ResourceTemplate(`trayful://project/${projectId}/types/{type}`, {
+    new ResourceTemplate('trayful://project/{project}/manifest', {
       list: () => ({
-        resources: Object.keys(types).map((id) => ({
-          uri: `trayful://project/${projectId}/types/${id}`,
-          name: types[id]!.name ?? id,
+        resources: workspace.projects().map((e) => ({
+          uri: `trayful://project/${e.id}/manifest`,
+          name: e.project?.manifest.name ?? e.id,
           mimeType: 'application/json',
         })),
       }),
     }),
-    { title: 'Component type', description: 'One component type: fields, faces and size.' },
-    (uri, { type }) => {
-      // The client-facing view leaves out the loader's bookkeeping.
-      const definition = session.view().types[String(type)];
-      if (!definition) throw new Error(`No component type "${type}".`);
-      return {
-        contents: [
-          { uri: uri.href, mimeType: 'application/json', text: JSON.stringify(definition) },
-        ],
-      };
+    {
+      title: 'Project',
+      description: 'A project manifest, its component types, decks, setups and what is in the box.',
+      mimeType: 'application/json',
+    },
+    (uri, vars) => {
+      const project = workspace.project(variable(vars.project!));
+      return json(uri, {
+        manifest: project.manifest,
+        types: Object.keys(project.types),
+        decks: project.decks,
+        setups: Object.keys(project.setups),
+        components: project.components.map((c) => ({ id: c.id, type: c.type, deck: c.deck })),
+      });
+    },
+  );
+
+  server.registerResource(
+    'component-type',
+    new ResourceTemplate('trayful://project/{project}/types/{type}', {
+      list: () => ({
+        resources: workspace
+          .projects()
+          .filter((e) => e.project)
+          .flatMap((e) =>
+            Object.values(e.project!.types).map((t) => ({
+              uri: `trayful://project/${e.id}/types/${t.id}`,
+              name: t.name ?? t.id,
+              mimeType: 'application/json',
+            })),
+          ),
+      }),
+    }),
+    {
+      title: 'Component type',
+      description: 'One component type: fields, faces, size, and the library file it lives in.',
+    },
+    (uri, vars) => {
+      const project = workspace.project(variable(vars.project!));
+      const found = project.types[variable(vars.type!)];
+      if (!found) throw new Error(`No component type "${variable(vars.type!)}".`);
+      const definition: Record<string, unknown> = { ...found, file: found.source.file };
+      delete definition.source;
+      delete definition.normalizedFields;
+      return json(uri, definition);
     },
   );
 
@@ -488,9 +852,42 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
       description: 'JSON Schemas for every Trayful file kind.',
       mimeType: 'application/json',
     },
-    (uri) => ({
+    (uri) => json(uri, toJsonSchemas()),
+  );
+
+  server.registerResource(
+    'docs',
+    'trayful://docs',
+    {
+      title: 'Documentation index',
+      description:
+        'HOWTO guides for designers and the full file format reference, as a list of documents to read.',
+      mimeType: 'text/markdown',
+    },
+    async (uri) => ({
+      contents: [{ uri: uri.href, mimeType: 'text/markdown', text: await docsIndex() }],
+    }),
+  );
+
+  server.registerResource(
+    'doc',
+    new ResourceTemplate('trayful://docs/{+path}', {
+      list: async () => ({
+        resources: (await docFiles()).map((file) => ({
+          uri: `trayful://docs/${file}`,
+          name: file,
+          mimeType: 'text/markdown',
+        })),
+      }),
+    }),
+    {
+      title: 'Documentation page',
+      description: 'One guide or reference page.',
+      mimeType: 'text/markdown',
+    },
+    async (uri, vars) => ({
       contents: [
-        { uri: uri.href, mimeType: 'application/json', text: JSON.stringify(toJsonSchemas()) },
+        { uri: uri.href, mimeType: 'text/markdown', text: await readDoc(variable(vars.path!)) },
       ],
     }),
   );

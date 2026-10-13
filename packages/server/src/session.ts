@@ -5,6 +5,8 @@ import {
   CommandError,
   createTable,
   SetupError,
+  syncTable,
+  type RenderRequest,
   fromTableFile,
   TableEngine,
   toTableFile,
@@ -40,10 +42,11 @@ export class TableSession {
   >();
 
   private constructor(
-    readonly project: ResolvedProject,
+    private current: ResolvedProject,
     readonly tableName: string,
     readonly engine: TableEngine,
     private readonly saveDelayMs: number,
+    private version: number,
   ) {
     engine.subscribe(() => {
       this.revision++;
@@ -58,11 +61,6 @@ export class TableSession {
     tableName = 'table-1',
     options: { seed?: number; setup?: string | false; saveDelayMs?: number } = {},
   ): Promise<TableSession> {
-    if (!TABLE_NAME.test(tableName)) {
-      throw new ProjectLoadError(
-        `Table names use lowercase letters, digits and dashes; got "${tableName}".`,
-      );
-    }
     const { project, diagnostics } = await loadProject(projectDir);
     if (!project) {
       const problems = diagnostics.filter((d) => d.severity === 'error').map(formatDiagnostic);
@@ -70,6 +68,16 @@ export class TableSession {
         `The project in ${projectDir} has errors:\n  ${problems.join('\n  ')}`,
       );
     }
+    return TableSession.create(project, tableName, options);
+  }
+
+  /** Opens (or creates) a table of a loaded project. */
+  static async create(
+    project: ResolvedProject,
+    tableName = 'table-1',
+    options: { seed?: number; setup?: string | false; saveDelayMs?: number; version?: number } = {},
+  ): Promise<TableSession> {
+    checkTableName(tableName);
     const file = tableFile(project, tableName);
     let state: TableState;
     try {
@@ -92,9 +100,36 @@ export class TableSession {
       tableName,
       new TableEngine(state, project.types),
       options.saveDelayMs ?? 250,
+      options.version ?? 1,
     );
     await session.save();
     return session;
+  }
+
+  get project(): ResolvedProject {
+    return this.current;
+  }
+
+  get projectId(): string {
+    return projectId(this.current);
+  }
+
+  /**
+   * Switches to freshly loaded project files: new type definitions apply at once,
+   * and the table picks up changed, added and removed components as one undoable step.
+   */
+  setProject(project: ResolvedProject, version: number): void {
+    this.current = project;
+    this.version = version;
+    this.engine.setCatalog(project.types);
+    this.broadcast({ type: 'project', view: this.view() });
+    const synced = syncTable(this.engine.state, project);
+    if (synced !== this.engine.state) this.engine.replace(synced);
+  }
+
+  /** Tells the people watching that the project files have errors. */
+  reportProblems(problems: string[]): void {
+    this.broadcast({ type: 'problems', problems });
   }
 
   get file(): string {
@@ -103,6 +138,8 @@ export class TableSession {
 
   view(): ProjectView {
     return {
+      project: projectId(this.project),
+      version: this.version,
       name: this.project.manifest.name,
       table: this.tableName,
       palette: this.project.palette,
@@ -145,10 +182,19 @@ export class TableSession {
 
   /** Asks a watching browser to render the whole table, and resolves with the PNG. */
   requestSnapshot(timeoutMs = 10_000): Promise<Buffer> {
+    return this.requestPicture((id) => ({ type: 'snapshot-request', id }), timeoutMs);
+  }
+
+  /** Asks a watching browser to draw one component, and resolves with the PNG. */
+  requestRender(component: RenderRequest, timeoutMs = 10_000): Promise<Buffer> {
+    return this.requestPicture((id) => ({ type: 'render-request', id, component }), timeoutMs);
+  }
+
+  private requestPicture(request: (id: string) => ServerMessage, timeoutMs: number) {
     if (this.listeners.size === 0) {
       return Promise.reject(
         new SnapshotError(
-          'No browser has the table open, so there is nothing to take a picture with.',
+          'No browser has the table open, so there is nothing to draw the picture with. Open the table in a browser first.',
         ),
       );
     }
@@ -156,10 +202,10 @@ export class TableSession {
     return new Promise<Buffer>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.snapshots.delete(id);
-        reject(new SnapshotError('The browser did not send a picture of the table in time.'));
+        reject(new SnapshotError('The browser did not send the picture in time.'));
       }, timeoutMs);
       this.snapshots.set(id, { resolve, reject, timer });
-      this.broadcast({ type: 'snapshot-request', id });
+      this.broadcast(request(id));
     });
   }
 
@@ -258,6 +304,19 @@ export class TableSession {
   }
 }
 
-function tableFile(project: ResolvedProject, name: string): string {
+export function tableFile(project: ResolvedProject, name: string): string {
   return path.join(project.dir, 'tables', `${name}.json`);
+}
+
+/** A project's id in its workspace: the name of its folder. */
+export function projectId(project: ResolvedProject): string {
+  return path.basename(project.dir);
+}
+
+export function checkTableName(name: string): void {
+  if (!TABLE_NAME.test(name)) {
+    throw new ProjectLoadError(
+      `Table names use lowercase letters, digits and dashes; got "${name}".`,
+    );
+  }
 }

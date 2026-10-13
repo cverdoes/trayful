@@ -2,7 +2,7 @@
 
 # Setup
 
-Setups are scripted starting layouts in `setups/*.yaml`. Trayful validates them today; running them on a table arrives in Milestone 4.
+Setups are scripted starting layouts in `setups/*.yaml`. A new table runs the setup named by the manifest's `setup` key; steps run in order, and anything they do not place is laid out in rows. See [Write a setup](../howto/write-a-setup.md) for a walkthrough and [Snapping](snapping.md) for how targets fill.
 
 ## Top-level keys
 

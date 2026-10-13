@@ -4,7 +4,12 @@ components:
   - type: action-card
     deck: actions
     items:
-      - { name: Harvest, cost: 1, suit: green, text: Gain 2 grain., count: 3 }
+      - name: Harvest
+        cost: 1
+        suit: green
+        text: Gain 2 grain.
+        art: assets/art/harvest.svg
+        count: 3
       - { name: Raid, cost: 2, suit: red, text: Steal 1 grain from a neighbour., count: 2 }
   - type: action-card
     deck: actions

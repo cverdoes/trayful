@@ -3,23 +3,28 @@
 The `trayful` command line. From the repo root:
 
 ```sh
+pnpm trayful new ../my-game --name "My Game"         # a new project from the starter template
 pnpm trayful play examples/harvest-moon              # open the table in your browser
+pnpm trayful play examples                           # a folder of projects, switchable in the browser
 pnpm trayful mcp examples/harvest-moon               # MCP server on stdio, for agents
 pnpm trayful validate examples/harvest-moon          # human-readable report
 pnpm trayful validate examples/harvest-moon --json   # for tools and agents
 ```
 
-`play [project-dir]` loads the project (default: the current folder), starts the local server at http://127.0.0.1:4317 and opens your browser. It needs the browser app built once with `pnpm build`. Options:
+`new <folder> [--name <name>]` copies [`examples/starter`](../../examples/starter) into a new folder, names the game and points the editor schema hints at this checkout.
+
+`play [project-dir]` loads the project (default: the current folder), or every project in a folder of projects, starts the local server at http://127.0.0.1:4317 and opens your browser. Project files are watched, so saved changes show up on the table at once. It needs the browser app built once with `pnpm build`. Options:
 
 | Option           | What it does                                                                                |
 | ---------------- | ------------------------------------------------------------------------------------------- |
+| `--project <id>` | In a folder of projects, the one to open first (default: the first that loads)              |
 | `--table <name>` | Open or create `tables/<name>.json` (default `table-1`)                                     |
 | `--seed <n>`     | Shuffle seed for a new table                                                                |
 | `--setup <name>` | Setup for a new table (default: the manifest's `setup`; `none` lays everything out in rows) |
 | `--port <n>`     | Port for the server (default 4317)                                                          |
 | `--no-open`      | Do not open a browser window                                                                |
 
-`mcp [project-dir]` takes the same options. It speaks MCP on stdin and stdout. If `trayful play` already has the project open on that port, it relays to that table; otherwise it opens the table itself, so people can watch at the printed address. Messages for people go to stderr.
+`mcp [project-dir]` takes the same options. It speaks MCP on stdin and stdout. If `trayful play` already serves the project (or the folder of projects) on that port, it relays to that server; otherwise it opens the table itself, so people can watch at the printed address. Messages for people go to stderr.
 
 `bin/trayful.js` runs the CLI from source without `pnpm`, for MCP client configs: `node /path/to/trayful/packages/cli/bin/trayful.js mcp /path/to/project`.
 

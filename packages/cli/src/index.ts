@@ -1,14 +1,24 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { formatDiagnostic, hasErrors, loadProject } from '@trayful/formats';
-import { DEFAULT_PORT, defaultAppDir, ProjectLoadError, startServer } from '@trayful/server';
+import {
+  createProjectFolder,
+  DEFAULT_PORT,
+  defaultAppDir,
+  ProjectLoadError,
+  startServer,
+} from '@trayful/server';
 import open from 'open';
 import { mcp } from './mcp.js';
 
 const HELP = `Usage: trayful <command> [options]
 
 Commands:
+  new <folder> [--name <name>]
+                           Start a new prototype from the starter template.
   play [project-dir]       Open the project on a table in your browser (default: this folder).
+                           Give a folder of projects to switch between them in the browser.
+                           --project <id>  in a folder of projects, the one to open first
                            --table <name>  which saved table to open (default table-1)
                            --port <n>      port for the local server (default ${DEFAULT_PORT})
                            --seed <n>      shuffle seed for a new table
@@ -29,6 +39,8 @@ export async function run(args: string[], out = console.log, err = console.error
   switch (command) {
     case 'validate':
       return validate(rest, out, err);
+    case 'new':
+      return newProject(rest, out, err);
     case 'play':
       return play(rest, out, err);
     case 'mcp': {
@@ -51,6 +63,37 @@ export async function run(args: string[], out = console.log, err = console.error
       err(`Unknown command "${command}".\n\n${HELP}`);
       return 2;
   }
+}
+
+async function newProject(
+  args: string[],
+  out: (s: string) => void,
+  err: (s: string) => void,
+): Promise<number> {
+  const nameAt = args.indexOf('--name');
+  const name = nameAt >= 0 ? args[nameAt + 1] : undefined;
+  const dir = args.find((a, i) => !a.startsWith('--') && (nameAt < 0 || i !== nameAt + 1));
+  if (!dir || (nameAt >= 0 && !name)) {
+    err('Usage: trayful new <folder> [--name <name>]');
+    return 2;
+  }
+  const title =
+    name ??
+    path
+      .basename(path.resolve(dir))
+      .replace(/[-_]+/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  try {
+    await createProjectFolder(path.resolve(dir), title);
+  } catch (e) {
+    if (e instanceof ProjectLoadError) {
+      err(e.message);
+      return 1;
+    }
+    throw e;
+  }
+  out(`Created "${title}" in ${dir}. Play it with: trayful play ${dir}`);
+  return 0;
 }
 
 async function validate(
@@ -91,6 +134,7 @@ interface PlayOptions {
   port?: number;
   seed?: number;
   setup?: string | false;
+  project?: string;
   open: boolean;
 }
 
@@ -107,6 +151,7 @@ function parsePlayArgs(args: string[]): PlayOptions | string {
     };
     try {
       if (arg === '--table') options.table = value();
+      else if (arg === '--project') options.project = value();
       else if (arg === '--port') options.port = number('--port');
       else if (arg === '--seed') options.seed = number('--seed');
       else if (arg === '--setup') {
@@ -147,6 +192,7 @@ async function play(
   try {
     server = await startServer({
       projectDir: path.resolve(options.dir),
+      project: options.project,
       table: options.table,
       port: options.port,
       seed: options.seed,
@@ -168,7 +214,10 @@ async function play(
   const { session, url } = server;
   out(`${session.project.manifest.name} is on the table at ${url}`);
   const saved = path.relative(process.cwd(), session.file);
-  out(`Saving to ${saved.startsWith('..') ? session.file : saved}. Press Ctrl+C to stop.`);
+  out(`Saving to ${saved.startsWith('..') ? session.file : saved}.`);
+  const projects = server.workspace.projects().length;
+  if (projects > 1) out(`${projects} projects in this folder; switch between them in the browser.`);
+  out('Edits to the project files show up on the table when you save. Press Ctrl+C to stop.');
 
   // CI uses this to check that the server starts and serves the app, then exits.
   if (process.env.TRAYFUL_SMOKE_TEST) {

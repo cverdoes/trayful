@@ -64,13 +64,42 @@ const KINDS: { kind: FileKind; file: string; example?: string; intro: string }[]
     file: 'setup.md',
     example: 'setups/2-player.yaml',
     intro:
-      'Setups are scripted starting layouts in `setups/*.yaml`. Trayful validates them today; running them on a table arrives in Milestone 4.',
+      "Setups are scripted starting layouts in `setups/*.yaml`. A new table runs the setup named by the manifest's `setup` key; steps run in order, and anything they do not place is laid out in rows. See [Write a setup](../howto/write-a-setup.md) for a walkthrough and [Snapping](snapping.md) for how targets fill.",
   },
   {
     kind: 'table',
     file: 'table.md',
     intro:
       'Tables are saved as JSON in `tables/`. Trayful writes these files; they are documented here for tools and agents that read them. Positions are piece centres in millimetres.',
+  },
+];
+
+/** Hand-written reference pages, listed in the generated index. */
+const TOPICS = [
+  {
+    title: 'Units and coordinates',
+    file: 'units-and-coordinates.md',
+    about: 'Millimetres, where `[0, 0]` is, common sizes.',
+  },
+  {
+    title: 'Faces and templates',
+    file: 'faces-and-templates.md',
+    about: 'Layers, `{{field}}` placeholders, `when`, colours and palettes.',
+  },
+  {
+    title: 'Snapping',
+    file: 'snapping.md',
+    about: 'Snap targets, spot names, `accepts`, and what happens on drop.',
+  },
+  {
+    title: 'Validation errors',
+    file: 'validation.md',
+    about: 'How problems are reported, and what the common ones mean.',
+  },
+  {
+    title: 'Versioning',
+    file: 'versioning.md',
+    about: 'The format version, stable component ids, and saved tables.',
   },
 ];
 
@@ -128,6 +157,9 @@ function renderIndex(): string {
     'The technical reference for every Trayful file kind. Each page lists every key with its type and meaning, and ends with a real example from the Harvest Moon sample project.\n\n' +
     '| File kind | What it is |\n| --- | --- |\n' +
     rows.join('\n') +
+    '\n\nHow things work across file kinds:\n\n' +
+    '| Topic | What it covers |\n| --- | --- |\n' +
+    TOPICS.map((t) => `| [${t.title}](${t.file}) | ${t.about} |`).join('\n') +
     '\n\nJSON Schemas for editor autocomplete live in [`packages/formats/schema/`](../../packages/formats/schema/). ' +
     'Add a comment such as `# yaml-language-server: $schema=<path to library.schema.json>` at the top of a YAML file to get completion and checking in editors with the YAML language server.\n'
   );

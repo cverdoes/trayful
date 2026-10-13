@@ -28,10 +28,15 @@ export class TableEngine {
 
   constructor(
     initial: TableState,
-    private readonly catalog: Catalog,
+    private catalog: Catalog,
     private readonly historyLimit = 500,
   ) {
     this.current = initial;
+  }
+
+  /** Swaps in new component types, for example after the project files were edited. */
+  setCatalog(catalog: Catalog): void {
+    this.catalog = catalog;
   }
 
   get state(): TableState {

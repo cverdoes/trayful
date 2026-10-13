@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/setup.schema.json
+kind: setup
+name: Start
+description: The deck shuffled face down, two cards face up, and the tokens beside it.
+steps:
+  - place: { deck: cards }
+    at: [0, 0]
+    shuffle: true
+    face: down
+  - deal: { from: cards, to: [80, 0], count: 1, face: up }
+  - deal: { from: cards, to: [150, 0], count: 1, face: up }
+  - place: token
+    at: [0, 70]

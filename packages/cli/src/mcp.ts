@@ -9,6 +9,7 @@ export interface McpCommandOptions {
   port?: number;
   seed?: number;
   setup?: string | false;
+  project?: string;
 }
 
 /**
@@ -25,7 +26,8 @@ export async function mcp(options: McpCommandOptions, err: (s: string) => void):
   const running = await health(port);
 
   if (running) {
-    if (running.projectDir !== projectDir || (options.table && options.table !== running.table)) {
+    const same = running.projectDir === projectDir || running.root === projectDir;
+    if (!same || (options.table && options.table !== running.table)) {
       err(
         `Port ${port} already has "${running.project}" (table ${running.table}) open. ` +
           'Stop it, or give this table another port with --port <n>.',
@@ -40,6 +42,7 @@ export async function mcp(options: McpCommandOptions, err: (s: string) => void):
   try {
     server = await startServer({
       projectDir,
+      project: options.project,
       table: options.table,
       port,
       seed: options.seed,
@@ -55,7 +58,7 @@ export async function mcp(options: McpCommandOptions, err: (s: string) => void):
   err(`${server.session.project.manifest.name}: watch the table at ${server.url}`);
   const stdio = new StdioServerTransport();
   const closed = new Promise<void>((resolve) => (stdio.onclose = resolve));
-  await createMcpServer(server.session, { url: server.url }).connect(stdio);
+  await createMcpServer(server.workspace, { url: server.url }).connect(stdio);
   process.stdin.once('end', () => void stdio.close());
   await closed;
   await server.close();
@@ -64,7 +67,7 @@ export async function mcp(options: McpCommandOptions, err: (s: string) => void):
 
 async function health(
   port: number,
-): Promise<{ project: string; projectDir: string; table: string } | undefined> {
+): Promise<{ project: string; projectDir: string; root?: string; table: string } | undefined> {
   try {
     const response = await fetch(`http://127.0.0.1:${port}/api/health`, {
       signal: AbortSignal.timeout(1000),

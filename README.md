@@ -2,7 +2,7 @@
 
 Trayful is a boardgame prototyping table. You describe your components (cards, boards, tokens, meeples, dice, counters) in plain YAML files, and Trayful lays them out on a table where people and AI agents can drag, flip, rotate, stack and shuffle them.
 
-> **Status: Milestones 1 to 3.** You can open a prototype on a table in your browser and play it, with pieces that snap onto boards and a setup that lays out the game for you, and an AI agent such as Claude can play on the same table over MCP while you watch. Projects and authoring tools (Milestone 4) come next. See the [roadmap](#roadmap).
+> **Status: Milestones 1 to 4.** You can start a prototype from a template, play it on a table in your browser with pieces that snap onto boards and a setup that lays out the game, and see every file you save show up on the table at once. An AI agent such as Claude can play on the same table over MCP, and design components with you. You can print everything at real size to play on paper. Multiplayer (Milestone 5) comes next. See the [roadmap](#roadmap).
 
 ## Quick start
 
@@ -30,10 +30,11 @@ pnpm trayful play examples/harvest-moon
 
 Drag a piece to move it. While you drag, the board spots it may go to light up, and dropping it near one snaps it in; pieces on a board move along with the board. Drag the top card off a pile to draw it, and drop cards on a pile to stack them; hold Shift to drag a whole pile. Double-click a card to flip it or a die to roll it. Click to select, Shift+click or Shift+drag on empty table to select several, then use the toolbar or the keys: **F** flip, **Q**/**E** rotate, **D** draw, **S** shuffle, **V** fan or spread a pile out (then drag out any card), **R** roll, **+**/**−** counters, **L** lock (boards start locked), **Ctrl+Z** undo. Drag empty table to pan, scroll to zoom, **0** to fit, **?** for all shortcuts.
 
-A new table starts from the setup named in `trayful.yaml` (Harvest Moon's puts the board in the middle, deals the market and lines up the workers). The table is saved to `tables/table-1.json` inside the project folder as you play, and reopens where you left off. **New table** in the toolbar starts over from the project files (you can undo it).
+A new table starts from the setup named in `trayful.yaml` (Harvest Moon's puts the board in the middle, deals the market and lines up the workers). The table is saved to `tables/table-1.json` inside the project folder as you play, and reopens where you left off. **Start over** in the toolbar sets the table up again from the project files (you can undo it). The menu next to the game's name switches tables: make a **new table** for another playtest, **duplicate** one to try two moves from the same position, or delete one. **Print** opens [print-and-play](docs/howto/print-and-play.md) sheets with every component at real size.
 
 | `trayful play` option | What it does                                         |
 | --------------------- | ---------------------------------------------------- |
+| `--project <id>`      | In a folder of projects, the one to open first       |
 | `--table <name>`      | Open or create another saved table, e.g. `--table b` |
 | `--seed <n>`          | Shuffle seed for a new table, for repeatable games   |
 | `--setup <name>`      | Setup for a new table; `none` lays everything out    |
@@ -78,7 +79,16 @@ In Claude Desktop the same goes in `claude_desktop_config.json`:
 | `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `set_counter`, `lock` | Play, the same moves people make                  |
 | `undo`, `redo`, `get_history`, `reset_table`                                                                  | Shared history, and a fresh table                 |
 
-Agents can aim moves at board spots by name, such as `main-board/fields/3`, or deal into a whole target such as `main-board/market`; `describe_table` lists every snap target and which spots are free. Face-down cards stay hidden from the agent unless it asks with `reveal: true`. `snapshot` needs the table open in a browser, since the browser draws the picture. Resources give the full table state, the project, each component type and the file format schemas.
+Agents can aim moves at board spots by name, such as `main-board/fields/3`, or deal into a whole target such as `main-board/market`; `describe_table` lists every snap target and which spots are free. Face-down cards stay hidden from the agent unless it asks with `reveal: true`. `snapshot` needs the table open in a browser, since the browser draws the picture. Resources give the full table state, the project, each component type, the file format schemas and these docs (`trayful://docs`).
+
+Agents can also build your prototype with you: ask Claude for "an event card type with a title, a rule text and a season band, and a deck of six events", and it writes the type into your library, puts the cards in the box and looks at a picture of the result, while the new deck appears on your table. Every change is checked first, so an agent cannot leave your project broken. See [Let an agent build components](docs/howto/agent-builds-components.md).
+
+| Projects and authoring tools                                     | What they do                                                      |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `list_projects`, `open_table`, `duplicate_table`, `delete_table` | Find projects and tables, and switch the table the agent plays on |
+| `create_project`, `validate_project`                             | Start a project from the starter template; check one after edits  |
+| `upsert_type`, `remove_type`, `set_inventory`, `add_asset`       | Change component types, what is in the box, and artwork           |
+| `render_component`                                               | A picture of one component type, as people will see it            |
 
 ## Make your own prototype
 
@@ -94,15 +104,18 @@ my-game/
   assets/                 # images and SVGs
 ```
 
-The easiest start is to copy the sample and edit it:
+Start one from the template, which has a deck of cards loaded from a spreadsheet, some tokens and a setup:
 
 ```sh
-cp -r examples/harvest-moon ../my-game
-pnpm trayful validate ../my-game
+pnpm trayful new ../my-game --name "My Game"
 pnpm trayful play ../my-game
 ```
 
-The validator points at the exact file, line and column of each problem. Every key is documented in the [format reference](docs/reference/README.md).
+Keep the table open while you edit: every time you save a file, the table updates (new cards appear, changed text redraws, and the change is one step you can undo). If a file has a mistake, a bar on the table names the file, line and column, and the table keeps the last version that worked. `pnpm trayful validate ../my-game` checks a project from the command line.
+
+To keep several games together, put their folders in one folder and run `pnpm trayful play` on that folder; the table menu switches between them.
+
+The [HOWTO guides](docs/howto/README.md) walk through adding a deck, loading cards from a spreadsheet, boards with snap spots, meeples and dice, your own images, setups, designing with an agent and printing. Every key is documented in the [format reference](docs/reference/README.md).
 
 Boards declare **snap targets** in their library type: a `grid` of spots (card slots, action spaces), a list of `points` (a score track) or a free `area` (a supply), each optionally limited to some types with `accepts`. A **setup** file places components on those targets and on the table, shuffles and deals; set `setup: <file name>` in `trayful.yaml` to start every new table from it. See [`library/pieces.yaml`](examples/harvest-moon/library/pieces.yaml) and [`setups/2-player.yaml`](examples/harvest-moon/setups/2-player.yaml) in the sample.
 
@@ -112,12 +125,13 @@ Boards declare **snap targets** in their library type: a `grid` of spots (card s
 | ------------------------------------------------ | ---------------------------------------------------------------------------- |
 | [`packages/formats`](packages/formats)           | File format schemas (Zod), YAML loader and validator, generated JSON Schemas |
 | [`packages/core`](packages/core)                 | Table state, commands, snapping, setups, undo and seeded randomness          |
-| [`packages/server`](packages/server)             | Local server: one table per project, WebSocket sync, MCP, saves to `tables/` |
+| [`packages/server`](packages/server)             | Local server: projects and tables, live reload, WebSocket sync, MCP          |
 | [`packages/app`](packages/app)                   | Browser table (React and Konva)                                              |
 | [`packages/cli`](packages/cli)                   | The `trayful` command line                                                   |
 | [`examples/harvest-moon`](examples/harvest-moon) | Sample prototype that uses every file kind; validated in CI                  |
-| [`docs`](docs)                                   | Format reference (generated) and, from Milestone 4, HOWTO guides             |
-| [`e2e`](e2e)                                     | Browser tests (Playwright) that play a hand on the example                   |
+| [`examples/starter`](examples/starter)           | The template `trayful new` copies; validated in CI                           |
+| [`docs`](docs)                                   | HOWTO guides and the format reference (partly generated)                     |
+| [`e2e`](e2e)                                     | Browser tests (Playwright): playing, snapping, agents, authoring, printing   |
 | [`scripts`](scripts)                             | Code generation, example validation and the dev server                       |
 
 ## Development
@@ -138,15 +152,15 @@ Boards declare **snap targets** in their library type: a `grid` of spots (card s
 
 Packages are TypeScript run directly from source (through `tsx` and Vitest). Only the browser app is built, with Vite. `pnpm dev [project-dir]` serves the app with hot reload; it opens `examples/harvest-moon` unless you name another folder. Before `pnpm test:e2e` on a new machine, run `pnpm exec playwright install chromium` once.
 
-When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generate` and commit the regenerated files; CI fails when they are stale. When you change setup steps, scripts or commands, update this README in the same change.
+When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generate` and commit the regenerated files; CI fails when they are stale. When you change setup steps, scripts or commands, update this README in the same change. When you change what a HOWTO guide describes, update the guide; `scripts/docs.test.ts` checks that the files the guides quote still match `examples/`, and that their links work.
 
 ## Roadmap
 
-| Milestone                             | Scope                                                                                                         |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 0. Foundations                        | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
-| 1. First playable table               | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
-| **2. Components and snapping** (this) | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
-| 3. MCP                                | Agents read and play tables over the Model Context Protocol                                                   |
-| 4. Projects and authoring             | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
-| 5. Multiplayer                        | Remote playtesters, hidden hands                                                                              |
+| Milestone                            | Scope                                                                                                         |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| 0. Foundations                       | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
+| 1. First playable table              | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
+| 2. Components and snapping           | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
+| 3. MCP                               | Agents read and play tables over the Model Context Protocol                                                   |
+| **4. Projects and authoring** (this) | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
+| 5. Multiplayer                       | Remote playtesters, hidden hands                                                                              |

@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../packages/formats/schema/inventory.schema.json
+kind: inventory
+components:
+  - type: card
+    deck: cards
+    from: data/cards.csv
+  - type: token
+    each: { color: [blue, orange] }
+    count: 3

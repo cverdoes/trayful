@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/library.schema.json
+kind: library
+palette:
+  ink: '#222233'
+  paper: '#f6f1e3'
+  accent: '#3a7ca5'
+  # Palette names win over CSS colour names, so tokens get these softer tones.
+  blue: '#3a7ca5'
+  orange: '#e08a2e'
+
+types:
+  - id: card
+    base: card
+    name: Card
+    size: [63, 88]
+    corner: 3
+    fields:
+      title: string
+      text: string?
+      value: { type: int, default: 1 }
+    front:
+      fill: paper
+      stroke: ink
+      layers:
+        - { shape: rect, at: [0, 0], size: [63, 16], fill: accent }
+        - { text: '{{title}}', at: [5, 4], font: { size: 13, weight: bold }, color: white }
+        - { text: '{{text}}', at: [5, 24], width: 53, font: { size: 10 }, color: ink }
+        - { shape: circle, at: [55, 78], r: 5, fill: accent }
+        - {
+            text: '{{value}}',
+            at: [55, 78],
+            align: center,
+            valign: middle,
+            color: white,
+            font: { size: 13, weight: bold },
+          }
+    back:
+      layers:
+        - { image: assets/card-back.svg }

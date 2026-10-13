@@ -13,6 +13,7 @@
     "@trayful/core": "workspace:*",
     "@trayful/formats": "workspace:*",
     "fastify": "^5.12.5",
+    "yaml": "^2.9.1",
     "zod": "^4.6.6"
   },
   "devDependencies": {

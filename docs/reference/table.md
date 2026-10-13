@@ -90,7 +90,8 @@ A fresh table for Harvest Moon, with most objects left out:
         "cost": 1,
         "name": "Harvest",
         "suit": "green",
-        "text": "Gain 2 grain."
+        "text": "Gain 2 grain.",
+        "art": "assets/art/harvest.svg"
       },
       "pos": [-145, -130],
       "rot": 0,

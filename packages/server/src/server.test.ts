@@ -64,6 +64,7 @@ describe('server', () => {
       ok: true,
       project: 'Harvest Moon',
       projectDir: dir,
+      root: dir,
       table: 'table-1',
     });
     const view = (await (await fetch(`${server.url}/api/project`)).json()) as {
@@ -76,9 +77,11 @@ describe('server', () => {
   });
 
   it('serves project images but nothing else from the project folder', async () => {
-    expect((await fetch(`${server.url}/project-files/assets/card-back.svg`)).status).toBe(200);
-    expect((await fetch(`${server.url}/project-files/inventory.yaml`)).status).toBe(404);
-    expect((await fetch(`${server.url}/project-files/../package.json`)).status).toBe(404);
+    const files = `${server.url}/project-files/${path.basename(dir)}`;
+    expect((await fetch(`${files}/assets/card-back.svg`)).status).toBe(200);
+    expect((await fetch(`${files}/inventory.yaml`)).status).toBe(404);
+    expect((await fetch(`${files}/%2e%2e/package.json`)).status).toBe(404);
+    expect((await fetch(`${server.url}/project-files/nope/assets/card-back.svg`)).status).toBe(400);
   });
 
   it('explains when the browser app is not built', async () => {
