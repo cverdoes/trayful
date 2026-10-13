@@ -138,12 +138,12 @@ describe('server', () => {
     const reset = await a.next();
     expect(
       reset.type === 'state' && (reset.state.objects[DECK] as { items: string[] }).items,
-    ).toHaveLength(10);
+    ).toHaveLength(5);
     a.send({ type: 'undo' });
     const undone = await a.next();
     expect(
       undone.type === 'state' && (undone.state.objects[DECK] as { items: string[] }).items,
-    ).toHaveLength(9);
+    ).toHaveLength(4);
     a.socket.close();
   });
 
@@ -155,7 +155,7 @@ describe('server', () => {
     a.socket.close();
     await server.close();
     const saved = JSON.parse(await readFile(path.join(dir, 'tables', 'table-1.json'), 'utf8'));
-    expect(saved.objects.find((o: { id: string }) => o.id === DECK).items).toHaveLength(8);
+    expect(saved.objects.find((o: { id: string }) => o.id === DECK).items).toHaveLength(3);
 
     server = await startServer({ projectDir: dir, port: 0, appDir: path.join(dir, 'no-app') });
     expect(after.type === 'state' && server.session.engine.state).toEqual(

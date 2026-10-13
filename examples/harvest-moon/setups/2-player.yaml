@@ -1,17 +1,22 @@
 # yaml-language-server: $schema=../../../packages/formats/schema/setup.schema.json
 kind: setup
 name: Two players
+description: The board in the middle, five market cards face up and every worker ready below.
 steps:
   - place: main-board
     at: [0, 0]
   - place: { deck: actions }
-    at: [650, 40]
+    at: [350, -130]
     shuffle: true
     face: down
   - deal: { from: actions, to: main-board/market, count: 5, face: up }
   - place: worker
-    at: [100, 450]
+    at: [-270, 240]
   - place: score-marker.red
     at: main-board/score-track/0
   - place: score-marker.green
     at: main-board/score-track/0
+  - place: coins
+    at: main-board/supply
+  - place: d6
+    at: main-board/supply

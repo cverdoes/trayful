@@ -43,7 +43,9 @@ function zoom(factor: number) {
 }
 
 function newTable() {
-  if (window.confirm('Start a new table from the project files? You can undo this.')) {
+  const setup = useStore.getState().view?.setup;
+  const from = setup ? ` set up as "${setup}"` : '';
+  if (window.confirm(`Start a new table from the project files${from}? You can undo this.`)) {
     useStore.getState().send({ type: 'reset' });
   }
 }
@@ -86,6 +88,12 @@ function Toolbar() {
         <Button label="⟳" title="Rotate right" keys="E" onClick={actions.rotateRight} />
         <Button label="Draw" keys="D" onClick={actions.draw} />
         <Button label="Shuffle" keys="S" onClick={actions.shuffle} />
+        <Button
+          label={actions.layoutLabel}
+          title={`${actions.layoutLabel} the pile`}
+          keys="V"
+          onClick={actions.layout}
+        />
         <Button label="Roll" keys="R" onClick={actions.roll} />
         <Button label="−" title="Decrease" keys="-" onClick={actions.decrement} />
         <Button label="+" title="Increase" keys="+" onClick={actions.increment} />
@@ -173,6 +181,8 @@ function ErrorToast() {
 const SHORTCUTS: [string, string][] = [
   ['Drag', 'Move a piece, or take the top card off a pile'],
   ['Drag onto a pile', 'Put cards or tiles on top of it'],
+  ['Drag near a board spot', 'Snap into it; pieces on a board move with the board'],
+  ['Drag a card in a fan or spread', 'Take that card out of the pile'],
   ['Shift + drag a pile', 'Move the whole pile'],
   ['Click / Shift + click', 'Select / add to the selection'],
   ['Shift + drag on the table', 'Select everything in a box'],
@@ -183,6 +193,7 @@ const SHORTCUTS: [string, string][] = [
   ['Q / E', 'Rotate left / right'],
   ['D', 'Draw the top card of the selected pile'],
   ['S', 'Shuffle the selected pile'],
+  ['V', 'Show the selected pile as a pile, a fan or spread out'],
   ['R', 'Roll the selected dice'],
   ['+ / −', 'Change the selected counters'],
   ['L', 'Lock or unlock'],
@@ -247,6 +258,7 @@ function useKeyboard() {
           q: actions.rotateLeft,
           e: actions.rotateRight,
           s: actions.shuffle,
+          v: actions.layout,
           r: actions.roll,
           d: actions.draw,
           l: state.selection.length ? actions.lock : undefined,

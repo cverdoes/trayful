@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   CommandError,
   createTable,
+  SetupError,
   fromTableFile,
   TableEngine,
   toTableFile,
@@ -55,7 +56,7 @@ export class TableSession {
   static async open(
     projectDir: string,
     tableName = 'table-1',
-    options: { seed?: number; saveDelayMs?: number } = {},
+    options: { seed?: number; setup?: string | false; saveDelayMs?: number } = {},
   ): Promise<TableSession> {
     if (!TABLE_NAME.test(tableName)) {
       throw new ProjectLoadError(
@@ -79,7 +80,12 @@ export class TableSession {
           `Could not open ${path.relative(project.dir, file)}: ${(err as Error).message}`,
         );
       }
-      state = createTable(project, { name: tableName, seed: options.seed });
+      try {
+        state = createTable(project, { name: tableName, seed: options.seed, setup: options.setup });
+      } catch (err) {
+        if (err instanceof SetupError) throw new ProjectLoadError(err.message);
+        throw err;
+      }
     }
     const session = new TableSession(
       project,
@@ -100,6 +106,8 @@ export class TableSession {
       name: this.project.manifest.name,
       table: this.tableName,
       palette: this.project.palette,
+      setups: Object.keys(this.project.setups),
+      ...(this.project.manifest.setup ? { setup: this.project.manifest.setup } : {}),
       // Strip loader bookkeeping; clients only need the type definitions.
       types: Object.fromEntries(
         Object.entries(this.project.types).map(
@@ -181,7 +189,7 @@ export class TableSession {
           this.engine.redo();
           return undefined;
         case 'reset':
-          this.reset(message.seed);
+          this.reset(message.seed, message.setup);
           return undefined;
         case 'snapshot':
           this.answerSnapshot(message.id, message.png, message.error);
@@ -195,7 +203,9 @@ export class TableSession {
     } catch (err) {
       // Commands never change state when they throw, so any error is safe to report and move on.
       const text =
-        err instanceof CommandError ? err.message : `Invalid message: ${(err as Error).message}`;
+        err instanceof CommandError || err instanceof SetupError
+          ? err.message
+          : `Invalid message: ${(err as Error).message}`;
       return {
         type: 'error',
         message: text,
@@ -204,9 +214,12 @@ export class TableSession {
     }
   }
 
-  /** Replaces the table with a fresh one from the project files, as one undoable step. */
-  reset(seed?: number): void {
-    this.engine.replace(createTable(this.project, { name: this.tableName, seed }));
+  /**
+   * Replaces the table with a fresh one from the project files, as one undoable step.
+   * Uses the project's default setup unless another (or `false`, for none) is given.
+   */
+  reset(seed?: number, setup?: string | false): void {
+    this.engine.replace(createTable(this.project, { name: this.tableName, seed, setup }));
   }
 
   subscribe(listener: (message: ServerMessage) => void): () => void {

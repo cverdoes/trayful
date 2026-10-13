@@ -9,12 +9,12 @@ test('plays a hand: draw, flip, undo, shuffle and restack', async ({ page }) => 
   await expect(page.locator('.toolbar')).toContainText('Harvest Moon');
 
   const deck = (await table(page)).objects[DECK] as Stack;
-  expect(deck.items).toHaveLength(10);
+  expect(deck.items).toHaveLength(5);
   const top = deck.items.at(-1)!;
 
   // Drag the top card off the deck onto empty table.
   await drag(page, [deck.pos[0], deck.pos[1]], [deck.pos[0], deck.pos[1] + 110]);
-  await expect.poll(async () => ((await table(page)).objects[DECK] as Stack).items.length).toBe(9);
+  await expect.poll(async () => ((await table(page)).objects[DECK] as Stack).items.length).toBe(4);
   const drawn = (await table(page)).objects[top] as Piece;
   expect(drawn.parent).toBeUndefined();
   expect(drawn.pos[1]).toBeCloseTo(deck.pos[1] + 110, 0);

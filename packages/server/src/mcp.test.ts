@@ -50,6 +50,7 @@ describe('MCP tools', () => {
         'draw',
         'flip',
         'get_history',
+        'layout',
         'lock',
         'move',
         'query_objects',
@@ -61,6 +62,7 @@ describe('MCP tools', () => {
         'shuffle',
         'snapshot',
         'stack',
+        'take',
         'undo',
       ].sort(),
     );
@@ -68,8 +70,12 @@ describe('MCP tools', () => {
 
   it('describes the table without peeking at face-down cards', async () => {
     const r = await call(client, 'describe_table');
-    expect(r.text).toContain('deck:actions: 10 × Action card');
-    expect(r.text).not.toContain('Harvest');
+    expect(r.text).toContain('deck:actions: 5 × Action card');
+    expect(r.text).toContain('top face down');
+    expect(r.text).not.toContain('bottom to top');
+    expect((await call(client, 'describe_table', { reveal: true })).text).toContain(
+      'bottom to top',
+    );
   });
 
   it('deals a round, shows it to watchers and shares undo with the browser', async () => {
@@ -98,8 +104,36 @@ describe('MCP tools', () => {
 
     // A person undoes the deal from the browser; the agent sees the deck whole again.
     session.handle({ type: 'undo' });
-    expect((session.engine.state.objects[DECK] as Stack).items).toHaveLength(10);
+    expect((session.engine.state.objects[DECK] as Stack).items).toHaveLength(5);
     expect((await call(client, 'get_history')).text).toContain('shuffle');
+  });
+
+  it('places workers on snap spots, deals into a target and takes a card from a pile', async () => {
+    const moved = await call(client, 'move', { ids: ['worker.red.1'], to: 'main-board/fields/3' });
+    expect(moved.isError).toBeFalsy();
+    expect(session.engine.state.objects['worker.red.1']!.snap).toBe('main-board/fields/3');
+    expect((await call(client, 'describe_table')).text).toContain('taken 3: worker.red.1');
+
+    const wrong = await call(client, 'move', { ids: ['worker.red.2'], to: 'main-board/market/0' });
+    expect(wrong.isError).toBe(true);
+    expect(wrong.text).toContain('only accepts action-card');
+
+    const laid = await call(client, 'layout', { id: DECK, layout: 'spread' });
+    expect(laid.isError).toBeFalsy();
+    const card = (session.engine.state.objects[DECK] as Stack).items[1]!;
+    const taken = await call(client, 'take', { id: card, to: [0, 300], face: 'up' });
+    expect(taken.isError).toBeFalsy();
+    expect((session.engine.state.objects[DECK] as Stack).items).not.toContain(card);
+  });
+
+  it('starts a new table from a named setup, or straight out of the box', async () => {
+    await call(client, 'reset_table', { setup: false });
+    expect((session.engine.state.objects[DECK] as Stack).items).toHaveLength(10);
+    await call(client, 'reset_table', { setup: '2-player' });
+    expect((session.engine.state.objects[DECK] as Stack).items).toHaveLength(5);
+    const bad = await call(client, 'reset_table', { setup: 'solo' });
+    expect(bad.isError).toBe(true);
+    expect(bad.text).toContain('Unknown setup "solo"');
   });
 
   it('reports bad moves as tool errors and changes nothing', async () => {
@@ -120,7 +154,7 @@ describe('MCP tools', () => {
     const state = await client.readResource({ uri: 'trayful://table/table-1/state' });
     expect(
       JSON.parse((state.contents[0] as { text: string }).text).objects[DECK].items,
-    ).toHaveLength(10);
+    ).toHaveLength(5);
   });
 
   it('says why a snapshot is not possible without a browser', async () => {
@@ -162,7 +196,7 @@ describe('MCP over HTTP', () => {
     const client = new Client({ name: 'test', version: '0' });
     await client.connect(new StreamableHTTPClientTransport(new URL(`${server.url}/mcp`)));
     await call(client, 'draw', { from: DECK, to: [0, 300], face: 'up' });
-    expect((server.session.engine.state.objects[DECK] as Stack).items).toHaveLength(9);
+    expect((server.session.engine.state.objects[DECK] as Stack).items).toHaveLength(4);
 
     const snap = await call(client, 'snapshot');
     expect(snap.content[0]).toMatchObject({ type: 'image', mimeType: 'image/png' });

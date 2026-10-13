@@ -45,6 +45,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "setup": {
+          "description": "Setup a new table starts from, by file name without `.yaml` (e.g. `2-player`). Default: everything laid out in rows.",
+          "type": "string"
         }
       },
       "required": [

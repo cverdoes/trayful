@@ -52,10 +52,13 @@ export async function agent(baseURL: string) {
   };
 }
 
-/** Puts the table back to how it starts, so tests do not depend on each other. */
-export async function freshTable(baseURL: string) {
+/**
+ * Puts the table back to how it starts, so tests do not depend on each other:
+ * set up for two players, or with `setup: false` everything straight out of the box.
+ */
+export async function freshTable(baseURL: string, setup?: string | false) {
   const a = await agent(baseURL);
-  await a.call('reset_table', { seed: 1 });
+  await a.call('reset_table', { seed: 1, ...(setup === undefined ? {} : { setup }) });
   await a.client.close();
 }
 

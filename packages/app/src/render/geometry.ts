@@ -1,4 +1,9 @@
-import type { Piece, TableObject, TableState } from '@trayful/core';
+import {
+  objectSize as coreObjectSize,
+  type Piece,
+  type TableObject,
+  type TableState,
+} from '@trayful/core';
 import { PRIMITIVE_INFO, type ComponentType } from '@trayful/formats/browser';
 
 export type Types = Record<string, ComponentType>;
@@ -14,7 +19,13 @@ export function facePiece(table: TableState, object: TableObject): Piece | undef
   return top?.kind === 'piece' ? top : undefined;
 }
 
+/** Width and height of an object, including a fanned or spread-out stack, before rotation. */
 export function objectSize(table: TableState, types: Types, object: TableObject): [number, number] {
+  return coreObjectSize(table, types, object);
+}
+
+/** Size of one piece of the object: itself, or the top piece of a stack. */
+export function pieceSize(table: TableState, types: Types, object: TableObject): [number, number] {
   const piece = facePiece(table, object);
   const type = piece && types[piece.type];
   return type ? sizeOf(type) : [20, 20];

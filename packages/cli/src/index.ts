@@ -12,6 +12,8 @@ Commands:
                            --table <name>  which saved table to open (default table-1)
                            --port <n>      port for the local server (default ${DEFAULT_PORT})
                            --seed <n>      shuffle seed for a new table
+                           --setup <name>  setup for a new table (default: the manifest's
+                                           setup; "none" lays everything out in rows)
                            --no-open       do not open a browser window
   mcp [project-dir]        Let an AI agent play the table over MCP (stdio). Shares the table
                            with \`trayful play\` if it is running; same options as play.
@@ -33,7 +35,7 @@ export async function run(args: string[], out = console.log, err = console.error
       const options = parsePlayArgs(rest);
       if (typeof options === 'string') {
         err(
-          `${options}\nUsage: trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>]`,
+          `${options}\nUsage: trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>]`,
         );
         return 2;
       }
@@ -88,6 +90,7 @@ interface PlayOptions {
   table?: string;
   port?: number;
   seed?: number;
+  setup?: string | false;
   open: boolean;
 }
 
@@ -106,7 +109,11 @@ function parsePlayArgs(args: string[]): PlayOptions | string {
       if (arg === '--table') options.table = value();
       else if (arg === '--port') options.port = number('--port');
       else if (arg === '--seed') options.seed = number('--seed');
-      else if (arg === '--no-open') options.open = false;
+      else if (arg === '--setup') {
+        const name = value();
+        if (!name) return '--setup needs a setup name, or "none".';
+        options.setup = name === 'none' ? false : name;
+      } else if (arg === '--no-open') options.open = false;
       else if (arg.startsWith('--')) return `Unknown option "${arg}".`;
       else dirs.push(arg);
     } catch (e) {
@@ -126,7 +133,7 @@ async function play(
   const options = parsePlayArgs(args);
   if (typeof options === 'string') {
     err(
-      `${options}\nUsage: trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--no-open]`,
+      `${options}\nUsage: trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open]`,
     );
     return 2;
   }
@@ -143,6 +150,7 @@ async function play(
       table: options.table,
       port: options.port,
       seed: options.seed,
+      setup: options.setup,
     });
   } catch (e) {
     if (e instanceof ProjectLoadError) {

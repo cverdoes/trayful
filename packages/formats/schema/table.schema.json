@@ -195,6 +195,15 @@
         "snap": {
           "description": "Snap spot the stack sits in, as `pieceId/target/index`.",
           "type": "string"
+        },
+        "layout": {
+          "description": "How the pieces lie: `pile` (default) shows only the top, `fan` overlaps them in a row, `spread` lays them side by side.",
+          "type": "string",
+          "enum": [
+            "pile",
+            "fan",
+            "spread"
+          ]
         }
       },
       "required": [

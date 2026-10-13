@@ -6,3 +6,4 @@ description: A small worker-placement and card-market sample used to exercise ev
 units: mm
 libraries: [library/*.yaml]
 inventory: inventory.yaml
+setup: 2-player

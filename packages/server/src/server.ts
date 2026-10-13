@@ -23,6 +23,8 @@ export interface ServerOptions {
   appDir?: string;
   /** Seed for a newly created table. */
   seed?: number;
+  /** Setup for a newly created table. Default: the manifest's `setup`; `false` for none. */
+  setup?: string | false;
   logger?: boolean;
 }
 
@@ -43,6 +45,7 @@ export function defaultAppDir(): string {
 export async function startServer(options: ServerOptions): Promise<RunningServer> {
   const session = await TableSession.open(options.projectDir, options.table, {
     seed: options.seed,
+    setup: options.setup,
   });
   const appDir = options.appDir ?? defaultAppDir();
   const app = Fastify({ logger: options.logger ?? false });

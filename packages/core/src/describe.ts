@@ -1,5 +1,7 @@
 import type { Vec2 } from '@trayful/formats/browser';
-import { sizeOf, type Catalog, type Piece, type TableObject, type TableState } from './state.js';
+import { objectSize } from './layout.js';
+import { allSpots, occupants } from './snap.js';
+import type { Catalog, Piece, TableObject, TableState } from './state.js';
 
 /**
  * Readable views of a table for agents. Face-down cards keep their secrets:
@@ -32,6 +34,10 @@ export interface ObjectSummary {
   items?: PieceSummary[];
   /** Pieces inside a stack: the stack's id. */
   parent?: string;
+  /** The snap spot or area the object sits in, such as `main-board/market/2`. */
+  snap?: string;
+  /** Stacks laid out as a `fan` or `spread`, where every piece shows. */
+  layout?: 'fan' | 'spread';
 }
 
 export interface ObjectQuery {
@@ -71,22 +77,27 @@ export function summarize(
   const pieces =
     object.kind === 'stack' ? object.items.map((id) => state.objects[id] as Piece) : [object];
   const top = pieces.at(-1)!;
-  const type = catalog[top.type];
+  const layout = object.kind === 'stack' ? object.layout : undefined;
   return {
     id: object.id,
     kind: object.kind,
     pos: object.pos,
     rot: object.rot,
-    size: type ? sizeOf(type) : [0, 0],
+    size: objectSize(state, catalog, object),
     ...(object.locked ? { locked: true } : {}),
     top: summarizePiece(top, catalog, reveal),
     ...(object.kind === 'stack'
       ? {
           count: pieces.length,
-          ...(reveal ? { items: pieces.map((p) => summarizePiece(p, catalog, true)) } : {}),
+          // A fan or spread shows every card's face, so its order is no secret.
+          ...(reveal || layout
+            ? { items: pieces.map((p) => summarizePiece(p, catalog, reveal)) }
+            : {}),
         }
       : {}),
     ...(object.kind === 'piece' && object.parent ? { parent: object.parent } : {}),
+    ...(object.snap ? { snap: object.snap } : {}),
+    ...(layout && layout !== 'pile' ? { layout } : {}),
   };
 }
 
@@ -167,8 +178,59 @@ export function describeTable(
   if (pieces.length) {
     lines.push('Pieces:');
     for (const s of pieces) lines.push(`- ${s.id}: ${pieceText(s.top, catalog)}${where(s)}`);
+    lines.push('');
+  }
+  const targets = snapTargets(state, catalog);
+  if (targets.length) {
+    lines.push(
+      'Snap targets (use these as "to" in move, draw and deal; a spot number picks one spot):',
+    );
+    lines.push(...targets);
   }
   return lines.join('\n').trimEnd();
+}
+
+/** One line per snap target on the table, saying which spots are taken and by what. */
+function snapTargets(state: TableState, catalog: Catalog): string[] {
+  const groups = new Map<string, ReturnType<typeof allSpots>>();
+  for (const spot of allSpots(state, catalog)) {
+    const key = `${spot.owner}/${spot.target}`;
+    groups.set(key, [...(groups.get(key) ?? []), spot]);
+  }
+  return [...groups].map(([key, spots]) => {
+    const first = spots[0]!;
+    const accepts = first.accepts ? ` (accepts ${first.accepts.join(', ')})` : '';
+    if (first.area) {
+      const held = occupants(state, first.ref).map((o) => o.id);
+      return (
+        `- ${key}${accepts}: free area of ${num(first.area[0])} × ${num(first.area[1])} mm ` +
+        `centred at [${num(first.pos[0])}, ${num(first.pos[1])}]` +
+        (held.length ? `, holding ${held.join(', ')}` : ', empty')
+      );
+    }
+    const taken: string[] = [];
+    const free: number[] = [];
+    for (const spot of spots) {
+      const held = occupants(state, spot.ref).map((o) => o.id);
+      if (held.length) taken.push(`${spot.index}: ${held.join(', ')}`);
+      else free.push(spot.index!);
+    }
+    const parts = [`${spots.length} spots`];
+    if (taken.length) parts.push(`taken ${taken.join('; ')}`);
+    parts.push(free.length ? `free ${ranges(free)}` : 'none free');
+    return `- ${key}${accepts}: ${parts.join(', ')}`;
+  });
+}
+
+/** `[0, 1, 2, 5]` as `0-2, 5`. */
+function ranges(numbers: number[]): string {
+  const out: string[] = [];
+  for (let i = 0; i < numbers.length; i++) {
+    const start = numbers[i]!;
+    while (numbers[i + 1] === numbers[i]! + 1) i++;
+    out.push(numbers[i] === start ? String(start) : `${start}-${numbers[i]}`);
+  }
+  return out.join(', ');
 }
 
 function typeName(p: PieceSummary, catalog: Catalog): string {
@@ -194,6 +256,8 @@ function dataText(data: Record<string, unknown> | undefined): string {
 
 function where(s: ObjectSummary): string {
   const extras = [`at [${num(s.pos[0])}, ${num(s.pos[1])}]`];
+  if (s.snap) extras.push(`in ${s.snap}`);
+  if (s.layout) extras.push(`${s.layout === 'fan' ? 'fanned' : 'spread'} out`);
   if (s.rot) extras.push(`rotated ${s.rot}°`);
   if (s.locked) extras.push('locked');
   return ', ' + extras.join(', ');

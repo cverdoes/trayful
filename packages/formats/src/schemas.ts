@@ -388,6 +388,12 @@ export const ManifestFile = z
       .array(z.string())
       .optional()
       .describe('Setup files, as paths or globs. Default `["setups/*.yaml"]`.'),
+    setup: z
+      .string()
+      .optional()
+      .describe(
+        'Setup a new table starts from, by file name without `.yaml` (e.g. `2-player`). Default: everything laid out in rows.',
+      ),
   })
   .meta({
     id: 'Manifest',
@@ -560,6 +566,12 @@ export const StackObject = z
     items: z.array(z.string()).describe('Piece ids from bottom to top.'),
     locked: z.boolean().optional().describe('Locked stacks ignore moves from the UI.'),
     snap: z.string().optional().describe('Snap spot the stack sits in, as `pieceId/target/index`.'),
+    layout: z
+      .enum(['pile', 'fan', 'spread'])
+      .optional()
+      .describe(
+        'How the pieces lie: `pile` (default) shows only the top, `fan` overlaps them in a row, `spread` lays them side by side.',
+      ),
   })
   .meta({ id: 'StackObject', description: 'An ordered pile of pieces, such as a deck.' });
 
