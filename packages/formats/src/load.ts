@@ -107,6 +107,17 @@ class ProjectLoader {
       ? await this.expandGlobs(manifest.setups, manifestSource, ['setups'])
       : await fg('setups/*.yaml', { cwd: this.dir });
     for (const file of setupFiles.sort()) await this.loadSetup(file);
+    if (manifest.setup !== undefined) {
+      const names = setupFiles.map((f) => path.basename(f).replace(/\.ya?ml$/, ''));
+      if (!names.includes(manifest.setup)) {
+        const known = names.length
+          ? `Known setups: ${names.join(', ')}.`
+          : 'There are no setup files.';
+        this.diagnostics.push(
+          manifestSource.diagnostic(['setup'], `Unknown setup "${manifest.setup}". ${known}`),
+        );
+      }
+    }
 
     const ok = !this.diagnostics.some((d) => d.severity === 'error');
     return {

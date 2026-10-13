@@ -10,8 +10,11 @@ export type ClientMessage =
   | { type: 'command'; command: Command; requestId?: string }
   | { type: 'undo' }
   | { type: 'redo' }
-  /** Replace the table with a fresh one straight out of the box. Undoable. */
-  | { type: 'reset'; seed?: number }
+  /**
+   * Replace the table with a fresh one, set up by the project's default setup or the
+   * one named (`false` for straight out of the box). Undoable.
+   */
+  | { type: 'reset'; seed?: number; setup?: string | false }
   /** Answer to a `snapshot-request`: the whole table as a base64 PNG, or why it failed. */
   | { type: 'snapshot'; id: string; png?: string; error?: string };
 
@@ -42,4 +45,7 @@ export interface ProjectView {
   table: string;
   palette: Record<string, string>;
   types: Record<string, ComponentType>;
+  /** Setup names, and the one a new table starts from. */
+  setups: string[];
+  setup?: string;
 }

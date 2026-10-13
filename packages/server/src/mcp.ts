@@ -5,6 +5,7 @@ import {
   applyCommand,
   describeTable,
   queryObjects,
+  resolveSpots,
   summarize,
   type Command,
   type TableState,
@@ -26,6 +27,16 @@ const Ids = z
   .min(1)
   .describe('Object ids, from describe_table or query_objects.');
 const Face = z.enum(['up', 'down']);
+const Target = z
+  .union([
+    Pos,
+    z
+      .string()
+      .describe(
+        'A snap target from describe_table: `board/target/index` for one spot, or `board/target` for its free spots in order (or its free area).',
+      ),
+  ])
+  .describe('A position `[x, y]` in mm, or a snap target such as `main-board/market/2`.');
 
 /**
  * Builds an MCP server for one open table. Agents get the same commands as the
@@ -41,6 +52,7 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
       instructions: [
         `Trayful is a tabletop for boardgame prototypes. This server controls the table "${session.tableName}" of the project "${project.manifest.name}"${options.url ? `, which people can watch at ${options.url}` : ''}.`,
         'Start with describe_table. Positions are piece centres in millimetres, y grows downwards. Stacks (piles and decks) hold cards bottom to top; draw and deal take from the top.',
+        'Boards declare snap targets (card slots, action spaces, tracks). Use them as `to` in move, draw and deal, e.g. `main-board/fields/3`; pieces in a spot ride along when the board moves.',
         'Face-down cards are hidden: their fields and the order of piles only show with reveal: true, which is like peeking, so only use it when the game allows.',
         'Every change goes into the same undo history as the people at the table. Trayful does not know the rules; you bring them.',
       ].join('\n'),
@@ -156,11 +168,21 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
     {
       title: 'Move',
       description:
-        'Move objects. `to` puts the first object there and keeps the others in place relative to it; `by` shifts them all.',
-      inputSchema: { ids: Ids, to: Pos.optional(), by: Pos.optional() },
+        'Move objects. `to` a position puts the first object there and keeps the others in place relative to it; `to` a snap target puts each object in a free spot; `by` shifts them all.',
+      inputSchema: {
+        ids: Ids,
+        to: Target.optional(),
+        by: Pos.optional(),
+        into: z
+          .string()
+          .optional()
+          .describe('With `by`: also mark the objects as sitting in this snap spot or area.'),
+      },
     },
-    ({ ids, to, by }) =>
-      play(`moved ${count(ids.length, 'object')}`, [{ type: 'move', ids, to, by }]),
+    ({ ids, to, by, into }) =>
+      play(`moved ${count(ids.length, 'object')}${typeof to === 'string' ? ` to ${to}` : ''}`, [
+        { type: 'move', ids, to, by, into },
+      ]),
   );
 
   server.registerTool(
@@ -202,11 +224,11 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
     {
       title: 'Draw',
       description:
-        'Take cards off the top of a stack to a position. Several cards land there as a new pile.',
+        'Take cards off the top of a stack to a position or snap spot. Several cards land there as a new pile.',
       inputSchema: {
         from: z.string().describe('Stack id, such as `deck:actions`.'),
         count: z.int().positive().optional().describe('Default 1.'),
-        to: Pos,
+        to: Target,
         face: Face.optional().describe('Turn the drawn cards up or down. Default: as they were.'),
       },
     },
@@ -219,18 +241,59 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
     {
       title: 'Deal',
       description:
-        'Deal cards from the top of a stack, one at a time to each position in turn, `count` times round. Use one position per player or slot.',
+        'Deal cards from the top of a stack, one at a time to each place in turn, `count` times round. Use one position per player, or a snap target such as `main-board/market` to fill each of its spots.',
       inputSchema: {
         from: z.string().describe('Stack id, such as `deck:actions`.'),
-        to: z.array(Pos).min(1).describe('Where each pile goes.'),
-        count: z.int().positive().optional().describe('Cards per position. Default 1.'),
+        to: z
+          .union([Target, z.array(Target).min(1)])
+          .describe('Where the piles go: a list of positions or spots, or one snap target.'),
+        count: z.int().positive().optional().describe('Cards per place. Default 1.'),
         face: Face.optional().describe('Deal face up or down. Default: as they were.'),
       },
     },
-    ({ from, to, count: n, face }) =>
-      play(`dealt ${count((n ?? 1) * to.length, 'card')}`, [
-        { type: 'deal', from, to, count: n, face },
-      ]),
+    ({ from, to, count: n, face }) => {
+      const command: Command = { type: 'deal', from, to, count: n, face };
+      const targets = typeof to === 'string' || typeof to[0] === 'number' ? [to] : to;
+      let places = 0;
+      try {
+        for (const t of targets as (string | [number, number])[]) {
+          places += typeof t === 'string' ? resolveSpots(engine.state, types, t).length : 1;
+        }
+      } catch (err) {
+        return failure(err);
+      }
+      const dealt = places * (n ?? 1);
+      return play(`dealt ${count(dealt, 'card')}`, [command]);
+    },
+  );
+
+  server.registerTool(
+    'take',
+    {
+      title: 'Take a card from a pile',
+      description:
+        'Take one particular card out of a stack, wherever it is in the pile, such as a card chosen from a spread-out market or hand.',
+      inputSchema: {
+        id: z.string().describe('The card id, from query_objects with `inside`.'),
+        to: Target,
+        face: Face.optional().describe('Turn it up or down. Default: as it was.'),
+      },
+    },
+    ({ id, to, face }) => play(`took ${id}`, [{ type: 'take', id, to, face }]),
+  );
+
+  server.registerTool(
+    'layout',
+    {
+      title: 'Lay out a pile',
+      description:
+        'Show a stack as a `pile` (only the top card shows), a `fan` (overlapping, like a hand) or `spread` out side by side.',
+      inputSchema: {
+        id: z.string().describe('Stack id.'),
+        layout: z.enum(['pile', 'fan', 'spread']),
+      },
+    },
+    ({ id, layout }) => play(`laid out ${id} as a ${layout}`, [{ type: 'layout', id, layout }]),
   );
 
   server.registerTool(
@@ -311,12 +374,24 @@ export function createMcpServer(session: TableSession, options: McpOptions = {})
     {
       title: 'Start a new table',
       description:
-        'Put everything back in the box: a fresh table from the project files, with decks shuffled by a new seed. Can be undone.',
-      inputSchema: { seed: z.int().optional().describe('Seed for repeatable shuffles.') },
+        "Start over with a fresh table from the project files, set up by the project's default setup (or the one named), with decks shuffled by a new seed. Can be undone.",
+      inputSchema: {
+        seed: z.int().optional().describe('Seed for repeatable shuffles.'),
+        setup: z
+          .union([z.string(), z.literal(false)])
+          .optional()
+          .describe(
+            `Setup to start from${Object.keys(project.setups).length ? ` (${Object.keys(project.setups).join(', ')})` : ''}, or false for everything straight out of the box.`,
+          ),
+      },
       annotations: { destructiveHint: true },
     },
-    ({ seed }) => {
-      session.asAgent('started a new table', () => session.reset(seed));
+    ({ seed, setup }) => {
+      try {
+        session.asAgent('started a new table', () => session.reset(seed, setup));
+      } catch (err) {
+        return failure(err);
+      }
       return text(describeTable(engine.state, types));
     },
   );

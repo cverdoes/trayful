@@ -35,7 +35,7 @@ describe('trayful mcp', () => {
     const result = (await client.callTool({ name: 'describe_table' })) as {
       content: { text: string }[];
     };
-    expect(result.content[0]!.text).toContain('deck:actions: 10 ×');
+    expect(result.content[0]!.text).toContain('deck:actions: 5 ×');
     // People can watch the same table in a browser while the agent plays.
     const health = (await (await fetch('http://127.0.0.1:4391/api/health')).json()) as {
       project: string;
@@ -50,7 +50,7 @@ describe('trayful mcp', () => {
     try {
       const client = await connect(dir, 4392);
       await client.callTool({ name: 'draw', arguments: { from: 'deck:actions', to: [0, 300] } });
-      expect((server.session.engine.state.objects['deck:actions'] as Stack).items).toHaveLength(9);
+      expect((server.session.engine.state.objects['deck:actions'] as Stack).items).toHaveLength(4);
       await client.close();
     } finally {
       await server.close();

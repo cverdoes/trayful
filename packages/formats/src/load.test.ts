@@ -55,6 +55,17 @@ const messages = (r: Awaited<ReturnType<typeof loadProject>>) =>
   r.diagnostics.map((d) => formatDiagnostic(d));
 
 describe('loadProject', () => {
+  it('reports a default setup that does not exist', async () => {
+    const dir = await project({
+      'trayful.yaml':
+        'name: Test\nformat: trayful/1\nlibraries: [lib.yaml]\ninventory: inventory.yaml\nsetup: start\n',
+    });
+    const result = await loadProject(dir);
+    expect(messages(result).join('\n')).toMatch(
+      /Unknown setup "start"\. There are no setup files\./,
+    );
+  });
+
   it('loads the Harvest Moon example without problems', async () => {
     const result = await loadProject(example);
     expect(messages(result)).toEqual([]);

@@ -4,9 +4,9 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { applyCommand, CommandError } from './commands.js';
 import { TableEngine } from './engine.js';
 import { shuffled } from './rng.js';
+import { createTable } from './setup.js';
 import {
   checkIntegrity,
-  createTable,
   fromTableFile,
   toTableFile,
   type Piece,
@@ -25,7 +25,7 @@ beforeAll(async () => {
   project = result.project;
 });
 
-const fresh = () => createTable(project, { name: 'test', seed: 42 });
+const fresh = () => createTable(project, { name: 'test', seed: 42, setup: false });
 const engine = () => new TableEngine(fresh(), project.types);
 const piece = (s: TableState, id: string) => s.objects[id] as Piece;
 const stack = (s: TableState, id: string) => s.objects[id] as Stack;

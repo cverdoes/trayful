@@ -4,3 +4,6 @@ export * from './engine.js';
 export * from './rng.js';
 export * from './protocol.js';
 export * from './describe.js';
+export * from './snap.js';
+export * from './layout.js';
+export * from './setup.js';

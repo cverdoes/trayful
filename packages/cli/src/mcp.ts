@@ -8,6 +8,7 @@ export interface McpCommandOptions {
   table?: string;
   port?: number;
   seed?: number;
+  setup?: string | false;
 }
 
 /**
@@ -37,7 +38,13 @@ export async function mcp(options: McpCommandOptions, err: (s: string) => void):
 
   let server: Awaited<ReturnType<typeof startServer>>;
   try {
-    server = await startServer({ projectDir, table: options.table, port, seed: options.seed });
+    server = await startServer({
+      projectDir,
+      table: options.table,
+      port,
+      seed: options.seed,
+      setup: options.setup,
+    });
   } catch (e) {
     if (e instanceof ProjectLoadError) {
       err(e.message);

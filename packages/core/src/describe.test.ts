@@ -3,7 +3,8 @@ import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { describeTable, queryObjects } from './describe.js';
 import { TableEngine } from './engine.js';
-import { checkIntegrity, createTable, type Piece, type Stack } from './state.js';
+import { createTable } from './setup.js';
+import { checkIntegrity, type Piece, type Stack } from './state.js';
 
 const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
 const DECK = 'deck:actions';
@@ -12,7 +13,8 @@ let project: ResolvedProject;
 beforeAll(async () => {
   project = (await loadProject(example)).project!;
 });
-const engine = () => new TableEngine(createTable(project, { name: 't', seed: 42 }), project.types);
+const engine = () =>
+  new TableEngine(createTable(project, { name: 't', seed: 42, setup: false }), project.types);
 
 describe('deal', () => {
   it('deals round-robin into piles, one undo step', () => {
