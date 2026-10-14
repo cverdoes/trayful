@@ -16,13 +16,26 @@ export interface Player {
 
 interface StoredPlayer extends Player {
   secretHash: string;
+  /** Tables a guest was invited to, as `project/table`. */
+  tables?: string[];
+}
+
+/** An invite to one table. Anyone holding its token may join that table as a guest. */
+export interface Invite {
+  token: string;
+  project: string;
+  table: string;
 }
 
 /** Everything the registry keeps between runs. */
 export interface PlayersData {
-  /** The secret in invite links. Anyone holding it may join as a guest. */
-  invite: string;
+  invites: Invite[];
   players: StoredPlayer[];
+}
+
+/** How a table is named in invites and grants: `project/table`. */
+export function tableKey(project: string, table: string): string {
+  return `${project}/${table}`;
 }
 
 /**
@@ -97,7 +110,10 @@ export class Players {
   ) {}
 
   static async open(store: PlayerStore): Promise<Players> {
-    const data = (await store.load()) ?? { invite: secret(16), players: [] };
+    const data = (await store.load()) ?? { invites: [], players: [] };
+    // Before invites were per table there was one for every table; it no longer works.
+    delete (data as { invite?: string }).invite;
+    data.invites ??= [];
     const players = new Players(data, store);
     if (!players.get(AGENT_PLAYER)) {
       data.players.push({
@@ -113,8 +129,35 @@ export class Players {
     return players;
   }
 
-  get invite(): string {
-    return this.data.invite;
+  /** The invite to a table, made the first time it is asked for. `renew` replaces it. */
+  async invite(project: string, table: string, renew = false): Promise<Invite> {
+    let invite = this.data.invites.find((i) => i.project === project && i.table === table);
+    if (invite && !renew) return invite;
+    if (invite) this.data.invites.splice(this.data.invites.indexOf(invite), 1);
+    invite = { token: secret(16), project, table };
+    this.data.invites.push(invite);
+    await this.store.save(this.data);
+    return invite;
+  }
+
+  /** The invite a token belongs to, if it is still valid. */
+  byToken(token: string): Invite | undefined {
+    return token ? this.data.invites.find((i) => i.token === token) : undefined;
+  }
+
+  /** Lets a player into a table from now on, even if its invite is renewed. */
+  async grant(id: string, keys: Iterable<string>): Promise<void> {
+    const player = this.data.players.find((p) => p.id === id);
+    if (!player) return;
+    const tables = new Set([...(player.tables ?? []), ...keys]);
+    if (tables.size === (player.tables?.length ?? 0)) return;
+    player.tables = [...tables].sort();
+    await this.store.save(this.data);
+  }
+
+  /** The tables a player was invited to, as `project/table`. */
+  tablesOf(id: string): string[] {
+    return this.data.players.find((p) => p.id === id)?.tables ?? [];
   }
 
   list(): Player[] {
@@ -203,7 +246,7 @@ function slug(name: string): string {
     .replace(/-+$/, '');
 }
 
-function publicPlayer({ secretHash: _secret, ...player }: StoredPlayer): Player {
+function publicPlayer({ secretHash: _secret, tables: _tables, ...player }: StoredPlayer): Player {
   return player;
 }
 

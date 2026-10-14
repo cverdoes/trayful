@@ -365,7 +365,7 @@ const SHORTCUTS: [string, string][] = [
   ['R', 'Roll the selected dice'],
   ['+ / −', 'Change the selected counters'],
   ['L', 'Lock or unlock'],
-  ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo'],
+  ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo your own last move'],
   ['0', 'Fit the table to the window'],
   ['Esc', 'Clear the selection'],
 ];

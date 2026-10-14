@@ -52,8 +52,9 @@ test('an agent deals and plays a round while a person watches', async ({ page, b
   expect(png.length).toBeGreaterThan(10_000);
   await writeFile('test-results/agent-snapshot.png', png);
 
-  // A person can undo the agent's last move from the toolbar.
-  await page.getByRole('button', { name: 'Undo' }).click();
+  // Each player undoes only their own moves: the person has none, the agent can undo its last.
+  await expect(page.getByRole('button', { name: 'Undo' })).toBeDisabled();
+  await claude.call('undo');
   await expect
     .poll(async () => ((await table(page)).objects[hand!.id] as Stack).items.length)
     .toBe(3);

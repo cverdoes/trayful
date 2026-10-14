@@ -243,10 +243,14 @@ async function play(
   out(`Saving to ${saved.startsWith('..') ? session.file : saved}.`);
   const projects = server.workspace.projects().length;
   if (projects > 1) out(`${projects} projects in this folder; switch between them in the browser.`);
-  const links = server.inviteLinks();
-  if (links.length) {
-    out('Invite others to play with a link (anyone with it can join, so share it with care):');
-    for (const link of links) out(`  ${link}`);
+  if (server.shareBases.length) {
+    // Invites are per table; this one is for the table that opened. Invite in the
+    // browser to make links for other tables.
+    out(
+      `Invite others to ${session.tableName} with a link (anyone with it can join that table, so share it with care):`,
+    );
+    for (const link of await server.inviteLinks()) out(`  ${link}`);
+    out('Invite in the toolbar makes links for other tables.');
   }
   out('Edits to the project files show up on the table when you save. Press Ctrl+C to stop.');
 

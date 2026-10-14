@@ -1,10 +1,11 @@
 import type { FastifyRequest } from 'fastify';
-import type { Player, Players } from './players.js';
+import { tableKey, type Player, type Players } from './players.js';
 
 /** Proves which player a browser is: `<id>:<secret>`. */
 export const PLAYER_COOKIE = 'trayful_player';
-/** Set by visiting an invite link; lets a browser join as a guest. */
+/** Set by visiting invite links: their tokens, separated by dots. Lets a browser join as a guest. */
 export const INVITE_COOKIE = 'trayful_invite';
+const TOKEN_SEPARATOR = '.';
 
 const YEAR = 365 * 24 * 60 * 60;
 
@@ -15,10 +16,14 @@ const FORWARDED = ['x-forwarded-for', 'forwarded', 'cf-connecting-ip', 'x-real-i
 export interface Caller {
   /** From this computer, not through a tunnel: the host, who may do anything. */
   local: boolean;
-  /** Holds a valid invite, so may join as a guest. */
+  /** Holds at least one valid invite (or is the host), so may join as a guest. */
   invited: boolean;
   /** The player their cookie proves, if any. */
   player?: Player;
+  /** Tables a guest may see and play, as `project/table`: from their invites and earlier joins. */
+  tables: Set<string>;
+  /** Invite tokens the browser holds, still valid. */
+  tokens: string[];
 }
 
 export function caller(request: FastifyRequest, players: Players): Caller {
@@ -26,12 +31,36 @@ export function caller(request: FastifyRequest, players: Players): Caller {
   const local = isLocalRequest(request);
   const [id, secret] = splitOnce(cookies[PLAYER_COOKIE] ?? '', ':');
   const player = id ? players.authenticate(id, secret) : undefined;
-  return { local, invited: local || cookies[INVITE_COOKIE] === players.invite, player };
+  const tokens = inviteTokens(request).filter((t) => players.byToken(t));
+  const tables = new Set([
+    ...tokens.map((t) => {
+      const invite = players.byToken(t)!;
+      return tableKey(invite.project, invite.table);
+    }),
+    ...(player ? players.tablesOf(player.id) : []),
+  ]);
+  return { local, invited: local || tables.size > 0, player, tables, tokens };
 }
 
-/** Whether a caller may see and play the tables at all. */
-export function allowed(who: Caller): boolean {
-  return who.local || who.invited || who.player !== undefined;
+/** Whether a caller may see and play one table: the host any, a guest those they were invited to. */
+export function allowed(who: Caller, project: string, table: string): boolean {
+  return who.local || who.tables.has(tableKey(project, table));
+}
+
+/** Whether a caller may see anything of a project, such as its images. */
+export function allowedProject(who: Caller, project: string): boolean {
+  return who.local || [...who.tables].some((key) => key.startsWith(`${project}/`));
+}
+
+/** The invite tokens in a request's cookie. */
+export function inviteTokens(request: FastifyRequest): string[] {
+  const value = parseCookies(request.headers.cookie)[INVITE_COOKIE] ?? '';
+  return value.split(TOKEN_SEPARATOR).filter(Boolean);
+}
+
+/** The invite cookie value with one more token, keeping the ones still valid. */
+export function addToken(tokens: string[], token: string): string {
+  return [...new Set([...tokens, token])].join(TOKEN_SEPARATOR);
 }
 
 /**

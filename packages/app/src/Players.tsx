@@ -4,7 +4,6 @@ import { Group, Layer, Stage } from 'react-konva';
 import { connect, join } from './connection';
 import { Component } from './render/Component';
 import { sizeOf } from './render/geometry';
-import { tableQuery } from './route';
 import { useStore } from './store';
 
 /** Data a hand card carries while dragged onto the table. */
@@ -119,23 +118,69 @@ export function PlayerList() {
   );
 }
 
-/** The host's invite links, to send to playtesters. */
+/** Makes (or with `renew`, replaces) the invite link to one table. */
+async function fetchInvite(project: string, table: string, renew = false): Promise<string[]> {
+  const response = await fetch('/api/invites', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ project, table, renew }),
+  });
+  const body = (await response.json()) as { links?: string[]; error?: string };
+  if (!response.ok) throw new Error(body.error ?? response.statusText);
+  return body.links ?? [];
+}
+
+/**
+ * The host's invite links to one table, to send to playtesters. Starts on the table
+ * open in this window; another can be picked. A link lets people into that table only.
+ */
 export function InviteDialog() {
+  const view = useStore((s) => s.view);
+  const [tables, setTables] = useState<{ project: string; name: string; tables: string[] }[]>([]);
+  const [chosen, setChosen] = useState(view ? `${view.project}/${view.table}` : '');
   const [links, setLinks] = useState<string[]>();
   const [error, setError] = useState<string>();
   const [copied, setCopied] = useState<string>();
+  const [renewed, setRenewed] = useState(false);
   const close = () => useStore.setState({ inviteOpen: false });
+  const [project, table] = chosen.split('/') as [string, string];
+
   useEffect(() => {
-    fetch(`/api/share${tableQuery()}`)
-      .then(async (r) => {
-        const body = (await r.json()) as { links?: string[]; error?: string };
-        if (!r.ok) throw new Error(body.error ?? r.statusText);
-        setLinks(body.links ?? []);
+    fetch('/api/projects')
+      .then((r) => r.json())
+      .then((list: { id: string; name: string; tables: string[] }[]) =>
+        setTables(list.map((p) => ({ project: p.id, name: p.name, tables: p.tables }))),
+      )
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!project || !table) return;
+    setLinks(undefined);
+    setCopied(undefined);
+    setRenewed(false);
+    fetchInvite(project, table)
+      .then(setLinks)
+      .catch((err: Error) => setError(err.message));
+  }, [project, table]);
+
+  const renew = () => {
+    if (
+      !window.confirm(
+        `Make a new link to ${table}? The old link stops working. Players who already joined keep their seat.`,
+      )
+    )
+      return;
+    fetchInvite(project, table, true)
+      .then((l) => {
+        setLinks(l);
+        setCopied(undefined);
+        setRenewed(true);
       })
       .catch((err: Error) => setError(err.message));
-  }, []);
+  };
   const copy = (link: string) =>
     void navigator.clipboard?.writeText(link).then(() => setCopied(link));
+
   return (
     <div className="overlay" onClick={close}>
       <div
@@ -145,6 +190,24 @@ export function InviteDialog() {
         onClick={(e) => e.stopPropagation()}
       >
         <h2>Invite players</h2>
+        <label className="row">
+          <span>Table</span>
+          <select
+            aria-label="Table to invite to"
+            value={chosen}
+            onChange={(e) => setChosen(e.target.value)}
+          >
+            {(tables.length ? tables : [{ project, name: project, tables: [table] }]).map((p) => (
+              <optgroup key={p.project} label={p.name}>
+                {p.tables.map((t) => (
+                  <option key={t} value={`${p.project}/${t}`}>
+                    {t}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
         {error && <p className="error">{error}</p>}
         {links?.length === 0 && (
           <p>
@@ -156,8 +219,9 @@ export function InviteDialog() {
         {links && links.length > 0 && (
           <>
             <p>
-              Send one of these links. Anyone who has it can join this table, so share it only with
-              your playtesters.
+              Send one of these links. Anyone who has it can join <strong>{table}</strong>, and only
+              that table, so share it only with your playtesters.
+              {renewed && ' This is a new link; the old one no longer works.'}
             </p>
             <ul className="links">
               {links.map((link) => (
@@ -171,9 +235,16 @@ export function InviteDialog() {
             </ul>
           </>
         )}
-        <button type="button" onClick={close}>
-          Close
-        </button>
+        <div className="row">
+          {links && links.length > 0 && (
+            <button type="button" onClick={renew} title="Stop the current link working">
+              New link
+            </button>
+          )}
+          <button type="button" onClick={close}>
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -16,16 +16,16 @@ pnpm trayful validate examples/harvest-moon --json   # for tools and agents
 
 `play [project-dir]` loads the project (default: the current folder), or every project in a folder of projects, starts the local server at http://127.0.0.1:4317 and opens your browser. Project files are watched, so saved changes show up on the table at once. It needs the browser app built once with `pnpm build`. Options:
 
-| Option           | What it does                                                                                   |
-| ---------------- | ---------------------------------------------------------------------------------------------- |
-| `--project <id>` | In a folder of projects, the one to open first (default: the first that loads)                 |
-| `--table <name>` | Open or create `tables/<name>.json` (default `table-1`)                                        |
-| `--seed <n>`     | Shuffle seed for a new table                                                                   |
-| `--setup <name>` | Setup for a new table (default: the manifest's `setup`; `none` lays everything out in rows)    |
-| `--port <n>`     | Port for the server (default 4317)                                                             |
-| `--no-open`      | Do not open a browser window                                                                   |
-| `--share`        | Listen on every network interface and print invite links for others on your network            |
-| `--tunnel`       | Open a Cloudflare quick tunnel with `cloudflared` and print an invite link that works anywhere |
+| Option           | What it does                                                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `--project <id>` | In a folder of projects, the one to open first (default: the first that loads)                                     |
+| `--table <name>` | Open or create `tables/<name>.json` (default `table-1`)                                                            |
+| `--seed <n>`     | Shuffle seed for a new table                                                                                       |
+| `--setup <name>` | Setup for a new table (default: the manifest's `setup`; `none` lays everything out in rows)                        |
+| `--port <n>`     | Port for the server (default 4317)                                                                                 |
+| `--no-open`      | Do not open a browser window                                                                                       |
+| `--share`        | Listen on every network interface and print invite links to the opened table for others on your network            |
+| `--tunnel`       | Open a Cloudflare quick tunnel with `cloudflared` and print an invite link to the opened table that works anywhere |
 
 `--tunnel` runs `cloudflared tunnel --url http://127.0.0.1:<port>` (from `tunnel.ts`) and reads the `https://….trycloudflare.com` address from its output; set `TRAYFUL_CLOUDFLARED` to run another program instead, as the tests do. Without `cloudflared` installed it says where to get it.
 

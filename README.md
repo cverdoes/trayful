@@ -2,7 +2,7 @@
 
 Trayful is a boardgame prototyping table. You describe your components (cards, boards, tokens, meeples, dice, counters) in plain YAML files, and Trayful lays them out on a table where people and AI agents can drag, flip, rotate, stack and shuffle them.
 
-> **Status: Milestones 1 to 5.** You can start a prototype from a template, play it on a table in your browser with pieces that snap onto boards and a setup that lays out the game, and see every file you save show up on the table at once. Playtesters can join from their own computers through an invite link, each with a private hand. An AI agent such as Claude can play on the same table over MCP, and design components with you. You can print everything at real size to play on paper. See the [roadmap](#roadmap).
+> **Status: Milestones 1 to 6.** You can start a prototype from a template, play it on a table in your browser with pieces that snap onto boards and a setup that lays out the game, and see every file you save show up on the table at once. Playtesters can join a table from their own computers through an invite link to that table, each with a private hand and their own undo. An AI agent such as Claude can play on the same table over MCP, and design components with you. You can print everything at real size to play on paper. See the [roadmap](#roadmap).
 
 ## Quick start
 
@@ -45,7 +45,7 @@ A new table starts from the setup named in `trayful.yaml` (Harvest Moon's puts t
 
 ## Play with others
 
-Start the table with `--share` (same network) or `--tunnel` (anywhere; needs [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/), no account), and Trayful prints an invite link to send your playtesters. They open it, pick a name, and play on the same table; **Invite** in the toolbar shows the link again.
+Start the table with `--share` (same network) or `--tunnel` (anywhere; needs [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/), no account), and Trayful prints an invite link to send your playtesters. They open it, pick a name, and play on that table, and no other; **Invite** in the toolbar makes links to any of your tables. Everyone undoes only their own moves.
 
 ```sh
 pnpm trayful play examples/harvest-moon --share
@@ -55,7 +55,7 @@ Everyone has a private **hand** along the bottom of the screen: drag cards onto 
 
 ## Let an agent play
 
-Trayful is an [MCP](https://modelcontextprotocol.io) server, so agents such as Claude Code or Claude Desktop can read the table and play on it. Their moves show up live in your browser, with a note saying what they did, and share the undo history with you.
+Trayful is an [MCP](https://modelcontextprotocol.io) server, so agents such as Claude Code or Claude Desktop can read the table and play on it. Their moves show up live in your browser, with a note saying what they did. They undo only their own moves, and you only yours.
 
 The simplest way: start the table, then point the agent at it over HTTP.
 
@@ -89,7 +89,7 @@ In Claude Desktop the same goes in `claude_desktop_config.json`:
 | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | `describe_table`, `query_objects`, `snapshot`                                                                 | Read the table as text or JSON, or as a PNG image |
 | `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `set_counter`, `lock` | Play, the same moves people make                  |
-| `undo`, `redo`, `get_history`, `reset_table`                                                                  | Shared history, and a fresh table                 |
+| `undo`, `redo`, `get_history`, `reset_table`                                                                  | Its own undo, the history, and a fresh table      |
 
 Agents can aim moves at board spots by name, such as `main-board/fields/3`, or deal into a whole target such as `main-board/market`; `describe_table` lists every snap target and which spots are free. Face-down cards stay hidden from the agent unless it asks with `reveal: true`. The agent plays as **Claude**, with its own hand (`hand:claude`); it can deal into anyone's hand with `hand:<player>`, but never sees other players' hands. MCP is only offered on your own computer, never to guests. `snapshot` needs the table open in a browser, since the browser draws the picture. Resources give the full table state, the project, each component type, the file format schemas and these docs (`trayful://docs`).
 
@@ -168,11 +168,12 @@ When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generat
 
 ## Roadmap
 
-| Milestone                  | Scope                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 0. Foundations             | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
-| 1. First playable table    | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
-| 2. Components and snapping | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
-| 3. MCP                     | Agents read and play tables over the Model Context Protocol                                                   |
-| 4. Projects and authoring  | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
-| **5. Multiplayer** (this)  | Players, invite links over the network or a tunnel, private hands, per-player hidden views                    |
+| Milestone                      | Scope                                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| 0. Foundations                 | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
+| 1. First playable table        | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
+| 2. Components and snapping     | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
+| 3. MCP                         | Agents read and play tables over the Model Context Protocol                                                   |
+| 4. Projects and authoring      | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
+| 5. Multiplayer                 | Players, invite links over the network or a tunnel, private hands, per-player hidden views                    |
+| **6. Invites and undo** (this) | Invite links to one table, made from the toolbar; each player undoes only their own moves                     |

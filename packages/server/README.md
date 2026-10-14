@@ -12,7 +12,7 @@ const server = await startServer({
   port: 4317,
   host: '0.0.0.0', // optional: let others on the network join
 });
-console.log(server.url, server.inviteLinks());
+console.log(server.url, await server.inviteLinks()); // invite links to the active table
 await server.close(); // saves every open table first
 ```
 
@@ -29,12 +29,12 @@ await server.close(); // saves every open table first
 
 ## Players and access
 
-`players.ts` keeps the players of a workspace (`Players`): the host, guests and the agent player `claude`. They are stored through a `PlayerStore`; `FilePlayerStore` writes `.trayful/players.json` in the served folder, and a hosted service could keep them elsewhere behind the same interface. Each guest proves who they are with a secret in an HttpOnly cookie; only its SHA-256 fingerprint is stored. The invite secret in the same file is what invite links carry.
+`players.ts` keeps the players of a workspace (`Players`): the host, guests and the agent player `claude`. They are stored through a `PlayerStore`; `FilePlayerStore` writes `.trayful/players.json` in the served folder, and a hosted service could keep them elsewhere behind the same interface. Each guest proves who they are with a secret in an HttpOnly cookie; only its SHA-256 fingerprint is stored. The same file keeps one invite per table (`invite(project, table)`, made on first use; `renew` replaces its token), and the tables each guest was invited to (`grant`), so a guest keeps their tables when an invite is renewed.
 
 `access.ts` decides who a request is from:
 
 - A request from this computer (a loopback address, a loopback `Host`, and no proxy headers such as `x-forwarded-for`) is the host, even without a cookie. Tunnels add proxy headers, so requests through them never count as local, and the `Host` check stops DNS rebinding.
-- Anyone else needs the invite cookie (set by `/join/<invite>`) or a player cookie (set by `POST /api/join`). Without one, every table route and the socket answer 403.
+- Anyone else may reach only the tables they were invited to: by an invite in their invite cookie (set by `/join/<invite>`), or granted to their player when they joined. Other tables, their routes and their socket answer 403, and `/api/projects` lists only their tables (`allowed` and `allowedProject`).
 - Requests that change something must come from a Trayful page: a local origin, or for guests the address they reached the server at.
 
 `TableSession` sends every watcher their own view of the table (`viewFor` in core): other hands left out, face-down pieces under stand-in ids. Commands from a player go through `act`, which swaps stand-in ids back, refuses pieces in other players' hands, and labels the change with the player's name for the others. Watchers who have not joined yet may look but not play.
@@ -52,8 +52,8 @@ await server.close(); // saves every open table first
 | `POST /api/tables`, `DELETE /api/tables` | Create, duplicate (`from`) or delete a table (host only)                                                                      |
 | `/api/me`, `POST /api/me`                | Who this browser plays as, and whether it is the host; rename                                                                 |
 | `POST /api/join`                         | Join under a name, with an invite; sets the player cookie                                                                     |
-| `/join/<invite>`                         | An invite link: sets the invite cookie and opens the table                                                                    |
-| `/api/share`                             | Invite links for this table (host only)                                                                                       |
+| `/join/<invite>`                         | An invite link: adds the invite to the invite cookie and opens its table                                                      |
+| `POST /api/invites`                      | Invite links to one table (`project`, `table`), or new ones with `renew` (host only)                                          |
 | `/mcp`                                   | MCP over Streamable HTTP (POST), for agents on this computer only                                                             |
 | `/api/health`                            | `{ ok, project, table }` for the active table, plus `projectDir` and `root` for the host                                      |
 | `/project-files/<project>/<path>`        | Images from a project folder (other file types are refused)                                                                   |
@@ -74,6 +74,6 @@ The server binds to `127.0.0.1` unless told otherwise (`trayful play --share` bi
 
 Resources: `trayful://projects`, each table's state and PNG snapshot, each project's manifest and component types, the JSON Schemas (`trayful://schema`), and the [docs](../../docs) (`trayful://docs` and `trayful://docs/<path>`, from `docs.ts`).
 
-Agents play as player `claude`: `describe_table` and `query_objects` (`inside: "hand:claude"`) show their own hand and only counts of other hands, moves to `hand:<player>` deal into hands, and `get_history` names pieces in other hands only as hidden. Tools send the same commands as the browser, through the same session, so people see agent moves live and share one undo history. Each tool call changes all or nothing. `/mcp` serves it over HTTP; `trayful mcp` in the CLI serves it over stdio. Pictures (`snapshot`, `render_component`) are drawn by a browser that has the table open: the server asks over the WebSocket and the browser answers with a PNG.
+Agents play as player `claude`: `describe_table` and `query_objects` (`inside: "hand:claude"`) show their own hand and only counts of other hands, moves to `hand:<player>` deal into hands, and `get_history` names pieces in other hands only as hidden. Tools send the same commands as the browser, through the same session, so people see agent moves live. `undo` and `redo` take back only the agent's own moves, just as each person undoes only theirs. Each tool call changes all or nothing. `/mcp` serves it over HTTP; `trayful mcp` in the CLI serves it over stdio. Pictures (`snapshot`, `render_component`) are drawn by a browser that has the table open: the server asks over the WebSocket and the browser answers with a PNG.
 
 Test with `pnpm vitest run packages/server` from the repo root.

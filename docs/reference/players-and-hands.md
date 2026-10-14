@@ -7,12 +7,12 @@ Everyone at a Trayful table is a **player**: the host who runs `trayful play`, g
 | Player | How they get in | May |
 | ------ | --------------- | --- |
 | Host | Opens the table on the computer running Trayful; no sign-in | Everything: play, manage tables, print, invite |
-| Guest | Opens an invite link, then picks a name | Play on every table of the workspace, and start a table over |
+| Guest | Opens an invite link to a table, then picks a name | Play on the tables they were invited to, and start them over |
 | Agent | Connects to `/mcp` on the host's computer | Play and author, as player `claude` |
 
 A player id is made from the name: lowercase letters, digits and dashes, such as `bob` or `asa-oberg` (a second "Bob" becomes `bob-2`). A browser remembers its player in a cookie, so a guest who comes back with the same browser is the same player.
 
-Players and the invite are kept in `.trayful/players.json` in the folder Trayful serves. It holds no passwords, only fingerprints of the browser cookies; the starter's `.gitignore` leaves the folder out of version control. Deleting the file makes a new invite, so old links stop working, and forgets every guest.
+Players, the tables each guest was invited to, and the invites are kept in `.trayful/players.json` in the folder Trayful serves. It holds no passwords, only fingerprints of the browser cookies; the starter's `.gitignore` leaves the folder out of version control. Deleting the file stops every invite link working and forgets every guest.
 
 ## Hands
 
@@ -41,10 +41,12 @@ Every player gets their own view of the table from the server:
 
 Agents see the table as player `claude`: their own hand in full, and face-down cards when they ask with `reveal: true`, but never other players' hands. `get_history` names pieces in other hands only as `a hidden piece`.
 
-Undo is shared: anyone can undo the last change, whoever made it.
+## Undo
+
+Each player undoes and redoes only their own changes: **Undo** takes back your last move, even if others have moved since, and leaves theirs alone. If someone has since moved the same pieces (drawn from the pile you shuffled, say), your move can no longer be undone and the table says so. Agents undo their own moves too, as `claude`. Changes no one made, such as reloading the project files, cannot be undone from a browser.
 
 ## Invites and access
 
-Without `--share` or `--tunnel`, only the host's computer can reach the table. With them, the server answers others too, but only browsers that opened the invite link (or have joined before) can see or play the tables. Only the host can create, duplicate or delete tables, print, see invite links, and use MCP. Changes are only accepted from Trayful's own pages, so other websites open in a browser cannot drive the table.
+Without `--share` or `--tunnel`, only the host's computer can reach the table. With them, the server answers others too, but only for the tables a browser was invited to. Each invite link is for **one table**: a guest sees and plays that table and no other, and the table menu lists only the tables they were invited to. Only the host can create, duplicate or delete tables, print, make invite links, and use MCP. Changes are only accepted from Trayful's own pages, so other websites open in a browser cannot drive the table.
 
-The invite link looks like `http://192.168.1.20:4317/join/<invite>`. Anyone who has it can join, so share it only with your playtesters. See [Play with others](../howto/play-with-others.md) for how to start a shared table.
+The invite link looks like `http://192.168.1.20:4317/join/<invite>`. Anyone who has it can join that table, so share it only with your playtesters. **New link** in the invite dialog replaces a table's link, so the old one stops working; guests who already joined keep their place at the table. See [Play with others](../howto/play-with-others.md) for how to start a shared table.
