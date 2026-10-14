@@ -184,6 +184,42 @@ describe('TableEngine', () => {
     expect(e.history.map((c) => c.type)).toEqual(['move', 'flip']);
   });
 
+  it('lets each player undo and redo only their own changes', () => {
+    const e = engine();
+    e.dispatch({ type: 'move', ids: ['worker.red.1'], by: [5, 0] }, 'alice');
+    e.dispatch({ type: 'move', ids: ['worker.red.2'], by: [0, 5] }, 'bob');
+    const red = piece(e.state, 'worker.red.1').pos;
+    const blue = piece(e.state, 'worker.red.2').pos;
+
+    // Alice undoes her move although Bob moved after her; Bob's move stays.
+    expect(e.canUndoFor('alice')).toBe(true);
+    expect(e.undo('alice')).toBe(true);
+    expect(piece(e.state, 'worker.red.1').pos).toEqual([red[0] - 5, red[1]]);
+    expect(piece(e.state, 'worker.red.2').pos).toEqual(blue);
+    expect(e.undo('alice')).toBe(false);
+    expect(e.canRedoFor('alice')).toBe(true);
+    expect(e.canRedoFor('bob')).toBe(false);
+    expect(e.history.map((c) => c.type)).toEqual(['move']);
+
+    expect(e.redo('alice')).toBe(true);
+    expect(piece(e.state, 'worker.red.1').pos).toEqual(red);
+    expect(e.undo('bob')).toBe(true);
+    expect(piece(e.state, 'worker.red.2').pos).toEqual([blue[0], blue[1] - 5]);
+  });
+
+  it('refuses to undo a change someone else has built on', () => {
+    const e = engine();
+    e.dispatch({ type: 'move', ids: ['worker.red.1'], by: [5, 0] }, 'alice');
+    e.dispatch({ type: 'move', ids: ['worker.red.1'], by: [0, 5] }, 'bob');
+    expect(e.canUndoFor('alice')).toBe(false);
+    expect(() => e.undo('alice')).toThrow(/Someone has changed those pieces/);
+    // Once Bob takes his move back, Alice can undo hers.
+    e.undo('bob');
+    expect(e.undo('alice')).toBe(true);
+    expect(e.canRedoFor('bob')).toBe(false);
+    expect(() => e.redo('bob')).toThrow(/cannot be redone/);
+  });
+
   it('leaves state unchanged when a command fails', () => {
     const e = engine();
     const s0 = e.state;

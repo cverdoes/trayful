@@ -92,7 +92,7 @@ describe('MCP tools', () => {
     );
   });
 
-  it('deals a round, shows it to watchers and shares undo with the browser', async () => {
+  it('deals a round, shows it to watchers, and undoes only its own changes', async () => {
     const seen: ServerMessage[] = [];
     session.subscribe((m) => seen.push(m));
     await call(client, 'shuffle', { id: DECK });
@@ -116,8 +116,11 @@ describe('MCP tools', () => {
       activity: { by: 'agent', text: 'dealt 4 cards' },
     });
 
-    // A person undoes the deal from the browser; the agent sees the deck whole again.
-    session.handle({ type: 'undo' });
+    // A person cannot undo the agent's deal; the agent can.
+    const dealt = session.engine.state;
+    session.handle({ type: 'undo' }, 'root');
+    expect(session.engine.state).toBe(dealt);
+    expect((await call(client, 'undo')).isError).toBeFalsy();
     expect((session.engine.state.objects[DECK] as Stack).items).toHaveLength(5);
     expect((await call(client, 'get_history')).text).toContain('shuffle');
   });

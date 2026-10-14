@@ -64,7 +64,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
         'Face-down cards are hidden: their fields and the order of piles only show with reveal: true, which is like peeking, so only use it when the game allows.',
         `You play as the player "${AGENT_PLAYER}". Each player has a private hand that only they see: \`hand:${AGENT_PLAYER}\` is yours, \`hand:<player>\` gives a piece to someone else. Move a piece from your hand to a position or spot to play it (face up unless you say \`face: "down"\`). Other players' hands are never shown to you, not even with reveal.`,
         'To design components, read trayful://docs (HOWTO guides and the format reference), then use upsert_type, set_inventory and add_asset; render_component shows a type as people will see it. Edits are checked and undone if they would break the project.',
-        'Every change goes into the same undo history as the people at the table. Trayful does not know the rules; you bring them.',
+        'Every change goes into the same history as the people at the table, but each player undoes only their own changes, you included. Trayful does not know the rules; you bring them.',
       ].join('\n'),
     },
   );
@@ -87,7 +87,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
       return failure(err);
     }
     session().asAgent(activity, () => {
-      for (const command of commands) engine().dispatch(command);
+      for (const command of commands) engine().dispatch(command, AGENT_PLAYER);
     });
     return text(changes(before, engine().state));
   };
@@ -390,23 +390,32 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
     'undo',
     {
       title: 'Undo',
-      description: 'Undo the last change, whoever made it.',
+      description:
+        "Undo your own last change. People's changes are theirs to undo; yours cannot be undone once someone has changed the same pieces.",
     },
     () => {
       const before = engine().state;
-      if (!session().asAgent('undid the last change', () => engine().undo()))
-        return text('Nothing to undo.');
+      try {
+        if (!session().asAgent('undid its last change', () => engine().undo(AGENT_PLAYER)))
+          return text('Nothing of yours to undo.');
+      } catch (err) {
+        return failure(err);
+      }
       return text(changes(before, engine().state));
     },
   );
 
   server.registerTool(
     'redo',
-    { title: 'Redo', description: 'Redo the last undone change.' },
+    { title: 'Redo', description: 'Redo the last change of yours you undid.' },
     () => {
       const before = engine().state;
-      if (!session().asAgent('redid a change', () => engine().redo()))
-        return text('Nothing to redo.');
+      try {
+        if (!session().asAgent('redid its change', () => engine().redo(AGENT_PLAYER)))
+          return text('Nothing of yours to redo.');
+      } catch (err) {
+        return failure(err);
+      }
       return text(changes(before, engine().state));
     },
   );
@@ -430,7 +439,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
     },
     ({ seed, setup }) => {
       try {
-        session().asAgent('started a new table', () => session().reset(seed, setup));
+        session().asAgent('started a new table', () => session().reset(seed, setup, AGENT_PLAYER));
       } catch (err) {
         return failure(err);
       }

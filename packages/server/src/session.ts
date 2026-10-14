@@ -203,8 +203,9 @@ export class TableSession {
       type: 'state',
       state: this.viewFor(viewer),
       revision: this.revision,
-      canUndo: this.engine.canUndo,
-      canRedo: this.engine.canRedo,
+      // Each player undoes only their own changes.
+      canUndo: this.engine.canUndoFor(viewer),
+      canRedo: this.engine.canRedoFor(viewer),
       ...(this.activity ? { activity: this.activity } : {}),
     };
   }
@@ -246,7 +247,7 @@ export class TableSession {
     this.checkReach(real, player);
     const name = (id: string) =>
       id === player ? 'their' : `${this.players?.get(id)?.name ?? id}'s`;
-    this.as(player, summarize(real, name), () => this.engine.dispatch(real));
+    this.as(player, summarize(real, name), () => this.engine.dispatch(real, player));
   }
 
   /** Throws when a command names a piece out of the player's reach, or an unknown player. */
@@ -367,13 +368,15 @@ export class TableSession {
           this.act(player, message.command);
           return undefined;
         case 'undo':
-          this.as(player, 'undid the last change', () => this.engine.undo());
+          this.as(player, 'undid their last change', () => this.engine.undo(player));
           return undefined;
         case 'redo':
-          this.as(player, 'redid a change', () => this.engine.redo());
+          this.as(player, 'redid their change', () => this.engine.redo(player));
           return undefined;
         case 'reset':
-          this.as(player, 'started a new table', () => this.reset(message.seed, message.setup));
+          this.as(player, 'started a new table', () =>
+            this.reset(message.seed, message.setup, player),
+          );
           return undefined;
         case 'snapshot':
           this.answerSnapshot(message.id, message.png, message.error);
@@ -402,8 +405,8 @@ export class TableSession {
    * Replaces the table with a fresh one from the project files, as one undoable step.
    * Uses the project's default setup unless another (or `false`, for none) is given.
    */
-  reset(seed?: number, setup?: string | false): void {
-    this.engine.replace(createTable(this.project, { name: this.tableName, seed, setup }));
+  reset(seed?: number, setup?: string | false, player?: string): void {
+    this.engine.replace(createTable(this.project, { name: this.tableName, seed, setup }), player);
   }
 
   /**
