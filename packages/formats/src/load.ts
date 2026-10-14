@@ -646,6 +646,7 @@ function rowKey(data: Record<string, Scalar>, index: number): string {
   return typeof text === 'string' ? slugify(text) : String(index + 1);
 }
 
+/** Runs of other characters become one dash, so trimming one dash at each end is enough. */
 export function slugify(text: string): string {
   return text
     .normalize('NFKD')

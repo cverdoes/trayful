@@ -21,7 +21,8 @@ export interface PieceSummary {
   id: string;
   type: string;
   base: string;
-  face?: 'up' | 'down';
+  /** Every piece lies face up or face down, so this is always set. */
+  face: 'up' | 'down';
   /** The component's fields; left out while it lies face down, unless revealed. */
   data?: Record<string, unknown>;
   value?: number | string;
@@ -281,7 +282,7 @@ function typeName(p: PieceSummary, catalog: Catalog): string {
 function pieceText(p: PieceSummary, catalog: Catalog): string {
   const parts = [typeName(p, catalog)];
   if (p.face === 'down') parts.push('face down');
-  else if (p.face === 'up' && p.data) parts.push('face up');
+  else if (p.data) parts.push('face up');
   if (p.value !== undefined) parts.push(`value ${p.value}`);
   return parts.join(', ') + dataText(p.data);
 }
