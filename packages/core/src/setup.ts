@@ -10,7 +10,15 @@ import { applyCommand, CommandError, type Command } from './commands.js';
 import { objectSize } from './layout.js';
 import { seedState } from './rng.js';
 import { resolveSpots, SnapError } from './snap.js';
-import { onTable, sizeOf, type Piece, type TableObject, type TableState } from './state.js';
+import {
+  onTable,
+  removeObject,
+  sizeOf,
+  withChanges,
+  type Piece,
+  type TableObject,
+  type TableState,
+} from './state.js';
 
 export interface CreateTableOptions {
   name: string;
@@ -137,10 +145,7 @@ export function applySetup(
     state = applyCommand(state, command, catalog);
   };
   const edit = (id: string, changes: Partial<TableObject>) => {
-    const next = { ...state.objects[id]!, ...changes } as TableObject;
-    for (const [k, v] of Object.entries(changes)) {
-      if (v === undefined) delete (next as unknown as Record<string, unknown>)[k];
-    }
+    const next = withChanges(state.objects[id]!, changes);
     state = { ...state, objects: { ...state.objects, [id]: next } };
   };
   const topLevel = () =>
@@ -302,13 +307,13 @@ export function syncTable(state: TableState, project: ResolvedProject): TableSta
   // Pieces whose component is gone leave the table, and their stacks.
   for (const object of Object.values(objects)) {
     if (object.kind !== 'piece' || specs.has(object.id)) continue;
-    delete objects[object.id];
+    removeObject(objects, object.id);
     changed = true;
     if (object.parent) {
       const stack = objects[object.parent];
       if (stack?.kind === 'stack') {
         const items = stack.items.filter((id) => id !== object.id);
-        if (items.length === 0) delete objects[stack.id];
+        if (items.length === 0) removeObject(objects, stack.id);
         else objects[stack.id] = { ...stack, items };
       }
     }

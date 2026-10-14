@@ -1,5 +1,5 @@
 import { applyCommand, CommandError, type Command } from './commands.js';
-import type { Catalog, TableObject, TableState } from './state.js';
+import { removeObject, type Catalog, type TableObject, type TableState } from './state.js';
 
 /** A history step: a command, or a whole-table replacement such as a reset. */
 export type HistoryStep = Command | { type: 'replace' };
@@ -169,7 +169,7 @@ export class TableEngine {
     const target = entry[to].objects;
     for (const id of changedIds(entry)) {
       if (target[id]) objects[id] = target[id];
-      else delete objects[id];
+      else removeObject(objects, id);
     }
     return { ...this.current, objects };
   }

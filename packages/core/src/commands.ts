@@ -15,12 +15,14 @@ import {
 import {
   handTarget,
   onTable,
+  removeObject,
   sizeOf,
   type Catalog,
   type Piece,
   type Stack,
   type TableObject,
   type TableState,
+  withChanges,
 } from './state.js';
 
 /**
@@ -206,10 +208,7 @@ class Transaction {
   }
 
   update<T extends TableObject>(object: T, changes: Partial<T>): T {
-    const next = { ...object, ...changes };
-    for (const [k, v] of Object.entries(changes)) {
-      if (v === undefined) delete (next as Record<string, unknown>)[k];
-    }
+    const next = withChanges(object, changes);
     this.objects[object.id] = next;
     return next;
   }
@@ -237,7 +236,7 @@ class Transaction {
       const pieces = given.flatMap((o) => {
         if (o.kind === 'piece') return [o];
         const items = o.items.map((i) => this.get(i) as Piece);
-        delete this.objects[o.id];
+        removeObject(this.objects, o.id);
         return items.reverse();
       });
       this.toHand(pieces, player);
@@ -493,7 +492,7 @@ class Transaction {
         for (const pieceId of source.items)
           this.update(this.get(pieceId) as Piece, { parent: target.id });
         items.push(...source.items);
-        delete this.objects[source.id];
+        removeObject(this.objects, source.id);
       } else {
         this.update(source, { parent: target.id, snap: undefined, hand: undefined });
         items.push(source.id);
@@ -606,7 +605,7 @@ class Transaction {
       this.update(stack, { items });
       return;
     }
-    delete this.objects[stack.id];
+    removeObject(this.objects, stack.id);
     const last = items[0];
     if (last) {
       this.update(this.get(last) as Piece, {

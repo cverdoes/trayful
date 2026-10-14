@@ -42,16 +42,6 @@ export default tseslint.config(
     },
   },
   {
-    // Table objects live in a plain record keyed by id because the table is saved and sent
-    // as JSON; deleting by id is how an object leaves the table.
-    files: [
-      'packages/core/src/commands.ts',
-      'packages/core/src/engine.ts',
-      'packages/core/src/setup.ts',
-    ],
-    rules: { '@typescript-eslint/no-dynamic-delete': 'off' },
-  },
-  {
     files: ['**/*.test.ts', 'e2e/**'],
     rules: {
       'max-lines': 'off',
