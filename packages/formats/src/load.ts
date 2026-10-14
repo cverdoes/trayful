@@ -283,12 +283,12 @@ class ProjectLoader {
   private async loadEntry(
     entry: InventoryEntry,
     source: SourceFile,
-    at: (string | number)[],
+    entryPath: (string | number)[],
     usedIds: Set<string>,
   ): Promise<void> {
-    const type = this.entryType(entry, source, at);
+    const type = this.entryType(entry, source, entryPath);
     if (!type) return;
-    const rows = await this.entryRows(entry, source, at);
+    const rows = await this.entryRows(entry, source, entryPath);
     for (const [r, row] of rows.entries()) {
       const resolved = resolveRow(type, entry, row, r);
       if (!resolved) {
@@ -302,14 +302,14 @@ class ProjectLoader {
     }
   }
 
-  /** The entry's type, if it is known and the entry's keys suit it. */
+  /** The entry's type, unless it is unknown or the entry mixes `items`, `from` and `each`. */
   private entryType(
     entry: InventoryEntry,
     source: SourceFile,
-    at: (string | number)[],
+    entryPath: (string | number)[],
   ): ResolvedType | undefined {
     const report = (key: string, message: string) =>
-      this.diagnostics.push(source.diagnostic([...at, key], message));
+      this.diagnostics.push(source.diagnostic([...entryPath, key], message));
     const type = this.types[entry.type];
     if (!type) {
       // Its deck is incomplete, so setups that use it are not reported again.
@@ -323,6 +323,8 @@ class ProjectLoader {
       report(modes[1]!, `Use only one of "items", "from" or "each" in an entry.`);
       return undefined;
     }
+    // A deck that cannot stack is reported, but the rows are still checked, so their
+    // problems show up in the same run.
     if (entry.deck && !PRIMITIVE_INFO[type.base].stackable) {
       report('deck', `A ${type.base} cannot be stacked into a deck.`);
     }
@@ -333,10 +335,10 @@ class ProjectLoader {
   private async entryRows(
     entry: InventoryEntry,
     source: SourceFile,
-    at: (string | number)[],
+    entryPath: (string | number)[],
   ): Promise<Row[]> {
     const report = (p: (string | number)[], message: string) =>
-      this.diagnostics.push(source.diagnostic([...at, ...p], message));
+      this.diagnostics.push(source.diagnostic([...entryPath, ...p], message));
     const under = (p: (string | number)[], field: string | undefined) =>
       field ? [...p, field] : p;
     if (entry.items) {
@@ -349,7 +351,7 @@ class ProjectLoader {
     }
     if (entry.from) {
       const file = entry.from;
-      const csvRows = await this.readCsv(file, source, [...at, 'from']);
+      const csvRows = await this.readCsv(file, source, [...entryPath, 'from']);
       return csvRows.map(({ values, line }) => ({
         values,
         fromText: true,
