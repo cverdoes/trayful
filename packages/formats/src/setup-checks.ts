@@ -3,17 +3,14 @@ import type { ComponentSpec, ResolvedType } from './resolved.js';
 import type { SetupStep, SnapTarget } from './schemas.js';
 import type { Problem } from './diagnostics.js';
 
-/**
- * What setups may refer to, as loaded from the libraries and the inventory. The checks
- * only read it.
- */
+/** What setups may refer to, as loaded from the libraries and the inventory. Read only. */
 export interface Known {
-  types: Record<string, ResolvedType>;
-  components: ComponentSpec[];
-  decks: Record<string, string[]>;
+  readonly types: Readonly<Record<string, ResolvedType>>;
+  readonly components: readonly ComponentSpec[];
+  readonly decks: Readonly<Record<string, readonly string[]>>;
   /** Types and decks that failed validation. References to them are not reported again. */
-  brokenTypes: Set<string>;
-  brokenDecks: Set<string>;
+  readonly brokenTypes: ReadonlySet<string>;
+  readonly brokenDecks: ReadonlySet<string>;
 }
 
 /** Problems with one setup step, at paths inside the step. */
