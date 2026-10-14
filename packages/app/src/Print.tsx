@@ -34,7 +34,7 @@ interface Placed {
  * Lays components out on pages, left to right and top to bottom, keeping each
  * type together. Anything larger than a page is shrunk to fit its own page.
  */
-export function paginate(specs: Spec[], types: Record<string, ComponentType>): Placed[][] {
+function paginate(specs: Spec[], types: Record<string, ComponentType>): Placed[][] {
   const pages: Placed[][] = [];
   const [areaW, areaH] = [PAGE[0] - 2 * MARGIN, PAGE[1] - 2 * MARGIN];
   let page: Placed[] = [];

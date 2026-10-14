@@ -388,12 +388,12 @@ class ProjectLoader {
       }
 
       // Collect raw rows, each with a way to report problems against its source.
-      type Row = {
+      interface Row {
         values: Record<string, Scalar>;
         fromText: boolean;
         report: (field: string | undefined, message: string) => void;
         key: string | undefined;
-      };
+      }
       const rows: Row[] = [];
       if (entry.items) {
         for (const [r, item] of entry.items.entries()) {

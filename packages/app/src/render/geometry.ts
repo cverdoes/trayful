@@ -50,7 +50,7 @@ export function baseOf(table: TableState, types: Types, object: TableObject) {
   return piece ? types[piece.type]?.base : undefined;
 }
 
-export function isStackable(table: TableState, types: Types, object: TableObject): boolean {
+function isStackable(table: TableState, types: Types, object: TableObject): boolean {
   const base = baseOf(table, types, object);
   return base !== undefined && PRIMITIVE_INFO[base].stackable;
 }

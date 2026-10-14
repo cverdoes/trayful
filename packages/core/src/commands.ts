@@ -206,7 +206,7 @@ class Transaction {
   }
 
   update<T extends TableObject>(object: T, changes: Partial<T>): T {
-    const next = { ...object, ...changes } as T;
+    const next = { ...object, ...changes };
     for (const [k, v] of Object.entries(changes)) {
       if (v === undefined) delete (next as Record<string, unknown>)[k];
     }
@@ -349,7 +349,7 @@ class Transaction {
       z: z++,
       snap,
       hand: undefined,
-    } as Partial<TableObject>);
+    });
     for (const rider of riders) {
       const local = toLocal(object, [0, 0], rider.pos);
       this.update(rider, {

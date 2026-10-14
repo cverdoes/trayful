@@ -32,10 +32,7 @@ export function previewPiece(
 }
 
 /** Which sides of a type to show: both for two-sided types unless one is asked for. */
-export function sides(
-  type: ComponentType,
-  face: 'up' | 'down' | 'both' = 'both',
-): ('up' | 'down')[] {
+function sides(type: ComponentType, face: 'up' | 'down' | 'both' = 'both'): ('up' | 'down')[] {
   if (face !== 'both') return [face];
   return PRIMITIVE_INFO[type.base].sides === 2 ? ['up', 'down'] : ['up'];
 }

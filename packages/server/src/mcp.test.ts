@@ -22,7 +22,10 @@ async function scratchProject(): Promise<string> {
   return dir;
 }
 
-type ToolResult = { content: { type: string; text?: string; data?: string }[]; isError?: boolean };
+interface ToolResult {
+  content: { type: string; text?: string; data?: string }[];
+  isError?: boolean;
+}
 
 async function call(client: Client, name: string, args: Record<string, unknown> = {}) {
   const result = (await client.callTool({ name, arguments: args })) as ToolResult;

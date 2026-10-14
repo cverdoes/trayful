@@ -15,7 +15,7 @@ import { loadProject, PRIMITIVE_INFO, toJsonSchemas, type FileKind } from '@tray
 const root = fileURLToPath(new URL('..', import.meta.url));
 const example = 'examples/harvest-moon';
 
-type Schema = {
+interface Schema {
   $ref?: string;
   $defs?: Record<string, Schema>;
   type?: string | string[];
@@ -34,7 +34,7 @@ type Schema = {
   maximum?: number;
   pattern?: string;
   default?: unknown;
-};
+}
 
 const KINDS: { kind: FileKind; file: string; example?: string; intro: string }[] = [
   {
@@ -120,10 +120,7 @@ async function main(): Promise<void> {
     );
   }
   for (const entry of KINDS) {
-    files.set(
-      `docs/reference/${entry.file}`,
-      await renderKind(entry, schemas[entry.kind] as Schema),
-    );
+    files.set(`docs/reference/${entry.file}`, await renderKind(entry, schemas[entry.kind]));
   }
   files.set('docs/reference/README.md', renderIndex());
 

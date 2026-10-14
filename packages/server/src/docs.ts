@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
  * The repository's `docs/` folder, served to agents as `trayful://docs`: HOWTO
  * guides for designers and the generated format reference.
  */
-export function docsDir(): string {
+function docsDir(): string {
   return fileURLToPath(new URL('../../../docs', import.meta.url));
 }
 
