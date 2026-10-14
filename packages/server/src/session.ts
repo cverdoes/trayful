@@ -244,7 +244,9 @@ export class TableSession {
   act(player: string | undefined, command: Command): void {
     const real = resolveAliases(command, this.aliases);
     this.checkReach(real, player);
-    this.as(player, summarize(real), () => this.engine.dispatch(real));
+    const name = (id: string) =>
+      id === player ? 'their' : `${this.players?.get(id)?.name ?? id}'s`;
+    this.as(player, summarize(real, name), () => this.engine.dispatch(real));
   }
 
   /** Throws when a command names a piece out of the player's reach, or an unknown player. */
@@ -450,11 +452,13 @@ export class TableSession {
 }
 
 /** A few words on what a command did, for people watching. Never names a piece. */
-export function summarize(command: Command): string {
+export function summarize(command: Command, whose: (player: string) => string = () => 'a'): string {
   const n = (count: number, one: string, many = `${one}s`) =>
     `${count} ${count === 1 ? one : many}`;
   const into = (to: unknown) =>
-    typeof to === 'string' && to.startsWith(HAND_PREFIX) ? ' into a hand' : '';
+    typeof to === 'string' && to.startsWith(HAND_PREFIX)
+      ? ` into ${whose(to.slice(HAND_PREFIX.length))} hand`
+      : '';
   switch (command.type) {
     case 'move':
       return `moved ${n(command.ids.length, 'piece')}${into(command.to)}`;

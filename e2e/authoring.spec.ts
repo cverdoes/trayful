@@ -104,16 +104,18 @@ test('saving a file updates the open table, and a broken file is reported', asyn
   const dir = await projectDir(page);
   const csv = path.join(dir, 'data', 'cards.csv');
   const original = await readFile(csv, 'utf8');
+  // The new card lands face down in the deck, so the page sees it only as one more card.
+  const before = (await objectIds(page)).length;
 
   await writeFile(csv, original + 'Rest,Skip your next turn.,0,1\n');
-  await expect.poll(() => objectIds(page)).toContain('card.rest');
+  await expect.poll(async () => (await objectIds(page)).length).toBe(before + 1);
 
   await writeFile(csv, original + 'Rest,Skip your next turn.,zero,1\n');
   await expect(page.getByRole('alert')).toContainText('"value" must be a number');
 
   await writeFile(csv, original);
   await expect(page.getByRole('alert')).toHaveCount(0);
-  await expect.poll(() => objectIds(page)).not.toContain('card.rest');
+  await expect.poll(async () => (await objectIds(page)).length).toBe(before);
 });
 
 test('the table menu switches projects and makes new tables', async ({ page }) => {

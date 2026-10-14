@@ -18,6 +18,7 @@ How things work across file kinds:
 | [Units and coordinates](units-and-coordinates.md) | Millimetres, where `[0, 0]` is, common sizes. |
 | [Faces and templates](faces-and-templates.md) | Layers, `{{field}}` placeholders, `when`, colours and palettes. |
 | [Snapping](snapping.md) | Snap targets, spot names, `accepts`, and what happens on drop. |
+| [Players and hands](players-and-hands.md) | Private hands, `hand:<player>` targets, what each player sees, invites. |
 | [Validation errors](validation.md) | How problems are reported, and what the common ones mean. |
 | [Versioning](versioning.md) | The format version, stable component ids, and saved tables. |
 

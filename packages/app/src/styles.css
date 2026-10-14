@@ -103,7 +103,7 @@ button:disabled {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 24px;
+  bottom: 144px;
   transform: translateX(-50%);
   max-width: min(560px, calc(100% - 32px));
   padding: 10px 14px;
@@ -157,7 +157,7 @@ button:disabled {
 .activity {
   position: fixed;
   left: 16px;
-  bottom: 16px;
+  bottom: 136px;
   max-width: calc(100% - 32px);
   padding: 8px 12px;
   border-radius: 8px;
@@ -255,4 +255,114 @@ body.printing #root {
     margin: 0;
     box-shadow: none;
   }
+}
+
+.hand-tray {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  overflow-x: auto;
+  background: rgba(31, 35, 40, 0.88);
+  border-top: 1px solid #000;
+  z-index: 10;
+}
+
+.hand-tray.over {
+  background: rgba(47, 129, 247, 0.35);
+  outline: 2px dashed var(--accent);
+  outline-offset: -4px;
+}
+
+.hand-tray p {
+  margin: 0 auto;
+}
+
+.hand-card {
+  flex: none;
+  cursor: grab;
+  border-radius: 4px;
+}
+
+.hand-card:hover {
+  transform: translateY(-4px);
+}
+
+/* The card picture is drawn on a canvas; let the card itself take the drag. */
+.hand-card .konvajs-content {
+  pointer-events: none;
+}
+
+.players {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.players li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.players li.away {
+  opacity: 0.5;
+}
+
+.players .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.players .count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #30363d;
+  text-align: center;
+  font-size: 12px;
+}
+
+.join input {
+  font: inherit;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  margin-bottom: 12px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #0d1117;
+  color: var(--bar-text);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.error {
+  color: #f85149;
+}
+
+.invite .links {
+  padding: 0;
+  list-style: none;
+}
+
+.invite .links li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.invite code {
+  overflow-wrap: anywhere;
 }

@@ -112,6 +112,8 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   });
 
   const { players } = workspace;
+  /** Addresses others reach this server at: the network's, and a tunnel's. */
+  const shareBases: string[] = [];
   /** Who a request is from. Requests from this computer without a cookie are the host. */
   const identify = async (request: FastifyRequest) => {
     const who = caller(request, players);
@@ -132,7 +134,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
       return reply.code(403).send({ error: 'Ask the host for an invite link to join this table.' });
     }
     // Changes must come from a Trayful page, not from another website open in the browser.
-    if (request.method !== 'GET' && route !== '/mcp' && !isTrustedOrigin(request)) {
+    if (request.method !== 'GET' && route !== '/mcp' && !isTrustedOrigin(request, shareBases)) {
       return reply.code(403).send({ error: 'Origin not allowed' });
     }
   });
@@ -168,10 +170,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     }
     if (who.player)
       return { player: await workspace.renamePlayer(who.player.id, request.body?.name ?? '') };
-    const { player, secret } = await players.join(
-      request.body?.name ?? '',
-      who.local ? 'host' : 'guest',
-    );
+    const { player, secret } = await players.join(request.body?.name ?? '', 'guest');
     void reply.header('set-cookie', cookie(PLAYER_COOKIE, `${player.id}:${secret}`, request));
     return { player };
   });
@@ -287,7 +286,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   app.get<{ Querystring: TableQuery }>('/ws', { websocket: true }, (socket, request) => {
     // Only Trayful pages may drive the table; this stops other websites open in the
     // browser from connecting to the server.
-    if (!isTrustedOrigin(request)) {
+    if (!isTrustedOrigin(request, shareBases)) {
       socket.close(1008, 'Origin not allowed');
       return;
     }
@@ -354,9 +353,9 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     port: options.port ?? DEFAULT_PORT,
     host: options.host ?? '127.0.0.1',
   });
-  url = address;
+  // Listening on every interface, the table is still at localhost for the host.
+  url = address.replace(/\/\/(0\.0\.0\.0|\[::\])(?=:)/, '//localhost');
 
-  const shareBases: string[] = [];
   const port = new URL(address).port;
   if (options.host === '0.0.0.0' || options.host === '::') {
     for (const ip of lanAddresses()) shareBases.push(`http://${ip}:${port}`);

@@ -92,6 +92,11 @@ const TOPICS = [
     about: 'Snap targets, spot names, `accepts`, and what happens on drop.',
   },
   {
+    title: 'Players and hands',
+    file: 'players-and-hands.md',
+    about: 'Private hands, `hand:<player>` targets, what each player sees, invites.',
+  },
+  {
     title: 'Validation errors',
     file: 'validation.md',
     about: 'How problems are reported, and what the common ones mean.',

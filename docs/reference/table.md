@@ -32,6 +32,7 @@ One component on the table.
 | `value` | number or text |  | Current value of a counter or the face shown by a die. |
 | `parent` | text |  | Id of the stack holding this piece. Its `pos` is then unused. |
 | `snap` | text |  | Snap spot the piece sits in, as `pieceId/target/index`. |
+| `hand` | text |  | Id of the player whose private hand holds this piece. Only that player sees it; its `pos` is then unused. |
 
 ## Vec2
 

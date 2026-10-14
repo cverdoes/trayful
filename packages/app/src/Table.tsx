@@ -13,6 +13,7 @@ import {
 import type Konva from 'konva';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Circle, Group, Layer, Rect, Stage, Text } from 'react-konva';
+import { HAND_DRAG, myId, overHandTray } from './Players';
 import { Component } from './render/Component';
 import { dropTarget, facePiece, pieceSize, sizeOf, topLevel, type Types } from './render/geometry';
 import { setSnapshotStage } from './snapshot';
@@ -94,6 +95,22 @@ export function Table() {
 
   const dragging = () => new Set([...dragStart.current.keys(), ...riderStart.current.keys()]);
 
+  /** Whether the pointer of a drag on the canvas is over the hand tray. */
+  const pointerOverHand = (node: Konva.Node): boolean => {
+    const stage = node.getStage();
+    const p = stage?.getPointerPosition();
+    if (!stage || !p || !myId()) return false;
+    const box = stage.container().getBoundingClientRect();
+    return overHandTray(box.left + p.x, box.top + p.y);
+  };
+
+  /** Lights up the hand tray while something is dragged over it. */
+  const hoverHand = (node: Konva.Node): boolean => {
+    const over = pointerOverHand(node);
+    if (useStore.getState().overHand !== over) useStore.setState({ overHand: over });
+    return over;
+  };
+
   const onDragStart = (id: string) => {
     const state = useStore.getState();
     if (!state.selection.includes(id)) state.select([id]);
@@ -120,6 +137,7 @@ export function Table() {
     }
     const point: Vec = [node.x(), node.y()];
     const moved = [...dragStart.current.keys()];
+    if (hoverHand(node)) return highlight(undefined);
     const onPile = dropTarget(table, types, moved, point);
     highlight(onPile ? undefined : snapAt(table.objects[id]!, point, dragging(), moved.length > 1));
   };
@@ -131,7 +149,8 @@ export function Table() {
     const riders = [...riderStart.current.keys()];
     dragStart.current.clear();
     riderStart.current.clear();
-    useStore.setState({ snapHint: undefined });
+    const toHand = pointerOverHand(node);
+    useStore.setState({ snapHint: undefined, overHand: false });
     if (!start) return;
     const by: Vec = [node.x() - start[0], node.y() - start[1]];
     if (Math.hypot(by[0], by[1]) < CLICK_SLOP) {
@@ -142,6 +161,12 @@ export function Table() {
     const target = dropTarget(table, types, moved, point);
     const ordered = moved.sort((a, b) => table.objects[a]!.z - table.objects[b]!.z);
     const command = useStore.getState().command;
+    if (toHand) {
+      // Riders stay on the table; only what was picked up goes into the hand.
+      restore(riders);
+      command({ type: 'move', ids: ordered, to: `hand:${myId()}` });
+      return;
+    }
     if (target) {
       command({ type: 'stack', ids: ordered, onto: target.id });
       return;
@@ -173,6 +198,7 @@ export function Table() {
   };
 
   const onDrawMove = (stack: Stack, node: Konva.Group) => {
+    if (hoverHand(node)) return highlight(undefined);
     const point = fromStack(stack, [node.x(), node.y()]);
     const onPile = dropTarget(table, types, [stack.id], point);
     highlight(onPile ? undefined : snapAt(stack, point, new Set([stack.id]), false));
@@ -183,16 +209,24 @@ export function Table() {
    * card); dropping it on a pile stacks it there, and near a spot snaps it in.
    */
   const onDrawEnd = (stack: Stack, pieceId: string, node: Konva.Group, home: Vec) => {
-    useStore.setState({ snapHint: undefined });
+    const toHand = pointerOverHand(node);
+    useStore.setState({ snapHint: undefined, overHand: false });
     const local: Vec = [node.x(), node.y()];
     if (Math.hypot(local[0] - home[0], local[1] - home[1]) < CLICK_SLOP) {
       node.position({ x: home[0], y: home[1] });
       useStore.getState().select([stack.id], useStore.getState().shiftDown ? 'toggle' : 'replace');
       return;
     }
+    const { command, select } = useStore.getState();
+    if (toHand) {
+      const hand = `hand:${myId()}`;
+      if (pieceId === stack.items.at(-1) && !stack.layout) {
+        command({ type: 'draw', from: stack.id, to: hand });
+      } else command({ type: 'take', id: pieceId, to: hand });
+      return;
+    }
     const point = fromStack(stack, local);
     const target = dropTarget(table, types, [stack.id], point);
-    const { command, select } = useStore.getState();
     if (target?.id === stack.id) {
       node.position({ x: home[0], y: home[1] });
       return;
@@ -258,6 +292,41 @@ export function Table() {
     setMarquee(undefined);
   };
 
+  /** A card dragged out of the hand tray: play it onto a pile, a spot or the table. */
+  const onDropFromHand = (e: React.DragEvent<HTMLDivElement>) => {
+    const id = e.dataTransfer.getData(HAND_DRAG);
+    const piece = table.objects[id];
+    if (!id || piece?.kind !== 'piece') return;
+    e.preventDefault();
+    const box = e.currentTarget.getBoundingClientRect();
+    const { viewport: v, command } = useStore.getState();
+    const point: Vec = [
+      (e.clientX - box.left - v.x) / v.scale,
+      (e.clientY - box.top - v.y) / v.scale,
+    ];
+    if (overHandTray(e.clientX, e.clientY)) return;
+    const face = e.altKey ? ('down' as const) : undefined;
+    const target = dropTarget(table, types, [id], point);
+    if (target && !face) {
+      command({ type: 'stack', ids: [id], onto: target.id });
+      return;
+    }
+    const spot = snapFor(
+      table,
+      types,
+      types[piece.type],
+      point,
+      snapRadius(pieceSize(table, types, piece)),
+      new Set([id]),
+    );
+    const to =
+      spot && !spot.area
+        ? spot.ref
+        : ([Math.round(point[0] * 10) / 10, Math.round(point[1] * 10) / 10] as Vec);
+    command({ type: 'move', ids: [id], to, ...(face ? { face } : {}) });
+    if (target) command({ type: 'stack', ids: [id], onto: target.id });
+  };
+
   const onWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
     e.evt.preventDefault();
     const stage = e.target.getStage();
@@ -266,83 +335,91 @@ export function Table() {
   };
 
   return (
-    <Stage
-      ref={setSnapshotStage}
-      width={size.width}
-      height={size.height}
-      x={viewport.x}
-      y={viewport.y}
-      scaleX={viewport.scale}
-      scaleY={viewport.scale}
-      draggable={!shiftDown && !marquee}
-      onDragEnd={(e) => {
-        if (e.target === e.target.getStage()) {
-          useStore.setState((s) => ({
-            viewport: { ...s.viewport, x: e.target.x(), y: e.target.y() },
-          }));
-        }
+    <div
+      className="table"
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes(HAND_DRAG)) e.preventDefault();
       }}
-      onMouseDown={onStageMouseDown}
-      onMouseMove={onStageMouseMove}
-      onMouseUp={onStageMouseUp}
-      onWheel={onWheel}
+      onDrop={onDropFromHand}
     >
-      <Layer key={redrawKey}>
-        {objects.map((object) => {
-          const handlers = {
-            register: (node: Konva.Group | null) => {
-              if (node) nodes.current.set(object.id, node);
-              else nodes.current.delete(object.id);
-            },
-            onClick: (evt: MouseEvent) => onObjectClick(object.id, evt),
-            onDoubleClick: () => onObjectDoubleClick(object),
-          };
-          return object.kind === 'stack' ? (
-            <StackView
-              key={object.id}
-              stack={object}
-              table={table}
-              types={types}
-              palette={view.palette}
-              selected={selected.has(object.id)}
-              wholeStack={shiftDown || (selected.has(object.id) && selection.length > 1)}
-              onDragStart={() => onDragStart(object.id)}
-              onDragMove={(node) => onDragMove(object.id, node)}
-              onDragEnd={(node) => onDragEnd(object.id, node)}
-              onDrawStart={() => onDrawStart(object)}
-              onDrawMove={(node) => onDrawMove(object, node)}
-              onDrawEnd={(pieceId, node, home) => onDrawEnd(object, pieceId, node, home)}
-              {...handlers}
+      <Stage
+        ref={setSnapshotStage}
+        width={size.width}
+        height={size.height}
+        x={viewport.x}
+        y={viewport.y}
+        scaleX={viewport.scale}
+        scaleY={viewport.scale}
+        draggable={!shiftDown && !marquee}
+        onDragEnd={(e) => {
+          if (e.target === e.target.getStage()) {
+            useStore.setState((s) => ({
+              viewport: { ...s.viewport, x: e.target.x(), y: e.target.y() },
+            }));
+          }
+        }}
+        onMouseDown={onStageMouseDown}
+        onMouseMove={onStageMouseMove}
+        onMouseUp={onStageMouseUp}
+        onWheel={onWheel}
+      >
+        <Layer key={redrawKey}>
+          {objects.map((object) => {
+            const handlers = {
+              register: (node: Konva.Group | null) => {
+                if (node) nodes.current.set(object.id, node);
+                else nodes.current.delete(object.id);
+              },
+              onClick: (evt: MouseEvent) => onObjectClick(object.id, evt),
+              onDoubleClick: () => onObjectDoubleClick(object),
+            };
+            return object.kind === 'stack' ? (
+              <StackView
+                key={object.id}
+                stack={object}
+                table={table}
+                types={types}
+                palette={view.palette}
+                selected={selected.has(object.id)}
+                wholeStack={shiftDown || (selected.has(object.id) && selection.length > 1)}
+                onDragStart={() => onDragStart(object.id)}
+                onDragMove={(node) => onDragMove(object.id, node)}
+                onDragEnd={(node) => onDragEnd(object.id, node)}
+                onDrawStart={() => onDrawStart(object)}
+                onDrawMove={(node) => onDrawMove(object, node)}
+                onDrawEnd={(pieceId, node, home) => onDrawEnd(object, pieceId, node, home)}
+                {...handlers}
+              />
+            ) : (
+              <PieceView
+                key={object.id}
+                piece={object}
+                types={types}
+                palette={view.palette}
+                selected={selected.has(object.id)}
+                onDragStart={() => onDragStart(object.id)}
+                onDragMove={(node) => onDragMove(object.id, node)}
+                onDragEnd={(node) => onDragEnd(object.id, node)}
+                {...handlers}
+              />
+            );
+          })}
+          <SnapHints />
+          {marquee && (
+            <Rect
+              x={Math.min(marquee.from[0], marquee.to[0])}
+              y={Math.min(marquee.from[1], marquee.to[1])}
+              width={Math.abs(marquee.to[0] - marquee.from[0])}
+              height={Math.abs(marquee.to[1] - marquee.from[1])}
+              fill="rgba(47,129,247,0.12)"
+              stroke="#2f81f7"
+              strokeWidth={1 / viewport.scale}
+              listening={false}
             />
-          ) : (
-            <PieceView
-              key={object.id}
-              piece={object}
-              types={types}
-              palette={view.palette}
-              selected={selected.has(object.id)}
-              onDragStart={() => onDragStart(object.id)}
-              onDragMove={(node) => onDragMove(object.id, node)}
-              onDragEnd={(node) => onDragEnd(object.id, node)}
-              {...handlers}
-            />
-          );
-        })}
-        <SnapHints />
-        {marquee && (
-          <Rect
-            x={Math.min(marquee.from[0], marquee.to[0])}
-            y={Math.min(marquee.from[1], marquee.to[1])}
-            width={Math.abs(marquee.to[0] - marquee.from[0])}
-            height={Math.abs(marquee.to[1] - marquee.from[1])}
-            fill="rgba(47,129,247,0.12)"
-            stroke="#2f81f7"
-            strokeWidth={1 / viewport.scale}
-            listening={false}
-          />
-        )}
-      </Layer>
-    </Stage>
+          )}
+        </Layer>
+      </Stage>
+    </div>
   );
 }
 

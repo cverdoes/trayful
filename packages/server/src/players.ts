@@ -72,15 +72,16 @@ export class MemoryPlayerStore implements PlayerStore {
 /** The player agents act as over MCP. */
 export const AGENT_PLAYER = 'claude';
 
+// Bright enough to read on the dark toolbar.
 const COLORS = [
   '#e4572e',
-  '#29335c',
+  '#4ea8de',
   '#17bebb',
   '#ffc914',
   '#76b041',
-  '#a23b72',
+  '#c77dff',
   '#f18f01',
-  '#6c757d',
+  '#adb5bd',
 ];
 const MAX_NAME = 40;
 

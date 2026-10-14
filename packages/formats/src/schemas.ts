@@ -552,7 +552,7 @@ export const PieceObject = z
       .string()
       .optional()
       .describe(
-        "Id of the player whose private hand holds this piece. Only that player sees it; its `pos` is then unused.",
+        'Id of the player whose private hand holds this piece. Only that player sees it; its `pos` is then unused.',
       ),
   })
   .meta({ id: 'PieceObject', description: 'One component on the table.' });

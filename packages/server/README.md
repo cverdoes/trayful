@@ -1,6 +1,6 @@
 # @trayful/server
 
-The local Trayful server. It serves a workspace of projects, keeps every browser looking at a table in sync, reloads projects when their files change, and lets agents play and author over MCP.
+The local Trayful server. It serves a workspace of projects, keeps every browser looking at a table in sync (each seeing only what their player may), lets invited guests join, reloads projects when their files change, and lets agents play and author over MCP.
 
 ```ts
 import { startServer } from '@trayful/server';
@@ -10,8 +10,9 @@ const server = await startServer({
   project: 'harvest-moon', // which project agents start on
   table: 'table-1',
   port: 4317,
+  host: '0.0.0.0', // optional: let others on the network join
 });
-console.log(server.url);
+console.log(server.url, server.inviteLinks());
 await server.close(); // saves every open table first
 ```
 
@@ -26,24 +27,40 @@ await server.close(); // saves every open table first
 
 `authoring.ts` changes project files for agents: `upsertType`, `removeType`, `setInventory` and `addAsset`. Edits go through the YAML document API, so comments and formatting elsewhere stay. After each edit the project is reloaded; if it no longer loads, the files are put back and an `AuthoringError` lists the problems.
 
+## Players and access
+
+`players.ts` keeps the players of a workspace (`Players`): the host, guests and the agent player `claude`. They are stored through a `PlayerStore`; `FilePlayerStore` writes `.trayful/players.json` in the served folder, and a hosted service could keep them elsewhere behind the same interface. Each guest proves who they are with a secret in an HttpOnly cookie; only its SHA-256 fingerprint is stored. The invite secret in the same file is what invite links carry.
+
+`access.ts` decides who a request is from:
+
+- A request from this computer (a loopback address, a loopback `Host`, and no proxy headers such as `x-forwarded-for`) is the host, even without a cookie. Tunnels add proxy headers, so requests through them never count as local, and the `Host` check stops DNS rebinding.
+- Anyone else needs the invite cookie (set by `/join/<invite>`) or a player cookie (set by `POST /api/join`). Without one, every table route and the socket answer 403.
+- Requests that change something must come from a Trayful page: a local origin, or for guests the address they reached the server at.
+
+`TableSession` sends every watcher their own view of the table (`viewFor` in core): other hands left out, face-down pieces under stand-in ids. Commands from a player go through `act`, which swaps stand-in ids back, refuses pieces in other players' hands, and labels the change with the player's name for the others. Watchers who have not joined yet may look but not play.
+
 ## Routes
 
-| Route                                    | What it serves                                                                   |
-| ---------------------------------------- | -------------------------------------------------------------------------------- |
-| `/`                                      | The built browser app from `packages/app/dist` (503 with a hint until built)     |
-| `/ws?project=&table=`                    | WebSocket: send `ClientMessage`s (commands, undo, redo, reset), get table states |
-| `/api/project?project=&table=`           | Project name, palette, component types and setups, for one table                 |
-| `/api/table?project=&table=`             | A table's state                                                                  |
-| `/api/projects`                          | Every project with its tables and any problems                                   |
-| `/api/components?project=`               | Every component in the box, for print-and-play                                   |
-| `POST /api/tables`, `DELETE /api/tables` | Create, duplicate (`from`) or delete a table                                     |
-| `/mcp`                                   | MCP over Streamable HTTP (POST), for agents                                      |
-| `/api/health`                            | `{ ok, project, projectDir, root, table }` for the active table                  |
-| `/project-files/<project>/<path>`        | Images from a project folder (other file types are refused)                      |
+| Route                                    | What it serves                                                                                                                |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                      | The built browser app from `packages/app/dist` (503 with a hint until built)                                                  |
+| `/ws?project=&table=`                    | WebSocket: send `ClientMessage`s (commands, undo, redo, reset), get table states as this player sees them, and who is playing |
+| `/api/project?project=&table=`           | Project name, palette, component types and setups, for one table                                                              |
+| `/api/table?project=&table=`             | A table's state, as the asking player sees it                                                                                 |
+| `/api/projects`                          | Every project with its tables and any problems                                                                                |
+| `/api/components?project=`               | Every component in the box, for print-and-play (host only)                                                                    |
+| `POST /api/tables`, `DELETE /api/tables` | Create, duplicate (`from`) or delete a table (host only)                                                                      |
+| `/api/me`, `POST /api/me`                | Who this browser plays as, and whether it is the host; rename                                                                 |
+| `POST /api/join`                         | Join under a name, with an invite; sets the player cookie                                                                     |
+| `/join/<invite>`                         | An invite link: sets the invite cookie and opens the table                                                                    |
+| `/api/share`                             | Invite links for this table (host only)                                                                                       |
+| `/mcp`                                   | MCP over Streamable HTTP (POST), for agents on this computer only                                                             |
+| `/api/health`                            | `{ ok, project, table }` for the active table, plus `projectDir` and `root` for the host                                      |
+| `/project-files/<project>/<path>`        | Images from a project folder (other file types are refused)                                                                   |
 
 Without `project` and `table`, routes use the active table. Tables are saved to `tables/<name>.json` shortly after every change, through a temporary file, so a crash never leaves half a file.
 
-The server binds to `127.0.0.1` and refuses WebSocket, MCP and table-changing requests from pages on other origins, so other websites open in your browser cannot drive the table.
+The server binds to `127.0.0.1` unless told otherwise (`trayful play --share` binds `0.0.0.0`; `--tunnel` keeps `127.0.0.1` and lets `cloudflared` connect locally). `addShareBase(url)` adds an address, such as a tunnel's, to the invite links.
 
 ## MCP
 
@@ -57,6 +74,6 @@ The server binds to `127.0.0.1` and refuses WebSocket, MCP and table-changing re
 
 Resources: `trayful://projects`, each table's state and PNG snapshot, each project's manifest and component types, the JSON Schemas (`trayful://schema`), and the [docs](../../docs) (`trayful://docs` and `trayful://docs/<path>`, from `docs.ts`).
 
-Tools send the same commands as the browser, through the same session, so people see agent moves live and share one undo history. Each tool call changes all or nothing. `/mcp` serves it over HTTP; `trayful mcp` in the CLI serves it over stdio. Pictures (`snapshot`, `render_component`) are drawn by a browser that has the table open: the server asks over the WebSocket and the browser answers with a PNG.
+Agents play as player `claude`: `describe_table` and `query_objects` (`inside: "hand:claude"`) show their own hand and only counts of other hands, moves to `hand:<player>` deal into hands, and `get_history` names pieces in other hands only as hidden. Tools send the same commands as the browser, through the same session, so people see agent moves live and share one undo history. Each tool call changes all or nothing. `/mcp` serves it over HTTP; `trayful mcp` in the CLI serves it over stdio. Pictures (`snapshot`, `render_component`) are drawn by a browser that has the table open: the server asks over the WebSocket and the browser answers with a PNG.
 
 Test with `pnpm vitest run packages/server` from the repo root.

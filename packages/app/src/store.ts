@@ -1,20 +1,39 @@
 import {
   onTable,
   type ClientMessage,
+  type PlayerInfo,
   type RenderRequest,
   type Command,
   type ProjectView,
   type ServerMessage,
   type SnapSpot,
-  type TableState,
+  type TableView,
 } from '@trayful/core';
 import { create } from 'zustand';
 
 export type ConnectionStatus = 'connecting' | 'online' | 'offline';
 
+/** Who this browser plays as, from `/api/me`. */
+export interface Me {
+  player?: Omit<PlayerInfo, 'online'>;
+  /** Running on the host's computer: may manage tables, print and invite. */
+  host: boolean;
+  invited: boolean;
+  joined: boolean;
+}
+
 interface TrayfulStore {
   view?: ProjectView;
-  table?: TableState;
+  /** The table as this player sees it: other hands and face-down cards hidden. */
+  table?: TableView;
+  me?: Me;
+  /** Before the table: asking for a name to join with, or no invite to get in. */
+  gate?: 'join' | 'closed';
+  /** Everyone at this table. */
+  players: PlayerInfo[];
+  /** While a piece is dragged over the hand tray. */
+  overHand: boolean;
+  inviteOpen: boolean;
   revision: number;
   canUndo: boolean;
   canRedo: boolean;
@@ -29,8 +48,8 @@ interface TrayfulStore {
   renderJob?: { id: string; component: RenderRequest };
   /** Errors in the project files after an edit; the table keeps the last good version meanwhile. */
   problems?: string[];
-  /** The latest change an agent made, shown briefly to people watching. */
-  activity?: { text: string; at: number };
+  /** The latest change someone else made, shown briefly to people watching. */
+  activity?: { text: string; name: string; agent: boolean; at: number };
   /** Bumped when the server rejects a change, so the canvas redraws from server state. */
   redrawKey: number;
   shiftDown: boolean;
@@ -49,6 +68,9 @@ interface TrayfulStore {
 
 export const useStore = create<TrayfulStore>((set, get) => ({
   revision: -1,
+  players: [],
+  overHand: false,
+  inviteOpen: false,
   canUndo: false,
   canRedo: false,
   status: 'connecting',
@@ -69,6 +91,10 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       set({ problems: message.problems });
       return;
     }
+    if (message.type === 'players') {
+      set({ players: message.players });
+      return;
+    }
     if (message.type === 'error') {
       set((s) => ({
         error: { message: message.message, at: Date.now() },
@@ -78,12 +104,23 @@ export const useStore = create<TrayfulStore>((set, get) => ({
     }
     if (message.revision < get().revision) return;
     const objects = message.state.objects;
+    const { activity } = message;
+    const mine = activity?.player !== undefined && activity.player === get().me?.player?.id;
     set((s) => ({
       table: message.state,
       revision: message.revision,
       canUndo: message.canUndo,
       canRedo: message.canRedo,
-      ...(message.activity ? { activity: { text: message.activity.text, at: Date.now() } } : {}),
+      ...(activity && !mine
+        ? {
+            activity: {
+              text: activity.text,
+              name: activity.name ?? (activity.by === 'agent' ? 'Agent' : 'Someone'),
+              agent: activity.by === 'agent',
+              at: Date.now(),
+            },
+          }
+        : {}),
       // Drop selected ids that vanished or went into a stack.
       selection: s.selection.filter((id) => {
         const o = objects[id];

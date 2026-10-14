@@ -62,9 +62,9 @@ export function isLocalOrigin(origin: string | undefined): boolean {
 /**
  * Whether a browser request comes from a Trayful page rather than another website:
  * a page on this computer, or one served by this server under the address the
- * guest used (the host header, or the address a tunnel forwarded).
+ * guest used (the host header, the address a tunnel forwarded, or a shared address).
  */
-export function isTrustedOrigin(request: FastifyRequest): boolean {
+export function isTrustedOrigin(request: FastifyRequest, shared: readonly string[] = []): boolean {
   const origin = request.headers.origin;
   if (isLocalOrigin(origin)) return true;
   if (isLocalRequest(request)) return false;
@@ -75,7 +75,11 @@ export function isTrustedOrigin(request: FastifyRequest): boolean {
     return false;
   }
   const forwarded = request.headers['x-forwarded-host'];
-  return host === request.headers.host || (typeof forwarded === 'string' && host === forwarded);
+  return (
+    host === request.headers.host ||
+    (typeof forwarded === 'string' && host === forwarded) ||
+    shared.some((base) => new URL(base).host === host)
+  );
 }
 
 export function parseCookies(header: string | undefined): Record<string, string> {
