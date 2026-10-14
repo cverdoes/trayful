@@ -47,8 +47,13 @@ export async function docsIndex(): Promise<string> {
   ];
   for (const file of await docFiles()) {
     const text = await readDoc(file);
-    const title = /^#\s+(.+)$/m.exec(text)?.[1] ?? file;
-    lines.push(`- \`${file}\`: ${title}`);
+    lines.push(`- \`${file}\`: ${docTitle(text) ?? file}`);
   }
   return lines.join('\n') + '\n';
+}
+
+/** A document's title: the text of its first non-blank top-level `#` heading, if it has one. */
+export function docTitle(text: string): string | undefined {
+  const heading = text.split('\n').find((line) => /^#\s+\S/.test(line));
+  return heading?.slice(1).trim();
 }

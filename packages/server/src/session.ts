@@ -358,8 +358,8 @@ export class TableSession {
    * Applies a client message from a player (or a spectator, who can reach no hand).
    * Returns an error message for the sender only, or nothing on success.
    */
-  handle(message: ClientMessage, player?: string): ServerMessage | undefined {
-    if (typeof message !== 'object' || message === null) {
+  handle(message: ClientMessage | null, player?: string): ServerMessage | undefined {
+    if (message === null || typeof message !== 'object') {
       return { type: 'error', message: 'Messages must be JSON objects with a "type".' };
     }
     try {

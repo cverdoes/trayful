@@ -1,7 +1,7 @@
 import type { ProjectView, ServerMessage } from '@trayful/core';
 import { forgetJoin, route, tableQuery } from './route';
 import { snapshotTable } from './snapshot';
-import { useStore, type Me } from './store';
+import { dropWhileOffline, useStore, type Me } from './store';
 
 /**
  * Finds out who this browser plays as, then connects; or, for someone who has
@@ -54,7 +54,8 @@ async function loadView(): Promise<void> {
   useStore.setState({ view: (await response.json()) as ProjectView });
 }
 
-function open(attempt: number): void {
+function open(previousAttempts: number): void {
+  let attempt = previousAttempts;
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const socket = new WebSocket(`${protocol}//${location.host}/ws${tableQuery()}`);
   useStore.setState({ status: 'connecting' });
@@ -89,7 +90,7 @@ function open(attempt: number): void {
     useStore.getState().receive(message);
   });
   socket.addEventListener('close', () => {
-    useStore.setState({ status: 'offline', send: () => {} });
+    useStore.setState({ status: 'offline', send: dropWhileOffline });
     const delay = Math.min(5000, 250 * 2 ** attempt);
     setTimeout(() => open(attempt + 1), delay);
   });

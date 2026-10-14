@@ -41,8 +41,17 @@ export function starterDir(): string {
 }
 
 const DEFAULT_TABLE = 'table-1';
-/** Files whose changes do not affect the project definition. */
-const IGNORED = /(^|[\\/])(tables|node_modules|\.[^\\/]*)([\\/]|$)|\.tmp$/;
+/**
+ * Path parts whose files do not affect the project definition: saved tables, installed
+ * dependencies, and anything whose name starts with a dot. That covers folders such as
+ * `.git` and `.vscode` and files such as `.DS_Store`, which tools write on their own.
+ */
+const IGNORED_PART = /(?:^|[\\/])(?:tables|node_modules|\.[^\\/]*)(?:[\\/]|$)/;
+
+/** Whether a change to `file` can be skipped. `.tmp` files are editors' half-written saves. */
+function ignored(file: string): boolean {
+  return IGNORED_PART.test(file) || file.endsWith('.tmp');
+}
 
 /**
  * The projects Trayful serves and their open tables. The root is either one
@@ -292,7 +301,7 @@ export class Workspace {
   private watch(entry: ProjectEntry): void {
     try {
       const watcher = watch(entry.dir, { recursive: true }, (_event, file) => {
-        if (file && IGNORED.test(String(file))) return;
+        if (file && ignored(file)) return;
         // Editors often write a file in several steps; reload once they settle.
         clearTimeout(this.timers.get(entry.id));
         this.timers.set(

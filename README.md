@@ -172,9 +172,9 @@ When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generat
 
 ### Code quality
 
-CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below the floor in `vitest.config.ts`.
+CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below each package's floor in `vitest.config.ts`; the app's components are covered by the e2e suite instead.
 
-Code written before these limits is listed in `eslint-suppressions.json`, so only new violations fail the build. When you fix one, run `pnpm lint:prune` and commit the smaller file; never add entries by hand. When coverage rises, raise the floor.
+Code written before these limits is listed in `eslint-suppressions.json`, so only new violations fail the build. When you fix one, run `pnpm lint:prune` and commit the smaller file; never add entries by hand. When your tests raise a package's coverage, `pnpm test:coverage` raises its floor in `vitest.config.ts` to 2 points under the new number; commit that change with your tests.
 
 Each CI run's summary page shows coverage per package, the most complex functions, duplication and the remaining lint backlog, and the HTML coverage report is attached to the run as `coverage-report`.
 

@@ -1,4 +1,5 @@
 import {
+  byCodeUnit,
   FORMAT_VERSION,
   TableFile,
   flattenIssues,
@@ -24,7 +25,7 @@ export interface TableState {
 
 /** Whether an object lies directly on the table: not inside a stack, and not in a player's hand. */
 export function onTable(object: TableObject): boolean {
-  return !(object.kind === 'piece' && (object.parent || object.hand));
+  return !(object.kind === 'piece' && (object.parent !== undefined || object.hand !== undefined));
 }
 
 /** The pieces in a player's hand, in the order they were picked up. */
@@ -72,7 +73,7 @@ export function toTableFile(state: TableState): TableFile {
     table: state.table,
     seed: state.seed,
     rng: state.rng,
-    objects: Object.values(state.objects).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)),
+    objects: Object.values(state.objects).sort((a, b) => byCodeUnit(a.id, b.id)),
   };
 }
 
@@ -108,7 +109,7 @@ export function checkIntegrity(state: TableState): string[] {
       if (object.items.length === 0) problems.push(`Stack "${object.id}" is empty.`);
       for (const id of object.items) {
         const item = state.objects[id];
-        if (!item || item.kind !== 'piece')
+        if (item?.kind !== 'piece')
           problems.push(`Stack "${object.id}" lists unknown piece "${id}".`);
         else if (item.parent !== object.id)
           problems.push(
@@ -122,7 +123,7 @@ export function checkIntegrity(state: TableState): string[] {
       problems.push(`Piece "${object.id}" cannot be both in a stack and in a hand.`);
     } else if (object.parent) {
       const parent = state.objects[object.parent];
-      if (!parent || parent.kind !== 'stack' || !parent.items.includes(object.id)) {
+      if (parent?.kind !== 'stack' || !parent.items.includes(object.id)) {
         problems.push(
           `Piece "${object.id}" names "${object.parent}" as its stack, but that stack does not hold it.`,
         );
@@ -130,4 +131,23 @@ export function checkIntegrity(state: TableState): string[] {
     }
   }
   return problems;
+}
+
+/**
+ * Takes an object off a table, in place. `no-dynamic-delete` asks for a `Map` instead of
+ * deleting keys from a plain object, but that doesn't suit tables: they keep their objects
+ * in a plain record keyed by id because the record is saved and sent as JSON. So removals
+ * go through this one function rather than a `delete` scattered across core.
+ */
+export function removeObject(objects: Record<string, TableObject>, id: string): void {
+  Reflect.deleteProperty(objects, id);
+}
+
+/**
+ * `object` with `changes` applied, where a change to `undefined` removes that key. Any key
+ * already `undefined` on `object` is left out too; a saved table has none.
+ */
+export function withChanges<T extends object>(object: T, changes: Partial<T>): T {
+  const merged = Object.entries({ ...object, ...changes }).filter(([, v]) => v !== undefined);
+  return Object.fromEntries(merged) as T;
 }

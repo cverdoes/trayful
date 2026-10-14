@@ -19,6 +19,8 @@ export interface Actions {
   lockLabel: 'Lock' | 'Unlock';
 }
 
+const LAYOUT_LABEL = { pile: 'Pile', fan: 'Fan', spread: 'Spread' } as const;
+
 /** Works out which actions apply to the selected objects. Each action sends one command per kind of object. */
 export function selectionActions(): Actions {
   const { table, view, selection, command } = useStore.getState();
@@ -75,7 +77,7 @@ export function selectionActions(): Actions {
     layout: stacks.length
       ? each(stacks, (o) => ({ type: 'layout', id: o.id, layout: next }))
       : undefined,
-    layoutLabel: next === 'fan' ? 'Fan' : next === 'spread' ? 'Spread' : 'Pile',
+    layoutLabel: LAYOUT_LABEL[next],
     lock: () => command({ type: 'lock', ids, locked: !allLocked }),
     increment: counters.length ? step(1) : undefined,
     decrement: counters.length ? step(-1) : undefined,

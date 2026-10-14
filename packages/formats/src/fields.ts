@@ -41,7 +41,7 @@ export function coerceValue(
     }
     case 'int':
     case 'number': {
-      const n = typeof value === 'number' ? value : fromText ? Number(value) : NaN;
+      const n = typeof value === 'number' || fromText ? Number(value) : NaN;
       if (typeof value === 'string' && value.trim() === '') return { error: 'must be a number' };
       if (!Number.isFinite(n)) return { error: 'must be a number' };
       if (field.type === 'int' && !Number.isInteger(n)) return { error: 'must be a whole number' };
@@ -64,7 +64,7 @@ export function coerceValue(
 
 /** Field names referenced as `{{name}}` in a template string. */
 export function templateRefs(text: string): string[] {
-  return [...text.matchAll(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g)].map((m) => m[1]!);
+  return [...text.matchAll(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g)].map((m) => m[1]!);
 }
 
 export function isTemplate(text: string): boolean {
@@ -73,7 +73,7 @@ export function isTemplate(text: string): boolean {
 
 /** Fills `{{field}}` placeholders from data. Missing values become empty text. */
 export function renderTemplate(text: string, data: Record<string, Scalar | undefined>): string {
-  return text.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (_, name: string) =>
+  return text.replace(/\{\{\s*([a-zA-Z_]\w*)\s*\}\}/g, (_, name: string) =>
     data[name] === undefined ? '' : String(data[name]),
   );
 }

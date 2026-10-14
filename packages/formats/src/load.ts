@@ -25,6 +25,7 @@ import {
   type SetupStep,
   type SnapTarget,
 } from './schemas.js';
+import { byCodeUnit } from './order.js';
 import { SourceFile } from './source.js';
 
 export const MANIFEST_FILE = 'trayful.yaml';
@@ -106,7 +107,7 @@ class ProjectLoader {
     const setupFiles = manifest.setups
       ? await this.expandGlobs(manifest.setups, manifestSource, ['setups'])
       : await fg('setups/*.yaml', { cwd: this.dir });
-    for (const file of setupFiles.sort()) await this.loadSetup(file);
+    for (const file of setupFiles.toSorted(byCodeUnit)) await this.loadSetup(file);
     if (manifest.setup !== undefined) {
       const names = setupFiles.map((f) => path.basename(f).replace(/\.ya?ml$/, ''));
       if (!names.includes(manifest.setup)) {
@@ -162,17 +163,18 @@ class ProjectLoader {
   ): Promise<string[]> {
     const files: string[] = [];
     for (const [i, pattern] of patterns.entries()) {
-      const matches = fg.isDynamicPattern(pattern)
-        ? await fg(pattern, { cwd: this.dir })
-        : (await this.exists(pattern))
-          ? [pattern]
-          : [];
+      const matches = await this.matchPattern(pattern);
       if (matches.length === 0) {
         this.diagnostics.push(source.diagnostic([...path_, i], `No files match "${pattern}".`));
       }
-      files.push(...matches.sort());
+      files.push(...matches.toSorted(byCodeUnit));
     }
     return [...new Set(files)];
+  }
+
+  private async matchPattern(pattern: string): Promise<string[]> {
+    if (fg.isDynamicPattern(pattern)) return fg(pattern, { cwd: this.dir });
+    return (await this.exists(pattern)) ? [pattern] : [];
   }
 
   private async exists(file: string): Promise<boolean> {
@@ -485,14 +487,14 @@ class ProjectLoader {
             : (row.key ?? rowKey(merged, r));
         const baseId = key ? `${type.id}.${key}` : type.id;
         for (let copy = 1; copy <= count; copy++) {
-          let id = count > 1 ? `${baseId}.${copy}` : baseId;
-          for (let n = 2; usedIds.has(id); n++)
-            id = `${count > 1 ? `${baseId}.${copy}` : baseId}~${n}`;
+          const id = unusedId(count > 1 ? `${baseId}.${copy}` : baseId, usedIds);
           usedIds.add(id);
           const spec: ComponentSpec = { id, type: type.id, data: { ...merged } };
           if (entry.deck) {
             spec.deck = entry.deck;
-            (this.decks[entry.deck] ??= []).push(id);
+            const deck = this.decks[entry.deck] ?? [];
+            deck.push(id);
+            this.decks[entry.deck] = deck;
           }
           this.components.push(spec);
         }
@@ -513,13 +515,13 @@ class ProjectLoader {
       return [];
     }
     try {
-      const records = parseCsv(text, {
+      const records = parseCsv<{ record: Record<string, string>; info: { lines: number } }>(text, {
         columns: true,
         skip_empty_lines: true,
         trim: true,
         bom: true,
         info: true,
-      }) as { record: Record<string, string>; info: { lines: number } }[];
+      });
       return records.map((r) => ({ values: r.record, line: r.info.lines }));
     } catch (err) {
       const e = err as Error & { lines?: number };
@@ -553,7 +555,9 @@ class ProjectLoader {
       const ref = step.place;
       if (typeof ref === 'string') {
         const known =
-          this.types[ref] || this.brokenTypes.has(ref) || this.components.some((c) => c.id === ref);
+          this.types[ref] !== undefined ||
+          this.brokenTypes.has(ref) ||
+          this.components.some((c) => c.id === ref);
         if (!known) report(['place'], `"${ref}" is neither a type id nor a component id.`);
         if (step.shuffle) report(['shuffle'], `Only a deck can be shuffled.`);
       } else {
@@ -622,6 +626,17 @@ function cartesian(each: Record<string, Scalar[]>): Record<string, Scalar>[] {
   return combos;
 }
 
+/** `base`, or `base~2`, `base~3`… when that id is already taken. */
+function unusedId(base: string, used: Set<string>): string {
+  let id = base;
+  let n = 2;
+  while (used.has(id)) {
+    id = `${base}~${n}`;
+    n++;
+  }
+  return id;
+}
+
 /** A readable row key: the first text field's value (usually the name), else the row number. */
 function rowKey(data: Record<string, Scalar>, index: number): string {
   const text =
@@ -637,5 +652,5 @@ export function slugify(text: string): string {
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/^-|-$/g, '');
 }

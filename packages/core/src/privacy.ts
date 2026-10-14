@@ -70,10 +70,13 @@ export function resolveAliases<T>(value: T, aliases: Aliases): T {
     const real = aliases.resolve(first!);
     return (real ? [real, ...rest].join('/') : value) as T;
   }
-  if (Array.isArray(value)) return value.map((v) => resolveAliases(v, aliases)) as T;
+  if (Array.isArray(value)) return (value as unknown[]).map((v) => resolveAliases(v, aliases)) as T;
   if (value && typeof value === 'object') {
     return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, resolveAliases(v, aliases)]),
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [
+        k,
+        resolveAliases(v, aliases),
+      ]),
     ) as T;
   }
   return value;

@@ -5,12 +5,20 @@ import {
   type SetupStep,
   type Vec2,
 } from '@trayful/formats/browser';
-import type { ResolvedProject } from '@trayful/formats';
+import type { ComponentSpec, ResolvedProject } from '@trayful/formats';
 import { applyCommand, CommandError, type Command } from './commands.js';
 import { objectSize } from './layout.js';
 import { seedState } from './rng.js';
 import { resolveSpots, SnapError } from './snap.js';
-import { onTable, sizeOf, type Piece, type TableObject, type TableState } from './state.js';
+import {
+  onTable,
+  removeObject,
+  sizeOf,
+  withChanges,
+  type Piece,
+  type TableObject,
+  type TableState,
+} from './state.js';
 
 export interface CreateTableOptions {
   name: string;
@@ -63,13 +71,7 @@ function outOfTheBox(project: ResolvedProject, name: string, seed: number): Tabl
       const stackId = `deck:${spec.deck}`;
       for (const id of ids) {
         const member = project.components.find((c) => c.id === id)!;
-        objects[id] = newPiece(
-          member.id,
-          project.types[member.type]!,
-          member.data,
-          'down',
-          stackId,
-        );
+        objects[id] = newPiece(member, project.types[member.type]!, 'down', stackId);
       }
       objects[stackId] = {
         kind: 'stack',
@@ -83,7 +85,7 @@ function outOfTheBox(project: ResolvedProject, name: string, seed: number): Tabl
       sized.push({ id: stackId, size: sizeOf(type) });
       continue;
     }
-    objects[spec.id] = { ...newPiece(spec.id, type, spec.data, 'up'), z: z++ };
+    objects[spec.id] = { ...newPiece(spec, type, 'up'), z: z++ };
     sized.push({ id: spec.id, size: sizeOf(type) });
   }
   for (const [id, pos] of rows(sized, [0, 0], BOX_WIDTH)) {
@@ -93,9 +95,8 @@ function outOfTheBox(project: ResolvedProject, name: string, seed: number): Tabl
 }
 
 function newPiece(
-  id: string,
+  { id, data }: ComponentSpec,
   type: ComponentType,
-  data: Record<string, string | number | boolean>,
   face: 'up' | 'down',
   parent?: string,
 ): Piece {
@@ -144,10 +145,7 @@ export function applySetup(
     state = applyCommand(state, command, catalog);
   };
   const edit = (id: string, changes: Partial<TableObject>) => {
-    const next = { ...state.objects[id]!, ...changes } as TableObject;
-    for (const [k, v] of Object.entries(changes)) {
-      if (v === undefined) delete (next as unknown as Record<string, unknown>)[k];
-    }
+    const next = withChanges(state.objects[id]!, changes);
     state = { ...state, objects: { ...state.objects, [id]: next } };
   };
   const topLevel = () =>
@@ -309,13 +307,13 @@ export function syncTable(state: TableState, project: ResolvedProject): TableSta
   // Pieces whose component is gone leave the table, and their stacks.
   for (const object of Object.values(objects)) {
     if (object.kind !== 'piece' || specs.has(object.id)) continue;
-    delete objects[object.id];
+    removeObject(objects, object.id);
     changed = true;
     if (object.parent) {
       const stack = objects[object.parent];
       if (stack?.kind === 'stack') {
         const items = stack.items.filter((id) => id !== object.id);
-        if (items.length === 0) delete objects[stack.id];
+        if (items.length === 0) removeObject(objects, stack.id);
         else objects[stack.id] = { ...stack, items };
       }
     }
@@ -346,7 +344,7 @@ export function syncTable(state: TableState, project: ResolvedProject): TableSta
     if (spec.deck) {
       const stackId = `deck:${spec.deck}`;
       const deck = objects[stackId];
-      objects[spec.id] = newPiece(spec.id, type, spec.data, 'down', stackId);
+      objects[spec.id] = newPiece(spec, type, 'down', stackId);
       if (deck?.kind === 'stack') {
         objects[stackId] = { ...deck, items: [spec.id, ...deck.items] };
       } else {
@@ -364,7 +362,7 @@ export function syncTable(state: TableState, project: ResolvedProject): TableSta
       }
       continue;
     }
-    objects[spec.id] = { ...newPiece(spec.id, type, spec.data, 'up'), z: z++ };
+    objects[spec.id] = { ...newPiece(spec, type, 'up'), z: z++ };
     fresh.push({ id: spec.id, size: sizeOf(type) });
   }
   if (!changed) return state;

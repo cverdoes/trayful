@@ -12,6 +12,7 @@ import { createMcpServer } from './mcp.js';
 import { startServer, type RunningServer } from './server.js';
 import type { TableSession } from './session.js';
 import { Workspace } from './workspace.js';
+import { frameText } from './frames.js';
 
 const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
 const DECK = 'deck:actions';
@@ -290,7 +291,7 @@ describe('MCP over HTTP', () => {
     // A stand-in browser that answers snapshot requests with a tiny PNG.
     const browser = new WebSocket(server.url.replace('http', 'ws') + '/ws');
     browser.on('message', (data) => {
-      const message = JSON.parse(String(data)) as ServerMessage;
+      const message = JSON.parse(frameText(data)) as ServerMessage;
       if (message.type === 'snapshot-request') {
         browser.send(
           JSON.stringify({
@@ -321,7 +322,7 @@ describe('MCP over HTTP', () => {
     const browser = new WebSocket(server.url.replace('http', 'ws') + '/ws');
     const requests: unknown[] = [];
     browser.on('message', (data) => {
-      const message = JSON.parse(String(data)) as ServerMessage;
+      const message = JSON.parse(frameText(data)) as ServerMessage;
       if (message.type === 'render-request') {
         requests.push(message.component);
         browser.send(JSON.stringify({ type: 'snapshot', id: message.id, png: 'cG5nIQ==' }));

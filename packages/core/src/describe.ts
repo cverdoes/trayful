@@ -73,7 +73,7 @@ export function summarizePiece(piece: Piece, catalog: Catalog, reveal = false): 
     id: piece.id,
     type: piece.type,
     base: type?.base ?? 'unknown',
-    ...(piece.face ? { face: piece.face } : {}),
+    face: piece.face,
     ...(piece.data && !hidden ? { data: piece.data } : {}),
     ...(piece.value !== undefined ? { value: piece.value } : {}),
   };
@@ -137,7 +137,7 @@ export function queryObjects(
     objects = tableObjects(state);
   }
   return objects
-    .map((o) => summarize(state, catalog, o, query.reveal || hand !== undefined))
+    .map((o) => summarize(state, catalog, o, query.reveal === true || hand !== undefined))
     .filter((s) => {
       if (query.type && s.top.type !== query.type) return false;
       if (query.base && s.top.base !== query.base) return false;

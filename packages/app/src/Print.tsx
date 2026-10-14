@@ -122,11 +122,11 @@ function Sheet({
   items,
   face,
   palette,
-}: {
+}: Readonly<{
   items: Placed[];
   face: 'up' | 'down';
   palette: Record<string, string>;
-}) {
+}>) {
   return (
     <section className="sheet" data-face={face}>
       {items.map(({ spec, type, x, y, scale }) => {

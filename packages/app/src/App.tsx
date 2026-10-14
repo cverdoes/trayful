@@ -6,6 +6,7 @@ import { RenderJob } from './render/Preview';
 import { go, route } from './route';
 import { useStore } from './store';
 import { Table } from './Table';
+import { tableChoices } from './tables';
 import { fitToTable, HAND_HEIGHT, tableBounds, TOOLBAR_HEIGHT, zoomAt } from './viewport';
 
 export function App() {
@@ -139,12 +140,7 @@ function TableMenu() {
         : [{ id: view.project, name: view.name, problems: [], tables }]
       ).map((p) => (
         <optgroup key={p.id} label={p.problems.length ? `${p.name} (has errors)` : p.name}>
-          {(p.id === view.project && !p.tables.includes(view.table)
-            ? [...p.tables, view.table]
-            : p.tables.length
-              ? p.tables
-              : ['table-1']
-          ).map((t) => (
+          {tableChoices(p, view).map((t) => (
             <option
               key={t}
               value={`${p.id}/${t}`}
@@ -215,7 +211,7 @@ function Toolbar() {
         <strong>{view?.name ?? 'Trayful'}</strong>
         <TableMenu />
         <span className={`status status-${status}`} title={`Connection: ${status}`}>
-          {status === 'online' ? '●' : status === 'connecting' ? '◌' : '○'} {status}
+          {STATUS_ICON[status]} {status}
         </span>
         <PlayerList />
       </div>
@@ -282,17 +278,19 @@ function Toolbar() {
   );
 }
 
+const STATUS_ICON = { online: '●', connecting: '◌', offline: '○' } as const;
+
 function Button({
   label,
   title,
   keys,
   onClick,
-}: {
+}: Readonly<{
   label: string;
   title?: string;
   keys?: string;
   onClick?: () => void;
-}) {
+}>) {
   const tip = [title ?? label, keys && `(${keys})`].filter(Boolean).join(' ');
   return (
     <button

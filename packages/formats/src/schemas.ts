@@ -313,7 +313,7 @@ export const ComponentType = z
       .describe('Corner radius in millimetres, for rectangular shapes.'),
     fill: Color.optional().describe('Shorthand for `front.fill`.'),
     fields: z
-      .record(z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/), Field)
+      .record(z.string().regex(/^[a-zA-Z_]\w*$/), Field)
       .optional()
       .describe('Per-component data, filled by the inventory and usable as `{{field}}` in faces.'),
     front: Face.optional().describe('The face-up side.'),
