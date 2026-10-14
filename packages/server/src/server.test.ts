@@ -2,7 +2,7 @@ import { cp, mkdtemp, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ServerMessage, TableState } from '@trayful/core';
+import type { Piece, ServerMessage, Stack, TableView } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { isLocalOrigin, startServer, type RunningServer } from './server.js';
@@ -28,13 +28,24 @@ afterEach(async () => {
   await server.close();
 });
 
-/** Opens a socket and collects messages; `next()` waits for the next one. */
-async function connect(origin?: string) {
-  const socket = new WebSocket(server.url.replace('http', 'ws') + '/ws', origin ? { origin } : {});
+/**
+ * Opens a socket and collects messages; `next()` waits for the next one. Player
+ * lists are kept apart in `players`, since they arrive whenever someone comes or goes.
+ */
+async function connect(origin?: string, headers: Record<string, string> = {}) {
+  const socket = new WebSocket(server.url.replace('http', 'ws') + '/ws', {
+    headers,
+    ...(origin ? { origin } : {}),
+  });
   const queue: ServerMessage[] = [];
   const waiting: ((m: ServerMessage) => void)[] = [];
+  const players: ServerMessage[] = [];
   socket.on('message', (data) => {
     const message = JSON.parse(String(data)) as ServerMessage;
+    if (message.type === 'players') {
+      players.push(message);
+      return;
+    }
     const waiter = waiting.shift();
     if (waiter) waiter(message);
     else queue.push(message);
@@ -45,6 +56,7 @@ async function connect(origin?: string) {
   });
   return {
     socket,
+    players,
     send: (message: unknown) => socket.send(JSON.stringify(message)),
     next: () =>
       new Promise<ServerMessage>((resolve) => {
@@ -72,8 +84,11 @@ describe('server', () => {
     };
     expect(Object.keys(view.types)).toContain('action-card');
     expect(view.types['action-card']!.source).toBeUndefined();
-    const table = (await (await fetch(`${server.url}/api/table`)).json()) as TableState;
-    expect(table.seed).toBe(7);
+    const table = (await (await fetch(`${server.url}/api/table`)).json()) as TableView;
+    expect(table.table).toBe('table-1');
+    // The seed predicts shuffles, so no one is shown it.
+    expect(table.seed).toBe(0);
+    expect(server.session.engine.state.seed).toBe(7);
   });
 
   it('serves project images but nothing else from the project folder', async () => {
@@ -154,22 +169,169 @@ describe('server', () => {
     const a = await connect();
     await a.next();
     a.send({ type: 'command', command: { type: 'draw', from: DECK, count: 2, to: [300, 300] } });
-    const after = await a.next();
+    await a.next();
+    const before = server.session.engine.state;
     a.socket.close();
     await server.close();
     const saved = JSON.parse(await readFile(path.join(dir, 'tables', 'table-1.json'), 'utf8'));
     expect(saved.objects.find((o: { id: string }) => o.id === DECK).items).toHaveLength(3);
 
     server = await startServer({ projectDir: dir, port: 0, appDir: path.join(dir, 'no-app') });
-    expect(after.type === 'state' && server.session.engine.state).toEqual(
-      after.type === 'state' && after.state,
-    );
+    expect(server.session.engine.state).toEqual(before);
   });
 
   it('rejects sockets from other websites', async () => {
     const a = await connect('https://evil.example');
     const code = await new Promise<number>((resolve) => a.socket.once('close', resolve));
     expect(code).toBe(1008);
+  });
+});
+
+interface Me {
+  player?: { id: string };
+}
+
+/** Requests that arrive through a tunnel, as a guest's do. */
+const REMOTE = { 'x-forwarded-for': '203.0.113.9' };
+
+/** Joins as a guest through the invite link and returns their cookie header. */
+async function joinAsGuest(name: string): Promise<string> {
+  const invite = await fetch(`${server.url}/join/${server.workspace.players.invite}`, {
+    headers: REMOTE,
+    redirect: 'manual',
+  });
+  expect(invite.status).toBe(302);
+  const inviteCookie = invite.headers.get('set-cookie')!.split(';')[0]!;
+  const join = await fetch(`${server.url}/api/join`, {
+    method: 'POST',
+    headers: { ...REMOTE, cookie: inviteCookie, 'content-type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  expect(join.status).toBe(200);
+  return `${inviteCookie}; ${join.headers.get('set-cookie')!.split(';')[0]}`;
+}
+
+describe('players and hands', () => {
+  it('keeps tables closed to people without an invite', async () => {
+    expect((await fetch(`${server.url}/api/table`, { headers: REMOTE })).status).toBe(403);
+    expect((await fetch(`${server.url}/join/wrong`, { headers: REMOTE })).status).toBe(403);
+    const me = (await (await fetch(`${server.url}/api/me`, { headers: REMOTE })).json()) as Me;
+    expect(me).toMatchObject({ host: false, invited: false, joined: false });
+    expect(me.player).toBeUndefined();
+    const join = await fetch(`${server.url}/api/join`, {
+      method: 'POST',
+      headers: { ...REMOTE, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Mallory' }),
+    });
+    expect(join.status).toBe(403);
+    const mcp = await fetch(`${server.url}/mcp`, { method: 'POST', headers: REMOTE });
+    expect(mcp.status).toBe(403);
+  });
+
+  it('lets an invited guest join, and keeps host-only actions for the host', async () => {
+    const cookie = await joinAsGuest('Bob Builder');
+    const me = (await (
+      await fetch(`${server.url}/api/me`, { headers: { ...REMOTE, cookie } })
+    ).json()) as Me;
+    expect(me.player).toMatchObject({ id: 'bob-builder', name: 'Bob Builder', role: 'guest' });
+    const host = await (await fetch(`${server.url}/api/me`)).json();
+    expect(host).toMatchObject({ host: true, player: { role: 'host' } });
+
+    const headers = { ...REMOTE, cookie, 'content-type': 'application/json' };
+    const create = await fetch(`${server.url}/api/tables`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ name: 'mine' }),
+    });
+    expect(create.status).toBe(403);
+    expect((await fetch(`${server.url}/api/components`, { headers })).status).toBe(403);
+    expect((await fetch(`${server.url}/api/share`, { headers })).status).toBe(403);
+    const forged = await fetch(`${server.url}/api/me`, {
+      method: 'POST',
+      headers: { ...headers, origin: 'https://evil.example' },
+      body: JSON.stringify({ name: 'Hacked' }),
+    });
+    expect(forged.status).toBe(403);
+    // A website pointing its own name at this computer is not the host.
+    const rebound = await server.app.inject({
+      url: '/api/share',
+      headers: { host: 'evil.example:4317' },
+    });
+    expect(rebound.statusCode).toBe(403);
+    expect((await server.app.inject({ url: '/api/share' })).statusCode).toBe(200);
+  });
+
+  it('shows each player their own hand and only counts of the others', async () => {
+    const cookie = await joinAsGuest('Bob');
+    const host = (await server.workspace.players.host()).id;
+    const alice = await connect();
+    const bob = await connect(undefined, { ...REMOTE, cookie });
+    await Promise.all([alice.next(), bob.next()]);
+
+    alice.send({
+      type: 'command',
+      command: { type: 'deal', from: DECK, to: [`hand:${host}`, 'hand:bob'], count: 1 },
+    });
+    const [forAlice, forBob] = (await Promise.all([alice.next(), bob.next()])) as Extract<
+      ServerMessage,
+      { type: 'state' }
+    >[];
+    const real = server.session.engine.state.objects;
+    const handOf = (view: TableView, id: string) =>
+      Object.values(view.objects).filter((o) => o.kind === 'piece' && o.hand === id);
+    expect(handOf(forAlice!.state, host)).toHaveLength(1);
+    expect(handOf(forAlice!.state, 'bob')).toHaveLength(0);
+    expect(handOf(forBob!.state, 'bob')).toHaveLength(1);
+    expect(handOf(forBob!.state, host)).toHaveLength(0);
+    expect(forBob!.state.hands).toEqual({ [host]: 1, bob: 1 });
+    expect(forBob!.activity).toMatchObject({
+      by: 'person',
+      player: host,
+      text: 'dealt 1 piece each',
+    });
+
+    // Bob cannot reach Alice's cards, even knowing their ids.
+    const aliceCard = handOf(forAlice!.state, host)[0]!.id;
+    expect(JSON.stringify(forBob!.state)).not.toContain(aliceCard);
+    bob.send({ type: 'command', command: { type: 'move', ids: [aliceCard], to: [0, 0] } });
+    expect(await bob.next()).toMatchObject({ message: "That piece is in another player's hand." });
+
+    // He plays a face-down card from the deck by the stand-in id he was shown.
+    const deck = forBob!.state.objects[DECK] as Stack;
+    expect(deck.items[0]).toMatch(/^hidden-/);
+    bob.send({ type: 'command', command: { type: 'take', id: deck.items[0], to: 'hand:bob' } });
+    const after = (await bob.next()) as Extract<ServerMessage, { type: 'state' }>;
+    expect(handOf(after.state, 'bob')).toHaveLength(2);
+    expect((real[DECK] as Stack).items).toHaveLength(3);
+    expect((server.session.engine.state.objects[DECK] as Stack).items).toHaveLength(2);
+    const bobCards = handOf(after.state, 'bob') as Piece[];
+    expect(bobCards.every((p) => p.data && !p.id.startsWith('hidden-'))).toBe(true);
+    await alice.next();
+
+    expect(bob.players.at(-1)).toMatchObject({
+      type: 'players',
+      you: 'bob',
+      players: [
+        { id: host, role: 'host', online: true },
+        { id: 'bob', role: 'guest', online: true },
+      ],
+    });
+    alice.socket.close();
+    bob.socket.close();
+  });
+
+  it('lets guests watch but not play until they join', async () => {
+    const invite = await fetch(`${server.url}/join/${server.workspace.players.invite}`, {
+      headers: REMOTE,
+      redirect: 'manual',
+    });
+    const cookie = invite.headers.get('set-cookie')!.split(';')[0]!;
+    expect(invite.headers.get('location')).toBe('/?join');
+    const watcher = await connect(undefined, { ...REMOTE, cookie });
+    expect((await watcher.next()).type).toBe('state');
+    watcher.send({ type: 'command', command: { type: 'shuffle', id: DECK } });
+    expect(await watcher.next()).toMatchObject({ message: 'Join the table to play.' });
+    watcher.socket.close();
   });
 });
 

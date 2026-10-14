@@ -10,7 +10,7 @@ import { applyCommand, CommandError, type Command } from './commands.js';
 import { objectSize } from './layout.js';
 import { seedState } from './rng.js';
 import { resolveSpots, SnapError } from './snap.js';
-import { sizeOf, type Piece, type TableObject, type TableState } from './state.js';
+import { onTable, sizeOf, type Piece, type TableObject, type TableState } from './state.js';
 
 export interface CreateTableOptions {
   name: string;
@@ -153,7 +153,7 @@ export function applySetup(
   const topLevel = () =>
     new Set(
       Object.values(state.objects)
-        .filter((o) => !(o.kind === 'piece' && o.parent))
+        .filter(onTable)
         .map((o) => o.id),
     );
 
@@ -273,7 +273,7 @@ function tidyLeftovers(
   project: ResolvedProject,
   used: ReadonlySet<string>,
 ): TableState {
-  const top = Object.values(state.objects).filter((o) => !(o.kind === 'piece' && o.parent));
+  const top = Object.values(state.objects).filter(onTable);
   const placed = top.filter((o) => used.has(o.id));
   const leftover = top.filter((o) => !used.has(o.id)).sort((a, b) => a.z - b.z);
   if (placed.length === 0 || leftover.length === 0) return state;
@@ -371,7 +371,7 @@ export function syncTable(state: TableState, project: ResolvedProject): TableSta
 
   if (fresh.length) {
     const others = Object.values(objects).filter(
-      (o) => !(o.kind === 'piece' && o.parent) && !fresh.some((f) => f.id === o.id),
+      (o) => onTable(o) && !fresh.some((f) => f.id === o.id),
     );
     let [x0, y1] = [0, 0];
     if (others.length) {

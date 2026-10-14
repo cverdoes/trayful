@@ -22,6 +22,37 @@ export interface TableState {
   objects: Readonly<Record<string, TableObject>>;
 }
 
+/** Whether an object lies directly on the table: not inside a stack, and not in a player's hand. */
+export function onTable(object: TableObject): boolean {
+  return !(object.kind === 'piece' && (object.parent || object.hand));
+}
+
+/** The pieces in a player's hand, in the order they were picked up. */
+export function handOf(state: TableState, player: string): Piece[] {
+  return Object.values(state.objects)
+    .filter((o): o is Piece => o.kind === 'piece' && o.hand === player)
+    .sort((a, b) => a.z - b.z || (a.id < b.id ? -1 : 1));
+}
+
+/** How many pieces each player holds in their hand. */
+export function handCounts(state: TableState): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const object of Object.values(state.objects)) {
+    if (object.kind === 'piece' && object.hand)
+      counts[object.hand] = (counts[object.hand] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/** `hand:<player>` names a player's private hand as a target. */
+export const HAND_PREFIX = 'hand:';
+
+export function handTarget(target: unknown): string | undefined {
+  return typeof target === 'string' && target.startsWith(HAND_PREFIX)
+    ? target.slice(HAND_PREFIX.length)
+    : undefined;
+}
+
 /** What the engine needs to know about component types. */
 export type Catalog = Readonly<Record<string, ComponentType>>;
 
@@ -87,6 +118,8 @@ export function checkIntegrity(state: TableState): string[] {
           problems.push(`Piece "${id}" is in both "${seen.get(id)}" and "${object.id}".`);
         seen.set(id, object.id);
       }
+    } else if (object.parent && object.hand) {
+      problems.push(`Piece "${object.id}" cannot be both in a stack and in a hand.`);
     } else if (object.parent) {
       const parent = state.objects[object.parent];
       if (!parent || parent.kind !== 'stack' || !parent.items.includes(object.id)) {

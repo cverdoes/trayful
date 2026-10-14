@@ -548,6 +548,12 @@ export const PieceObject = z
       .optional()
       .describe('Id of the stack holding this piece. Its `pos` is then unused.'),
     snap: z.string().optional().describe('Snap spot the piece sits in, as `pieceId/target/index`.'),
+    hand: z
+      .string()
+      .optional()
+      .describe(
+        "Id of the player whose private hand holds this piece. Only that player sees it; its `pos` is then unused.",
+      ),
   })
   .meta({ id: 'PieceObject', description: 'One component on the table.' });
 

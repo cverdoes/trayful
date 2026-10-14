@@ -1,11 +1,12 @@
-import type {
-  ClientMessage,
-  RenderRequest,
-  Command,
-  ProjectView,
-  ServerMessage,
-  SnapSpot,
-  TableState,
+import {
+  onTable,
+  type ClientMessage,
+  type RenderRequest,
+  type Command,
+  type ProjectView,
+  type ServerMessage,
+  type SnapSpot,
+  type TableState,
 } from '@trayful/core';
 import { create } from 'zustand';
 
@@ -86,7 +87,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       // Drop selected ids that vanished or went into a stack.
       selection: s.selection.filter((id) => {
         const o = objects[id];
-        return o && !(o.kind === 'piece' && o.parent);
+        return o && onTable(o);
       }),
     }));
   },

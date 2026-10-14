@@ -3,9 +3,12 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import {
   applyCommand,
   describeTable,
+  handTarget,
+  onTable,
   queryObjects,
   resolveSpots,
   summarize,
+  withoutOtherHands,
   type Command,
   type TableState,
 } from '@trayful/core';
@@ -13,6 +16,7 @@ import { toJsonSchemas } from '@trayful/formats';
 import { z } from 'zod';
 import { addAsset, removeType, setInventory, upsertType } from './authoring.js';
 import { docFiles, docsIndex, readDoc } from './docs.js';
+import { AGENT_PLAYER } from './players.js';
 import type { Workspace } from './workspace.js';
 
 export interface McpOptions {
@@ -34,10 +38,12 @@ const Target = z
     z
       .string()
       .describe(
-        'A snap target from describe_table: `board/target/index` for one spot, or `board/target` for its free spots in order (or its free area).',
+        "A snap target from describe_table: `board/target/index` for one spot, or `board/target` for its free spots in order (or its free area); or `hand:<player>` for a player's private hand.",
       ),
   ])
-  .describe('A position `[x, y]` in mm, or a snap target such as `main-board/market/2`.');
+  .describe(
+    'A position `[x, y]` in mm, a snap target such as `main-board/market/2`, or a hand such as `hand:claude`.',
+  );
 
 /**
  * Builds an MCP server for a workspace. Play tools act on the active table (the one
@@ -56,6 +62,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
         'To play, start with describe_table. Positions are piece centres in millimetres, y grows downwards. Stacks (piles and decks) hold cards bottom to top; draw and deal take from the top.',
         'Boards declare snap targets (card slots, action spaces, tracks). Use them as `to` in move, draw and deal, e.g. `main-board/fields/3`; pieces in a spot ride along when the board moves.',
         'Face-down cards are hidden: their fields and the order of piles only show with reveal: true, which is like peeking, so only use it when the game allows.',
+        `You play as the player "${AGENT_PLAYER}". Each player has a private hand that only they see: \`hand:${AGENT_PLAYER}\` is yours, \`hand:<player>\` gives a piece to someone else. Move a piece from your hand to a position or spot to play it (face up unless you say \`face: "down"\`). Other players' hands are never shown to you, not even with reveal.`,
         'To design components, read trayful://docs (HOWTO guides and the format reference), then use upsert_type, set_inventory and add_asset; render_component shows a type as people will see it. Edits are checked and undone if they would break the project.',
         'Every change goes into the same undo history as the people at the table. Trayful does not know the rules; you bring them.',
       ].join('\n'),
@@ -74,6 +81,11 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
     } catch (err) {
       return failure(err);
     }
+    try {
+      for (const command of commands) session().checkReach(command, AGENT_PLAYER);
+    } catch (err) {
+      return failure(err);
+    }
     session().asAgent(activity, () => {
       for (const command of commands) engine().dispatch(command);
     });
@@ -82,7 +94,11 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
 
   const changes = (before: TableState, after: TableState): string => {
     const changed = Object.values(after.objects)
-      .filter((o) => before.objects[o.id] !== o && !(o.kind === 'piece' && o.parent))
+      .filter(
+        (o) =>
+          before.objects[o.id] !== o &&
+          (onTable(o) || (o.kind === 'piece' && o.hand === AGENT_PLAYER)),
+      )
       .map((o) => summarize(after, types(), o));
     const removed = Object.keys(before.objects).filter((id) => !after.objects[id]);
     return JSON.stringify({ changed, ...(removed.length ? { removed } : {}) });
@@ -95,11 +111,11 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
     {
       title: 'Describe the table',
       description:
-        'A short text overview of everything on the table: piles, pieces, positions and visible card text.',
+        'A short text overview of everything on the table: piles, pieces, positions and visible card text, your own hand, and how many pieces the other players hold.',
       inputSchema: { reveal: z.boolean().optional().describe('Also show face-down cards.') },
       annotations: { readOnlyHint: true },
     },
-    ({ reveal }) => text(describeTable(engine().state, types(), { reveal })),
+    ({ reveal }) => text(describeTable(engine().state, types(), { reveal, viewer: AGENT_PLAYER })),
   );
 
   server.registerTool(
@@ -119,14 +135,21 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
           .tuple([z.number(), z.number(), z.number(), z.number()])
           .optional()
           .describe('`[x, y, width, height]` in mm; objects whose centre lies inside.'),
-        inside: z.string().optional().describe('A stack id: list its pieces, bottom to top.'),
+        inside: z
+          .string()
+          .optional()
+          .describe(
+            `A stack id: list its pieces, bottom to top. \`hand:${AGENT_PLAYER}\` lists your hand.`,
+          ),
         reveal: z.boolean().optional().describe('Also show face-down cards.'),
       },
       annotations: { readOnlyHint: true },
     },
     (query) => {
       try {
-        return text(JSON.stringify(queryObjects(engine().state, types(), query)));
+        return text(
+          JSON.stringify(queryObjects(engine().state, types(), { ...query, viewer: AGENT_PLAYER })),
+        );
       } catch (err) {
         return failure(err);
       }
@@ -162,7 +185,18 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
       inputSchema: { limit: z.int().positive().optional().describe('How many. Default 20.') },
       annotations: { readOnlyHint: true },
     },
-    ({ limit }) => text(JSON.stringify(engine().history.slice(-(limit ?? 20)))),
+    ({ limit }) => {
+      // Pieces in other players' hands are named only as hidden, so the history cannot
+      // tell you what they hold.
+      const state = engine().state;
+      const steps = JSON.stringify(engine().history.slice(-(limit ?? 20)), (_key, value) => {
+        const piece = typeof value === 'string' ? state.objects[value] : undefined;
+        return piece?.kind === 'piece' && piece.hand && piece.hand !== AGENT_PLAYER
+          ? 'a hidden piece'
+          : value;
+      });
+      return text(steps);
+    },
   );
 
   // --- Playing ----------------------------------------------------------------
@@ -261,7 +295,10 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
       let places = 0;
       try {
         for (const t of targets as (string | [number, number])[]) {
-          places += typeof t === 'string' ? resolveSpots(engine().state, types(), t).length : 1;
+          places +=
+            typeof t === 'string' && handTarget(t) === undefined
+              ? resolveSpots(engine().state, types(), t).length
+              : 1;
         }
       } catch (err) {
         return failure(err);
@@ -283,7 +320,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
         face: Face.optional().describe('Turn it up or down. Default: as it was.'),
       },
     },
-    ({ id, to, face }) => play(`took ${id}`, [{ type: 'take', id, to, face }]),
+    ({ id, to, face }) => play('took a card from a pile', [{ type: 'take', id, to, face }]),
   );
 
   server.registerTool(
@@ -747,14 +784,15 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
     ),
     {
       title: 'Table state',
-      description: 'Everything on a table as JSON, including face-down cards.',
+      description:
+        "Everything on a table as JSON, including face-down cards and your own hand, but not other players' hands.",
       mimeType: 'application/json',
     },
     async (uri, vars) => {
       const s = await workspace.table(variable(vars.project!), variable(vars.table!), {
         create: false,
       });
-      return json(uri, s.engine.state);
+      return json(uri, withoutOtherHands(s.engine.state, AGENT_PLAYER));
     },
   );
 

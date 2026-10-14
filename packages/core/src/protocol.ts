@@ -1,6 +1,6 @@
 import type { ComponentType } from '@trayful/formats/browser';
 import type { Command } from './commands.js';
-import type { TableState } from './state.js';
+import type { TableView } from './privacy.js';
 
 /**
  * Messages between a Trayful server and its clients (the browser table today,
@@ -21,12 +21,13 @@ export type ClientMessage =
 export type ServerMessage =
   | {
       type: 'state';
-      state: TableState;
+      /** The table as this client's player may see it: other hands and face-down faces hidden. */
+      state: TableView;
       /** Increases with every change, so clients can ignore stale messages. */
       revision: number;
       canUndo: boolean;
       canRedo: boolean;
-      /** Set when an agent made this change, so people watching can see what happened. */
+      /** Who made this change and what it was, so people watching can follow along. */
       activity?: Activity;
     }
   | { type: 'error'; message: string; requestId?: string }
@@ -40,7 +41,9 @@ export type ServerMessage =
   /** The project files changed and loaded cleanly: redraw with these definitions. */
   | { type: 'project'; view: ProjectView }
   /** The project files changed but have errors; the table keeps the last good version. */
-  | { type: 'problems'; problems: string[] };
+  | { type: 'problems'; problems: string[] }
+  /** Who is at the table. Sent on connect and whenever someone joins, leaves or renames. */
+  | { type: 'players'; players: PlayerInfo[]; you?: string };
 
 /** What to draw for `render-request`: a type, with field values for its `{{field}}` placeholders. */
 export interface RenderRequest {
@@ -51,9 +54,23 @@ export interface RenderRequest {
 }
 
 export interface Activity {
-  by: 'agent';
-  /** What happened, in a few words, such as "dealt 5 cards". */
+  by: 'agent' | 'person';
+  /** The player who acted, and their name. */
+  player?: string;
+  name?: string;
+  /** What happened, in a few words, such as "dealt 5 cards". Never names hidden pieces. */
   text: string;
+}
+
+/** A player as other players see them. */
+export interface PlayerInfo {
+  id: string;
+  name: string;
+  color: string;
+  kind: 'person' | 'agent';
+  role: 'host' | 'guest' | 'agent';
+  /** Whether they have this table open right now. */
+  online: boolean;
 }
 
 /** What a client needs to draw a project's components, served at `/api/project`. */
