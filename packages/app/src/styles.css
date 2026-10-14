@@ -170,3 +170,89 @@ button:disabled {
   color: var(--accent);
   margin-right: 6px;
 }
+
+.problems {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(720px, calc(100% - 32px));
+  max-height: 40vh;
+  overflow: auto;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #3d2a12;
+  border: 1px solid #d29922;
+  z-index: 20;
+}
+
+.problems pre {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  font-size: 12px;
+}
+
+.toolbar select {
+  font: inherit;
+  height: 32px;
+  max-width: 220px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #21262d;
+  color: var(--bar-text);
+}
+
+/* Print-and-play sheets */
+
+body.printing,
+body.printing #root {
+  overflow: auto;
+  background: #525659;
+}
+
+.print-bar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bar);
+  z-index: 1;
+}
+
+.sheet {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  margin: 16px auto;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  break-after: page;
+}
+
+.sheet-item {
+  position: absolute;
+  outline: 0.1mm dashed #bbb;
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  body.printing,
+  body.printing #root {
+    background: white;
+  }
+  .print-bar {
+    display: none;
+  }
+  .sheet {
+    margin: 0;
+    box-shadow: none;
+  }
+}

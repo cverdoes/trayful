@@ -293,3 +293,100 @@ function tidyLeftovers(
   }
   return { ...state, objects };
 }
+
+/**
+ * Brings a table in line with edited project files: pieces get their component's
+ * current data and type, components new to the inventory are put on the table
+ * below everything else (cards join their deck when it is still there), and
+ * pieces whose component is gone are taken off. Returns the same state when
+ * nothing changed.
+ */
+export function syncTable(state: TableState, project: ResolvedProject): TableState {
+  const specs = new Map(project.components.map((c) => [c.id, c]));
+  const objects: Record<string, TableObject> = { ...state.objects };
+  let changed = false;
+
+  // Pieces whose component is gone leave the table, and their stacks.
+  for (const object of Object.values(objects)) {
+    if (object.kind !== 'piece' || specs.has(object.id)) continue;
+    delete objects[object.id];
+    changed = true;
+    if (object.parent) {
+      const stack = objects[object.parent];
+      if (stack?.kind === 'stack') {
+        const items = stack.items.filter((id) => id !== object.id);
+        if (items.length === 0) delete objects[stack.id];
+        else objects[stack.id] = { ...stack, items };
+      }
+    }
+  }
+
+  // Pieces still in the box take their component's current data.
+  for (const object of Object.values(objects)) {
+    if (object.kind !== 'piece') continue;
+    const spec = specs.get(object.id)!;
+    const data = Object.keys(spec.data).length ? spec.data : undefined;
+    if (spec.type !== object.type || JSON.stringify(data) !== JSON.stringify(object.data)) {
+      const next: Piece = { ...object, type: spec.type };
+      if (data) next.data = data;
+      else delete next.data;
+      objects[object.id] = next;
+      changed = true;
+    }
+  }
+
+  // New components: cards join their deck if it is on the table, the rest go below.
+  const fresh: { id: string; size: Vec2 }[] = [];
+  let z = Math.max(-1, ...Object.values(objects).map((o) => o.z)) + 1;
+  for (const spec of project.components) {
+    if (objects[spec.id]) continue;
+    const type = project.types[spec.type];
+    if (!type) continue;
+    changed = true;
+    if (spec.deck) {
+      const stackId = `deck:${spec.deck}`;
+      const deck = objects[stackId];
+      objects[spec.id] = newPiece(spec.id, type, spec.data, 'down', stackId);
+      if (deck?.kind === 'stack') {
+        objects[stackId] = { ...deck, items: [spec.id, ...deck.items] };
+      } else {
+        // A new deck, or one whose cards have all been dealt out: start a pile.
+        objects[stackId] = {
+          kind: 'stack',
+          id: stackId,
+          name: spec.deck,
+          pos: [0, 0],
+          rot: 0,
+          z: z++,
+          items: [spec.id],
+        };
+        fresh.push({ id: stackId, size: sizeOf(type) });
+      }
+      continue;
+    }
+    objects[spec.id] = { ...newPiece(spec.id, type, spec.data, 'up'), z: z++ };
+    fresh.push({ id: spec.id, size: sizeOf(type) });
+  }
+  if (!changed) return state;
+
+  if (fresh.length) {
+    const others = Object.values(objects).filter(
+      (o) => !(o.kind === 'piece' && o.parent) && !fresh.some((f) => f.id === o.id),
+    );
+    let [x0, y1] = [0, 0];
+    if (others.length) {
+      x0 = Infinity;
+      y1 = -Infinity;
+      for (const o of others) {
+        const [w, h] = objectSize({ ...state, objects }, project.types, o);
+        x0 = Math.min(x0, o.pos[0] - w / 2);
+        y1 = Math.max(y1, o.pos[1] + h / 2);
+      }
+      y1 += MARGIN;
+    }
+    for (const [id, pos] of rows(fresh, [x0, y1], BOX_WIDTH)) {
+      objects[id] = { ...objects[id]!, pos };
+    }
+  }
+  return { ...state, objects };
+}

@@ -11,6 +11,7 @@ A small worker-placement and card-market game that uses every Trayful file kind.
 | `data/actions.csv`     | Card data in a spreadsheet-friendly form                                                       |
 | `setups/2-player.yaml` | Placing on the table and on snap targets, shuffling and dealing into the market                |
 | `assets/board.svg`     | Board artwork whose slots match the snap targets                                               |
+| `assets/art/`          | Card art, given per card through an `image` field                                              |
 
 Check it, then play it (after `pnpm build`):
 

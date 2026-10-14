@@ -1,5 +1,6 @@
 import type {
   ClientMessage,
+  RenderRequest,
   Command,
   ProjectView,
   ServerMessage,
@@ -21,6 +22,12 @@ interface TrayfulStore {
   selection: string[];
   /** The latest error from the server, shown briefly. */
   error?: { message: string; at: number };
+  /** Why the page cannot show a table at all, such as an unknown table name. */
+  fatal?: string;
+  /** A component an agent asked to see, waiting to be drawn. */
+  renderJob?: { id: string; component: RenderRequest };
+  /** Errors in the project files after an edit; the table keeps the last good version meanwhile. */
+  problems?: string[];
   /** The latest change an agent made, shown briefly to people watching. */
   activity?: { text: string; at: number };
   /** Bumped when the server rejects a change, so the canvas redraws from server state. */
@@ -52,7 +59,15 @@ export const useStore = create<TrayfulStore>((set, get) => ({
   send: () => {},
   command: (command) => get().send({ type: 'command', command }),
   receive: (message) => {
-    if (message.type === 'snapshot-request') return;
+    if (message.type === 'snapshot-request' || message.type === 'render-request') return;
+    if (message.type === 'project') {
+      set({ view: message.view, problems: undefined });
+      return;
+    }
+    if (message.type === 'problems') {
+      set({ problems: message.problems });
+      return;
+    }
     if (message.type === 'error') {
       set((s) => ({
         error: { message: message.message, at: Date.now() },

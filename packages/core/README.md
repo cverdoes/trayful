@@ -8,7 +8,8 @@ The table engine: state, commands, undo and seeded randomness. It has no UI or f
 - `snap.ts` resolves snap targets (`resolveSpots`, `allSpots`) and finds where a dropped piece snaps (`snapFor`); `layout.ts` gives the geometry of fanned and spread-out stacks.
 - `TableEngine` wraps a state with undo, redo, a command history and change listeners.
 - `describeTable` and `queryObjects` in `describe.ts` give agents a text or JSON view of the table. Face-down cards stay hidden unless asked with `reveal`.
-- `replace(state)` on the engine swaps in a whole new table (a reset) as one undoable step.
+- `replace(state)` on the engine swaps in a whole new table (a reset) as one undoable step; `setCatalog(types)` switches to reloaded component types.
+- `syncTable(state, project)` brings a table up to date with edited project files: components that left the box leave the table, changed data applies in place, and new components join their deck or wait in rows below the table.
 - `ClientMessage` and `ServerMessage` in `protocol.ts` are the WebSocket messages between the browser and the server.
 - `toTableFile` and `fromTableFile` convert to and from the saved JSON form, checking stack consistency on load.
 

@@ -1,21 +1,158 @@
 import { useEffect, useState } from 'react';
 import { selectionActions } from './actions';
+import { Print } from './Print';
+import { RenderJob } from './render/Preview';
+import { go, route } from './route';
 import { useStore } from './store';
 import { Table } from './Table';
 import { fitToTable, tableBounds, TOOLBAR_HEIGHT, zoomAt } from './viewport';
 
 export function App() {
-  useKeyboard();
   useTestHook();
+  const fatal = useStore((s) => s.fatal);
+  if (fatal) return <div className="loading">{fatal}</div>;
+  return route().print ? <Print /> : <TableApp />;
+}
+
+function TableApp() {
+  useKeyboard();
   const helpOpen = useStore((s) => s.helpOpen);
   return (
     <>
       <Table />
       <Toolbar />
+      <Problems />
       <ErrorToast />
       <AgentActivity />
+      <RenderJob />
       {helpOpen && <Help />}
     </>
+  );
+}
+
+/** Shown while the project files have errors; the table keeps the last good version. */
+function Problems() {
+  const problems = useStore((s) => s.problems);
+  if (!problems?.length) return null;
+  return (
+    <div className="problems" role="alert">
+      <strong>The project files have errors.</strong> The table shows the last version that loaded;
+      fix the files and save to update it.
+      <pre>{problems.join('\n')}</pre>
+    </div>
+  );
+}
+
+interface ProjectSummary {
+  id: string;
+  name: string;
+  problems: string[];
+  tables: string[];
+}
+
+const NEW = '\u0000new';
+const DUPLICATE = '\u0000duplicate';
+const DELETE = '\u0000delete';
+
+async function api(method: string, url: string, body?: unknown): Promise<unknown> {
+  const response = await fetch(url, {
+    method,
+    headers: body ? { 'content-type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const result = (await response.json()) as { error?: string };
+  if (!response.ok) throw new Error(result.error ?? response.statusText);
+  return result;
+}
+
+function suggestName(tables: string[]): string {
+  let n = tables.length + 1;
+  while (tables.includes(`table-${n}`)) n++;
+  return `table-${n}`;
+}
+
+/** Switches between the tables (and projects) of the workspace, and makes new ones. */
+function TableMenu() {
+  const view = useStore((s) => s.view);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const refresh = () =>
+    void fetch('/api/projects')
+      .then((r) => r.json())
+      .then((p: ProjectSummary[]) => setProjects(p));
+  useEffect(refresh, []);
+  if (!view) return null;
+  const current = `${view.project}/${view.table}`;
+  const tables = projects.find((p) => p.id === view.project)?.tables ?? [view.table];
+  const fail = (err: unknown) =>
+    useStore.setState({ error: { message: (err as Error).message, at: Date.now() } });
+
+  const onChange = async (value: string) => {
+    try {
+      if (value === NEW || value === DUPLICATE) {
+        const name = window.prompt(
+          value === NEW ? 'Name for the new table:' : `Name for the copy of ${view.table}:`,
+          suggestName(tables),
+        );
+        if (!name) return;
+        await api('POST', '/api/tables', {
+          project: view.project,
+          name,
+          ...(value === DUPLICATE ? { from: view.table } : {}),
+        });
+        go({ project: view.project, table: name });
+      } else if (value === DELETE) {
+        if (!window.confirm(`Delete table "${view.table}" for good? This cannot be undone.`))
+          return;
+        const next = tables.find((t) => t !== view.table);
+        await api(
+          'DELETE',
+          `/api/tables?project=${encodeURIComponent(view.project)}&name=${encodeURIComponent(view.table)}`,
+        );
+        go({ project: view.project, table: next });
+      } else {
+        const [project, table] = value.split('/');
+        go({ project: project!, table });
+      }
+    } catch (err) {
+      fail(err);
+      refresh();
+    }
+  };
+
+  return (
+    <select
+      aria-label="Table"
+      value={current}
+      onFocus={refresh}
+      onChange={(e) => void onChange(e.target.value)}
+    >
+      {(projects.length
+        ? projects
+        : [{ id: view.project, name: view.name, problems: [], tables }]
+      ).map((p) => (
+        <optgroup key={p.id} label={p.problems.length ? `${p.name} (has errors)` : p.name}>
+          {(p.id === view.project && !p.tables.includes(view.table)
+            ? [...p.tables, view.table]
+            : p.tables.length
+              ? p.tables
+              : ['table-1']
+          ).map((t) => (
+            <option
+              key={t}
+              value={`${p.id}/${t}`}
+              disabled={p.problems.length > 0 && p.id !== view.project}
+            >
+              {t}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+      <optgroup label="This table">
+        <option value={NEW}>New table…</option>
+        <option value={DUPLICATE}>Duplicate this table…</option>
+        <option value={DELETE}>Delete this table…</option>
+      </optgroup>
+    </select>
   );
 }
 
@@ -45,7 +182,7 @@ function zoom(factor: number) {
 function newTable() {
   const setup = useStore.getState().view?.setup;
   const from = setup ? ` set up as "${setup}"` : '';
-  if (window.confirm(`Start a new table from the project files${from}? You can undo this.`)) {
+  if (window.confirm(`Start this table over from the project files${from}? You can undo this.`)) {
     useStore.getState().send({ type: 'reset' });
   }
 }
@@ -65,7 +202,7 @@ function Toolbar() {
     <header className="toolbar">
       <div className="title">
         <strong>{view?.name ?? 'Trayful'}</strong>
-        {view && <span className="muted">{view.table}</span>}
+        <TableMenu />
         <span className={`status status-${status}`} title={`Connection: ${status}`}>
           {status === 'online' ? '●' : status === 'connecting' ? '◌' : '○'} {status}
         </span>
@@ -105,7 +242,14 @@ function Toolbar() {
       </div>
       <div className="group">
         <Button label="Fit" keys="0" onClick={fit} />
-        <Button label="New table" onClick={newTable} />
+        <Button label="Start over" title="Start this table over" onClick={newTable} />
+        <Button
+          label="Print"
+          title="Print and play: every component at real size"
+          onClick={
+            view ? () => go({ project: view.project, table: view.table, print: true }) : undefined
+          }
+        />
         <Button
           label="?"
           title="Help"
