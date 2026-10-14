@@ -159,7 +159,7 @@ export function Table() {
     }
     const point: Vec = [start[0] + by[0], start[1] + by[1]];
     const target = dropTarget(table, types, moved, point);
-    const ordered = moved.sort((a, b) => table.objects[a]!.z - table.objects[b]!.z);
+    const ordered = moved.toSorted((a, b) => table.objects[a]!.z - table.objects[b]!.z);
     const command = useStore.getState().command;
     if (toHand) {
       // Riders stay on the table; only what was picked up goes into the hand.
@@ -352,7 +352,7 @@ export function Table() {
         scaleY={viewport.scale}
         draggable={!shiftDown && !marquee}
         onDragEnd={(e) => {
-          if (e.target === e.target.getStage()) {
+          if (e.target.nodeType === 'Stage') {
             useStore.setState((s) => ({
               viewport: { ...s.viewport, x: e.target.x(), y: e.target.y() },
             }));

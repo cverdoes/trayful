@@ -74,11 +74,12 @@ export class FilePlayerStore implements PlayerStore {
 
 export class MemoryPlayerStore implements PlayerStore {
   private data: PlayersData | undefined;
-  async load() {
-    return this.data && structuredClone(this.data);
+  load() {
+    return Promise.resolve(this.data && structuredClone(this.data));
   }
-  async save(data: PlayersData) {
+  save(data: PlayersData) {
     this.data = structuredClone(data);
+    return Promise.resolve();
   }
 }
 
@@ -110,10 +111,10 @@ export class Players {
   ) {}
 
   static async open(store: PlayerStore): Promise<Players> {
-    const data = (await store.load()) ?? { invites: [], players: [] };
+    // Files written before invites were per table have no `invites` list.
+    const data: PlayersData = { invites: [], players: [], ...(await store.load()) };
     // Before invites were per table there was one for every table; it no longer works.
     delete (data as { invite?: string }).invite;
-    data.invites ??= [];
     const players = new Players(data, store);
     if (!players.get(AGENT_PLAYER)) {
       data.players.push({
@@ -151,7 +152,7 @@ export class Players {
     if (!player) return;
     const tables = new Set([...(player.tables ?? []), ...keys]);
     if (tables.size === (player.tables?.length ?? 0)) return;
-    player.tables = [...tables].sort();
+    player.tables = [...tables].sort((a, b) => a.localeCompare(b));
     await this.store.save(this.data);
   }
 
@@ -174,7 +175,11 @@ export class Players {
     const clean = cleanName(name);
     const base = slug(clean) || role;
     let id = base;
-    for (let n = 2; this.data.players.some((p) => p.id === id); n++) id = `${base}-${n}`;
+    let n = 2;
+    while (this.data.players.some((p) => p.id === id)) {
+      id = `${base}-${n}`;
+      n++;
+    }
     const key = secret(24);
     const stored: StoredPlayer = {
       id,
@@ -241,9 +246,9 @@ function slug(name: string): string {
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/^-|-$/g, '')
     .slice(0, 24)
-    .replace(/-+$/, '');
+    .replace(/-$/, '');
 }
 
 function publicPlayer({ secretHash: _secret, tables: _tables, ...player }: StoredPlayer): Player {

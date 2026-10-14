@@ -139,12 +139,7 @@ function TableMenu() {
         : [{ id: view.project, name: view.name, problems: [], tables }]
       ).map((p) => (
         <optgroup key={p.id} label={p.problems.length ? `${p.name} (has errors)` : p.name}>
-          {(p.id === view.project && !p.tables.includes(view.table)
-            ? [...p.tables, view.table]
-            : p.tables.length
-              ? p.tables
-              : ['table-1']
-          ).map((t) => (
+          {tableChoices(p, view).map((t) => (
             <option
               key={t}
               value={`${p.id}/${t}`}
@@ -215,7 +210,7 @@ function Toolbar() {
         <strong>{view?.name ?? 'Trayful'}</strong>
         <TableMenu />
         <span className={`status status-${status}`} title={`Connection: ${status}`}>
-          {status === 'online' ? '●' : status === 'connecting' ? '◌' : '○'} {status}
+          {STATUS_ICON[status]} {status}
         </span>
         <PlayerList />
       </div>
@@ -282,17 +277,29 @@ function Toolbar() {
   );
 }
 
+/** The tables to offer for a project: the open table is always listed, and a project has at least one. */
+function tableChoices(
+  project: Pick<ProjectSummary, 'id' | 'tables'>,
+  view: { project: string; table: string },
+): string[] {
+  if (project.id === view.project && !project.tables.includes(view.table))
+    return [...project.tables, view.table];
+  return project.tables.length ? project.tables : ['table-1'];
+}
+
+const STATUS_ICON = { online: '●', connecting: '◌', offline: '○' } as const;
+
 function Button({
   label,
   title,
   keys,
   onClick,
-}: {
+}: Readonly<{
   label: string;
   title?: string;
   keys?: string;
   onClick?: () => void;
-}) {
+}>) {
   const tip = [title ?? label, keys && `(${keys})`].filter(Boolean).join(' ');
   return (
     <button

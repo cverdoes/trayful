@@ -79,7 +79,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
   shiftDown: false,
   helpOpen: false,
   viewport: { x: 0, y: 0, scale: 1 },
-  send: () => {},
+  send: dropWhileOffline,
   command: (command) => get().send({ type: 'command', command }),
   receive: (message) => {
     if (message.type === 'snapshot-request' || message.type === 'render-request') return;
@@ -140,3 +140,8 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       return { selection: [...next] };
     }),
 }));
+
+/** Stands in for `send` while there is no connection; the server sends the table again on reconnect. */
+export function dropWhileOffline(): void {
+  // Nothing to send to.
+}

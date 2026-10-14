@@ -100,10 +100,10 @@ describe('Workspace', () => {
 
     expect(await ws.reload('starter-game')).toEqual([]);
     expect(ws.entry().version).toBe(2);
-    expect((session.engine.state.objects['deck:cards'] as Stack).items.length).toBe(before + 1);
+    expect((session.engine.state.objects['deck:cards'] as Stack).items).toHaveLength(before + 1);
     expect(messages.map((m) => m.type)).toContain('project');
     session.engine.undo();
-    expect((session.engine.state.objects['deck:cards'] as Stack).items.length).toBe(before);
+    expect((session.engine.state.objects['deck:cards'] as Stack).items).toHaveLength(before);
   });
 
   it('keeps the last good project when files break, and reports the problems', async () => {

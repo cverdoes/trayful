@@ -159,7 +159,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     return true;
   };
 
-  app.get('/api/health', async (request) => ({
+  app.get('/api/health', (request) => ({
     ok: true,
     project: workspace.active.project.manifest.name,
     table: workspace.active.tableName,
@@ -172,12 +172,12 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     const { who, player } = await identify(request);
     return { player, host: who.local, invited: who.invited, joined: who.player !== undefined };
   });
-  app.post<{ Body: { name?: string } }>('/api/me', async (request, reply) => {
+  app.post<{ Body: { name?: string } | undefined }>('/api/me', async (request, reply) => {
     const { player } = await identify(request);
     if (!player) return reply.code(403).send({ error: 'Join the table first.' });
     return { player: await workspace.renamePlayer(player.id, request.body?.name ?? '') };
   });
-  app.post<{ Body: { name?: string } }>('/api/join', async (request, reply) => {
+  app.post<{ Body: { name?: string } | undefined }>('/api/join', async (request, reply) => {
     const who = caller(request, players);
     if (!who.invited) return reply.code(403).send({ error: NOT_INVITED });
     let player = who.player;
@@ -209,16 +209,19 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     const join = who.player ? '' : '&join';
     return reply
       .header('set-cookie', cookie(INVITE_COOKIE, addToken(who.tokens, invite.token), request))
-      .redirect(`/?${query}${join}`);
+      .redirect(`/?${query.toString()}${join}`);
   });
   // The invite link to a table, made on first use; `renew` replaces it, so old links stop working.
-  app.post<{ Body: TableQuery & { renew?: boolean } }>('/api/invites', async (request, reply) => {
-    if (hostOnly(request, reply)) return;
-    const { project, table } = target(request.body ?? {});
-    await workspace.table(project, table, { create: false });
-    const invite = await players.invite(project, table, request.body?.renew === true);
-    return { project, table, links: linksFor(invite) };
-  });
+  app.post<{ Body: (TableQuery & { renew?: boolean }) | undefined }>(
+    '/api/invites',
+    async (request, reply) => {
+      if (hostOnly(request, reply)) return;
+      const { project, table } = target(request.body ?? {});
+      await workspace.table(project, table, { create: false });
+      const invite = await players.invite(project, table, request.body?.renew === true);
+      return { project, table, links: linksFor(invite) };
+    },
+  );
   app.get('/api/projects', async (request) => {
     const who = caller(request, players);
     const projects = await Promise.all(
@@ -249,7 +252,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
 
   // New, duplicated and deleted tables, for the table menu in the browser.
   app.post<{
-    Body: { project?: string; name: string; from?: string; setup?: string | false };
+    Body: { project?: string; name?: string; from?: string; setup?: string | false } | undefined;
   }>('/api/tables', async (request, reply) => {
     if (hostOnly(request, reply)) return;
     const { project = workspace.active.projectId, name, from, setup } = request.body ?? {};
@@ -289,7 +292,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
         return reply.code(404).send({ error: 'Not found' });
       }
       try {
-        return reply
+        return await reply
           .type(type)
           .header('cache-control', 'no-cache')
           .send(await readFile(file));
@@ -328,9 +331,10 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
         if (problems.length) send({ type: 'problems', problems });
         const unsubscribe = session.subscribe(send, viewer);
         socket.on('message', (data) => {
-          let message: ClientMessage;
+          let message: ClientMessage | null;
           try {
-            message = JSON.parse(String(data)) as ClientMessage;
+            // ws hands text frames over as a Buffer.
+            message = JSON.parse((data as Buffer).toString()) as ClientMessage | null;
           } catch {
             send({ type: 'error', message: 'Messages must be JSON.' });
             return;
@@ -345,8 +349,8 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
         });
         socket.on('close', unsubscribe);
       },
-      (err: Error) => {
-        send({ type: 'error', message: err.message });
+      (err: unknown) => {
+        send({ type: 'error', message: err instanceof Error ? err.message : String(err) });
         socket.close(1008, 'No such table');
       },
     );
@@ -406,7 +410,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     app,
     shareBases,
     addShareBase(base: string) {
-      shareBases.unshift(base.replace(/\/+$/, ''));
+      shareBases.unshift(withoutTrailingSlashes(base));
     },
     inviteLinks,
     async close() {
@@ -420,6 +424,12 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
 export function lanAddresses(): string[] {
   return Object.values(os.networkInterfaces())
     .flat()
-    .filter((a) => a && a.family === 'IPv4' && !a.internal)
-    .map((a) => a!.address);
+    .filter((a): a is os.NetworkInterfaceInfo => a?.family === 'IPv4' && !a.internal)
+    .map((a) => a.address);
+}
+
+function withoutTrailingSlashes(url: string): string {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === '/') end--;
+  return url.slice(0, end);
 }

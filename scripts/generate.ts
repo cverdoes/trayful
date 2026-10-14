@@ -314,11 +314,9 @@ function typeText(s: Schema, defs: Record<string, Schema>): string {
   // Zod adds the safe-integer limits to every int; they are noise for authors.
   const meaningful = (n: number | undefined) =>
     n !== undefined && Math.abs(n) < Number.MAX_SAFE_INTEGER;
-  const range = meaningful(s.exclusiveMinimum)
-    ? ` > ${s.exclusiveMinimum}`
-    : meaningful(s.minimum)
-      ? ` ≥ ${s.minimum}`
-      : '';
+  let range = '';
+  if (meaningful(s.exclusiveMinimum)) range = ` > ${s.exclusiveMinimum}`;
+  else if (meaningful(s.minimum)) range = ` ≥ ${s.minimum}`;
   const max = meaningful(s.maximum) ? ` ≤ ${s.maximum}` : '';
   const names: Record<string, string> = {
     integer: 'whole number',

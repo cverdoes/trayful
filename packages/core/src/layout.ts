@@ -14,13 +14,15 @@ const FAN_SHOW = 0.3;
  * fan overlaps them in a row and a spread lays them side by side.
  */
 export function stackOffsets(layout: StackLayout | undefined, count: number, size: Vec2): Vec2[] {
-  const step =
-    layout === 'spread'
-      ? size[0] + SPREAD_GAP
-      : layout === 'fan'
-        ? Math.max(size[0] * FAN_SHOW, 4)
-        : 0;
+  const step = offsetStep(layout, size);
   return Array.from({ length: count }, (_, i): Vec2 => [step && (i - (count - 1) / 2) * step, 0]);
+}
+
+/** How far apart neighbouring items in a stack are drawn, along x. */
+function offsetStep(layout: StackLayout | undefined, size: Vec2): number {
+  if (layout === 'spread') return size[0] + SPREAD_GAP;
+  if (layout === 'fan') return Math.max(size[0] * FAN_SHOW, 4);
+  return 0;
 }
 
 /** Width and height of a stack's footprint, before rotation. */

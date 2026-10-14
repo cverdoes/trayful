@@ -47,7 +47,8 @@ export async function docsIndex(): Promise<string> {
   ];
   for (const file of await docFiles()) {
     const text = await readDoc(file);
-    const title = /^#\s+(.+)$/m.exec(text)?.[1] ?? file;
+    const heading = text.split('\n').find((line) => line.startsWith('# '));
+    const title = heading?.slice(2).trim() ?? file;
     lines.push(`- \`${file}\`: ${title}`);
   }
   return lines.join('\n') + '\n';

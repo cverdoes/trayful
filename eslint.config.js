@@ -26,6 +26,9 @@ export default tseslint.config(
         { allowNumber: true, allowBoolean: true },
       ],
       '@typescript-eslint/no-confusing-void-expression': 'off',
+      // Table objects live in a plain record keyed by id because the table is saved and sent
+      // as JSON; deleting by id is how an object leaves the table.
+      '@typescript-eslint/no-dynamic-delete': 'off',
       'sonarjs/no-nested-template-literals': 'off',
       // Security hotspots meant for human review, not build failures. Seeded RNG and
       // loopback addresses are deliberate here.

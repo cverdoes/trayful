@@ -14,6 +14,7 @@ import {
 } from './snap.js';
 import {
   handTarget,
+  onTable,
   sizeOf,
   type Catalog,
   type Piece,
@@ -151,8 +152,7 @@ class Transaction {
     for (const object of Object.values(this.objects)) {
       if (!object.snap) continue;
       const owner = this.objects[snapOwner(object.snap)];
-      const inStack = object.kind === 'piece' && (object.parent || object.hand);
-      if (inStack || owner?.kind !== 'piece' || owner.parent || owner.hand)
+      if (!onTable(object) || owner?.kind !== 'piece' || owner.parent || owner.hand)
         this.update(object, { snap: undefined });
     }
     return { ...this.state, rng: this.rng, objects: this.objects };
@@ -217,8 +217,7 @@ class Transaction {
   private topZ(): number {
     let max = -1;
     for (const object of Object.values(this.objects)) {
-      if (!(object.kind === 'piece' && (object.parent || object.hand)))
-        max = Math.max(max, object.z);
+      if (onTable(object)) max = Math.max(max, object.z);
     }
     return max + 1;
   }
@@ -527,8 +526,7 @@ class Transaction {
     if (!Number.isInteger(rounds) || rounds < 1)
       throw new CommandError('"count" must be a whole number of at least 1.');
     const stack = this.stackObject(fromId);
-    const targets: Target[] =
-      typeof to === 'string' || isVec2(to) ? [to] : Array.isArray(to) ? to : [];
+    const targets = targetList(to);
     if (targets.length === 0) throw new CommandError('Give at least one place to deal to.');
     const cards = stack.items.map((id) => this.get(id) as Piece);
     const places = targets.flatMap((t) => this.places(t, cards));
@@ -728,6 +726,12 @@ function add(a: Vec2, b: Vec2): Vec2 {
 
 function normalize(degrees: number): number {
   return ((degrees % 360) + 360) % 360;
+}
+
+/** `to` as a list of places: one place, a list of them, or none when `to` is neither. */
+function targetList(to: Target | Target[]): Target[] {
+  if (typeof to === 'string' || isVec2(to)) return [to];
+  return Array.isArray(to) ? to : [];
 }
 
 function isVec2(value: unknown): value is Vec2 {

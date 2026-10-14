@@ -41,7 +41,7 @@ async function connect(origin?: string, headers: Record<string, string> = {}) {
   const waiting: ((m: ServerMessage) => void)[] = [];
   const players: ServerMessage[] = [];
   socket.on('message', (data) => {
-    const message = JSON.parse(String(data)) as ServerMessage;
+    const message = JSON.parse((data as Buffer).toString()) as ServerMessage;
     if (message.type === 'players') {
       players.push(message);
       return;

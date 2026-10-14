@@ -63,13 +63,7 @@ function outOfTheBox(project: ResolvedProject, name: string, seed: number): Tabl
       const stackId = `deck:${spec.deck}`;
       for (const id of ids) {
         const member = project.components.find((c) => c.id === id)!;
-        objects[id] = newPiece(
-          member.id,
-          project.types[member.type]!,
-          member.data,
-          'down',
-          stackId,
-        );
+        objects[id] = newPiece(member, project.types[member.type]!, 'down', stackId);
       }
       objects[stackId] = {
         kind: 'stack',
@@ -83,7 +77,7 @@ function outOfTheBox(project: ResolvedProject, name: string, seed: number): Tabl
       sized.push({ id: stackId, size: sizeOf(type) });
       continue;
     }
-    objects[spec.id] = { ...newPiece(spec.id, type, spec.data, 'up'), z: z++ };
+    objects[spec.id] = { ...newPiece(spec, type, 'up'), z: z++ };
     sized.push({ id: spec.id, size: sizeOf(type) });
   }
   for (const [id, pos] of rows(sized, [0, 0], BOX_WIDTH)) {
@@ -93,9 +87,8 @@ function outOfTheBox(project: ResolvedProject, name: string, seed: number): Tabl
 }
 
 function newPiece(
-  id: string,
+  { id, data }: Pick<ResolvedProject['components'][number], 'id' | 'data'>,
   type: ComponentType,
-  data: Record<string, string | number | boolean>,
   face: 'up' | 'down',
   parent?: string,
 ): Piece {
@@ -346,7 +339,7 @@ export function syncTable(state: TableState, project: ResolvedProject): TableSta
     if (spec.deck) {
       const stackId = `deck:${spec.deck}`;
       const deck = objects[stackId];
-      objects[spec.id] = newPiece(spec.id, type, spec.data, 'down', stackId);
+      objects[spec.id] = newPiece(spec, type, 'down', stackId);
       if (deck?.kind === 'stack') {
         objects[stackId] = { ...deck, items: [spec.id, ...deck.items] };
       } else {
@@ -364,7 +357,7 @@ export function syncTable(state: TableState, project: ResolvedProject): TableSta
       }
       continue;
     }
-    objects[spec.id] = { ...newPiece(spec.id, type, spec.data, 'up'), z: z++ };
+    objects[spec.id] = { ...newPiece(spec, type, 'up'), z: z++ };
     fresh.push({ id: spec.id, size: sizeOf(type) });
   }
   if (!changed) return state;

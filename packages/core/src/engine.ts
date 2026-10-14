@@ -87,11 +87,11 @@ export class TableEngine {
 
   /** Whether the table's own changes (made without a player) can be undone. */
   get canUndo(): boolean {
-    return this.canUndoFor(undefined);
+    return this.canUndoFor();
   }
 
   get canRedo(): boolean {
-    return this.canRedoFor(undefined);
+    return this.canRedoFor();
   }
 
   /**

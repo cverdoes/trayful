@@ -290,7 +290,7 @@ describe('MCP over HTTP', () => {
     // A stand-in browser that answers snapshot requests with a tiny PNG.
     const browser = new WebSocket(server.url.replace('http', 'ws') + '/ws');
     browser.on('message', (data) => {
-      const message = JSON.parse(String(data)) as ServerMessage;
+      const message = JSON.parse((data as Buffer).toString()) as ServerMessage;
       if (message.type === 'snapshot-request') {
         browser.send(
           JSON.stringify({
@@ -321,7 +321,7 @@ describe('MCP over HTTP', () => {
     const browser = new WebSocket(server.url.replace('http', 'ws') + '/ws');
     const requests: unknown[] = [];
     browser.on('message', (data) => {
-      const message = JSON.parse(String(data)) as ServerMessage;
+      const message = JSON.parse((data as Buffer).toString()) as ServerMessage;
       if (message.type === 'render-request') {
         requests.push(message.component);
         browser.send(JSON.stringify({ type: 'snapshot', id: message.id, png: 'cG5nIQ==' }));

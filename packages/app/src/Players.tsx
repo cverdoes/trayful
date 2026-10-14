@@ -1,5 +1,5 @@
 import { handOf, type Piece } from '@trayful/core';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type SubmitEvent } from 'react';
 import { Group, Layer, Stage } from 'react-konva';
 import { connect, join } from './connection';
 import { Component } from './render/Component';
@@ -34,7 +34,7 @@ export function JoinScreen() {
   const [name, setName] = useState('');
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
-  const submit = async (e: FormEvent) => {
+  const submit = async (e: SubmitEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
@@ -151,7 +151,9 @@ export function InviteDialog() {
       .then((list: { id: string; name: string; tables: string[] }[]) =>
         setTables(list.map((p) => ({ project: p.id, name: p.name, tables: p.tables }))),
       )
-      .catch(() => {});
+      .catch(() => {
+        // Without the list the dialog still offers the open table.
+      });
   }, []);
   useEffect(() => {
     if (!project || !table) return;
@@ -160,7 +162,7 @@ export function InviteDialog() {
     setRenewed(false);
     fetchInvite(project, table)
       .then(setLinks)
-      .catch((err: Error) => setError(err.message));
+      .catch((err: unknown) => setError(messageOf(err)));
   }, [project, table]);
 
   const renew = () => {
@@ -176,10 +178,11 @@ export function InviteDialog() {
         setCopied(undefined);
         setRenewed(true);
       })
-      .catch((err: Error) => setError(err.message));
+      .catch((err: unknown) => setError(messageOf(err)));
   };
-  const copy = (link: string) =>
-    void navigator.clipboard?.writeText(link).then(() => setCopied(link));
+  // The clipboard is missing on plain-http pages, such as an invite opened over the LAN.
+  const clipboard = navigator.clipboard as Clipboard | undefined;
+  const copy = (link: string) => void clipboard?.writeText(link).then(() => setCopied(link));
 
   return (
     <div className="overlay" onClick={close}>
@@ -279,7 +282,7 @@ export function HandTray() {
   );
 }
 
-function HandCard({ piece }: { piece: Piece }) {
+function HandCard({ piece }: Readonly<{ piece: Piece }>) {
   const view = useStore((s) => s.view)!;
   const type = view.types[piece.type];
   if (!type) return null;
@@ -314,4 +317,8 @@ function HandCard({ piece }: { piece: Piece }) {
       </Stage>
     </div>
   );
+}
+
+function messageOf(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }

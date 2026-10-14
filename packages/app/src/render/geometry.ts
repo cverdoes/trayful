@@ -71,7 +71,7 @@ export function dropTarget(
   const candidates = topLevel(table).filter(
     (o) => !dragged.includes(o.id) && baseOf(table, types, o) === base && !o.locked,
   );
-  for (const o of candidates.reverse()) {
+  for (const o of candidates.toReversed()) {
     const b = bounds(table, types, o);
     if (point[0] >= b.x && point[0] <= b.x + b.w && point[1] >= b.y && point[1] <= b.y + b.h)
       return o;

@@ -77,7 +77,8 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
     const before = engine().state;
     try {
       // Try every command first, so a tool call changes all or nothing.
-      commands.reduce((state, command) => applyCommand(state, command, types()), before);
+      let state = before;
+      for (const command of commands) state = applyCommand(state, command, types());
     } catch (err) {
       return failure(err);
     }
@@ -189,12 +190,15 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
       // Pieces in other players' hands are named only as hidden, so the history cannot
       // tell you what they hold.
       const state = engine().state;
-      const steps = JSON.stringify(engine().history.slice(-(limit ?? 20)), (_key, value) => {
-        const piece = typeof value === 'string' ? state.objects[value] : undefined;
-        return piece?.kind === 'piece' && piece.hand && piece.hand !== AGENT_PLAYER
-          ? 'a hidden piece'
-          : value;
-      });
+      const steps = JSON.stringify(
+        engine().history.slice(-(limit ?? 20)),
+        (_key, value: unknown) => {
+          const piece = typeof value === 'string' ? state.objects[value] : undefined;
+          return piece?.kind === 'piece' && piece.hand && piece.hand !== AGENT_PLAYER
+            ? 'a hidden piece'
+            : value;
+        },
+      );
       return text(steps);
     },
   );

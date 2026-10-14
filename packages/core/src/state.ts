@@ -24,7 +24,7 @@ export interface TableState {
 
 /** Whether an object lies directly on the table: not inside a stack, and not in a player's hand. */
 export function onTable(object: TableObject): boolean {
-  return !(object.kind === 'piece' && (object.parent || object.hand));
+  return !(object.kind === 'piece' && (object.parent !== undefined || object.hand !== undefined));
 }
 
 /** The pieces in a player's hand, in the order they were picked up. */
@@ -72,7 +72,7 @@ export function toTableFile(state: TableState): TableFile {
     table: state.table,
     seed: state.seed,
     rng: state.rng,
-    objects: Object.values(state.objects).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)),
+    objects: Object.values(state.objects).sort(byId),
   };
 }
 
@@ -108,7 +108,7 @@ export function checkIntegrity(state: TableState): string[] {
       if (object.items.length === 0) problems.push(`Stack "${object.id}" is empty.`);
       for (const id of object.items) {
         const item = state.objects[id];
-        if (!item || item.kind !== 'piece')
+        if (item?.kind !== 'piece')
           problems.push(`Stack "${object.id}" lists unknown piece "${id}".`);
         else if (item.parent !== object.id)
           problems.push(
@@ -122,7 +122,7 @@ export function checkIntegrity(state: TableState): string[] {
       problems.push(`Piece "${object.id}" cannot be both in a stack and in a hand.`);
     } else if (object.parent) {
       const parent = state.objects[object.parent];
-      if (!parent || parent.kind !== 'stack' || !parent.items.includes(object.id)) {
+      if (parent?.kind !== 'stack' || !parent.items.includes(object.id)) {
         problems.push(
           `Piece "${object.id}" names "${object.parent}" as its stack, but that stack does not hold it.`,
         );
@@ -130,4 +130,10 @@ export function checkIntegrity(state: TableState): string[] {
     }
   }
   return problems;
+}
+
+/** Orders objects by id in plain code-unit order, so saved files do not depend on the machine's locale. */
+function byId(a: TableObject, b: TableObject): number {
+  if (a.id < b.id) return -1;
+  return a.id > b.id ? 1 : 0;
 }

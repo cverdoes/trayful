@@ -42,7 +42,7 @@ export function starterDir(): string {
 
 const DEFAULT_TABLE = 'table-1';
 /** Files whose changes do not affect the project definition. */
-const IGNORED = /(^|[\\/])(tables|node_modules|\.[^\\/]*)([\\/]|$)|\.tmp$/;
+const IGNORED = /(?:(?:^|[\\/])(?:tables|node_modules|\.[^\\/]*)(?:[\\/]|$))|(?:\.tmp$)/;
 
 /**
  * The projects Trayful serves and their open tables. The root is either one
@@ -292,7 +292,7 @@ export class Workspace {
   private watch(entry: ProjectEntry): void {
     try {
       const watcher = watch(entry.dir, { recursive: true }, (_event, file) => {
-        if (file && IGNORED.test(String(file))) return;
+        if (file && IGNORED.test(file)) return;
         // Editors often write a file in several steps; reload once they settle.
         clearTimeout(this.timers.get(entry.id));
         this.timers.set(

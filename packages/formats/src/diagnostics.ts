@@ -22,7 +22,12 @@ export function formatDiagnostic(d: Diagnostic): string {
 }
 
 export function formatPath(path: (string | number)[]): string {
-  return path.map((p, i) => (typeof p === 'number' ? `[${p}]` : i === 0 ? p : `.${p}`)).join('');
+  return path.map((p, i) => formatPathPart(p, i === 0)).join('');
+}
+
+function formatPathPart(part: string | number, first: boolean): string {
+  if (typeof part === 'number') return `[${part}]`;
+  return first ? part : `.${part}`;
 }
 
 export function hasErrors(diagnostics: Diagnostic[]): boolean {

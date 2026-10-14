@@ -39,7 +39,7 @@ interface Props {
  * Draws one component centred on (0, 0), in millimetres. The caller positions
  * and rotates it.
  */
-export function Component({ piece, type, palette, selected }: Props) {
+export function Component({ piece, type, palette, selected }: Readonly<Props>) {
   const [w, h] = sizeOf(type);
   const data: Data = piece.data ?? {};
   const twoSided = PRIMITIVE_INFO[type.base].sides === 2;
@@ -48,10 +48,8 @@ export function Component({ piece, type, palette, selected }: Props) {
   const outline = type.shape ?? (type.base === 'meeple' ? 'meeple' : 'rect');
   const corner = type.corner ?? (type.base === 'die' ? 2 : 0);
 
-  const fill =
-    resolveColor(face?.fill, data, palette) ??
-    (showBack ? (type.back ? undefined : BACK_FILL) : resolveColor(type.fill, data, palette)) ??
-    (type.base === 'zone' ? 'transparent' : showBack ? BACK_FILL : DEFAULT_FILL);
+  const typeFill = showBack ? plainBackFill(type) : resolveColor(type.fill, data, palette);
+  const fill = resolveColor(face?.fill, data, palette) ?? typeFill ?? defaultFill(type, showBack);
   const stroke = selected ? '#2f81f7' : (resolveColor(face?.stroke, data, palette) ?? OUTLINE);
   const strokeWidth = selected ? 1.2 : 0.3;
 
@@ -122,7 +120,7 @@ function roundRect(ctx: Konva.Context, w: number, h: number, r: number) {
 }
 
 /** A plain back for two-sided components that do not define one. */
-function BackPattern({ w, h }: { w: number; h: number }) {
+function BackPattern({ w, h }: Readonly<{ w: number; h: number }>) {
   const inset = Math.min(w, h) * 0.08;
   return (
     <Rect
@@ -139,7 +137,12 @@ function BackPattern({ w, h }: { w: number; h: number }) {
   );
 }
 
-function CenteredText({ text, w, h, size }: { text: string; w: number; h: number; size: number }) {
+function CenteredText({
+  text,
+  w,
+  h,
+  size,
+}: Readonly<{ text: string; w: number; h: number; size: number }>) {
   return (
     <Text
       text={text}
@@ -158,17 +161,45 @@ function CenteredText({ text, w, h, size }: { text: string; w: number; h: number
 /** Large box used to anchor centred or right-aligned text on a point. */
 const ANCHOR_BOX = 400;
 
+const H_ALIGN = { left: 'start', center: 'center', right: 'end' } as const;
+const V_ALIGN = { top: 'start', middle: 'center', bottom: 'end' } as const;
+
+/** Where a box of `length` starts so that it sits on `at` with the given alignment. */
+function boxStart(at: number, align: 'start' | 'center' | 'end', length: number): number {
+  if (align === 'center') return at - length / 2;
+  return align === 'end' ? at - length : at;
+}
+
+/** A layer's `size`: one number for a square, or a width and height. */
+function layerSize(
+  size: number | [number, number] | undefined,
+  fallback: [number, number],
+): [number, number] {
+  if (size === undefined) return fallback;
+  return typeof size === 'number' ? [size, size] : size;
+}
+
+/** A two-sided type without its own back gets the plain back colour. */
+function plainBackFill(type: ComponentType): string | undefined {
+  return type.back ? undefined : BACK_FILL;
+}
+
+function defaultFill(type: ComponentType, showBack: boolean): string {
+  if (type.base === 'zone') return 'transparent';
+  return showBack ? BACK_FILL : DEFAULT_FILL;
+}
+
 function LayerView({
   layer,
   data,
   palette,
   faceSize,
-}: {
+}: Readonly<{
   layer: Layer;
   data: Data;
   palette: Record<string, string>;
   faceSize: [number, number];
-}) {
+}>) {
   if (!isShown(layer.when, data)) return null;
   const [ax, ay] = layer.at ?? [0, 0];
   const common = { rotation: layer.rotate ?? 0, opacity: layer.opacity ?? 1, listening: false };
@@ -179,14 +210,9 @@ function LayerView({
     const align = layer.align ?? 'left';
     const valign = layer.valign ?? 'top';
     const width = layer.width ?? ANCHOR_BOX;
-    const x =
-      layer.width !== undefined || align === 'left'
-        ? ax
-        : align === 'center'
-          ? ax - width / 2
-          : ax - width;
+    const x = layer.width === undefined ? boxStart(ax, H_ALIGN[align], width) : ax;
     const height = valign === 'top' ? undefined : ANCHOR_BOX;
-    const y = valign === 'top' ? ay : valign === 'middle' ? ay - ANCHOR_BOX / 2 : ay - ANCHOR_BOX;
+    const y = boxStart(ay, V_ALIGN[valign], ANCHOR_BOX);
     const style = [
       layer.font?.weight === 'bold' ? 'bold' : '',
       layer.font?.style === 'italic' ? 'italic' : '',
@@ -219,12 +245,7 @@ function LayerView({
   const fill = resolveColor(layer.fill, data, palette);
   const stroke = resolveColor(layer.stroke, data, palette);
   const style = { ...common, fill, stroke, strokeWidth: layer.strokeWidth ?? (stroke ? 0.3 : 0) };
-  const [sw, sh] =
-    layer.size !== undefined
-      ? typeof layer.size === 'number'
-        ? [layer.size, layer.size]
-        : layer.size
-      : [0, 0];
+  const [sw, sh] = layerSize(layer.size, [0, 0]);
   switch (layer.shape) {
     case 'circle':
     case 'disc':
@@ -269,22 +290,17 @@ function ImageLayerView({
   data,
   faceSize,
   common,
-}: {
+}: Readonly<{
   layer: Extract<Layer, { image: string }>;
   data: Data;
   faceSize: [number, number];
   common: { rotation: number; opacity: number; listening: boolean };
-}) {
+}>) {
   const path = renderTemplate(layer.image, data).trim();
   const image = useProjectImage(path || undefined);
   if (!image) return null;
   const [x, y] = layer.at ?? [0, 0];
-  const [w, h] =
-    layer.size !== undefined
-      ? typeof layer.size === 'number'
-        ? [layer.size, layer.size]
-        : layer.size
-      : faceSize;
+  const [w, h] = layerSize(layer.size, faceSize);
   const fit = layer.fit ?? 'cover';
   const iw = image.naturalWidth || w;
   const ih = image.naturalHeight || h;
