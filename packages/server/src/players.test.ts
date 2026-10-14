@@ -2,7 +2,13 @@ import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { AGENT_PLAYER, FilePlayerStore, MemoryPlayerStore, Players } from './players.js';
+import {
+  AGENT_PLAYER,
+  FilePlayerStore,
+  MemoryPlayerStore,
+  Players,
+  type PlayersData,
+} from './players.js';
 
 describe('Players', () => {
   it('gives each player a unique id and a secret only they know', async () => {
@@ -37,5 +43,16 @@ describe('Players', () => {
     expect((await again.host()).id).toBe(h1.id);
     expect(await readFile(store.file, 'utf8')).not.toContain(secret);
     if (process.platform !== 'win32') expect((await stat(store.file)).mode & 0o077).toBe(0);
+  });
+
+  it('opens a file written before invites were per table', async () => {
+    const store = new MemoryPlayerStore();
+    const old = { players: [], invite: 'old-token' } as unknown as PlayersData;
+    await store.save(old);
+    const players = await Players.open(store);
+    expect(players.byToken('old-token')).toBeUndefined();
+    const invite = await players.invite('harvest-moon', 'table-1');
+    expect(players.byToken(invite.token)).toStrictEqual(invite);
+    expect(await store.load()).not.toHaveProperty('invite');
   });
 });
