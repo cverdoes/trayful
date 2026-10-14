@@ -53,8 +53,9 @@ export function coverageByPackage(summary: Record<string, FileCoverage>) {
   for (const [file, coverage] of Object.entries(summary)) {
     const name = /packages\/([^/]+)\//.exec(file)?.[1];
     if (!name) continue;
-    if (!byPackage.has(name)) byPackage.set(name, emptyCoverage());
-    addMetrics(byPackage.get(name)!, coverage);
+    const total = byPackage.get(name) ?? emptyCoverage();
+    byPackage.set(name, total);
+    addMetrics(total, coverage);
   }
   return [...byPackage].sort(([a], [b]) => a.localeCompare(b));
 }
@@ -99,7 +100,8 @@ export function complexityLinter() {
 /**
  * Reads the scores from complexityLinter's results. The rule only reports a score in its
  * message ("... from 23 to the 0 allowed"), so this throws on a parse error or on a message
- * it cannot read; quality-summary.test.ts shows a sonarjs upgrade that rewords it.
+ * it cannot read; quality-summary.test.ts shows a sonarjs upgrade that rewords it. That is
+ * also why package.json pins eslint-plugin-sonarjs to an exact version.
  */
 export function readScores(results: ESLint.LintResult[]): ComplexFunction[] {
   return results.flatMap((result) =>
