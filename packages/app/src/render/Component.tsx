@@ -9,13 +9,12 @@ import {
 import type Konva from 'konva';
 import { Circle, Ellipse, Group, Image, Path, Rect, RegularPolygon, Text } from 'react-konva';
 import { isShown, resolveColor, type Data } from './color';
+import { boxStart, fillOf, layerSize } from './face';
 import { sizeOf } from './geometry';
 import { useProjectImage } from './images';
 
 /** 1 typographic point in millimetres. */
 const PT = 0.3528;
-const DEFAULT_FILL = '#f4f1ea';
-const BACK_FILL = '#3b4252';
 const OUTLINE = '#5c5346';
 
 /** A standing figure in a 1×1 box; `meeplePath` scales it to a piece. */
@@ -162,40 +161,6 @@ const ANCHOR_BOX = 400;
 
 const H_ALIGN = { left: 'start', center: 'center', right: 'end' } as const;
 const V_ALIGN = { top: 'start', middle: 'center', bottom: 'end' } as const;
-
-/** Where a box of `length` starts so that it sits on `at` with the given alignment. */
-function boxStart(at: number, align: 'start' | 'center' | 'end', length: number): number {
-  if (align === 'center') return at - length / 2;
-  return align === 'end' ? at - length : at;
-}
-
-/** A layer's `size`: one number for a square, or a width and height. */
-function layerSize(
-  size: number | [number, number] | undefined,
-  fallback: [number, number],
-): [number, number] {
-  if (size === undefined) return fallback;
-  return typeof size === 'number' ? [size, size] : size;
-}
-
-/**
- * The colour a component is filled with: the shown face's own fill, else the type's fill
- * (front only), else a default. A back the type does not define is the plain back colour.
- */
-function fillOf(
-  type: ComponentType,
-  showBack: boolean,
-  resolve: (color: string | undefined) => string | undefined,
-): string {
-  const face = showBack ? type.back : type.front;
-  const own = resolve(face?.fill);
-  if (own !== undefined) return own;
-  if (showBack && !type.back) return BACK_FILL;
-  const typeFill = showBack ? undefined : resolve(type.fill);
-  if (typeFill !== undefined) return typeFill;
-  if (type.base === 'zone') return 'transparent';
-  return showBack ? BACK_FILL : DEFAULT_FILL;
-}
 
 function LayerView({
   layer,
