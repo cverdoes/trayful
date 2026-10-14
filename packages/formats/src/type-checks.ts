@@ -71,13 +71,13 @@ function snapProblems(type: ComponentType): Problem[] {
   return problems;
 }
 
-/** Every `{{field}}` used in a face must be a declared field. */
 /** A text that may hold `{{field}}` placeholders, and where it is in the type. */
 interface TemplateAt {
   text: string | undefined;
   path: (string | number)[];
 }
 
+/** Every `{{field}}` used in a face must be a declared field. */
 function templateProblems(type: ComponentType, fields: Record<string, NormalizedField>): Problem[] {
   const templates: TemplateAt[] = [{ text: type.fill, path: ['fill'] }];
   for (const side of ['front', 'back'] as const) {
@@ -91,6 +91,7 @@ function templateProblems(type: ComponentType, fields: Record<string, Normalized
   );
 }
 
+/** The texts in a face that may hold `{{field}}` placeholders, with their paths. */
 function faceTemplates(face: Face, side: string): TemplateAt[] {
   const templates: TemplateAt[] = [
     { text: face.fill, path: [side, 'fill'] },
