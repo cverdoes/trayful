@@ -38,10 +38,17 @@ test('two players keep their hands hidden from each other', async ({ page, brows
   // The host plays in one browser; a guest joins through the invite link in another.
   await page.goto('/');
   await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
+  // The host opens Invite, which makes the link to this table.
+  await page.getByRole('button', { name: 'Invite players to this table' }).click();
+  await expect(page.getByRole('dialog', { name: 'Invite players' })).toContainText(
+    'only reachable',
+  );
+  await page.getByRole('button', { name: 'Close' }).click();
   const { root } = (await (await page.request.get('/api/health')).json()) as { root: string };
-  const { invite } = JSON.parse(
+  const { invites } = JSON.parse(
     await readFile(path.join(root, '.trayful', 'players.json'), 'utf8'),
-  ) as { invite: string };
+  ) as { invites: { token: string; table: string }[] };
+  const invite = invites.find((i) => i.table === 'table-1')!.token;
 
   const guest = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const bob = await guest.newPage();
@@ -72,6 +79,7 @@ test('two players keep their hands hidden from each other', async ({ page, brows
   const spot = await screen(page, deck.pos[0] + 90, deck.pos[1] + 100);
   await page.locator('.hand-card').dragTo(page.locator('.table'), { targetPosition: spot });
   await expect(page.locator('.hand-card')).toHaveCount(0);
+
   await expect
     .poll(() =>
       bob.evaluate(
@@ -86,5 +94,10 @@ test('two players keep their hands hidden from each other', async ({ page, brows
     )
     .toBe('up');
   await expect(bob.locator('.activity')).toContainText('moved 1 piece');
+
+  // The host takes back their own move; Bob's card stays in his hand.
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.locator('.hand-card')).toHaveCount(1);
+  await expect(bob.locator('.hand-card')).toHaveCount(1);
   await guest.close();
 });

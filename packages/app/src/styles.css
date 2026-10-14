@@ -366,3 +366,17 @@ body.printing #root {
 .invite code {
   overflow-wrap: anywhere;
 }
+
+.invite label.row {
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.invite select {
+  font: inherit;
+  height: 32px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #21262d;
+  color: var(--bar-text);
+}

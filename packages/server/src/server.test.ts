@@ -194,9 +194,14 @@ interface Me {
 /** Requests that arrive through a tunnel, as a guest's do. */
 const REMOTE = { 'x-forwarded-for': '203.0.113.9' };
 
+/** The invite token to a table of the test project. */
+async function inviteTo(table = 'table-1'): Promise<string> {
+  return (await server.workspace.players.invite(server.session.projectId, table)).token;
+}
+
 /** Joins as a guest through the invite link and returns their cookie header. */
 async function joinAsGuest(name: string): Promise<string> {
-  const invite = await fetch(`${server.url}/join/${server.workspace.players.invite}`, {
+  const invite = await fetch(`${server.url}/join/${await inviteTo()}`, {
     headers: REMOTE,
     redirect: 'manual',
   });
@@ -245,7 +250,12 @@ describe('players and hands', () => {
     });
     expect(create.status).toBe(403);
     expect((await fetch(`${server.url}/api/components`, { headers })).status).toBe(403);
-    expect((await fetch(`${server.url}/api/share`, { headers })).status).toBe(403);
+    const invite = await fetch(`${server.url}/api/invites`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({}),
+    });
+    expect(invite.status).toBe(403);
     const forged = await fetch(`${server.url}/api/me`, {
       method: 'POST',
       headers: { ...headers, origin: 'https://evil.example' },
@@ -254,11 +264,14 @@ describe('players and hands', () => {
     expect(forged.status).toBe(403);
     // A website pointing its own name at this computer is not the host.
     const rebound = await server.app.inject({
-      url: '/api/share',
+      method: 'POST',
+      url: '/api/invites',
       headers: { host: 'evil.example:4317' },
+      payload: {},
     });
     expect(rebound.statusCode).toBe(403);
-    expect((await server.app.inject({ url: '/api/share' })).statusCode).toBe(200);
+    const own = await server.app.inject({ method: 'POST', url: '/api/invites', payload: {} });
+    expect(own.statusCode).toBe(200);
   });
 
   it('shows each player their own hand and only counts of the others', async () => {
@@ -321,17 +334,76 @@ describe('players and hands', () => {
   });
 
   it('lets guests watch but not play until they join', async () => {
-    const invite = await fetch(`${server.url}/join/${server.workspace.players.invite}`, {
+    const invite = await fetch(`${server.url}/join/${await inviteTo()}`, {
       headers: REMOTE,
       redirect: 'manual',
     });
     const cookie = invite.headers.get('set-cookie')!.split(';')[0]!;
-    expect(invite.headers.get('location')).toBe('/?join');
+    expect(invite.headers.get('location')).toBe(
+      `/?project=${server.session.projectId}&table=table-1&join`,
+    );
     const watcher = await connect(undefined, { ...REMOTE, cookie });
     expect((await watcher.next()).type).toBe('state');
     watcher.send({ type: 'command', command: { type: 'shuffle', id: DECK } });
     expect(await watcher.next()).toMatchObject({ message: 'Join the table to play.' });
     watcher.socket.close();
+  });
+});
+
+describe('invites and undo', () => {
+  it('lets a guest into the invited table only, for good once joined', async () => {
+    const project = server.session.projectId;
+    await server.workspace.duplicateTable(project, 'table-1', 'other');
+    const cookie = await joinAsGuest('Bob');
+    const get = (url: string) => fetch(`${server.url}${url}`, { headers: { ...REMOTE, cookie } });
+    expect((await get(`/api/table?project=${project}&table=table-1`)).status).toBe(200);
+    expect((await get(`/api/table?project=${project}&table=other`)).status).toBe(403);
+    const projects = (await (await get('/api/projects')).json()) as { tables: string[] }[];
+    expect(projects.map((p) => p.tables)).toEqual([['table-1']]);
+
+    // A new link to the table stops the old one working, but Bob, who joined, stays in.
+    const renewed = await server.app.inject({
+      method: 'POST',
+      url: '/api/invites',
+      payload: { project, table: 'table-1', renew: true },
+    });
+    expect(renewed.statusCode).toBe(200);
+    expect(renewed.json().links).toEqual([]);
+    const playerOnly = cookie.split('; ').find((c) => c.startsWith('trayful_player'))!;
+    const again = await fetch(`${server.url}/api/table?project=${project}&table=table-1`, {
+      headers: { ...REMOTE, cookie: playerOnly },
+    });
+    expect(again.status).toBe(200);
+    expect(
+      (
+        await fetch(
+          `${server.url}/join/${(await server.workspace.players.invite(project, 'other')).token.slice(1)}`,
+          { headers: REMOTE },
+        )
+      ).status,
+    ).toBe(403);
+  });
+
+  it('lets each player undo only their own moves', async () => {
+    const cookie = await joinAsGuest('Bob');
+    const alice = await connect();
+    const bob = await connect(undefined, { ...REMOTE, cookie });
+    await Promise.all([alice.next(), bob.next()]);
+    bob.send({ type: 'command', command: { type: 'shuffle', id: DECK } });
+    const [forAlice, forBob] = await Promise.all([alice.next(), bob.next()]);
+    expect(forAlice).toMatchObject({ canUndo: false });
+    expect(forBob).toMatchObject({ canUndo: true });
+    const revision = forBob.type === 'state' ? forBob.revision : 0;
+    alice.send({ type: 'undo' });
+    bob.send({ type: 'undo' });
+    expect(await bob.next()).toMatchObject({
+      revision: revision + 1,
+      canUndo: false,
+      canRedo: true,
+      activity: { name: 'Bob', text: 'undid their last change' },
+    });
+    alice.socket.close();
+    bob.socket.close();
   });
 });
 

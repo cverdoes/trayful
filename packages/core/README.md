@@ -6,7 +6,7 @@ The table engine: state, commands, undo and seeded randomness. It has no UI or f
 - `applyCommand(state, command, catalog)` returns a new state for one of: `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `setValue`, `lock`. Invalid commands throw `CommandError` and change nothing.
 - `move`, `draw`, `deal` and `take` go to a position or to a snap target: `owner/target/index` for one spot, `owner/target` for its free spots in order (or its free area). Snapped pieces remember their spot in `snap`, and ride along when the piece that holds the spot moves or rotates.
 - `snap.ts` resolves snap targets (`resolveSpots`, `allSpots`) and finds where a dropped piece snaps (`snapFor`); `layout.ts` gives the geometry of fanned and spread-out stacks.
-- `TableEngine` wraps a state with undo, redo, a command history and change listeners.
+- `TableEngine` wraps a state with undo, redo, a command history and change listeners. Changes carry the player who made them (`dispatch(command, player)`), and `undo(player)` and `redo(player)` take back only that player's own last change, even with others' changes after it: just the pieces it touched are put back, and a `CommandError` says so when someone has changed those pieces since. `canUndoFor(player)` and `canRedoFor(player)` tell whether a player can.
 - `describeTable` and `queryObjects` in `describe.ts` give agents a text or JSON view of the table. Face-down cards stay hidden unless asked with `reveal`.
 - `replace(state)` on the engine swaps in a whole new table (a reset) as one undoable step; `setCatalog(types)` switches to reloaded component types.
 - `syncTable(state, project)` brings a table up to date with edited project files: components that left the box leave the table, changed data applies in place, and new components join their deck or wait in rows below the table.
@@ -21,9 +21,9 @@ Shuffles and rolls draw from a random state stored in the table, so the same see
 import { createTable, TableEngine } from '@trayful/core';
 
 const engine = new TableEngine(createTable(project, { name: 'playtest', seed: 42 }), project.types);
-engine.dispatch({ type: 'shuffle', id: 'deck:actions' });
-engine.dispatch({ type: 'draw', from: 'deck:actions', count: 1, to: [100, 100], face: 'up' });
-engine.undo();
+engine.dispatch({ type: 'shuffle', id: 'deck:actions' }, 'alice');
+engine.dispatch({ type: 'roll', id: 'die.1' }, 'bob');
+engine.undo('alice'); // puts the deck back in order, leaves Bob's roll
 ```
 
 Test with `pnpm vitest run packages/core` from the repo root.

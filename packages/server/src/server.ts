@@ -9,7 +9,9 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { SetupError, type ClientMessage, type ServerMessage } from '@trayful/core';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import {
+  addToken,
   allowed,
+  allowedProject,
   caller,
   cookie,
   INVITE_COOKIE,
@@ -19,7 +21,7 @@ import {
   PLAYER_COOKIE,
 } from './access.js';
 import { createMcpServer } from './mcp.js';
-import { PlayerError, type Player } from './players.js';
+import { PlayerError, tableKey, type Invite, type Player } from './players.js';
 import { ProjectLoadError, type TableSession } from './session.js';
 import { Workspace } from './workspace.js';
 
@@ -60,8 +62,8 @@ export interface RunningServer {
   readonly shareBases: string[];
   /** Adds an address others can reach this server at, such as a tunnel's. */
   addShareBase(url: string): void;
-  /** Invite links: open one to join the tables as a guest. */
-  inviteLinks(query?: TableQuery): string[];
+  /** Invite links to one table (default: the active one): open one to join it as a guest. */
+  inviteLinks(query?: TableQuery): Promise<string[]>;
   close(): Promise<void>;
 }
 
@@ -100,10 +102,14 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   await app.register(fastifyWebsocket);
 
   /** The table a request names, or the one agents are playing on. */
-  const sessionFor = (query: TableQuery) =>
+  const target = (query: TableQuery) =>
     query.project || query.table
-      ? workspace.table(query.project ?? workspace.active.projectId, query.table ?? 'table-1')
-      : Promise.resolve(workspace.active);
+      ? { project: query.project ?? workspace.active.projectId, table: query.table ?? 'table-1' }
+      : { project: workspace.active.projectId, table: workspace.active.tableName };
+  const sessionFor = (query: TableQuery) => {
+    const { project, table } = target(query);
+    return workspace.table(project, table);
+  };
 
   app.setErrorHandler((err: Error, _request, reply) => {
     const known =
@@ -121,23 +127,31 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     return { who, player };
   };
 
-  // Tables, images and the socket are for the host and invited guests only. The page
-  // itself is not secret; without an invite it shows how to get one.
-  const open = new Set(['/api/me', '/api/join', '/api/health']);
+  // A table, its images and its socket are for the host and the guests invited to it.
+  // The page itself is not secret; without an invite it shows how to get one.
+  const NOT_INVITED = 'Ask the host for an invite link to join this table.';
   app.addHook('onRequest', async (request, reply) => {
     const route = request.url.split('?')[0]!;
-    const guarded =
-      (route.startsWith('/api/') && !open.has(route)) ||
-      route.startsWith('/project-files/') ||
-      route === '/ws';
-    if (guarded && !allowed(caller(request, players))) {
-      return reply.code(403).send({ error: 'Ask the host for an invite link to join this table.' });
-    }
     // Changes must come from a Trayful page, not from another website open in the browser.
     if (request.method !== 'GET' && route !== '/mcp' && !isTrustedOrigin(request, shareBases)) {
       return reply.code(403).send({ error: 'Origin not allowed' });
     }
   });
+  app.addHook('preHandler', async (request, reply) => {
+    const route = request.url.split('?')[0]!;
+    const who = caller(request, players);
+    let ok = true;
+    if (route === '/api/project' || route === '/api/table' || route === '/ws') {
+      const { project, table } = target(request.query as TableQuery);
+      ok = allowed(who, project, table);
+    } else if (route.startsWith('/project-files/')) {
+      ok = allowedProject(who, (request.params as { project: string }).project);
+    } else if (route.startsWith('/api/') && !open.has(route)) {
+      ok = who.invited;
+    }
+    if (!ok) return reply.code(403).send({ error: NOT_INVITED });
+  });
+  const open = new Set(['/api/me', '/api/join', '/api/health']);
   /** Only the person at this computer may change which tables exist, or author. */
   const hostOnly = (request: FastifyRequest, reply: FastifyReply) => {
     if (isLocalRequest(request) && isLocalOrigin(request.headers.origin)) return false;
@@ -165,46 +179,61 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   });
   app.post<{ Body: { name?: string } }>('/api/join', async (request, reply) => {
     const who = caller(request, players);
-    if (!who.invited) {
-      return reply.code(403).send({ error: 'Ask the host for an invite link to join this table.' });
+    if (!who.invited) return reply.code(403).send({ error: NOT_INVITED });
+    let player = who.player;
+    if (player) player = await workspace.renamePlayer(player.id, request.body?.name ?? '');
+    else {
+      const joined = await players.join(request.body?.name ?? '', 'guest');
+      player = joined.player;
+      void reply.header(
+        'set-cookie',
+        cookie(PLAYER_COOKIE, `${player.id}:${joined.secret}`, request),
+      );
     }
-    if (who.player)
-      return { player: await workspace.renamePlayer(who.player.id, request.body?.name ?? '') };
-    const { player, secret } = await players.join(request.body?.name ?? '', 'guest');
-    void reply.header('set-cookie', cookie(PLAYER_COOKIE, `${player.id}:${secret}`, request));
+    // Joined guests keep their tables even when an invite is renewed later.
+    await players.grant(player.id, who.tables);
     return { player };
   });
-  app.get<{ Params: { invite: string }; Querystring: TableQuery }>(
-    '/join/:invite',
-    async (request, reply) => {
-      if (request.params.invite !== players.invite) {
-        return reply
-          .code(403)
-          .type('text/plain')
-          .send('This invite link is not valid any more. Ask the host for a new one.');
-      }
-      const query = new URLSearchParams({ join: '' });
-      if (request.query.project) query.set('project', request.query.project);
-      if (request.query.table) query.set('table', request.query.table);
+  app.get<{ Params: { token: string } }>('/join/:token', async (request, reply) => {
+    const invite = players.byToken(request.params.token);
+    if (!invite) {
       return reply
-        .header('set-cookie', cookie(INVITE_COOKIE, players.invite, request))
-        .redirect(`/?${query.toString().replace('join=', 'join')}`);
-    },
-  );
-  app.get<{ Querystring: TableQuery }>('/api/share', async (request, reply) => {
-    if (hostOnly(request, reply)) return;
-    return { links: inviteLinks(request.query), bound: options.host ?? '127.0.0.1' };
+        .code(403)
+        .type('text/plain')
+        .send('This invite link is not valid any more. Ask the host for a new one.');
+    }
+    const who = caller(request, players);
+    if (who.player) await players.grant(who.player.id, [tableKey(invite.project, invite.table)]);
+    const query = new URLSearchParams({ project: invite.project, table: invite.table });
+    // Someone who has not joined yet picks a name first.
+    const join = who.player ? '' : '&join';
+    return reply
+      .header('set-cookie', cookie(INVITE_COOKIE, addToken(who.tokens, invite.token), request))
+      .redirect(`/?${query}${join}`);
   });
-  app.get('/api/projects', async () =>
-    Promise.all(
+  // The invite link to a table, made on first use; `renew` replaces it, so old links stop working.
+  app.post<{ Body: TableQuery & { renew?: boolean } }>('/api/invites', async (request, reply) => {
+    if (hostOnly(request, reply)) return;
+    const { project, table } = target(request.body ?? {});
+    await workspace.table(project, table, { create: false });
+    const invite = await players.invite(project, table, request.body?.renew === true);
+    return { project, table, links: linksFor(invite) };
+  });
+  app.get('/api/projects', async (request) => {
+    const who = caller(request, players);
+    const projects = await Promise.all(
       workspace.projects().map(async (entry) => ({
         id: entry.id,
         name: entry.project?.manifest.name ?? entry.id,
         problems: entry.problems,
-        tables: entry.project ? await workspace.tables(entry.id) : [],
+        tables: (entry.project ? await workspace.tables(entry.id) : []).filter((t) =>
+          allowed(who, entry.id, t),
+        ),
       })),
-    ),
-  );
+    );
+    // Guests see only the tables they were invited to.
+    return who.local ? projects : projects.filter((p) => p.tables.length);
+  });
   app.get<{ Querystring: TableQuery }>('/api/project', async (request) =>
     (await sessionFor(request.query)).view(),
   );
@@ -360,12 +389,12 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   if (options.host === '0.0.0.0' || options.host === '::') {
     for (const ip of lanAddresses()) shareBases.push(`http://${ip}:${port}`);
   }
-  function inviteLinks(query: TableQuery = {}): string[] {
-    const params = new URLSearchParams();
-    if (query.project) params.set('project', query.project);
-    if (query.table) params.set('table', query.table);
-    const suffix = params.size ? `?${params}` : '';
-    return shareBases.map((base) => `${base}/join/${players.invite}${suffix}`);
+  function linksFor(invite: Invite): string[] {
+    return shareBases.map((base) => `${base}/join/${invite.token}`);
+  }
+  async function inviteLinks(query: TableQuery = {}): Promise<string[]> {
+    const { project, table } = target(query);
+    return linksFor(await players.invite(project, table));
   }
 
   return {
