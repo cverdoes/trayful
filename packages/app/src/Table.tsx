@@ -83,7 +83,7 @@ export function Table() {
     const piece = facePiece(table, object);
     const type = piece && types[piece.type];
     const size = pieceSize(table, types, object);
-    const spot = snapFor(table, types, type, point, snapRadius(size), ignore);
+    const spot = snapFor(table, types, { type, point, radius: snapRadius(size), ignore });
     return spot && (spot.area || !group) ? spot : undefined;
   };
 
@@ -311,14 +311,12 @@ export function Table() {
       command({ type: 'stack', ids: [id], onto: target.id });
       return;
     }
-    const spot = snapFor(
-      table,
-      types,
-      types[piece.type],
+    const spot = snapFor(table, types, {
+      type: types[piece.type],
       point,
-      snapRadius(pieceSize(table, types, piece)),
-      new Set([id]),
-    );
+      radius: snapRadius(pieceSize(table, types, piece)),
+      ignore: new Set([id]),
+    });
     const to =
       spot && !spot.area
         ? spot.ref

@@ -50,45 +50,6 @@
       "count": 1
     }
   },
-  "packages/core/src/commands.ts": {
-    "max-lines": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    }
-  },
-  "packages/core/src/describe.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "packages/core/src/privacy.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "packages/core/src/setup.ts": {
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    }
-  },
-  "packages/core/src/snap.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "packages/core/src/state.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "packages/server/src/mcp.ts": {
     "max-lines": {
       "count": 1

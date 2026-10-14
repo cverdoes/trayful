@@ -31,35 +31,47 @@ export function viewFor(
   viewer: string | undefined,
   aliases: Aliases,
 ): TableView {
-  const objects: Record<string, TableObject> = {};
   const name = (id: string): string => {
     const object = state.objects[id];
     return object?.kind === 'piece' && isHidden(object, viewer) ? aliases.alias(id) : id;
   };
-  const snapRef = (snap: string | undefined) => {
-    if (!snap) return snap;
-    const [owner, ...rest] = snap.split('/');
-    return [name(owner!), ...rest].join('/');
-  };
+  const objects: Record<string, TableObject> = {};
   for (const object of Object.values(state.objects)) {
-    if (object.kind === 'stack') {
-      const stack: Stack = { ...object, items: object.items.map(name) };
-      if (object.snap) stack.snap = snapRef(object.snap);
-      objects[stack.id] = stack;
-      continue;
-    }
-    if (object.hand && object.hand !== viewer) continue;
-    if (isHidden(object, viewer)) {
-      const id = aliases.alias(object.id);
-      const hidden: Piece = { ...object, id };
-      delete hidden.data;
-      if (object.snap) hidden.snap = snapRef(object.snap);
-      objects[id] = hidden;
-      continue;
-    }
-    objects[object.id] = object.snap ? { ...object, snap: snapRef(object.snap) } : object;
+    const seen = viewObject(object, viewer, name);
+    if (seen) objects[seen.id] = seen;
   }
   return { ...state, seed: 0, rng: 0, objects, hands: handCounts(state) };
+}
+
+/**
+ * How one object looks to `viewer`, with hidden pieces under the stand-in ids
+ * `name` gives them; undefined for a piece in someone else's hand.
+ */
+function viewObject(
+  object: TableObject,
+  viewer: string | undefined,
+  name: (id: string) => string,
+): TableObject | undefined {
+  // Each branch names the object before its snap, so stand-in ids are handed out in a stable order.
+  if (object.kind === 'stack') {
+    const stack: Stack = { ...object, items: object.items.map(name) };
+    if (object.snap) stack.snap = renameSnap(object.snap, name);
+    return stack;
+  }
+  if (object.hand && object.hand !== viewer) return undefined;
+  if (isHidden(object, viewer)) {
+    const hidden: Piece = { ...object, id: name(object.id) };
+    delete hidden.data;
+    if (object.snap) hidden.snap = renameSnap(object.snap, name);
+    return hidden;
+  }
+  return object.snap ? { ...object, snap: renameSnap(object.snap, name) } : object;
+}
+
+/** A snap reference with its owner under the name the viewer knows it by. */
+function renameSnap(snap: string, name: (id: string) => string): string {
+  const [owner, ...rest] = snap.split('/');
+  return [name(owner!), ...rest].join('/');
 }
 
 /** Swaps stand-in ids in a message from a player back to the real ids, at any depth. */

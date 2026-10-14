@@ -165,39 +165,17 @@ export function describeTable(
   if (summaries.length === 0) {
     return [`Table "${state.table}" is empty.`, ...(hands.length ? ['', ...hands] : [])].join('\n');
   }
-  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
-  for (const s of summaries) {
-    x0 = Math.min(x0, s.pos[0] - s.size[0] / 2);
-    y0 = Math.min(y0, s.pos[1] - s.size[1] / 2);
-    x1 = Math.max(x1, s.pos[0] + s.size[0] / 2);
-    y1 = Math.max(y1, s.pos[1] + s.size[1] / 2);
-  }
   const lines = [
-    `Table "${state.table}": ${summaries.length} objects, covering x ${num(x0)} to ${num(x1)} ` +
-      `and y ${num(y0)} to ${num(y1)} mm. Positions are centres in mm; y grows downwards.`,
-    `Free space: anywhere below y ${num(y1)} or right of x ${num(x1)}.`,
-    '',
+    ...overviewLines(state.table, summaries),
+    ...stackLines(
+      summaries.filter((s) => s.kind === 'stack'),
+      catalog,
+    ),
+    ...pieceLines(
+      summaries.filter((s) => s.kind === 'piece'),
+      catalog,
+    ),
   ];
-  const stacks = summaries.filter((s) => s.kind === 'stack');
-  const pieces = summaries.filter((s) => s.kind === 'piece');
-  if (stacks.length) {
-    lines.push('Piles (stacks):');
-    for (const s of stacks) {
-      const top = s.top.face === 'down' ? 'top face down' : `top: ${pieceText(s.top, catalog)}`;
-      lines.push(`- ${s.id}: ${s.count} × ${typeName(s.top, catalog)}, ${top}${where(s)}`);
-      if (s.items) {
-        lines.push(
-          `  bottom to top: ${s.items.map((p) => `${p.id}${dataText(p.data)}${p.face === 'down' ? ' (down)' : ''}`).join(', ')}`,
-        );
-      }
-    }
-    lines.push('');
-  }
-  if (pieces.length) {
-    lines.push('Pieces:');
-    for (const s of pieces) lines.push(`- ${s.id}: ${pieceText(s.top, catalog)}${where(s)}`);
-    lines.push('');
-  }
   if (hands.length) lines.push(...hands, '');
   const targets = snapTargets(state, catalog);
   if (targets.length) {
@@ -207,6 +185,48 @@ export function describeTable(
     lines.push(...targets);
   }
   return lines.join('\n').trimEnd();
+}
+
+/** How many objects there are, the area they cover, and where there is room. */
+function overviewLines(table: string, summaries: ObjectSummary[]): string[] {
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const s of summaries) {
+    x0 = Math.min(x0, s.pos[0] - s.size[0] / 2);
+    y0 = Math.min(y0, s.pos[1] - s.size[1] / 2);
+    x1 = Math.max(x1, s.pos[0] + s.size[0] / 2);
+    y1 = Math.max(y1, s.pos[1] + s.size[1] / 2);
+  }
+  return [
+    `Table "${table}": ${summaries.length} objects, covering x ${num(x0)} to ${num(x1)} ` +
+      `and y ${num(y0)} to ${num(y1)} mm. Positions are centres in mm; y grows downwards.`,
+    `Free space: anywhere below y ${num(y1)} or right of x ${num(x1)}.`,
+    '',
+  ];
+}
+
+/** Each stack with its top piece, and its pieces bottom to top when they are known. */
+function stackLines(stacks: ObjectSummary[], catalog: Catalog): string[] {
+  if (stacks.length === 0) return [];
+  const lines = ['Piles (stacks):'];
+  for (const s of stacks) {
+    const top = s.top.face === 'down' ? 'top face down' : `top: ${pieceText(s.top, catalog)}`;
+    lines.push(`- ${s.id}: ${s.count} × ${typeName(s.top, catalog)}, ${top}${where(s)}`);
+    if (s.items) {
+      lines.push(
+        `  bottom to top: ${s.items.map((p) => `${p.id}${dataText(p.data)}${p.face === 'down' ? ' (down)' : ''}`).join(', ')}`,
+      );
+    }
+  }
+  return [...lines, ''];
+}
+
+function pieceLines(pieces: ObjectSummary[], catalog: Catalog): string[] {
+  if (pieces.length === 0) return [];
+  return [
+    'Pieces:',
+    ...pieces.map((s) => `- ${s.id}: ${pieceText(s.top, catalog)}${where(s)}`),
+    '',
+  ];
 }
 
 /** The viewer's own hand in full, and how many pieces everyone else holds. */

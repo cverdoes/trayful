@@ -103,34 +103,43 @@ export function fromTableFile(data: unknown): TableState {
 /** Problems with stack membership; an empty list means the table is consistent. */
 export function checkIntegrity(state: TableState): string[] {
   const problems: string[] = [];
+  /** The stack each piece was first seen in, to catch pieces listed by two. */
   const seen = new Map<string, string>();
   for (const object of Object.values(state.objects)) {
-    if (object.kind === 'stack') {
-      if (object.items.length === 0) problems.push(`Stack "${object.id}" is empty.`);
-      for (const id of object.items) {
-        const item = state.objects[id];
-        if (item?.kind !== 'piece')
-          problems.push(`Stack "${object.id}" lists unknown piece "${id}".`);
-        else if (item.parent !== object.id)
-          problems.push(
-            `Piece "${id}" is in stack "${object.id}" but its parent is "${item.parent ?? 'none'}".`,
-          );
-        if (seen.has(id))
-          problems.push(`Piece "${id}" is in both "${seen.get(id)}" and "${object.id}".`);
-        seen.set(id, object.id);
-      }
-    } else if (object.parent && object.hand) {
-      problems.push(`Piece "${object.id}" cannot be both in a stack and in a hand.`);
-    } else if (object.parent) {
-      const parent = state.objects[object.parent];
-      if (parent?.kind !== 'stack' || !parent.items.includes(object.id)) {
-        problems.push(
-          `Piece "${object.id}" names "${object.parent}" as its stack, but that stack does not hold it.`,
-        );
-      }
+    if (object.kind === 'stack') problems.push(...stackProblems(state, object, seen));
+    else {
+      const problem = pieceProblem(state, object);
+      if (problem) problems.push(problem);
     }
   }
   return problems;
+}
+
+/** A stack must hold pieces that name it as their parent, and share none with another stack. */
+function stackProblems(state: TableState, stack: Stack, seen: Map<string, string>): string[] {
+  const problems: string[] = [];
+  if (stack.items.length === 0) problems.push(`Stack "${stack.id}" is empty.`);
+  for (const id of stack.items) {
+    const item = state.objects[id];
+    if (item?.kind !== 'piece') problems.push(`Stack "${stack.id}" lists unknown piece "${id}".`);
+    else if (item.parent !== stack.id)
+      problems.push(
+        `Piece "${id}" is in stack "${stack.id}" but its parent is "${item.parent ?? 'none'}".`,
+      );
+    if (seen.has(id))
+      problems.push(`Piece "${id}" is in both "${seen.get(id)}" and "${stack.id}".`);
+    seen.set(id, stack.id);
+  }
+  return problems;
+}
+
+/** A piece's stack must list it, and a piece cannot be in a stack and a hand at once. */
+function pieceProblem(state: TableState, piece: Piece): string | undefined {
+  if (!piece.parent) return undefined;
+  if (piece.hand) return `Piece "${piece.id}" cannot be both in a stack and in a hand.`;
+  const parent = state.objects[piece.parent];
+  if (parent?.kind === 'stack' && parent.items.includes(piece.id)) return undefined;
+  return `Piece "${piece.id}" names "${piece.parent}" as its stack, but that stack does not hold it.`;
 }
 
 /**
