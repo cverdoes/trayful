@@ -7,7 +7,7 @@ export default defineConfig({
       provider: 'v8',
       include: ['packages/*/src/**'],
       exclude: ['**/*.test.ts'],
-      reporter: ['text-summary', 'html'],
+      reporter: ['text-summary', 'html', 'json-summary'],
       // A floor just under today's numbers, so coverage can only go up. Raise it as tests land.
       thresholds: { statements: 60, branches: 50, functions: 57, lines: 62 },
     },

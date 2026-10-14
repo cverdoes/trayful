@@ -19,6 +19,7 @@
     "lint:unused": "knip",
     "lint:dupes": "jscpd",
     "quality": "pnpm lint:deps && pnpm lint:unused && pnpm lint:dupes",
+    "quality:summary": "tsx scripts/quality-summary.ts",
     "format": "prettier --write .",
     "generate": "tsx scripts/generate.ts",
     "check:generated": "tsx scripts/generate.ts --check",

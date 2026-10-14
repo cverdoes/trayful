@@ -160,6 +160,7 @@ Boards declare **snap targets** in their library type: a `grid` of spots (card s
 | `pnpm lint`              | ESLint (incl. complexity and size limits) and Prettier check             |
 | `pnpm lint:prune`        | Drop fixed entries from `eslint-suppressions.json`                       |
 | `pnpm quality`           | Package boundaries, unused code and copy-paste duplication               |
+| `pnpm quality:summary`   | Coverage, complexity, duplication and lint backlog as Markdown           |
 | `pnpm format`            | Format everything with Prettier                                          |
 | `pnpm generate`          | Regenerate JSON Schemas and the format reference after changing a schema |
 | `pnpm validate:examples` | Validate every project in `examples/`                                    |
@@ -174,6 +175,8 @@ When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generat
 CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below the floor in `vitest.config.ts`.
 
 Code written before these limits is listed in `eslint-suppressions.json`, so only new violations fail the build. When you fix one, run `pnpm lint:prune` and commit the smaller file; never add entries by hand. When coverage rises, raise the floor.
+
+Each CI run's summary page shows coverage per package, the most complex functions, duplication and the remaining lint backlog, and the HTML coverage report is attached to the run as `coverage-report`.
 
 On each pull request, Claude also reviews the change against [REVIEW.md](REVIEW.md) for readability, naming and design, and comments on the PR. That review is advice and never fails the build. It runs once the repository has a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret.
 
