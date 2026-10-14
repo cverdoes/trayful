@@ -25,6 +25,7 @@ import {
   type TableState,
 } from '@trayful/core';
 import { formatDiagnostic, loadProject, type ResolvedProject } from '@trayful/formats';
+import { activityText } from './activity.js';
 import { AGENT_PLAYER, type Player } from './players.js';
 
 export class ProjectLoadError extends Error {}
@@ -73,15 +74,18 @@ export class TableSession {
     { resolve: (png: Buffer) => void; reject: (err: Error) => void; timer: NodeJS.Timeout }
   >();
 
+  private readonly saveDelayMs: number;
+  private version: number;
+
   private constructor(
     private current: ResolvedProject,
     readonly tableName: string,
     readonly engine: TableEngine,
-    private readonly saveDelayMs: number,
-    private version: number,
-    players?: PlayerDirectory,
+    options: SessionOptions,
   ) {
-    this.players = players;
+    this.saveDelayMs = options.saveDelayMs ?? 250;
+    this.version = options.version ?? 1;
+    this.players = options.players;
     engine.subscribe((state, change) => {
       this.revision++;
       // After a shuffle, an undo or a whole new table nobody may follow a hidden piece
@@ -141,9 +145,7 @@ export class TableSession {
       project,
       tableName,
       new TableEngine(state, project.types),
-      options.saveDelayMs ?? 250,
-      options.version ?? 1,
-      options.players,
+      options,
     );
     await session.save();
     return session;
@@ -247,31 +249,33 @@ export class TableSession {
     this.checkReach(real, player);
     const name = (id: string) =>
       id === player ? 'their' : `${this.players?.get(id)?.name ?? id}'s`;
-    this.as(player, summarize(real, name), () => this.engine.dispatch(real, player));
+    this.as(player, activityText(real, name), () => this.engine.dispatch(real, player));
   }
 
   /** Throws when a command names a piece out of the player's reach, or an unknown player. */
   checkReach(value: unknown, player: string | undefined): void {
-    if (typeof value === 'string') {
-      const id = value.split('/')[0]!;
-      if (id.startsWith(HIDDEN_PREFIX)) {
-        throw new CommandError(
-          'That hidden piece is no longer where you saw it (it was shuffled or moved). Look at the table again.',
-        );
-      }
-      const object = this.engine.state.objects[id];
-      if (object?.kind === 'piece' && object.hand && object.hand !== player) {
-        throw new CommandError("That piece is in another player's hand.");
-      }
-      if (value.startsWith(HAND_PREFIX) && this.players) {
-        const owner = value.slice(HAND_PREFIX.length);
-        if (!this.players.get(owner)) throw new CommandError(`There is no player "${owner}".`);
-      }
-      return;
-    }
-    if (Array.isArray(value)) for (const v of value) this.checkReach(v, player);
+    if (typeof value === 'string') this.checkReference(value, player);
+    else if (Array.isArray(value)) for (const v of value) this.checkReach(v, player);
     else if (value && typeof value === 'object') {
       for (const v of Object.values(value)) this.checkReach(v, player);
+    }
+  }
+
+  /** Checks one string in a command, which may name a piece, a snap spot or a hand. */
+  private checkReference(value: string, player: string | undefined): void {
+    const id = value.split('/')[0]!;
+    if (id.startsWith(HIDDEN_PREFIX)) {
+      throw new CommandError(
+        'That hidden piece is no longer where you saw it (it was shuffled or moved). Look at the table again.',
+      );
+    }
+    const object = this.engine.state.objects[id];
+    if (object?.kind === 'piece' && object.hand && object.hand !== player) {
+      throw new CommandError("That piece is in another player's hand.");
+    }
+    const owner = value.startsWith(HAND_PREFIX) ? value.slice(HAND_PREFIX.length) : undefined;
+    if (owner !== undefined && this.players && !this.players.get(owner)) {
+      throw new CommandError(`There is no player "${owner}".`);
     }
   }
 
@@ -451,44 +455,6 @@ export class TableSession {
       this.answerSnapshot(id, undefined, 'The server is stopping.');
     await this.save();
     this.listeners.clear();
-  }
-}
-
-/** A few words on what a command did, for people watching. Never names a piece. */
-export function summarize(command: Command, whose: (player: string) => string = () => 'a'): string {
-  const n = (count: number, one: string, many = `${one}s`) =>
-    `${count} ${count === 1 ? one : many}`;
-  const into = (to: unknown) =>
-    typeof to === 'string' && to.startsWith(HAND_PREFIX)
-      ? ` into ${whose(to.slice(HAND_PREFIX.length))} hand`
-      : '';
-  switch (command.type) {
-    case 'move':
-      return `moved ${n(command.ids.length, 'piece')}${into(command.to)}`;
-    case 'flip':
-      return `flipped ${n(command.ids.length, 'piece')}`;
-    case 'rotate':
-      return `turned ${n(command.ids.length, 'piece')}`;
-    case 'stack':
-      return `stacked ${n(command.ids.length, 'piece')}`;
-    case 'draw':
-      return `drew ${n(command.count ?? 1, 'piece')}${into(command.to)}`;
-    case 'deal':
-      return `dealt ${n(command.count ?? 1, 'piece')} each`;
-    case 'take':
-      return `took a piece from a pile${into(command.to)}`;
-    case 'layout':
-      return 'spread out a pile';
-    case 'shuffle':
-      return 'shuffled a pile';
-    case 'roll':
-      return 'rolled';
-    case 'setValue':
-      return 'set a value';
-    case 'lock':
-      return `${command.locked ? 'locked' : 'unlocked'} ${n(command.ids.length, 'piece')}`;
-    default:
-      return 'changed the table';
   }
 }
 

@@ -58,13 +58,13 @@ await server.close(); // saves every open table first
 | `/api/health`                            | `{ ok, project, table }` for the active table, plus `projectDir` and `root` for the host                                      |
 | `/project-files/<project>/<path>`        | Images from a project folder (other file types are refused)                                                                   |
 
-Without `project` and `table`, routes use the active table. Tables are saved to `tables/<name>.json` shortly after every change, through a temporary file, so a crash never leaves half a file.
+The routes live in `src/routes/`, one module per group, sharing a `RouteContext`; `guards.ts` checks origins and invites before any route runs. Without `project` and `table`, routes use the active table. Tables are saved to `tables/<name>.json` shortly after every change, through a temporary file, so a crash never leaves half a file.
 
 The server binds to `127.0.0.1` unless told otherwise (`trayful play --share` binds `0.0.0.0`; `--tunnel` keeps `127.0.0.1` and lets `cloudflared` connect locally). `addShareBase(url)` adds an address, such as a tunnel's, to the invite links.
 
 ## MCP
 
-`createMcpServer(workspace)` in `mcp.ts` builds the MCP server. Tools act on the active table:
+`createMcpServer(workspace)` in `mcp.ts` builds the MCP server from the tool groups in `src/mcp/` (reading, play, tables, authoring, resources), which share a `ToolContext`. Tools act on the active table:
 
 - Reading: `describe_table`, `query_objects`, `snapshot`.
 - Playing: `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `set_counter`, `lock`, with snap targets such as `main-board/market/2` wherever a position goes.
