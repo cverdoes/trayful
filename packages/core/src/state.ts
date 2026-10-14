@@ -135,13 +135,17 @@ export function checkIntegrity(state: TableState): string[] {
 
 /**
  * Takes an object off a table. Tables keep their objects in a plain record keyed by id,
- * because they are saved and sent as JSON, so this is the one place an id is deleted.
+ * because they are saved and sent as JSON. The lint rule against `delete` with a computed
+ * key exists for maps like this one, so removals go through here instead of `delete`.
  */
 export function removeObject(objects: Record<string, TableObject>, id: string): void {
   Reflect.deleteProperty(objects, id);
 }
 
-/** `object` with `changes` applied, where a change to `undefined` removes that key. */
+/**
+ * `object` with `changes` applied, where a change to `undefined` removes that key. Any key
+ * already `undefined` on `object` is left out too; a saved table has none.
+ */
 export function withChanges<T extends object>(object: T, changes: Partial<T>): T {
   const merged = Object.entries({ ...object, ...changes }).filter(([, v]) => v !== undefined);
   return Object.fromEntries(merged) as T;

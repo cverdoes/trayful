@@ -15,4 +15,8 @@ describe('docTitle', () => {
     expect(docTitle('## Only a section\ntext')).toBeUndefined();
     expect(docTitle('#  \ntext')).toBeUndefined();
   });
+
+  it('skips a blank heading before a real one', () => {
+    expect(docTitle('# \n# Making a deck')).toBe('Making a deck');
+  });
 });
