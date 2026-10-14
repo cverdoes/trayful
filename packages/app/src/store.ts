@@ -11,7 +11,7 @@ import {
 } from '@trayful/core';
 import { create } from 'zustand';
 
-export type ConnectionStatus = 'connecting' | 'online' | 'offline';
+type ConnectionStatus = 'connecting' | 'online' | 'offline';
 
 /** Who this browser plays as, from `/api/me`. */
 export interface Me {

@@ -48,7 +48,7 @@ export class SourceFile {
 
   /** Line and column of the deepest node that exists along `path`. */
   locate(path: (string | number)[]): { line: number; col: number } | undefined {
-    let node: Node | null | undefined = this.doc.contents as Node | null;
+    let node: Node | null | undefined = this.doc.contents;
     let offset = node?.range?.[0];
     for (const key of path) {
       if (isMap(node)) {

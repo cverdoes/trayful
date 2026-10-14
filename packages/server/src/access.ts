@@ -53,7 +53,7 @@ export function allowedProject(who: Caller, project: string): boolean {
 }
 
 /** The invite tokens in a request's cookie. */
-export function inviteTokens(request: FastifyRequest): string[] {
+function inviteTokens(request: FastifyRequest): string[] {
   const value = parseCookies(request.headers.cookie)[INVITE_COOKIE] ?? '';
   return value.split(TOKEN_SEPARATOR).filter(Boolean);
 }
@@ -111,7 +111,7 @@ export function isTrustedOrigin(request: FastifyRequest, shared: readonly string
   );
 }
 
-export function parseCookies(header: string | undefined): Record<string, string> {
+function parseCookies(header: string | undefined): Record<string, string> {
   const cookies: Record<string, string> = {};
   for (const part of (header ?? '').split(';')) {
     const [name, value] = splitOnce(part.trim(), '=');

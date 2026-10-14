@@ -123,8 +123,8 @@ export async function upsertType(
   const types = doc.get('types');
   if (!isSeq(types)) throw new AuthoringError(`${target} has no "types" list.`);
   const node = doc.createNode(type);
-  if (existing) (types as YAMLSeq).set(existing.source.index, node);
-  else (types as YAMLSeq).add(node);
+  if (existing) types.set(existing.source.index, node);
+  else types.add(node);
 
   const updated = await commit(workspace, projectId, [{ file: target, content: doc.toString() }]);
   if (!updated.types[type.id]) {
@@ -178,7 +178,7 @@ export async function setInventory(
   const doc = await readDocument(project.dir, file);
   const components = doc.get('components');
   if (!isSeq(components)) throw new AuthoringError(`${file} has no "components" list.`);
-  const items = components.items as unknown[];
+  const items = components.items;
   const first = items.findIndex((n: unknown) => isMap(n) && n.get('type') === type);
   const kept = items.filter((n: unknown) => !(isMap(n) && n.get('type') === type));
   const at =

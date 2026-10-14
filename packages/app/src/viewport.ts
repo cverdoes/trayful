@@ -2,8 +2,8 @@ import type { TableState } from '@trayful/core';
 import { bounds, topLevel, type Types } from './render/geometry';
 import { useStore } from './store';
 
-export const MIN_SCALE = 0.2;
-export const MAX_SCALE = 12;
+const MIN_SCALE = 0.2;
+const MAX_SCALE = 12;
 export const TOOLBAR_HEIGHT = 56;
 /** The hand tray along the bottom of the screen. */
 export const HAND_HEIGHT = 120;
@@ -55,6 +55,6 @@ export function zoomAt(screen: { x: number; y: number }, factor: number): void {
   });
 }
 
-export function clamp(n: number, lo: number, hi: number): number {
+function clamp(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, n));
 }

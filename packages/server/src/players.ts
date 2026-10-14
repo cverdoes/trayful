@@ -220,7 +220,7 @@ export class Players {
 }
 
 /** A name for the person running the server, from their account on this computer. */
-export function hostName(): string {
+function hostName(): string {
   try {
     const name = os.userInfo().username;
     return name ? name[0]!.toUpperCase() + name.slice(1) : 'Host';
