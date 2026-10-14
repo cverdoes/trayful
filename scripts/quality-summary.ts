@@ -10,9 +10,9 @@ import path from 'node:path';
 import { ESLint } from 'eslint';
 import tseslint from 'typescript-eslint';
 import sonarjs from 'eslint-plugin-sonarjs';
+import { COGNITIVE_COMPLEXITY_LIMIT } from '../eslint.config.js';
 
 const root = path.resolve(import.meta.dirname, '..');
-const COMPLEXITY_LIMIT = 15;
 const TOP_FUNCTIONS = 10;
 const TOP_RULES = 10;
 
@@ -62,7 +62,7 @@ async function coverageSection(): Promise<string> {
     '| Package | Lines | Statements | Functions | Branches |',
     '| --- | ---: | ---: | ---: | ---: |',
     ...[...byPackage].sort(([a], [b]) => a.localeCompare(b)).map(([n, c]) => row(n, c)),
-    row('**All**', summary.total!),
+    row('**All**', summary.total ?? emptyCoverage()),
     '',
     'The app is mostly covered by the e2e suite, which this does not count.',
   ].join('\n');
@@ -90,8 +90,12 @@ async function complexFunctions(): Promise<ComplexFunction[]> {
   const results = await eslint.lintFiles(['packages/*/src/**/*.{ts,tsx}']);
   return results.flatMap((result) =>
     result.messages.flatMap((m) => {
+      // Scores are read from the rule's message ("... from 23 to the 0 allowed"), so fail
+      // loudly if a parse error shows up or a sonarjs upgrade rewords the message.
       const score = /from (\d+) to/.exec(m.message)?.[1];
-      if (!score) return [];
+      if (m.ruleId !== 'sonarjs/cognitive-complexity' || !score) {
+        throw new Error(`Unexpected ESLint message in ${result.filePath}: ${m.message}`);
+      }
       const where = `${path.relative(root, result.filePath)}:${m.line}`;
       return [{ score: Number(score), where }];
     }),
@@ -100,9 +104,9 @@ async function complexFunctions(): Promise<ComplexFunction[]> {
 
 async function complexitySection(): Promise<string> {
   const functions = (await complexFunctions()).sort((a, b) => b.score - a.score);
-  const over = functions.filter((f) => f.score > COMPLEXITY_LIMIT).length;
+  const over = functions.filter((f) => f.score > COGNITIVE_COMPLEXITY_LIMIT).length;
   return [
-    `${over} of ${functions.length} functions are over the cognitive complexity limit of ${COMPLEXITY_LIMIT}.`,
+    `${over} of ${functions.length} functions are over the cognitive complexity limit of ${COGNITIVE_COMPLEXITY_LIMIT}.`,
     '',
     '| Cognitive complexity | Function |',
     '| ---: | --- |',
