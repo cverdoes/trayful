@@ -10,6 +10,8 @@ The table engine: state, commands, undo and seeded randomness. It has no UI or f
 - `describeTable` and `queryObjects` in `describe.ts` give agents a text or JSON view of the table. Face-down cards stay hidden unless asked with `reveal`.
 - `replace(state)` on the engine swaps in a whole new table (a reset) as one undoable step; `setCatalog(types)` switches to reloaded component types.
 - `syncTable(state, project)` brings a table up to date with edited project files: components that left the box leave the table, changed data applies in place, and new components join their deck or wait in rows below the table.
+- Pieces can sit in a player's private hand (`hand: <player>`): `hand:<player>` as a target puts them there, and moving them `to` a place plays them. `onTable`, `handOf` and `handCounts` in `state.ts` tell where pieces are.
+- `viewFor(state, player, aliases)` in `privacy.ts` is what one player may see: other hands left out, face-down pieces without their data and under stand-in ids from an `AliasBook`, no random state. `resolveAliases` maps stand-in ids in a player's command back to real ones.
 - `ClientMessage` and `ServerMessage` in `protocol.ts` are the WebSocket messages between the browser and the server.
 - `toTableFile` and `fromTableFile` convert to and from the saved JSON form, checking stack consistency on load.
 

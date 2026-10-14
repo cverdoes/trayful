@@ -2,7 +2,7 @@
 
 Trayful is a boardgame prototyping table. You describe your components (cards, boards, tokens, meeples, dice, counters) in plain YAML files, and Trayful lays them out on a table where people and AI agents can drag, flip, rotate, stack and shuffle them.
 
-> **Status: Milestones 1 to 4.** You can start a prototype from a template, play it on a table in your browser with pieces that snap onto boards and a setup that lays out the game, and see every file you save show up on the table at once. An AI agent such as Claude can play on the same table over MCP, and design components with you. You can print everything at real size to play on paper. Multiplayer (Milestone 5) comes next. See the [roadmap](#roadmap).
+> **Status: Milestones 1 to 5.** You can start a prototype from a template, play it on a table in your browser with pieces that snap onto boards and a setup that lays out the game, and see every file you save show up on the table at once. Playtesters can join from their own computers through an invite link, each with a private hand. An AI agent such as Claude can play on the same table over MCP, and design components with you. You can print everything at real size to play on paper. See the [roadmap](#roadmap).
 
 ## Quick start
 
@@ -32,14 +32,26 @@ Drag a piece to move it. While you drag, the board spots it may go to light up, 
 
 A new table starts from the setup named in `trayful.yaml` (Harvest Moon's puts the board in the middle, deals the market and lines up the workers). The table is saved to `tables/table-1.json` inside the project folder as you play, and reopens where you left off. **Start over** in the toolbar sets the table up again from the project files (you can undo it). The menu next to the game's name switches tables: make a **new table** for another playtest, **duplicate** one to try two moves from the same position, or delete one. **Print** opens [print-and-play](docs/howto/print-and-play.md) sheets with every component at real size.
 
-| `trayful play` option | What it does                                         |
-| --------------------- | ---------------------------------------------------- |
-| `--project <id>`      | In a folder of projects, the one to open first       |
-| `--table <name>`      | Open or create another saved table, e.g. `--table b` |
-| `--seed <n>`          | Shuffle seed for a new table, for repeatable games   |
-| `--setup <name>`      | Setup for a new table; `none` lays everything out    |
-| `--port <n>`          | Use another port than 4317                           |
-| `--no-open`           | Do not open a browser window                         |
+| `trayful play` option | What it does                                          |
+| --------------------- | ----------------------------------------------------- |
+| `--project <id>`      | In a folder of projects, the one to open first        |
+| `--table <name>`      | Open or create another saved table, e.g. `--table b`  |
+| `--seed <n>`          | Shuffle seed for a new table, for repeatable games    |
+| `--setup <name>`      | Setup for a new table; `none` lays everything out     |
+| `--port <n>`          | Use another port than 4317                            |
+| `--no-open`           | Do not open a browser window                          |
+| `--share`             | Let others on your network join, by invite link       |
+| `--tunnel`            | Let others anywhere join, through a Cloudflare tunnel |
+
+## Play with others
+
+Start the table with `--share` (same network) or `--tunnel` (anywhere; needs [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/), no account), and Trayful prints an invite link to send your playtesters. They open it, pick a name, and play on the same table; **Invite** in the toolbar shows the link again.
+
+```sh
+pnpm trayful play examples/harvest-moon --share
+```
+
+Everyone has a private **hand** along the bottom of the screen: drag cards onto it to keep them hidden, and drag them out to play them (hold Alt for face down). The others see only how many cards you hold, and face-down cards stay hidden from every browser, down to the data it is sent. Only the host can make or delete tables, print, invite and connect agents. See [Play with others](docs/howto/play-with-others.md) and [Players and hands](docs/reference/players-and-hands.md).
 
 ## Let an agent play
 
@@ -79,7 +91,7 @@ In Claude Desktop the same goes in `claude_desktop_config.json`:
 | `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `set_counter`, `lock` | Play, the same moves people make                  |
 | `undo`, `redo`, `get_history`, `reset_table`                                                                  | Shared history, and a fresh table                 |
 
-Agents can aim moves at board spots by name, such as `main-board/fields/3`, or deal into a whole target such as `main-board/market`; `describe_table` lists every snap target and which spots are free. Face-down cards stay hidden from the agent unless it asks with `reveal: true`. `snapshot` needs the table open in a browser, since the browser draws the picture. Resources give the full table state, the project, each component type, the file format schemas and these docs (`trayful://docs`).
+Agents can aim moves at board spots by name, such as `main-board/fields/3`, or deal into a whole target such as `main-board/market`; `describe_table` lists every snap target and which spots are free. Face-down cards stay hidden from the agent unless it asks with `reveal: true`. The agent plays as **Claude**, with its own hand (`hand:claude`); it can deal into anyone's hand with `hand:<player>`, but never sees other players' hands. MCP is only offered on your own computer, never to guests. `snapshot` needs the table open in a browser, since the browser draws the picture. Resources give the full table state, the project, each component type, the file format schemas and these docs (`trayful://docs`).
 
 Agents can also build your prototype with you: ask Claude for "an event card type with a title, a rule text and a season band, and a deck of six events", and it writes the type into your library, puts the cards in the box and looks at a picture of the result, while the new deck appears on your table. Every change is checked first, so an agent cannot leave your project broken. See [Let an agent build components](docs/howto/agent-builds-components.md).
 
@@ -121,18 +133,18 @@ Boards declare **snap targets** in their library type: a `grid` of spots (card s
 
 ## Repository layout
 
-| Path                                             | What it is                                                                   |
-| ------------------------------------------------ | ---------------------------------------------------------------------------- |
-| [`packages/formats`](packages/formats)           | File format schemas (Zod), YAML loader and validator, generated JSON Schemas |
-| [`packages/core`](packages/core)                 | Table state, commands, snapping, setups, undo and seeded randomness          |
-| [`packages/server`](packages/server)             | Local server: projects and tables, live reload, WebSocket sync, MCP          |
-| [`packages/app`](packages/app)                   | Browser table (React and Konva)                                              |
-| [`packages/cli`](packages/cli)                   | The `trayful` command line                                                   |
-| [`examples/harvest-moon`](examples/harvest-moon) | Sample prototype that uses every file kind; validated in CI                  |
-| [`examples/starter`](examples/starter)           | The template `trayful new` copies; validated in CI                           |
-| [`docs`](docs)                                   | HOWTO guides and the format reference (partly generated)                     |
-| [`e2e`](e2e)                                     | Browser tests (Playwright): playing, snapping, agents, authoring, printing   |
-| [`scripts`](scripts)                             | Code generation, example validation and the dev server                       |
+| Path                                             | What it is                                                                               |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [`packages/formats`](packages/formats)           | File format schemas (Zod), YAML loader and validator, generated JSON Schemas             |
+| [`packages/core`](packages/core)                 | Table state, commands, snapping, setups, undo and seeded randomness                      |
+| [`packages/server`](packages/server)             | Local server: projects and tables, players and invites, live reload, WebSocket sync, MCP |
+| [`packages/app`](packages/app)                   | Browser table (React and Konva)                                                          |
+| [`packages/cli`](packages/cli)                   | The `trayful` command line                                                               |
+| [`examples/harvest-moon`](examples/harvest-moon) | Sample prototype that uses every file kind; validated in CI                              |
+| [`examples/starter`](examples/starter)           | The template `trayful new` copies; validated in CI                                       |
+| [`docs`](docs)                                   | HOWTO guides and the format reference (partly generated)                                 |
+| [`e2e`](e2e)                                     | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players  |
+| [`scripts`](scripts)                             | Code generation, example validation and the dev server                                   |
 
 ## Development
 
@@ -156,11 +168,11 @@ When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generat
 
 ## Roadmap
 
-| Milestone                            | Scope                                                                                                         |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| 0. Foundations                       | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
-| 1. First playable table              | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
-| 2. Components and snapping           | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
-| 3. MCP                               | Agents read and play tables over the Model Context Protocol                                                   |
-| **4. Projects and authoring** (this) | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
-| 5. Multiplayer                       | Remote playtesters, hidden hands                                                                              |
+| Milestone                  | Scope                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 0. Foundations             | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
+| 1. First playable table    | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
+| 2. Components and snapping | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
+| 3. MCP                     | Agents read and play tables over the Model Context Protocol                                                   |
+| 4. Projects and authoring  | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
+| **5. Multiplayer** (this)  | Players, invite links over the network or a tunnel, private hands, per-player hidden views                    |

@@ -1,7 +1,42 @@
 import type { ProjectView, ServerMessage } from '@trayful/core';
-import { tableQuery } from './route';
+import { forgetJoin, route, tableQuery } from './route';
 import { snapshotTable } from './snapshot';
-import { useStore } from './store';
+import { useStore, type Me } from './store';
+
+/**
+ * Finds out who this browser plays as, then connects; or, for someone who has
+ * an invite but no name yet, waits for them to join first.
+ */
+export async function start(): Promise<void> {
+  let me: Me;
+  try {
+    me = (await (await fetch('/api/me')).json()) as Me;
+  } catch {
+    useStore.setState({ fatal: 'Could not reach the Trayful server.' });
+    return;
+  }
+  useStore.setState({ me });
+  if (!me.host && !me.invited && !me.joined) useStore.setState({ gate: 'closed' });
+  else if (!me.player || (route().join && !me.joined)) useStore.setState({ gate: 'join' });
+  else {
+    if (route().join) forgetJoin();
+    connect();
+  }
+}
+
+/** Joins the table under a name, then connects. */
+export async function join(name: string): Promise<void> {
+  const response = await fetch('/api/join', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  const result = (await response.json()) as { error?: string };
+  if (!response.ok) throw new Error(result.error ?? response.statusText);
+  forgetJoin();
+  useStore.setState({ gate: undefined });
+  await start();
+}
 
 /** Connects to the Trayful server, loading the project and keeping the table in sync. Reconnects on loss. */
 export function connect(): void {

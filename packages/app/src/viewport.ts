@@ -5,6 +5,8 @@ import { useStore } from './store';
 export const MIN_SCALE = 0.2;
 export const MAX_SCALE = 12;
 export const TOOLBAR_HEIGHT = 56;
+/** The hand tray along the bottom of the screen. */
+export const HAND_HEIGHT = 120;
 const MARGIN = 32;
 
 /** The rectangle `[x0, y0, x1, y1]` in mm that holds every object, or nothing for an empty table. */
@@ -31,7 +33,7 @@ export function fitToTable(table: TableState, types: Types, width: number, heigh
   if (!box) return;
   const [x0, y0, x1, y1] = box;
   const availW = width - 2 * MARGIN;
-  const availH = height - TOOLBAR_HEIGHT - 2 * MARGIN;
+  const availH = height - TOOLBAR_HEIGHT - HAND_HEIGHT - 2 * MARGIN;
   const scale = clamp(Math.min(availW / (x1 - x0), availH / (y1 - y0)), MIN_SCALE, MAX_SCALE);
   useStore.setState({
     viewport: {

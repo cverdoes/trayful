@@ -1,8 +1,16 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  AliasBook,
   CommandError,
+  handCounts,
+  HAND_PREFIX,
+  HIDDEN_PREFIX,
+  resolveAliases,
+  viewFor,
+  type Command,
+  type PlayerInfo,
   createTable,
   SetupError,
   syncTable,
@@ -17,6 +25,7 @@ import {
   type TableState,
 } from '@trayful/core';
 import { formatDiagnostic, loadProject, type ResolvedProject } from '@trayful/formats';
+import { AGENT_PLAYER, type Player } from './players.js';
 
 export class ProjectLoadError extends Error {}
 
@@ -25,6 +34,24 @@ export class SnapshotError extends Error {}
 
 const TABLE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 
+/** The players a table may name. A workspace hands its `Players` registry here. */
+export interface PlayerDirectory {
+  get(id: string): Player | undefined;
+}
+
+/** An agent counts as at the table this long after it last acted. */
+const AGENT_ONLINE_MS = 5 * 60_000;
+
+type Listener = (message: ServerMessage) => void;
+
+export interface SessionOptions {
+  seed?: number;
+  setup?: string | false;
+  saveDelayMs?: number;
+  version?: number;
+  players?: PlayerDirectory;
+}
+
 /**
  * One open table: the loaded project, its engine and its file on disk.
  * Every client message goes through `handle`, and every change is saved
@@ -32,7 +59,12 @@ const TABLE_NAME = /^[a-z0-9][a-z0-9-]*$/;
  */
 export class TableSession {
   private revision = 0;
-  private listeners = new Set<(message: ServerMessage) => void>();
+  /** Who is watching, and as which player (none for a spectator who sees no hand). */
+  private listeners = new Map<Listener, string | undefined>();
+  private aliases = new AliasBook(() => randomBytes(5).toString('hex'));
+  /** Players who have been at this table, and when they last acted. */
+  private seen = new Map<string, number>();
+  private players: PlayerDirectory | undefined;
   private saveTimer: NodeJS.Timeout | undefined;
   private saving: Promise<void> = Promise.resolve();
   private activity: Activity | undefined;
@@ -47,10 +79,20 @@ export class TableSession {
     readonly engine: TableEngine,
     private readonly saveDelayMs: number,
     private version: number,
+    players?: PlayerDirectory,
   ) {
-    engine.subscribe(() => {
+    this.players = players;
+    engine.subscribe((state, change) => {
       this.revision++;
-      this.broadcast(this.stateMessage());
+      // After a shuffle, an undo or a whole new table nobody may follow a hidden piece
+      // by its stand-in id, so those get new ones.
+      if (change.kind !== 'apply' || change.command.type === 'replace') this.aliases.clear();
+      else if (change.command.type === 'shuffle') {
+        const stack = state.objects[change.command.id];
+        if (stack?.kind === 'stack') this.aliases.forget(stack.items);
+      }
+      this.aliases.prune(state);
+      for (const [listener, viewer] of this.listeners) listener(this.stateMessage(viewer));
       this.scheduleSave();
     });
   }
@@ -59,7 +101,7 @@ export class TableSession {
   static async open(
     projectDir: string,
     tableName = 'table-1',
-    options: { seed?: number; setup?: string | false; saveDelayMs?: number } = {},
+    options: SessionOptions = {},
   ): Promise<TableSession> {
     const { project, diagnostics } = await loadProject(projectDir);
     if (!project) {
@@ -75,7 +117,7 @@ export class TableSession {
   static async create(
     project: ResolvedProject,
     tableName = 'table-1',
-    options: { seed?: number; setup?: string | false; saveDelayMs?: number; version?: number } = {},
+    options: SessionOptions = {},
   ): Promise<TableSession> {
     checkTableName(tableName);
     const file = tableFile(project, tableName);
@@ -101,6 +143,7 @@ export class TableSession {
       new TableEngine(state, project.types),
       options.saveDelayMs ?? 250,
       options.version ?? 1,
+      options.players,
     );
     await session.save();
     return session;
@@ -154,10 +197,11 @@ export class TableSession {
     };
   }
 
-  stateMessage(): ServerMessage {
+  /** The table as one player may see it. */
+  stateMessage(viewer?: string): ServerMessage {
     return {
       type: 'state',
-      state: this.engine.state,
+      state: this.viewFor(viewer),
       revision: this.revision,
       canUndo: this.engine.canUndo,
       canRedo: this.engine.canRedo,
@@ -165,13 +209,104 @@ export class TableSession {
     };
   }
 
+  /** The table as one player may see it: other hands and face-down faces hidden. */
+  viewFor(viewer: string | undefined) {
+    return viewFor(this.engine.state, viewer, this.aliases);
+  }
+
   /** Makes a change on behalf of an agent, labelled so people watching see what it did. */
   asAgent<T>(text: string, change: () => T): T {
-    this.activity = { by: 'agent', text };
+    return this.as(AGENT_PLAYER, text, change);
+  }
+
+  /** Makes a change on behalf of a player, labelled with who did it and what. */
+  as<T>(player: string | undefined, text: string, change: () => T): T {
+    const agent = player === AGENT_PLAYER;
+    const first = player !== undefined && !this.seen.has(player);
+    if (player) this.seen.set(player, Date.now());
+    if (first) this.broadcastPlayers();
+    this.activity = {
+      by: agent ? 'agent' : 'person',
+      ...(player ? { player, name: this.players?.get(player)?.name ?? player } : {}),
+      text,
+    };
     try {
       return change();
     } finally {
       this.activity = undefined;
+    }
+  }
+
+  /**
+   * Checks that a player may make a command, and applies it. Stand-in ids of hidden
+   * pieces are swapped for the real ones; pieces in other players' hands are out of reach.
+   */
+  act(player: string | undefined, command: Command): void {
+    const real = resolveAliases(command, this.aliases);
+    this.checkReach(real, player);
+    const name = (id: string) =>
+      id === player ? 'their' : `${this.players?.get(id)?.name ?? id}'s`;
+    this.as(player, summarize(real, name), () => this.engine.dispatch(real));
+  }
+
+  /** Throws when a command names a piece out of the player's reach, or an unknown player. */
+  checkReach(value: unknown, player: string | undefined): void {
+    if (typeof value === 'string') {
+      const id = value.split('/')[0]!;
+      if (id.startsWith(HIDDEN_PREFIX)) {
+        throw new CommandError(
+          'That hidden piece is no longer where you saw it (it was shuffled or moved). Look at the table again.',
+        );
+      }
+      const object = this.engine.state.objects[id];
+      if (object?.kind === 'piece' && object.hand && object.hand !== player) {
+        throw new CommandError("That piece is in another player's hand.");
+      }
+      if (value.startsWith(HAND_PREFIX) && this.players) {
+        const owner = value.slice(HAND_PREFIX.length);
+        if (!this.players.get(owner)) throw new CommandError(`There is no player "${owner}".`);
+      }
+      return;
+    }
+    if (Array.isArray(value)) for (const v of value) this.checkReach(v, player);
+    else if (value && typeof value === 'object') {
+      for (const v of Object.values(value)) this.checkReach(v, player);
+    }
+  }
+
+  /** Who is at this table: everyone watching, holding pieces, or who has acted here. */
+  roster(): PlayerInfo[] {
+    const watching = new Set(this.listeners.values());
+    const ids = new Set([
+      ...watching,
+      ...this.seen.keys(),
+      ...Object.keys(handCounts(this.engine.state)),
+    ]);
+    const now = Date.now();
+    const infos: PlayerInfo[] = [];
+    for (const id of ids) {
+      if (!id) continue;
+      const player = this.players?.get(id) ?? {
+        id,
+        name: id,
+        color: '#6c757d',
+        kind: id === AGENT_PLAYER ? 'agent' : 'person',
+        role: id === AGENT_PLAYER ? 'agent' : 'guest',
+      };
+      const online =
+        watching.has(id) ||
+        (player.kind === 'agent' && now - (this.seen.get(id) ?? 0) < AGENT_ONLINE_MS);
+      infos.push({ ...player, online });
+    }
+    const order = { host: 0, guest: 1, agent: 2 };
+    return infos.sort((a, b) => order[a.role] - order[b.role] || a.name.localeCompare(b.name));
+  }
+
+  /** Tells everyone watching who is at the table, for example after someone renamed. */
+  broadcastPlayers(): void {
+    const players = this.roster();
+    for (const [listener, viewer] of this.listeners) {
+      listener({ type: 'players', players, ...(viewer ? { you: viewer } : {}) });
     }
   }
 
@@ -218,24 +353,27 @@ export class TableSession {
     else pending.reject(new SnapshotError(error ?? 'The browser could not draw the table.'));
   }
 
-  /** Applies a client message. Returns an error message for the sender only, or nothing on success. */
-  handle(message: ClientMessage): ServerMessage | undefined {
+  /**
+   * Applies a client message from a player (or a spectator, who can reach no hand).
+   * Returns an error message for the sender only, or nothing on success.
+   */
+  handle(message: ClientMessage, player?: string): ServerMessage | undefined {
     if (typeof message !== 'object' || message === null) {
       return { type: 'error', message: 'Messages must be JSON objects with a "type".' };
     }
     try {
       switch (message.type) {
         case 'command':
-          this.engine.dispatch(message.command);
+          this.act(player, message.command);
           return undefined;
         case 'undo':
-          this.engine.undo();
+          this.as(player, 'undid the last change', () => this.engine.undo());
           return undefined;
         case 'redo':
-          this.engine.redo();
+          this.as(player, 'redid a change', () => this.engine.redo());
           return undefined;
         case 'reset':
-          this.reset(message.seed, message.setup);
+          this.as(player, 'started a new table', () => this.reset(message.seed, message.setup));
           return undefined;
         case 'snapshot':
           this.answerSnapshot(message.id, message.png, message.error);
@@ -268,13 +406,22 @@ export class TableSession {
     this.engine.replace(createTable(this.project, { name: this.tableName, seed, setup }));
   }
 
-  subscribe(listener: (message: ServerMessage) => void): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+  /**
+   * Sends every change to a listener, as the table looks to `viewer`. Watching
+   * players show as online to the others while they are subscribed.
+   */
+  subscribe(listener: Listener, viewer?: string): () => void {
+    this.listeners.set(listener, viewer);
+    if (viewer) this.seen.set(viewer, this.seen.get(viewer) ?? 0);
+    this.broadcastPlayers();
+    return () => {
+      this.listeners.delete(listener);
+      this.broadcastPlayers();
+    };
   }
 
   private broadcast(message: ServerMessage): void {
-    for (const listener of this.listeners) listener(message);
+    for (const listener of this.listeners.keys()) listener(message);
   }
 
   private scheduleSave(): void {
@@ -301,6 +448,44 @@ export class TableSession {
       this.answerSnapshot(id, undefined, 'The server is stopping.');
     await this.save();
     this.listeners.clear();
+  }
+}
+
+/** A few words on what a command did, for people watching. Never names a piece. */
+export function summarize(command: Command, whose: (player: string) => string = () => 'a'): string {
+  const n = (count: number, one: string, many = `${one}s`) =>
+    `${count} ${count === 1 ? one : many}`;
+  const into = (to: unknown) =>
+    typeof to === 'string' && to.startsWith(HAND_PREFIX)
+      ? ` into ${whose(to.slice(HAND_PREFIX.length))} hand`
+      : '';
+  switch (command.type) {
+    case 'move':
+      return `moved ${n(command.ids.length, 'piece')}${into(command.to)}`;
+    case 'flip':
+      return `flipped ${n(command.ids.length, 'piece')}`;
+    case 'rotate':
+      return `turned ${n(command.ids.length, 'piece')}`;
+    case 'stack':
+      return `stacked ${n(command.ids.length, 'piece')}`;
+    case 'draw':
+      return `drew ${n(command.count ?? 1, 'piece')}${into(command.to)}`;
+    case 'deal':
+      return `dealt ${n(command.count ?? 1, 'piece')} each`;
+    case 'take':
+      return `took a piece from a pile${into(command.to)}`;
+    case 'layout':
+      return 'spread out a pile';
+    case 'shuffle':
+      return 'shuffled a pile';
+    case 'roll':
+      return 'rolled';
+    case 'setValue':
+      return 'set a value';
+    case 'lock':
+      return `${command.locked ? 'locked' : 'unlocked'} ${n(command.ids.length, 'piece')}`;
+    default:
+      return 'changed the table';
   }
 }
 

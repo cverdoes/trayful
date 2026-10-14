@@ -12,12 +12,20 @@ import {
   toTable,
   type SnapSpot,
 } from './snap.js';
-import type { Catalog, Piece, Stack, TableObject, TableState } from './state.js';
+import {
+  handTarget,
+  sizeOf,
+  type Catalog,
+  type Piece,
+  type Stack,
+  type TableObject,
+  type TableState,
+} from './state.js';
 
 /**
- * Where something goes: an `[x, y]` position in millimetres, or a snap target
- * such as `main-board/market/2` (one spot) or `main-board/market` (the target's
- * spots, filled in order, or its free area).
+ * Where something goes: an `[x, y]` position in millimetres, a snap target such
+ * as `main-board/market/2` (one spot) or `main-board/market` (the target's spots,
+ * filled in order, or its free area), or a player's private hand as `hand:<player>`.
  */
 export type Target = Vec2 | string;
 
@@ -31,9 +39,17 @@ export type Command =
    * object goes there and the others keep their places relative to it; with a snap
    * target each object takes the next free spot. `into` records that the moved
    * objects now sit in a snap spot or area, without changing where they land.
-   * Pieces snapped onto a moved object ride along with it.
+   * Pieces snapped onto a moved object ride along with it. Pieces played from a
+   * hand land side by side at `to`, turned to `face` (default up).
    */
-  | { type: 'move'; ids: string[]; by?: Vec2; to?: Target; into?: string }
+  | {
+      type: 'move';
+      ids: string[];
+      by?: Vec2;
+      to?: Target;
+      into?: string;
+      face?: 'up' | 'down';
+    }
   /** Turn objects over. Flipping a stack turns the whole pile over, reversing its order. */
   | { type: 'flip'; ids: string[] }
   /** Rotate by whole steps of the type's `rotationStep` (default 90°), or by free degrees. */
@@ -70,7 +86,7 @@ export function applyCommand(state: TableState, command: Command, catalog: Catal
   const tx = new Transaction(state, catalog);
   switch (command.type) {
     case 'move':
-      tx.move(command.ids, command.by, command.to, command.into);
+      tx.move(command.ids, command.by, command.to, command.into, command.face);
       break;
     case 'flip':
       for (const id of unique(command.ids)) tx.flip(id);
@@ -104,7 +120,7 @@ export function applyCommand(state: TableState, command: Command, catalog: Catal
       break;
     case 'lock':
       for (const id of unique(command.ids))
-        tx.update(tx.topLevel(id), { locked: command.locked || undefined });
+        tx.update(tx.onTable(id), { locked: command.locked || undefined });
       break;
     default:
       throw new CommandError(`Unknown command "${(command as { type: string }).type}".`);
@@ -135,8 +151,8 @@ class Transaction {
     for (const object of Object.values(this.objects)) {
       if (!object.snap) continue;
       const owner = this.objects[snapOwner(object.snap)];
-      const inStack = object.kind === 'piece' && object.parent;
-      if (inStack || owner?.kind !== 'piece' || owner.parent)
+      const inStack = object.kind === 'piece' && (object.parent || object.hand);
+      if (inStack || owner?.kind !== 'piece' || owner.parent || owner.hand)
         this.update(object, { snap: undefined });
     }
     return { ...this.state, rng: this.rng, objects: this.objects };
@@ -162,8 +178,17 @@ class Transaction {
     return object;
   }
 
-  piece(id: string): Piece {
+  /** An object lying on the table itself: not in a stack, and not in anyone's hand. */
+  onTable(id: string): TableObject {
     const object = this.topLevel(id);
+    if (object.kind === 'piece' && object.hand) {
+      throw new CommandError(`"${id}" is in a player's hand; play it to the table first.`);
+    }
+    return object;
+  }
+
+  piece(id: string): Piece {
+    const object = this.onTable(id);
     if (object.kind !== 'piece') throw new CommandError(`"${id}" is a stack, not a single piece.`);
     return object;
   }
@@ -192,19 +217,41 @@ class Transaction {
   private topZ(): number {
     let max = -1;
     for (const object of Object.values(this.objects)) {
-      if (!(object.kind === 'piece' && object.parent)) max = Math.max(max, object.z);
+      if (!(object.kind === 'piece' && (object.parent || object.hand)))
+        max = Math.max(max, object.z);
     }
     return max + 1;
   }
 
   // -------------------------------------------------------------------------
 
-  move(ids: string[], by?: Vec2, to?: Target, into?: string): void {
+  move(ids: string[], by?: Vec2, to?: Target, into?: string, face?: 'up' | 'down'): void {
     if ((by === undefined) === (to === undefined))
       throw new CommandError('Give exactly one of "by" or "to".');
     const given = unique(ids).map((id) => this.topLevel(id));
     for (const object of given) {
       if (object.locked) throw new CommandError(`"${object.id}" is locked.`);
+    }
+    const player = handTarget(to);
+    if (player !== undefined) {
+      if (into !== undefined) throw new CommandError('Give "into" only with "by" or a position.');
+      const pieces = given.flatMap((o) => {
+        if (o.kind === 'piece') return [o];
+        const items = o.items.map((i) => this.get(i) as Piece);
+        delete this.objects[o.id];
+        return items.reverse();
+      });
+      this.toHand(pieces, player);
+      return;
+    }
+    const held = given.filter((o): o is Piece => o.kind === 'piece' && !!o.hand);
+    if (held.length > 0) {
+      if (held.length !== given.length)
+        throw new CommandError('Play pieces from a hand separately from pieces on the table.');
+      if (by !== undefined || into !== undefined)
+        throw new CommandError('Pieces in a hand have no table position; give "to".');
+      this.playFromHand(held, to!, face ?? 'up');
+      return;
     }
     // Objects riding on another moved object travel with it rather than on their own.
     const riding = new Set(
@@ -296,7 +343,13 @@ class Transaction {
       .sort((a, b) => a.z - b.z);
     const delta = rot - object.rot;
     let z = this.topZ();
-    this.update(object, { pos, rot: normalize(rot), z: z++, snap });
+    this.update(object, {
+      pos,
+      rot: normalize(rot),
+      z: z++,
+      snap,
+      hand: undefined,
+    } as Partial<TableObject>);
     for (const rider of riders) {
       const local = toLocal(object, [0, 0], rider.pos);
       this.update(rider, {
@@ -345,11 +398,13 @@ class Transaction {
    * The places a target names, for pieces about to land there: a position, one
    * spot, or every spot of a snap target (its centre, for a free area).
    */
-  private places(target: Target, pieces: Piece[]): { pos: Vec2; rot?: number; snap?: string }[] {
+  private places(target: Target, pieces: Piece[]): Place[] {
     if (typeof target !== 'string') {
       if (!isVec2(target)) throw new CommandError('A position must be an [x, y] pair.');
       return [{ pos: target }];
     }
+    const player = handTarget(target);
+    if (player !== undefined) return [{ pos: [0, 0], hand: checkPlayer(player) }];
     return this.spots(target, pieces, new Set()).map((s) => ({
       pos: s.pos,
       rot: s.area ? undefined : s.rot,
@@ -358,10 +413,10 @@ class Transaction {
   }
 
   /** One place for pieces that land together: a position, a spot, or a snap target's first free spot. */
-  private place(target: Target, pieces: Piece[]): { pos: Vec2; rot?: number; snap?: string } {
+  private place(target: Target, pieces: Piece[]): Place {
     const places = this.places(target, pieces);
     if (places.length === 1) return places[0]!;
-    const free = places.find((p) => this.isFree(p.snap!));
+    const free = places.find((p) => p.snap && this.isFree(p.snap));
     if (!free) throw new CommandError(`Every spot of "${target as string}" is taken.`);
     return free;
   }
@@ -398,6 +453,7 @@ class Transaction {
         ? (this.typeOf(object).rotationStep ?? 90)
         : (this.typeOf(this.get(object.items[0]!) as Piece).rotationStep ?? 90);
     const delta = degrees ?? steps! * step;
+    this.onTable(id);
     this.relocate(object, object.pos, object.rot + delta, object.snap);
   }
 
@@ -405,7 +461,7 @@ class Transaction {
     const sources = unique(ids).map((id) => this.topLevel(id));
     if (sources.some((s) => s.id === ontoId))
       throw new CommandError('Cannot stack an object onto itself.');
-    let target = this.topLevel(ontoId);
+    let target = this.onTable(ontoId);
     for (const source of [target, ...sources]) {
       const pieces =
         source.kind === 'stack' ? source.items.map((i) => this.get(i) as Piece) : [source];
@@ -440,7 +496,7 @@ class Transaction {
         items.push(...source.items);
         delete this.objects[source.id];
       } else {
-        this.update(source, { parent: target.id, snap: undefined });
+        this.update(source, { parent: target.id, snap: undefined, hand: undefined });
         items.push(source.id);
       }
     }
@@ -512,15 +568,18 @@ class Transaction {
   }
 
   /** Puts piles of pieces taken from `from` at their places; piles of several become stacks. */
-  private land(
-    piles: string[][],
-    places: { pos: Vec2; rot?: number; snap?: string }[],
-    from: Stack,
-    face?: 'up' | 'down',
-  ): void {
+  private land(piles: string[][], places: Place[], from: Stack, face?: 'up' | 'down'): void {
     let z = this.topZ();
     piles.forEach((pile, i) => {
-      const { pos, rot = from.rot, snap } = places[i]!;
+      const { pos, rot = from.rot, snap, hand } = places[i]!;
+      if (hand !== undefined) {
+        for (const pieceId of pile) this.update(this.get(pieceId) as Piece, { parent: undefined });
+        this.toHand(
+          pile.map((id) => this.get(id) as Piece),
+          hand,
+        );
+        return;
+      }
       for (const pieceId of pile) {
         const piece = this.get(pieceId) as Piece;
         this.update(piece, {
@@ -596,11 +655,71 @@ class Transaction {
     }
   }
 
+  /** Puts pieces into a player's hand, after what the hand already holds. */
+  private toHand(pieces: Piece[], player: string): void {
+    checkPlayer(player);
+    let z = 0;
+    for (const object of Object.values(this.objects)) {
+      if (object.kind === 'piece' && object.hand === player) z = Math.max(z, object.z + 1);
+    }
+    for (const piece of pieces) {
+      const type = this.typeOf(piece);
+      if (type.base === 'board' || type.base === 'zone') {
+        throw new CommandError(`"${piece.id}" is a ${type.base}, which cannot go in a hand.`);
+      }
+      // Whatever rode on the piece stays on the table.
+      for (const rider of ridersOf(this.objects, [piece.id])) {
+        this.update(this.objects[rider]!, { snap: undefined });
+      }
+      this.update(piece, { hand: player, parent: undefined, snap: undefined, z: z++ });
+    }
+  }
+
+  /** Lays pieces from a hand on the table side by side, the first at `to`. */
+  private playFromHand(pieces: Piece[], to: Target, face: 'up' | 'down'): void {
+    const place = this.place(to, pieces);
+    if (place.hand !== undefined) {
+      this.toHand(pieces, place.hand);
+      return;
+    }
+    let x = place.pos[0];
+    let z = this.topZ();
+    pieces.forEach((piece, i) => {
+      const [w] = sizeOf(this.typeOf(piece));
+      const twoSided = PRIMITIVE_INFO[this.typeOf(piece).base].sides === 2;
+      if (i > 0) x += w / 2;
+      this.update(piece, {
+        hand: undefined,
+        pos: [x, place.pos[1]],
+        rot: place.rot ?? 0,
+        z: z++,
+        face: twoSided ? face : piece.face,
+        snap: pieces.length === 1 ? place.snap : undefined,
+      });
+      x += w / 2 + 2;
+    });
+  }
+
   private newStackId(): string {
     let n = 1;
     while (this.objects[`stack:${n}`]) n++;
     return `stack:${n}`;
   }
+}
+
+/** Where pieces land: a table position (with a spot's rotation and reference), or a hand. */
+interface Place {
+  pos: Vec2;
+  rot?: number;
+  snap?: string;
+  hand?: string;
+}
+
+function checkPlayer(player: string): string {
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(player)) {
+    throw new CommandError(`"hand:${player}" does not name a player.`);
+  }
+  return player;
 }
 
 function add(a: Vec2, b: Vec2): Vec2 {

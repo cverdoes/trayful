@@ -1,5 +1,12 @@
 import type { ComponentType, Vec2 } from '@trayful/formats/browser';
-import { sizeOf, type Catalog, type Piece, type TableObject, type TableState } from './state.js';
+import {
+  onTable,
+  sizeOf,
+  type Catalog,
+  type Piece,
+  type TableObject,
+  type TableState,
+} from './state.js';
 
 /**
  * Snap targets live on boards, tiles and zones. A numbered spot is written
@@ -90,7 +97,7 @@ export function spotsOf(piece: Piece, type: ComponentType): SnapSpot[] {
 export function allSpots(state: TableState, catalog: Catalog): SnapSpot[] {
   const spots: SnapSpot[] = [];
   for (const object of Object.values(state.objects)) {
-    if (object.kind !== 'piece' || object.parent) continue;
+    if (object.kind !== 'piece' || !onTable(object)) continue;
     const type = catalog[object.type];
     if (type?.snap) spots.push(...spotsOf(object, type));
   }
@@ -148,9 +155,7 @@ export function accepts(spot: SnapSpot, type: ComponentType | undefined): boolea
 
 /** Objects on the table that sit in a spot. */
 export function occupants(state: TableState, ref: string): TableObject[] {
-  return Object.values(state.objects).filter(
-    (o) => o.snap === ref && !(o.kind === 'piece' && o.parent),
-  );
+  return Object.values(state.objects).filter((o) => o.snap === ref && onTable(o));
 }
 
 /** Whether a table point lies inside a free area. */
@@ -206,7 +211,7 @@ export function ridersOf(
 ): string[] {
   const carried = new Set(owners);
   const riders: string[] = [];
-  const all = Object.values(objects).filter((o) => o.snap && !(o.kind === 'piece' && o.parent));
+  const all = Object.values(objects).filter((o) => o.snap && onTable(o));
   let grew = true;
   while (grew) {
     grew = false;

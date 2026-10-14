@@ -7,3 +7,4 @@ export * from './describe.js';
 export * from './snap.js';
 export * from './layout.js';
 export * from './setup.js';
+export * from './privacy.js';

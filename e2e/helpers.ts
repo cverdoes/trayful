@@ -15,9 +15,20 @@ declare global {
 
 export const DECK = 'deck:actions';
 
+/**
+ * The whole table with real ids, as an agent reads it. The page itself shows
+ * face-down cards under stand-in ids, which change when they are turned up.
+ */
 export async function table(page: Page): Promise<TableState> {
-  const response = await page.request.get('/api/table');
-  return (await response.json()) as TableState;
+  const { client } = await agent(new URL(page.url()).origin);
+  try {
+    const result = await client.readResource({
+      uri: 'trayful://project/harvest-moon/tables/table-1/state',
+    });
+    return JSON.parse((result.contents[0] as { text: string }).text) as TableState;
+  } finally {
+    await client.close();
+  }
 }
 
 /** Screen position of a table point, in millimetres. */

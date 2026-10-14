@@ -1,7 +1,16 @@
 import type { Vec2 } from '@trayful/formats/browser';
 import { objectSize } from './layout.js';
 import { allSpots, occupants } from './snap.js';
-import type { Catalog, Piece, TableObject, TableState } from './state.js';
+import {
+  handCounts,
+  handOf,
+  handTarget,
+  onTable,
+  type Catalog,
+  type Piece,
+  type TableObject,
+  type TableState,
+} from './state.js';
 
 /**
  * Readable views of a table for agents. Face-down cards keep their secrets:
@@ -53,6 +62,8 @@ export interface ObjectQuery {
   inside?: string;
   /** Show face-down data and the order of cards in piles. */
   reveal?: boolean;
+  /** The player asking; `inside: "hand:<viewer>"` lists their own hand. */
+  viewer?: string;
 }
 
 export function summarizePiece(piece: Piece, catalog: Catalog, reveal = false): PieceSummary {
@@ -104,7 +115,7 @@ export function summarize(
 /** Objects lying directly on the table, bottom to top. */
 export function tableObjects(state: TableState): TableObject[] {
   return Object.values(state.objects)
-    .filter((o) => !(o.kind === 'piece' && o.parent))
+    .filter(onTable)
     .sort((a, b) => a.z - b.z || (a.id < b.id ? -1 : 1));
 }
 
@@ -114,7 +125,11 @@ export function queryObjects(
   query: ObjectQuery = {},
 ): ObjectSummary[] {
   let objects: TableObject[];
-  if (query.inside) {
+  const hand = handTarget(query.inside);
+  if (hand !== undefined) {
+    if (hand !== query.viewer) throw new Error('You can only look inside your own hand.');
+    objects = handOf(state, hand);
+  } else if (query.inside) {
     const stack = state.objects[query.inside];
     if (stack?.kind !== 'stack') throw new Error(`"${query.inside}" is not a stack.`);
     objects = stack.items.map((id) => state.objects[id]!);
@@ -122,7 +137,7 @@ export function queryObjects(
     objects = tableObjects(state);
   }
   return objects
-    .map((o) => summarize(state, catalog, o, query.reveal))
+    .map((o) => summarize(state, catalog, o, query.reveal || hand !== undefined))
     .filter((s) => {
       if (query.type && s.top.type !== query.type) return false;
       if (query.base && s.top.base !== query.base) return false;
@@ -143,10 +158,13 @@ export function queryObjects(
 export function describeTable(
   state: TableState,
   catalog: Catalog,
-  options: { reveal?: boolean } = {},
+  options: { reveal?: boolean; viewer?: string } = {},
 ): string {
   const summaries = tableObjects(state).map((o) => summarize(state, catalog, o, options.reveal));
-  if (summaries.length === 0) return `Table "${state.table}" is empty.`;
+  const hands = handLines(state, catalog, options.viewer);
+  if (summaries.length === 0) {
+    return [`Table "${state.table}" is empty.`, ...(hands.length ? ['', ...hands] : [])].join('\n');
+  }
   let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
   for (const s of summaries) {
     x0 = Math.min(x0, s.pos[0] - s.size[0] / 2);
@@ -180,6 +198,7 @@ export function describeTable(
     for (const s of pieces) lines.push(`- ${s.id}: ${pieceText(s.top, catalog)}${where(s)}`);
     lines.push('');
   }
+  if (hands.length) lines.push(...hands, '');
   const targets = snapTargets(state, catalog);
   if (targets.length) {
     lines.push(
@@ -188,6 +207,27 @@ export function describeTable(
     lines.push(...targets);
   }
   return lines.join('\n').trimEnd();
+}
+
+/** The viewer's own hand in full, and how many pieces everyone else holds. */
+function handLines(state: TableState, catalog: Catalog, viewer: string | undefined): string[] {
+  const lines: string[] = [];
+  const own = viewer ? handOf(state, viewer) : [];
+  if (own.length) {
+    lines.push(`Your hand (hand:${viewer}; only you see these):`);
+    for (const piece of own) {
+      lines.push(`- ${piece.id}: ${pieceText(summarizePiece(piece, catalog, true), catalog)}`);
+    }
+  }
+  const others = Object.entries(handCounts(state)).filter(([player]) => player !== viewer);
+  if (others.length) {
+    lines.push(
+      `Other players' hands (hidden; "hand:<player>" as "to" gives them pieces): ${others
+        .map(([player, count]) => `${player} ${count}`)
+        .join(', ')}`,
+    );
+  }
+  return lines;
 }
 
 /** One line per snap target on the table, saying which spots are taken and by what. */

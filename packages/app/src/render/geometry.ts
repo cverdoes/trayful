@@ -1,5 +1,6 @@
 import {
   objectSize as coreObjectSize,
+  onTable,
   type Piece,
   type TableObject,
   type TableState,
@@ -40,7 +41,7 @@ export function bounds(table: TableState, types: Types, object: TableObject) {
 /** Objects lying directly on the table, bottom to top. */
 export function topLevel(table: TableState): TableObject[] {
   return Object.values(table.objects)
-    .filter((o) => !(o.kind === 'piece' && o.parent))
+    .filter(onTable)
     .sort((a, b) => a.z - b.z || (a.id < b.id ? -1 : 1));
 }
 

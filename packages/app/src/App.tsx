@@ -1,29 +1,36 @@
 import { useEffect, useState } from 'react';
 import { selectionActions } from './actions';
+import { ClosedScreen, HandTray, InviteDialog, JoinScreen, PlayerList } from './Players';
 import { Print } from './Print';
 import { RenderJob } from './render/Preview';
 import { go, route } from './route';
 import { useStore } from './store';
 import { Table } from './Table';
-import { fitToTable, tableBounds, TOOLBAR_HEIGHT, zoomAt } from './viewport';
+import { fitToTable, HAND_HEIGHT, tableBounds, TOOLBAR_HEIGHT, zoomAt } from './viewport';
 
 export function App() {
   useTestHook();
   const fatal = useStore((s) => s.fatal);
+  const gate = useStore((s) => s.gate);
   if (fatal) return <div className="loading">{fatal}</div>;
+  if (gate === 'closed') return <ClosedScreen />;
+  if (gate === 'join') return <JoinScreen />;
   return route().print ? <Print /> : <TableApp />;
 }
 
 function TableApp() {
   useKeyboard();
   const helpOpen = useStore((s) => s.helpOpen);
+  const inviteOpen = useStore((s) => s.inviteOpen);
   return (
     <>
       <Table />
       <Toolbar />
+      <HandTray />
+      {inviteOpen && <InviteDialog />}
       <Problems />
       <ErrorToast />
-      <AgentActivity />
+      <Activity />
       <RenderJob />
       {helpOpen && <Help />}
     </>
@@ -74,6 +81,7 @@ function suggestName(tables: string[]): string {
 /** Switches between the tables (and projects) of the workspace, and makes new ones. */
 function TableMenu() {
   const view = useStore((s) => s.view);
+  const host = useStore((s) => s.me?.host);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const refresh = () =>
     void fetch('/api/projects')
@@ -147,11 +155,13 @@ function TableMenu() {
           ))}
         </optgroup>
       ))}
-      <optgroup label="This table">
-        <option value={NEW}>New table…</option>
-        <option value={DUPLICATE}>Duplicate this table…</option>
-        <option value={DELETE}>Delete this table…</option>
-      </optgroup>
+      {host && (
+        <optgroup label="This table">
+          <option value={NEW}>New table…</option>
+          <option value={DUPLICATE}>Duplicate this table…</option>
+          <option value={DELETE}>Delete this table…</option>
+        </optgroup>
+      )}
     </select>
   );
 }
@@ -171,7 +181,7 @@ function keepTableInView() {
     v.x + x0 * v.scale < 0 ||
     v.y + y0 * v.scale < TOOLBAR_HEIGHT ||
     v.x + x1 * v.scale > window.innerWidth ||
-    v.y + y1 * v.scale > window.innerHeight;
+    v.y + y1 * v.scale > window.innerHeight - HAND_HEIGHT;
   if (outside) fit();
 }
 
@@ -189,6 +199,7 @@ function newTable() {
 
 function Toolbar() {
   const view = useStore((s) => s.view);
+  const host = useStore((s) => s.me?.host);
   const status = useStore((s) => s.status);
   const canUndo = useStore((s) => s.canUndo);
   const canRedo = useStore((s) => s.canRedo);
@@ -206,6 +217,7 @@ function Toolbar() {
         <span className={`status status-${status}`} title={`Connection: ${status}`}>
           {status === 'online' ? '●' : status === 'connecting' ? '◌' : '○'} {status}
         </span>
+        <PlayerList />
       </div>
       <div className="group">
         <Button
@@ -243,13 +255,22 @@ function Toolbar() {
       <div className="group">
         <Button label="Fit" keys="0" onClick={fit} />
         <Button label="Start over" title="Start this table over" onClick={newTable} />
-        <Button
-          label="Print"
-          title="Print and play: every component at real size"
-          onClick={
-            view ? () => go({ project: view.project, table: view.table, print: true }) : undefined
-          }
-        />
+        {host && (
+          <Button
+            label="Print"
+            title="Print and play: every component at real size"
+            onClick={
+              view ? () => go({ project: view.project, table: view.table, print: true }) : undefined
+            }
+          />
+        )}
+        {host && (
+          <Button
+            label="Invite"
+            title="Invite players to this table"
+            onClick={() => useStore.setState({ inviteOpen: true })}
+          />
+        )}
         <Button
           label="?"
           title="Help"
@@ -286,21 +307,21 @@ function Button({
   );
 }
 
-/** Says what an agent just did, so people watching can follow along. */
-function AgentActivity() {
+/** Says what an agent or another player just did, so everyone can follow along. */
+function Activity() {
   const activity = useStore((s) => s.activity);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     if (!activity) return;
     setVisible(true);
-    keepTableInView();
+    if (activity.agent) keepTableInView();
     const timer = setTimeout(() => setVisible(false), 5000);
     return () => clearTimeout(timer);
   }, [activity]);
   if (!activity || !visible) return null;
   return (
     <div className="activity" role="status">
-      <strong>Agent</strong> {activity.text}
+      <strong>{activity.name}</strong> {activity.text}
     </div>
   );
 }
@@ -333,6 +354,9 @@ const SHORTCUTS: [string, string][] = [
   ['Drag on the table', 'Pan'],
   ['Wheel', 'Zoom (over a counter: change its number)'],
   ['Double-click', 'Flip a card, or roll a die'],
+  ['Drag onto your hand', 'Keep cards hidden from the other players, along the bottom'],
+  ['Drag out of your hand', 'Play a card face up; hold Alt to play it face down'],
+  ['Double-click in your hand', 'Play that card into the middle of the view'],
   ['F', 'Flip'],
   ['Q / E', 'Rotate left / right'],
   ['D', 'Draw the top card of the selected pile'],

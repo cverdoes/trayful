@@ -122,6 +122,10 @@
         "snap": {
           "description": "Snap spot the piece sits in, as `pieceId/target/index`.",
           "type": "string"
+        },
+        "hand": {
+          "description": "Id of the player whose private hand holds this piece. Only that player sees it; its `pos` is then unused.",
+          "type": "string"
         }
       },
       "required": [

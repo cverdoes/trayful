@@ -10,6 +10,7 @@ import {
 } from '@trayful/server';
 import open from 'open';
 import { mcp } from './mcp.js';
+import { startTunnel, TunnelError, type Tunnel } from './tunnel.js';
 
 const HELP = `Usage: trayful <command> [options]
 
@@ -25,6 +26,10 @@ Commands:
                            --setup <name>  setup for a new table (default: the manifest's
                                            setup; "none" lays everything out in rows)
                            --no-open       do not open a browser window
+                           --share         let others on your network join, through
+                                           invite links printed at start
+                           --tunnel        let others anywhere join, through a Cloudflare
+                                           quick tunnel (needs cloudflared; no account)
   mcp [project-dir]        Let an AI agent play the table over MCP (stdio). Shares the table
                            with \`trayful play\` if it is running; same options as play.
                            Agents can also connect over HTTP at http://127.0.0.1:${DEFAULT_PORT}/mcp.
@@ -136,10 +141,12 @@ interface PlayOptions {
   setup?: string | false;
   project?: string;
   open: boolean;
+  share: boolean;
+  tunnel: boolean;
 }
 
 function parsePlayArgs(args: string[]): PlayOptions | string {
-  const options: PlayOptions = { dir: '.', open: true };
+  const options: PlayOptions = { dir: '.', open: true, share: false, tunnel: false };
   const dirs: string[] = [];
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
@@ -159,6 +166,8 @@ function parsePlayArgs(args: string[]): PlayOptions | string {
         if (!name) return '--setup needs a setup name, or "none".';
         options.setup = name === 'none' ? false : name;
       } else if (arg === '--no-open') options.open = false;
+      else if (arg === '--share') options.share = true;
+      else if (arg === '--tunnel') options.tunnel = true;
       else if (arg.startsWith('--')) return `Unknown option "${arg}".`;
       else dirs.push(arg);
     } catch (e) {
@@ -178,7 +187,7 @@ async function play(
   const options = parsePlayArgs(args);
   if (typeof options === 'string') {
     err(
-      `${options}\nUsage: trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open]`,
+      `${options}\nUsage: trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel]`,
     );
     return 2;
   }
@@ -197,6 +206,8 @@ async function play(
       port: options.port,
       seed: options.seed,
       setup: options.setup,
+      // Sharing on the network listens on every interface; a tunnel reaches us locally.
+      host: options.share ? '0.0.0.0' : undefined,
     });
   } catch (e) {
     if (e instanceof ProjectLoadError) {
@@ -211,17 +222,38 @@ async function play(
     }
     throw e;
   }
+  let tunnel: Tunnel | undefined;
+  if (options.tunnel) {
+    out('Opening a tunnel…');
+    try {
+      tunnel = await startTunnel(Number(new URL(server.url).port));
+      server.addShareBase(tunnel.url);
+    } catch (e) {
+      await server.close();
+      if (e instanceof TunnelError) {
+        err(e.message);
+        return 1;
+      }
+      throw e;
+    }
+  }
   const { session, url } = server;
   out(`${session.project.manifest.name} is on the table at ${url}`);
   const saved = path.relative(process.cwd(), session.file);
   out(`Saving to ${saved.startsWith('..') ? session.file : saved}.`);
   const projects = server.workspace.projects().length;
   if (projects > 1) out(`${projects} projects in this folder; switch between them in the browser.`);
+  const links = server.inviteLinks();
+  if (links.length) {
+    out('Invite others to play with a link (anyone with it can join, so share it with care):');
+    for (const link of links) out(`  ${link}`);
+  }
   out('Edits to the project files show up on the table when you save. Press Ctrl+C to stop.');
 
   // CI uses this to check that the server starts and serves the app, then exits.
   if (process.env.TRAYFUL_SMOKE_TEST) {
     const page = await fetch(url);
+    tunnel?.close();
     await server.close();
     if (!page.ok) {
       err(`Smoke test failed: ${url} answered ${page.status}.`);
@@ -237,6 +269,7 @@ async function play(
     process.once('SIGTERM', resolve);
   });
   out('\nSaving and stopping…');
+  tunnel?.close();
   await server.close();
   return 0;
 }

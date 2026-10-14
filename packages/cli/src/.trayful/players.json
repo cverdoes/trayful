@@ -1,0 +1,13 @@
+{
+  "invite": "fMNPwaxf4cWhD4EOg-CqJg",
+  "players": [
+    {
+      "id": "claude",
+      "name": "Claude",
+      "color": "#d97757",
+      "kind": "agent",
+      "role": "agent",
+      "secretHash": ""
+    }
+  ]
+}

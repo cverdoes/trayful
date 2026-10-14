@@ -122,6 +122,43 @@ describe('MCP tools', () => {
     expect((await call(client, 'get_history')).text).toContain('shuffle');
   });
 
+  it("plays from its own hand and never sees other players' hands", async () => {
+    expect((await call(client, 'draw', { from: DECK, to: 'hand:bob' })).text).toMatch(
+      /no player "bob"/,
+    );
+    await workspace.players.join('Bob', 'guest');
+    const r = await call(client, 'deal', { from: DECK, to: ['hand:claude', 'hand:bob'], count: 2 });
+    expect(r.isError).toBeFalsy();
+    const described = (await call(client, 'describe_table', { reveal: true })).text;
+    expect(described).toContain('Your hand (hand:claude; only you see these):');
+    expect(described).toContain("Other players' hands");
+    expect(described).toContain('bob 2');
+    const bobs = Object.values(session.engine.state.objects).filter(
+      (o) => o.kind === 'piece' && o.hand === 'bob',
+    );
+    for (const card of bobs) expect(described).not.toContain(card.id);
+
+    const mine = JSON.parse(
+      (await call(client, 'query_objects', { inside: 'hand:claude' })).text,
+    ) as { id: string; top: { data?: object } }[];
+    expect(mine).toHaveLength(2);
+    expect(mine[0]!.top.data).toBeDefined();
+    expect((await call(client, 'query_objects', { inside: 'hand:bob' })).isError).toBe(true);
+    const grab = await call(client, 'move', { ids: [bobs[0]!.id], to: [0, 0] });
+    expect(grab).toMatchObject({ isError: true, text: expect.stringContaining('another player') });
+
+    const play = await call(client, 'move', { ids: [mine[0]!.id], to: [50, 300] });
+    expect(play.isError).toBeFalsy();
+    expect(session.engine.state.objects[mine[0]!.id]).toMatchObject({ pos: [50, 300], face: 'up' });
+    const history = (await call(client, 'get_history')).text;
+    for (const card of bobs) expect(history).not.toContain(card.id);
+    const state = await client.readResource({
+      uri: `trayful://project/${session.projectId}/tables/table-1/state`,
+    });
+    const text = (state.contents[0] as { text: string }).text;
+    for (const card of bobs) expect(text).not.toContain(`"${card.id}"`);
+  });
+
   it('places workers on snap spots, deals into a target and takes a card from a pile', async () => {
     const moved = await call(client, 'move', { ids: ['worker.red.1'], to: 'main-board/fields/3' });
     expect(moved.isError).toBeFalsy();
@@ -258,7 +295,8 @@ describe('MCP over HTTP', () => {
         );
       }
     });
-    await new Promise((resolve) => browser.once('open', resolve));
+    // The table is open in the browser once its first state arrives.
+    await new Promise((resolve) => browser.once('message', resolve));
 
     const client = new Client({ name: 'test', version: '0' });
     await client.connect(new StreamableHTTPClientTransport(new URL(`${server.url}/mcp`)));
@@ -283,7 +321,8 @@ describe('MCP over HTTP', () => {
         browser.send(JSON.stringify({ type: 'snapshot', id: message.id, png: 'cG5nIQ==' }));
       }
     });
-    await new Promise((resolve) => browser.once('open', resolve));
+    // The table is open in the browser once its first state arrives.
+    await new Promise((resolve) => browser.once('message', resolve));
     const client = new Client({ name: 'test', version: '0' });
     await client.connect(new StreamableHTTPClientTransport(new URL(`${server.url}/mcp`)));
     const picture = await call(client, 'render_component', { type: 'worker', face: 'up' });

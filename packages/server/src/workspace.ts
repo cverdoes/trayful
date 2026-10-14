@@ -11,6 +11,7 @@ import {
   type Diagnostic,
   type ResolvedProject,
 } from '@trayful/formats';
+import { FilePlayerStore, Players, type Player, type PlayerStore } from './players.js';
 import { checkTableName, ProjectLoadError, TableSession, tableFile } from './session.js';
 
 /** One project folder in the workspace. */
@@ -30,6 +31,8 @@ export interface WorkspaceOptions {
   /** Reload projects when their files change. Default true. */
   watch?: boolean;
   saveDelayMs?: number;
+  /** Where players are kept. Default: `.trayful/players.json` in the root folder. */
+  playerStore?: PlayerStore;
 }
 
 /** Where `trayful new` and `create_project` copy a fresh project from. */
@@ -61,6 +64,8 @@ export class Workspace {
     /** True when the root is itself a project, so no other projects can be created. */
     readonly single: boolean,
     private readonly options: WorkspaceOptions,
+    /** Everyone who has played here, shared by all tables. */
+    readonly players: Players,
   ) {}
 
   static async open(
@@ -74,7 +79,8 @@ export class Workspace {
   ): Promise<Workspace> {
     root = path.resolve(root);
     const single = existsSync(path.join(root, MANIFEST_FILE));
-    const workspace = new Workspace(root, single, options);
+    const players = await Players.open(options.playerStore ?? FilePlayerStore.in(root));
+    const workspace = new Workspace(root, single, options, players);
     const dirs = single ? [root] : await projectDirs(root);
     for (const dir of dirs) await workspace.load(path.basename(dir), dir);
 
@@ -147,6 +153,7 @@ export class Workspace {
       setup: options.setup,
       saveDelayMs: this.options.saveDelayMs,
       version: this.entry(projectId).version,
+      players: this.players,
     });
     this.opening.set(key, opening);
     try {
@@ -236,6 +243,13 @@ export class Workspace {
     const entry = this.entry(projectId);
     await this.load(entry.id, entry.dir);
     return entry.problems;
+  }
+
+  /** Renames a player, and shows the new name at every open table. */
+  async renamePlayer(id: string, name: string): Promise<Player> {
+    const player = await this.players.rename(id, name);
+    for (const session of this.sessions.values()) session.broadcastPlayers();
+    return player;
   }
 
   /** Called after every reload, with the project's new state. */
