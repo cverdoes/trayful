@@ -14,11 +14,12 @@ import {
   PRIMITIVES,
   SetupFile,
   type InventoryEntry,
+  type Scalar,
 } from './schemas.js';
 import { cartesian, componentIds, resolveRow, type Row } from './inventory.js';
 import { byCodeUnit } from './order.js';
 import type { ComponentSpec, LoadResult, ResolvedSetup, ResolvedType } from './resolved.js';
-import { stepProblems, type Loaded } from './setup-checks.js';
+import { stepProblems, type Known } from './setup-checks.js';
 import { SourceFile } from './source.js';
 import { typeProblems } from './type-checks.js';
 
@@ -74,7 +75,8 @@ class ProjectLoader {
     const setupFiles = manifest.setups
       ? await this.expandGlobs(manifest.setups, manifestSource, ['setups'])
       : await fg('setups/*.yaml', { cwd: this.dir });
-    for (const file of setupFiles.toSorted(byCodeUnit)) await this.loadSetup(file);
+    const known = this.known();
+    for (const file of setupFiles.toSorted(byCodeUnit)) await this.loadSetup(file, known);
     if (manifest.setup !== undefined) {
       const names = setupFiles.map((f) => path.basename(f).replace(/\.ya?ml$/, ''));
       if (!names.includes(manifest.setup)) {
@@ -286,7 +288,7 @@ class ProjectLoader {
     entryPath: (string | number)[],
     usedIds: Set<string>,
   ): Promise<void> {
-    const type = this.entryType(entry, source, entryPath);
+    const type = this.checkEntry(entry, source, entryPath);
     if (!type) return;
     const rows = await this.entryRows(entry, source, entryPath);
     for (const [r, row] of rows.entries()) {
@@ -297,13 +299,17 @@ class ProjectLoader {
       }
       const baseId = resolved.key ? `${type.id}.${resolved.key}` : type.id;
       for (const id of componentIds(baseId, resolved.count, usedIds)) {
-        this.addComponent({ id, type: type.id, data: { ...resolved.data } }, entry.deck);
+        this.addComponent(id, type.id, resolved.data, entry.deck);
       }
     }
   }
 
-  /** The entry's type, unless it is unknown or the entry mixes `items`, `from` and `each`. */
-  private entryType(
+  /**
+   * Reports problems with an entry's type and keys, and marks the deck of an entry with an
+   * unknown type as broken. Returns the type, unless it is unknown or the entry mixes
+   * `items`, `from` and `each`, so there are no rows to load.
+   */
+  private checkEntry(
     entry: InventoryEntry,
     source: SourceFile,
     entryPath: (string | number)[],
@@ -371,14 +377,17 @@ class ProjectLoader {
     return [{ values: {}, fromText: false, key: '', report: (_f, message) => report([], message) }];
   }
 
-  private addComponent(spec: ComponentSpec, deck: string | undefined): void {
-    if (deck) {
-      spec.deck = deck;
-      const ids = this.decks[deck] ?? [];
-      ids.push(spec.id);
-      this.decks[deck] = ids;
-    }
-    this.components.push(spec);
+  private addComponent(
+    id: string,
+    type: string,
+    data: Record<string, Scalar>,
+    deck: string | undefined,
+  ): void {
+    this.components.push({ id, type, data: { ...data }, ...(deck ? { deck } : {}) });
+    if (!deck) return;
+    const ids = this.decks[deck] ?? [];
+    ids.push(id);
+    this.decks[deck] = ids;
   }
 
   private async readCsv(
@@ -413,22 +422,26 @@ class ProjectLoader {
   // Setups
   // -------------------------------------------------------------------------
 
-  private async loadSetup(file: string): Promise<void> {
-    const source = await this.readSource(file);
-    if (!source) return;
-    const { data, diagnostics } = source.validate(SetupFile);
-    this.diagnostics.push(...diagnostics);
-    if (!data) return;
-    const name = path.basename(file).replace(/\.ya?ml$/, '');
-    const loaded: Loaded = {
+  /** What setups may refer to. It shares the loader's collections, so it stays current. */
+  private known(): Known {
+    return {
       types: this.types,
       components: this.components,
       decks: this.decks,
       brokenTypes: this.brokenTypes,
       brokenDecks: this.brokenDecks,
     };
+  }
+
+  private async loadSetup(file: string, known: Known): Promise<void> {
+    const source = await this.readSource(file);
+    if (!source) return;
+    const { data, diagnostics } = source.validate(SetupFile);
+    this.diagnostics.push(...diagnostics);
+    if (!data) return;
+    const name = path.basename(file).replace(/\.ya?ml$/, '');
     for (const [i, step] of data.steps.entries()) {
-      for (const problem of stepProblems(step, loaded)) {
+      for (const problem of stepProblems(step, known)) {
         this.diagnostics.push(source.diagnostic(['steps', i, ...problem.path], problem.message));
       }
     }

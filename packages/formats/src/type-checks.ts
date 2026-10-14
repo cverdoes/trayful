@@ -72,39 +72,45 @@ function snapProblems(type: ComponentType): Problem[] {
 }
 
 /** Every `{{field}}` used in a face must be a declared field. */
+/** A text that may hold `{{field}}` placeholders, and where it is in the type. */
+interface TemplateAt {
+  text: string | undefined;
+  path: (string | number)[];
+}
+
 function templateProblems(type: ComponentType, fields: Record<string, NormalizedField>): Problem[] {
-  const templates: [string | undefined, (string | number)[]][] = [[type.fill, ['fill']]];
+  const templates: TemplateAt[] = [{ text: type.fill, path: ['fill'] }];
   for (const side of ['front', 'back'] as const) {
     const face = type[side];
     if (face) templates.push(...faceTemplates(face, side));
   }
-  return templates.flatMap(([text, path]) =>
+  return templates.flatMap(({ text, path }) =>
     templateRefs(text ?? '')
       .filter((ref) => !fields[ref])
       .map((ref) => ({ path, message: `"{{${ref}}}" is not a field of "${type.id}".` })),
   );
 }
 
-/** The texts in a face that may hold `{{field}}` placeholders, with their paths. */
-function faceTemplates(face: Face, side: string): [string | undefined, (string | number)[]][] {
-  const templates: [string | undefined, (string | number)[]][] = [
-    [face.fill, [side, 'fill']],
-    [face.stroke, [side, 'stroke']],
+function faceTemplates(face: Face, side: string): TemplateAt[] {
+  const templates: TemplateAt[] = [
+    { text: face.fill, path: [side, 'fill'] },
+    { text: face.stroke, path: [side, 'stroke'] },
   ];
   for (const [i, layer] of (face.layers ?? []).entries()) {
-    for (const [key, text] of layerTemplates(layer))
-      templates.push([text, [side, 'layers', i, key]]);
+    for (const { text, path } of layerTemplates(layer)) {
+      templates.push({ text, path: [side, 'layers', i, ...path] });
+    }
   }
   return templates;
 }
 
-function layerTemplates(layer: Layer): [string, string | undefined][] {
+function layerTemplates(layer: Layer): TemplateAt[] {
   return [
-    ['text', 'text' in layer ? layer.text : undefined],
-    ['image', 'image' in layer ? layer.image : undefined],
-    ['color', 'color' in layer ? layer.color : undefined],
-    ['fill', 'fill' in layer ? layer.fill : undefined],
-    ['stroke', 'stroke' in layer ? layer.stroke : undefined],
-    ['when', layer.when],
+    { text: 'text' in layer ? layer.text : undefined, path: ['text'] },
+    { text: 'image' in layer ? layer.image : undefined, path: ['image'] },
+    { text: 'color' in layer ? layer.color : undefined, path: ['color'] },
+    { text: 'fill' in layer ? layer.fill : undefined, path: ['fill'] },
+    { text: 'stroke' in layer ? layer.stroke : undefined, path: ['stroke'] },
+    { text: layer.when, path: ['when'] },
   ];
 }

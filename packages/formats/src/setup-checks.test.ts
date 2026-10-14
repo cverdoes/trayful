@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ResolvedType } from './resolved.js';
 import type { SetupStep } from './schemas.js';
-import { snapSpotCount, stepProblems, type Loaded } from './setup-checks.js';
+import { snapSpotCount, stepProblems, type Known } from './setup-checks.js';
 
 const board = {
   id: 'board',
@@ -12,7 +12,7 @@ const board = {
   ],
 } as unknown as ResolvedType;
 
-const loaded: Loaded = {
+const known: Known = {
   types: { board, card: { id: 'card', base: 'card' } as unknown as ResolvedType },
   components: [
     { id: 'board', type: 'board', data: {} },
@@ -24,7 +24,7 @@ const loaded: Loaded = {
   brokenDecks: new Set(['broken']),
 };
 
-const messages = (step: SetupStep) => stepProblems(step, loaded).map((p) => p.message);
+const messages = (step: SetupStep) => stepProblems(step, known).map((p) => p.message);
 
 describe('stepProblems', () => {
   it('accepts steps that refer to things that exist', () => {
@@ -35,11 +35,11 @@ describe('stepProblems', () => {
   });
 
   it('reports unknown pieces and decks, and shuffling a single piece', () => {
-    expect(stepProblems({ place: 'nope', at: [0, 0], shuffle: true }, loaded)).toEqual([
+    expect(stepProblems({ place: 'nope', at: [0, 0], shuffle: true }, known)).toEqual([
       { path: ['place'], message: '"nope" is neither a type id nor a component id.' },
       { path: ['shuffle'], message: 'Only a deck can be shuffled.' },
     ]);
-    expect(stepProblems({ deal: { from: 'side', to: [0, 0], count: 1 } }, loaded)).toEqual([
+    expect(stepProblems({ deal: { from: 'side', to: [0, 0], count: 1 } }, known)).toEqual([
       { path: ['deal', 'from'], message: 'Unknown deck "side".' },
     ]);
   });
