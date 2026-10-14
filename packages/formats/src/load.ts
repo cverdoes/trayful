@@ -625,7 +625,6 @@ function cartesian(each: Record<string, Scalar[]>): Record<string, Scalar>[] {
   return combos;
 }
 
-/** A readable row key: the first text field's value (usually the name), else the row number. */
 /** Plain code-unit order, so file order does not depend on the machine's locale. */
 function byCodeUnit(a: string, b: string): number {
   if (a < b) return -1;
@@ -643,6 +642,7 @@ function unusedId(base: string, used: Set<string>): string {
   return id;
 }
 
+/** A readable row key: the first text field's value (usually the name), else the row number. */
 function rowKey(data: Record<string, Scalar>, index: number): string {
   const text =
     typeof data.name === 'string' && slugify(data.name) !== ''
