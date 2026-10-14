@@ -5,7 +5,7 @@ import {
   type SetupStep,
   type Vec2,
 } from '@trayful/formats/browser';
-import type { ResolvedProject } from '@trayful/formats';
+import type { ComponentSpec, ResolvedProject } from '@trayful/formats';
 import { applyCommand, CommandError, type Command } from './commands.js';
 import { objectSize } from './layout.js';
 import { seedState } from './rng.js';
@@ -87,7 +87,7 @@ function outOfTheBox(project: ResolvedProject, name: string, seed: number): Tabl
 }
 
 function newPiece(
-  { id, data }: Pick<ResolvedProject['components'][number], 'id' | 'data'>,
+  { id, data }: ComponentSpec,
   type: ComponentType,
   face: 'up' | 'down',
   parent?: string,
