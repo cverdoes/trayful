@@ -1,11 +1,11 @@
 # Review guide
 
-How Claude reviews pull requests in this repository (see `.github/workflows/claude-review.yml`).
+How Claude reviews its own changes in this repository, locally, before opening a pull request.
 The build already enforces the mechanical limits: lint, type checks, complexity and size limits,
 package boundaries, unused code, duplication and test coverage. This review covers what a tool
 cannot measure: whether a person new to the code would understand it and could change it safely.
 
-Only comment on code the pull request adds or changes. Start each comment with a severity:
+Only review code the change adds or modifies. Give each finding a severity:
 
 - **Blocking**: a defect, or a design problem that will be expensive to undo later.
 - **Should fix**: makes the code noticeably harder to understand or change.

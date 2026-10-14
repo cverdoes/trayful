@@ -178,7 +178,7 @@ Code written before these limits is listed in `eslint-suppressions.json`, so onl
 
 Each CI run's summary page shows coverage per package, the most complex functions, duplication and the remaining lint backlog, and the HTML coverage report is attached to the run as `coverage-report`.
 
-On each pull request, Claude also reviews the change against [REVIEW.md](REVIEW.md) for readability, naming and design, and comments on the PR. That review is advice and never fails the build. It runs once the repository has a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret.
+Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for readability, naming and design, locally, before opening a pull request. There is no review on the pull request itself.
 
 ## Roadmap
 

@@ -15,6 +15,12 @@ export interface Diagnostic {
   message: string;
 }
 
+/** A problem at a path inside a type or setup step, before it is placed in its file. */
+export interface Problem {
+  path: (string | number)[];
+  message: string;
+}
+
 export function formatDiagnostic(d: Diagnostic): string {
   const where = d.line ? `${d.file}:${d.line}:${d.col ?? 1}` : d.file;
   const at = d.path && d.path.length > 0 ? ` (at ${formatPath(d.path)})` : '';
