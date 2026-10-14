@@ -22,44 +22,54 @@ export function normalizeField(field: Field): NormalizedField {
   };
 }
 
+type Coerced = { value: Scalar } | { error: string };
+
 /**
  * Checks (and for CSV text, converts) one value against a field.
  * Returns the value to store, or an error message.
  */
-export function coerceValue(
-  field: NormalizedField,
-  value: Scalar,
-  fromText: boolean,
-): { value: Scalar } | { error: string } {
+export function coerceValue(field: NormalizedField, value: Scalar, fromText: boolean): Coerced {
   switch (field.type) {
-    case 'enum': {
-      const allowed = field.enum ?? [];
-      const match = allowed.find((a) => a === value || (fromText && String(a) === String(value)));
-      if (match === undefined)
-        return { error: `must be one of ${allowed.map((a) => JSON.stringify(a)).join(', ')}` };
-      return { value: match };
-    }
+    case 'enum':
+      return coerceEnum(field.enum ?? [], value, fromText);
     case 'int':
-    case 'number': {
-      const n = typeof value === 'number' || fromText ? Number(value) : NaN;
-      if (typeof value === 'string' && value.trim() === '') return { error: 'must be a number' };
-      if (!Number.isFinite(n)) return { error: 'must be a number' };
-      if (field.type === 'int' && !Number.isInteger(n)) return { error: 'must be a whole number' };
-      return { value: n };
-    }
-    case 'bool': {
-      if (typeof value === 'boolean') return { value };
-      if (fromText && /^(true|yes|1)$/i.test(String(value))) return { value: true };
-      if (fromText && /^(false|no|0)$/i.test(String(value))) return { value: false };
-      return { error: 'must be true or false' };
-    }
+    case 'number':
+      return coerceNumber(value, fromText, field.type === 'int');
+    case 'bool':
+      return coerceBool(value, fromText);
     case 'string':
     case 'image':
     case 'color':
-      if (typeof value === 'string') return { value };
-      if (fromText || typeof value === 'number') return { value: String(value) };
-      return { error: 'must be text' };
+      return coerceText(value, fromText);
   }
+}
+
+function coerceEnum(allowed: (string | number)[], value: Scalar, fromText: boolean): Coerced {
+  const match = allowed.find((a) => a === value || (fromText && String(a) === String(value)));
+  if (match === undefined)
+    return { error: `must be one of ${allowed.map((a) => JSON.stringify(a)).join(', ')}` };
+  return { value: match };
+}
+
+function coerceNumber(value: Scalar, fromText: boolean, whole: boolean): Coerced {
+  const n = typeof value === 'number' || fromText ? Number(value) : NaN;
+  if (typeof value === 'string' && value.trim() === '') return { error: 'must be a number' };
+  if (!Number.isFinite(n)) return { error: 'must be a number' };
+  if (whole && !Number.isInteger(n)) return { error: 'must be a whole number' };
+  return { value: n };
+}
+
+function coerceBool(value: Scalar, fromText: boolean): Coerced {
+  if (typeof value === 'boolean') return { value };
+  if (fromText && /^(true|yes|1)$/i.test(String(value))) return { value: true };
+  if (fromText && /^(false|no|0)$/i.test(String(value))) return { value: false };
+  return { error: 'must be true or false' };
+}
+
+function coerceText(value: Scalar, fromText: boolean): Coerced {
+  if (typeof value === 'string') return { value };
+  if (fromText || typeof value === 'number') return { value: String(value) };
+  return { error: 'must be text' };
 }
 
 /** Field names referenced as `{{name}}` in a template string. */

@@ -3,13 +3,7 @@ import path from 'node:path';
 import { parse as parseCsv } from 'csv-parse/sync';
 import fg from 'fast-glob';
 import type { Diagnostic } from './diagnostics.js';
-import {
-  coerceValue,
-  isTemplate,
-  normalizeField,
-  templateRefs,
-  type NormalizedField,
-} from './fields.js';
+import { isTemplate, normalizeField } from './fields.js';
 import { z } from 'zod';
 import {
   ComponentType as ComponentTypeSchema,
@@ -19,53 +13,26 @@ import {
   PRIMITIVE_INFO,
   PRIMITIVES,
   SetupFile,
-  type ComponentType,
-  type Face,
-  type Scalar,
-  type SetupStep,
-  type SnapTarget,
+  type InventoryEntry,
 } from './schemas.js';
+import { cartesian, componentIds, resolveRow, type Row } from './inventory.js';
 import { byCodeUnit } from './order.js';
+import type { ComponentSpec, LoadResult, ResolvedSetup, ResolvedType } from './resolved.js';
+import { stepProblems, type Loaded } from './setup-checks.js';
 import { SourceFile } from './source.js';
+import { typeProblems } from './type-checks.js';
+
+export type {
+  ComponentSpec,
+  LoadResult,
+  ResolvedProject,
+  ResolvedSetup,
+  ResolvedType,
+} from './resolved.js';
+export { slugify } from './inventory.js';
+export { snapSpotCount } from './setup-checks.js';
 
 export const MANIFEST_FILE = 'trayful.yaml';
-
-export interface ResolvedType extends ComponentType {
-  /** Where the type is defined, for error messages. */
-  source: { file: string; index: number };
-  normalizedFields: Record<string, NormalizedField>;
-}
-
-/** One physical component, expanded from the inventory. */
-export interface ComponentSpec {
-  /** Stable id: `type`, `type.row` or `type.row.copy`, e.g. `action-card.harvest.2`. */
-  id: string;
-  type: string;
-  data: Record<string, Scalar>;
-  deck?: string;
-}
-
-export interface ResolvedSetup extends SetupFile {
-  file: string;
-}
-
-export interface ResolvedProject {
-  dir: string;
-  manifest: ManifestFile;
-  palette: Record<string, string>;
-  types: Record<string, ResolvedType>;
-  components: ComponentSpec[];
-  /** Deck name to component ids, top of the deck first. */
-  decks: Record<string, string[]>;
-  /** Setup name (file name without extension, or its `name`) to setup. */
-  setups: Record<string, ResolvedSetup>;
-}
-
-export interface LoadResult {
-  /** Present when the project has no errors. */
-  project?: ResolvedProject;
-  diagnostics: Diagnostic[];
-}
 
 /** Loads and validates a project folder. Never throws for problems in the files. */
 export async function loadProject(dir: string): Promise<LoadResult> {
@@ -204,7 +171,12 @@ class ProjectLoader {
     this.diagnostics.push(...diagnostics);
     if (!data) return;
 
-    for (const [name, color] of Object.entries(data.palette ?? {})) {
+    this.mergePalette(data.palette ?? {}, source);
+    for (const [index, raw] of data.types.entries()) this.loadType(raw, file, index, source);
+  }
+
+  private mergePalette(palette: Record<string, string>, source: SourceFile): void {
+    for (const [name, color] of Object.entries(palette)) {
       if (this.palette[name] !== undefined && this.palette[name] !== color) {
         this.diagnostics.push(
           source.diagnostic(
@@ -216,97 +188,33 @@ class ProjectLoader {
       }
       this.palette[name] = color;
     }
-
-    for (const [index, raw] of data.types.entries()) {
-      const at = (...p: (string | number)[]) => ['types', index, ...p];
-      const { data: type, diagnostics: typeProblems } = source.validateValue(
-        ComponentTypeSchema,
-        raw,
-        at(),
-      );
-      this.diagnostics.push(...typeProblems);
-      if (!type) {
-        const id = (raw as { id?: unknown } | null)?.id;
-        if (typeof id === 'string') this.brokenTypes.add(id);
-        continue;
-      }
-      const existing = this.types[type.id];
-      if (existing) {
-        this.diagnostics.push(
-          source.diagnostic(
-            at('id'),
-            `Type "${type.id}" is already defined in ${existing.source.file}.`,
-          ),
-        );
-        continue;
-      }
-      const normalizedFields = Object.fromEntries(
-        Object.entries(type.fields ?? {}).map(([k, f]) => [k, normalizeField(f)]),
-      );
-      this.types[type.id] = { ...type, source: { file, index }, normalizedFields };
-      this.checkType(type, normalizedFields, source, at);
-    }
   }
 
-  private checkType(
-    type: ComponentType,
-    fields: Record<string, NormalizedField>,
-    source: SourceFile,
-    at: (...p: (string | number)[]) => (string | number)[],
-  ): void {
-    const info = PRIMITIVE_INFO[type.base];
-    const report = (p: (string | number)[], message: string) =>
-      this.diagnostics.push(source.diagnostic(p, message));
-
-    if (type.back && info.sides === 1)
-      report(at('back'), `A ${type.base} has one side, so it cannot have a "back".`);
-    if (type.snap && !info.snapTargets)
-      report(at('snap'), `Only boards, tiles and zones can have snap targets.`);
-    if (type.range && type.base !== 'counter') report(at('range'), `"range" is only for counters.`);
-    if (type.faces && type.base !== 'die') report(at('faces'), `"faces" is only for dice.`);
-    if (type.range && type.range[0] > type.range[1])
-      report(at('range'), `The minimum is larger than the maximum.`);
-    if (type.fill && type.front?.fill)
-      report(at('fill'), `Use either "fill" or "front.fill", not both.`);
-
-    for (const [name, field] of Object.entries(fields)) {
-      if (field.default === undefined) continue;
-      const result = coerceValue(field, field.default, false);
-      if ('error' in result)
-        report(at('fields', name, 'default'), `Default value ${result.error}.`);
+  private loadType(raw: unknown, file: string, index: number, source: SourceFile): void {
+    const at = (...p: (string | number)[]) => ['types', index, ...p];
+    const { data: type, diagnostics } = source.validateValue(ComponentTypeSchema, raw, at());
+    this.diagnostics.push(...diagnostics);
+    if (!type) {
+      const id = (raw as { id?: unknown } | null)?.id;
+      if (typeof id === 'string') this.brokenTypes.add(id);
+      return;
     }
-
-    const snapIds = new Set<string>();
-    for (const [i, target] of (type.snap ?? []).entries()) {
-      const kinds = [target.grid, target.points, target.area].filter(Boolean).length;
-      if (kinds !== 1) report(at('snap', i), `Give exactly one of "grid", "points" or "area".`);
-      if (snapIds.has(target.id))
-        report(at('snap', i, 'id'), `Snap target "${target.id}" is defined twice.`);
-      snapIds.add(target.id);
+    const existing = this.types[type.id];
+    if (existing) {
+      this.diagnostics.push(
+        source.diagnostic(
+          at('id'),
+          `Type "${type.id}" is already defined in ${existing.source.file}.`,
+        ),
+      );
+      return;
     }
-
-    // Every {{field}} used in a face must be a declared field.
-    const check = (text: string | undefined, p: (string | number)[]) => {
-      if (!text) return;
-      for (const ref of templateRefs(text)) {
-        if (!fields[ref]) report(p, `"{{${ref}}}" is not a field of "${type.id}".`);
-      }
-    };
-    check(type.fill, at('fill'));
-    for (const side of ['front', 'back'] as const) {
-      const face: Face | undefined = type[side];
-      if (!face) continue;
-      check(face.fill, at(side, 'fill'));
-      check(face.stroke, at(side, 'stroke'));
-      for (const [i, layer] of (face.layers ?? []).entries()) {
-        const lp = (k: string) => at(side, 'layers', i, k);
-        if ('text' in layer) check(layer.text, lp('text'));
-        if ('image' in layer) check(layer.image, lp('image'));
-        if ('color' in layer) check(layer.color, lp('color'));
-        if ('fill' in layer) check(layer.fill, lp('fill'));
-        if ('stroke' in layer) check(layer.stroke, lp('stroke'));
-        check(layer.when, lp('when'));
-      }
+    const normalizedFields = Object.fromEntries(
+      Object.entries(type.fields ?? {}).map(([k, f]) => [k, normalizeField(f)]),
+    );
+    this.types[type.id] = { ...type, source: { file, index }, normalizedFields };
+    for (const problem of typeProblems(type, normalizedFields)) {
+      this.diagnostics.push(source.diagnostic(at(...problem.path), problem.message));
     }
   }
 
@@ -366,140 +274,109 @@ class ProjectLoader {
     const { data, diagnostics } = source.validate(InventoryFile);
     this.diagnostics.push(...diagnostics);
     if (!data) return;
-
     const usedIds = new Set<string>();
     for (const [e, entry] of data.components.entries()) {
-      const at = (...p: (string | number)[]) => ['components', e, ...p];
-      const report = (p: (string | number)[], message: string) =>
-        this.diagnostics.push(source.diagnostic(p, message));
+      await this.loadEntry(entry, source, ['components', e], usedIds);
+    }
+  }
 
-      const type = this.types[entry.type];
-      if (!type) {
+  private async loadEntry(
+    entry: InventoryEntry,
+    source: SourceFile,
+    at: (string | number)[],
+    usedIds: Set<string>,
+  ): Promise<void> {
+    const type = this.entryType(entry, source, at);
+    if (!type) return;
+    const rows = await this.entryRows(entry, source, at);
+    for (const [r, row] of rows.entries()) {
+      const resolved = resolveRow(type, entry, row, r);
+      if (!resolved) {
         if (entry.deck) this.brokenDecks.add(entry.deck);
-        if (this.brokenTypes.has(entry.type)) continue;
-        report(at('type'), `Unknown type "${entry.type}". Define it in a library first.`);
         continue;
       }
-      const modes = (['items', 'from', 'each'] as const).filter((k) => entry[k] !== undefined);
-      if (modes.length > 1) {
-        report(at(modes[1]!), `Use only one of "items", "from" or "each" in an entry.`);
-        continue;
-      }
-      if (entry.deck && !PRIMITIVE_INFO[type.base].stackable) {
-        report(at('deck'), `A ${type.base} cannot be stacked into a deck.`);
-      }
-
-      // Collect raw rows, each with a way to report problems against its source.
-      interface Row {
-        values: Record<string, Scalar>;
-        fromText: boolean;
-        report: (field: string | undefined, message: string) => void;
-        key: string | undefined;
-      }
-      const rows: Row[] = [];
-      if (entry.items) {
-        for (const [r, item] of entry.items.entries()) {
-          rows.push({
-            values: item,
-            fromText: false,
-            key: undefined,
-            report: (field, message) =>
-              report(field ? at('items', r, field) : at('items', r), message),
-          });
-        }
-      } else if (entry.from) {
-        const csvRows = await this.readCsv(entry.from, source, at('from'));
-        for (const row of csvRows) {
-          rows.push({
-            values: row.values,
-            fromText: true,
-            key: undefined,
-            report: (field, message) =>
-              this.error(entry.from!, field ? `${message} (column "${field}")` : message, {
-                line: row.line,
-              }),
-          });
-        }
-      } else if (entry.each) {
-        for (const combo of cartesian(entry.each)) {
-          rows.push({
-            values: combo,
-            fromText: false,
-            key: Object.values(combo).map(String).join('-'),
-            report: (field, message) => report(field ? at('each', field) : at('each'), message),
-          });
-        }
-      } else {
-        rows.push({
-          values: {},
-          fromText: false,
-          key: '',
-          report: (_f, message) => report(at(), message),
-        });
-      }
-
-      for (const [r, row] of rows.entries()) {
-        const { count: rowCount, id: rowId, ...values } = row.values;
-        const merged: Record<string, Scalar> = {};
-        for (const [name, field] of Object.entries(type.normalizedFields)) {
-          if (field.default !== undefined) merged[name] = field.default;
-        }
-        Object.assign(merged, entry.data ?? {});
-        let rowOk = true;
-        const invalid = new Set<string>();
-        for (const [name, raw] of Object.entries(values)) {
-          if (row.fromText && raw === '') continue;
-          const field = type.normalizedFields[name];
-          if (!field) {
-            row.report(name, `"${name}" is not a field of "${type.id}".`);
-            rowOk = false;
-            continue;
-          }
-          const result = coerceValue(field, raw, row.fromText);
-          if ('error' in result) {
-            row.report(name, `"${name}" ${result.error}.`);
-            invalid.add(name);
-            rowOk = false;
-          } else merged[name] = result.value;
-        }
-        for (const [name, field] of Object.entries(type.normalizedFields)) {
-          if (merged[name] === undefined && !field.optional && !invalid.has(name)) {
-            row.report(undefined, `Missing value for field "${name}".`);
-            rowOk = false;
-          }
-        }
-        let count = entry.count ?? 1;
-        if (rowCount !== undefined && !(row.fromText && rowCount === '')) {
-          const n = Number(rowCount);
-          if (!Number.isInteger(n) || n < 1) {
-            row.report('count', `"count" must be a whole number of at least 1.`);
-            rowOk = false;
-          } else count = n;
-        }
-        if (!rowOk) {
-          if (entry.deck) this.brokenDecks.add(entry.deck);
-          continue;
-        }
-
-        const key =
-          rowId !== undefined && rowId !== ''
-            ? slugify(String(rowId))
-            : (row.key ?? rowKey(merged, r));
-        const baseId = key ? `${type.id}.${key}` : type.id;
-        for (let copy = 1; copy <= count; copy++) {
-          const id = unusedId(count > 1 ? `${baseId}.${copy}` : baseId, usedIds);
-          usedIds.add(id);
-          const spec: ComponentSpec = { id, type: type.id, data: { ...merged } };
-          if (entry.deck) {
-            spec.deck = entry.deck;
-            const deck = this.decks[entry.deck] ?? [];
-            deck.push(id);
-            this.decks[entry.deck] = deck;
-          }
-          this.components.push(spec);
-        }
+      const baseId = resolved.key ? `${type.id}.${resolved.key}` : type.id;
+      for (const id of componentIds(baseId, resolved.count, usedIds)) {
+        this.addComponent({ id, type: type.id, data: { ...resolved.data } }, entry.deck);
       }
     }
+  }
+
+  /** The entry's type, if it is known and the entry's keys suit it. */
+  private entryType(
+    entry: InventoryEntry,
+    source: SourceFile,
+    at: (string | number)[],
+  ): ResolvedType | undefined {
+    const report = (key: string, message: string) =>
+      this.diagnostics.push(source.diagnostic([...at, key], message));
+    const type = this.types[entry.type];
+    if (!type) {
+      // Its deck is incomplete, so setups that use it are not reported again.
+      if (entry.deck) this.brokenDecks.add(entry.deck);
+      if (!this.brokenTypes.has(entry.type))
+        report('type', `Unknown type "${entry.type}". Define it in a library first.`);
+      return undefined;
+    }
+    const modes = (['items', 'from', 'each'] as const).filter((k) => entry[k] !== undefined);
+    if (modes.length > 1) {
+      report(modes[1]!, `Use only one of "items", "from" or "each" in an entry.`);
+      return undefined;
+    }
+    if (entry.deck && !PRIMITIVE_INFO[type.base].stackable) {
+      report('deck', `A ${type.base} cannot be stacked into a deck.`);
+    }
+    return type;
+  }
+
+  /** The entry's designs, each with a way to report problems against where it came from. */
+  private async entryRows(
+    entry: InventoryEntry,
+    source: SourceFile,
+    at: (string | number)[],
+  ): Promise<Row[]> {
+    const report = (p: (string | number)[], message: string) =>
+      this.diagnostics.push(source.diagnostic([...at, ...p], message));
+    const under = (p: (string | number)[], field: string | undefined) =>
+      field ? [...p, field] : p;
+    if (entry.items) {
+      return entry.items.map((values, r) => ({
+        values,
+        fromText: false,
+        key: undefined,
+        report: (field, message) => report(under(['items', r], field), message),
+      }));
+    }
+    if (entry.from) {
+      const file = entry.from;
+      const csvRows = await this.readCsv(file, source, [...at, 'from']);
+      return csvRows.map(({ values, line }) => ({
+        values,
+        fromText: true,
+        key: undefined,
+        report: (field, message) =>
+          this.error(file, field ? `${message} (column "${field}")` : message, { line }),
+      }));
+    }
+    if (entry.each) {
+      return cartesian(entry.each).map((values) => ({
+        values,
+        fromText: false,
+        key: Object.values(values).map(String).join('-'),
+        report: (field, message) => report(under(['each'], field), message),
+      }));
+    }
+    return [{ values: {}, fromText: false, key: '', report: (_f, message) => report([], message) }];
+  }
+
+  private addComponent(spec: ComponentSpec, deck: string | undefined): void {
+    if (deck) {
+      spec.deck = deck;
+      const ids = this.decks[deck] ?? [];
+      ids.push(spec.id);
+      this.decks[deck] = ids;
+    }
+    this.components.push(spec);
   }
 
   private async readCsv(
@@ -541,117 +418,18 @@ class ProjectLoader {
     this.diagnostics.push(...diagnostics);
     if (!data) return;
     const name = path.basename(file).replace(/\.ya?ml$/, '');
-    for (const [i, step] of data.steps.entries()) this.checkStep(step, source, ['steps', i]);
+    const loaded: Loaded = {
+      types: this.types,
+      components: this.components,
+      decks: this.decks,
+      brokenTypes: this.brokenTypes,
+      brokenDecks: this.brokenDecks,
+    };
+    for (const [i, step] of data.steps.entries()) {
+      for (const problem of stepProblems(step, loaded)) {
+        this.diagnostics.push(source.diagnostic(['steps', i, ...problem.path], problem.message));
+      }
+    }
     this.setups[name] = { ...data, file };
   }
-
-  private checkStep(step: SetupStep, source: SourceFile, at: (string | number)[]): void {
-    const report = (p: (string | number)[], message: string) =>
-      this.diagnostics.push(source.diagnostic([...at, ...p], message));
-    const checkDeck = (name: string, p: (string | number)[]) => {
-      if (!this.decks[name] && !this.brokenDecks.has(name)) report(p, `Unknown deck "${name}".`);
-    };
-    if ('place' in step) {
-      const ref = step.place;
-      if (typeof ref === 'string') {
-        const known =
-          this.types[ref] !== undefined ||
-          this.brokenTypes.has(ref) ||
-          this.components.some((c) => c.id === ref);
-        if (!known) report(['place'], `"${ref}" is neither a type id nor a component id.`);
-        if (step.shuffle) report(['shuffle'], `Only a deck can be shuffled.`);
-      } else {
-        checkDeck(ref.deck, ['place', 'deck']);
-      }
-      if (typeof step.at === 'string') this.checkTarget(step.at, (m) => report(['at'], m));
-    } else if ('deal' in step) {
-      checkDeck(step.deal.from, ['deal', 'from']);
-      if (typeof step.deal.to === 'string')
-        this.checkTarget(step.deal.to, (m) => report(['deal', 'to'], m));
-    } else {
-      checkDeck(step.shuffle, ['shuffle']);
-    }
-  }
-
-  /** Checks a `piece/target[/index]` reference, where piece is a component id or a type with one component. */
-  private checkTarget(ref: string, report: (message: string) => void): void {
-    const [owner, targetId, index, ...rest] = ref.split('/');
-    if (!owner || !targetId || rest.length > 0) {
-      report(`"${ref}" should look like "board/target" or "board/target/index".`);
-      return;
-    }
-    const component = this.components.find((c) => c.id === owner);
-    const ofType = this.components.filter((c) => c.type === owner);
-    const typeId = component?.type ?? (ofType.length > 0 ? owner : undefined);
-    if (!typeId) {
-      if (this.brokenTypes.has(owner)) return;
-      report(`"${owner}" is not a component id or a type in the inventory.`);
-      return;
-    }
-    if (!component && ofType.length > 1) {
-      report(
-        `There are ${ofType.length} components of type "${owner}"; use a component id such as "${ofType[0]!.id}".`,
-      );
-      return;
-    }
-    const target = this.types[typeId]?.snap?.find((t) => t.id === targetId);
-    if (!target) {
-      report(`"${typeId}" has no snap target "${targetId}".`);
-      return;
-    }
-    if (index !== undefined) {
-      const spots = snapSpotCount(target);
-      const i = Number(index);
-      if (spots === undefined)
-        report(`Snap target "${targetId}" is an area and has no numbered spots.`);
-      else if (!Number.isInteger(i) || i < 0 || i >= spots) {
-        report(`Spot ${index} is out of range; "${targetId}" has spots 0 to ${spots - 1}.`);
-      }
-    }
-  }
-}
-
-/** Number of numbered spots in a snap target, or undefined for free areas. */
-export function snapSpotCount(target: SnapTarget): number | undefined {
-  if (target.grid) return target.grid.cols * target.grid.rows;
-  if (target.points) return target.points.length;
-  return undefined;
-}
-
-function cartesian(each: Record<string, Scalar[]>): Record<string, Scalar>[] {
-  let combos: Record<string, Scalar>[] = [{}];
-  for (const [key, values] of Object.entries(each)) {
-    combos = combos.flatMap((c) => values.map((v) => ({ ...c, [key]: v })));
-  }
-  return combos;
-}
-
-/** `base`, or `base~2`, `base~3`… when that id is already taken. */
-function unusedId(base: string, used: Set<string>): string {
-  let id = base;
-  let n = 2;
-  while (used.has(id)) {
-    id = `${base}~${n}`;
-    n++;
-  }
-  return id;
-}
-
-/** A readable row key: the first text field's value (usually the name), else the row number. */
-function rowKey(data: Record<string, Scalar>, index: number): string {
-  const text =
-    typeof data.name === 'string' && slugify(data.name) !== ''
-      ? data.name
-      : Object.values(data).find((v) => typeof v === 'string' && slugify(v) !== '');
-  return typeof text === 'string' ? slugify(text) : String(index + 1);
-}
-
-/** Runs of other characters become one dash, so trimming one dash at each end is enough. */
-export function slugify(text: string): string {
-  return text
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
 }

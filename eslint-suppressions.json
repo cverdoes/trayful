@@ -89,27 +89,6 @@
       "count": 1
     }
   },
-  "packages/formats/src/fields.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "packages/formats/src/load.ts": {
-    "max-lines": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 3
-    }
-  },
-  "packages/formats/src/schemas.ts": {
-    "max-lines": {
-      "count": 1
-    }
-  },
   "packages/server/src/mcp.ts": {
     "max-lines": {
       "count": 1
