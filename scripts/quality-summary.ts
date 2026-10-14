@@ -21,6 +21,7 @@ interface Metric {
   covered: number;
 }
 type FileCoverage = Record<'lines' | 'statements' | 'functions' | 'branches', Metric>;
+type Suppressions = Record<string, Record<string, { count: number }>>;
 
 async function readJson<T>(file: string): Promise<T | undefined> {
   try {
@@ -39,16 +40,15 @@ function addMetrics(into: FileCoverage, from: FileCoverage) {
   }
 }
 
-const emptyCoverage = (): FileCoverage => ({
+export const emptyCoverage = (): FileCoverage => ({
   lines: { total: 0, covered: 0 },
   statements: { total: 0, covered: 0 },
   functions: { total: 0, covered: 0 },
   branches: { total: 0, covered: 0 },
 });
 
-async function coverageSection(): Promise<string> {
-  const summary = await readJson<Record<string, FileCoverage>>('coverage/coverage-summary.json');
-  if (!summary) return '_No coverage report; run `pnpm test:coverage` first._';
+/** Adds up per-file coverage into one entry per workspace package, sorted by name. */
+export function coverageByPackage(summary: Record<string, FileCoverage>) {
   const byPackage = new Map<string, FileCoverage>();
   for (const [file, coverage] of Object.entries(summary)) {
     const name = /packages\/([^/]+)\//.exec(file)?.[1];
@@ -56,12 +56,18 @@ async function coverageSection(): Promise<string> {
     if (!byPackage.has(name)) byPackage.set(name, emptyCoverage());
     addMetrics(byPackage.get(name)!, coverage);
   }
+  return [...byPackage].sort(([a], [b]) => a.localeCompare(b));
+}
+
+async function coverageSection(): Promise<string> {
+  const summary = await readJson<Record<string, FileCoverage>>('coverage/coverage-summary.json');
+  if (!summary) return '_No coverage report; run `pnpm test:coverage` first._';
   const row = (name: string, c: FileCoverage) =>
     `| ${name} | ${pct(c.lines)} | ${pct(c.statements)} | ${pct(c.functions)} | ${pct(c.branches)} |`;
   return [
     '| Package | Lines | Statements | Functions | Branches |',
     '| --- | ---: | ---: | ---: | ---: |',
-    ...[...byPackage].sort(([a], [b]) => a.localeCompare(b)).map(([n, c]) => row(n, c)),
+    ...coverageByPackage(summary).map(([n, c]) => row(n, c)),
     row('**All**', summary.total ?? emptyCoverage()),
     '',
     'The app is mostly covered by the e2e suite, which this does not count.',
@@ -73,8 +79,9 @@ interface ComplexFunction {
   where: string;
 }
 
-async function complexFunctions(): Promise<ComplexFunction[]> {
-  const eslint = new ESLint({
+/** An ESLint that reports every function's cognitive complexity, whatever its score. */
+export function complexityLinter() {
+  return new ESLint({
     cwd: root,
     overrideConfigFile: true,
     overrideConfig: [
@@ -87,19 +94,27 @@ async function complexFunctions(): Promise<ComplexFunction[]> {
       },
     ],
   });
-  const results = await eslint.lintFiles(['packages/*/src/**/*.{ts,tsx}']);
+}
+
+/**
+ * Reads the scores from complexityLinter's results. The rule only reports a score in its
+ * message ("... from 23 to the 0 allowed"), so this throws on a parse error or on a message
+ * it cannot read; quality-summary.test.ts shows a sonarjs upgrade that rewords it.
+ */
+export function readScores(results: ESLint.LintResult[]): ComplexFunction[] {
   return results.flatMap((result) =>
-    result.messages.flatMap((m) => {
-      // Scores are read from the rule's message ("... from 23 to the 0 allowed"), so fail
-      // loudly if a parse error shows up or a sonarjs upgrade rewords the message.
+    result.messages.map((m) => {
       const score = /from (\d+) to/.exec(m.message)?.[1];
       if (m.ruleId !== 'sonarjs/cognitive-complexity' || !score) {
         throw new Error(`Unexpected ESLint message in ${result.filePath}: ${m.message}`);
       }
-      const where = `${path.relative(root, result.filePath)}:${m.line}`;
-      return [{ score: Number(score), where }];
+      return { score: Number(score), where: `${path.relative(root, result.filePath)}:${m.line}` };
     }),
   );
+}
+
+async function complexFunctions(): Promise<ComplexFunction[]> {
+  return readScores(await complexityLinter().lintFiles(['packages/*/src/**/*.{ts,tsx}']));
 }
 
 async function complexitySection(): Promise<string> {
@@ -123,28 +138,28 @@ async function duplicationSection(): Promise<string> {
   return `${t.clones} clones, ${t.duplicatedLines} of ${t.lines} lines duplicated (${t.percentage}%).`;
 }
 
-async function backlogSection(): Promise<string> {
-  const suppressions =
-    (await readJson<Record<string, Record<string, { count: number }>>>(
-      'eslint-suppressions.json',
-    )) ?? {};
+/** Counts suppressed violations per rule, most common first. */
+export function backlogByRule(suppressions: Suppressions): [string, number][] {
   const byRule = new Map<string, number>();
   for (const rules of Object.values(suppressions)) {
     for (const [rule, { count }] of Object.entries(rules)) {
       byRule.set(rule, (byRule.get(rule) ?? 0) + count);
     }
   }
-  const total = [...byRule.values()].reduce((a, b) => a + b, 0);
+  return [...byRule].sort((a, b) => b[1] - a[1]);
+}
+
+async function backlogSection(): Promise<string> {
+  const suppressions = (await readJson<Suppressions>('eslint-suppressions.json')) ?? {};
+  const byRule = backlogByRule(suppressions);
+  const total = byRule.reduce((sum, [, n]) => sum + n, 0);
   if (total === 0) return 'No baselined lint violations left.';
   return [
     `${total} baselined violations in ${Object.keys(suppressions).length} files. Fix them, then run \`pnpm lint:prune\`.`,
     '',
     '| Rule | Count |',
     '| --- | ---: |',
-    ...[...byRule]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, TOP_RULES)
-      .map(([rule, n]) => `| \`${rule}\` | ${n} |`),
+    ...byRule.slice(0, TOP_RULES).map(([rule, n]) => `| \`${rule}\` | ${n} |`),
   ].join('\n');
 }
 
@@ -155,9 +170,13 @@ const sections: [string, () => Promise<string>][] = [
   ['Lint backlog', backlogSection],
 ];
 
-const parts = ['## Code quality'];
-for (const [title, section] of sections) parts.push(`### ${title}`, await section());
-const markdown = parts.join('\n\n') + '\n';
+async function main() {
+  const parts = ['## Code quality'];
+  for (const [title, section] of sections) parts.push(`### ${title}`, await section());
+  const markdown = parts.join('\n\n') + '\n';
+  process.stdout.write(markdown);
+  if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, markdown);
+}
 
-process.stdout.write(markdown);
-if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, markdown);
+// Run only as a script, so tests can import the functions above.
+if (path.resolve(process.argv[1] ?? '') === import.meta.filename) await main();
