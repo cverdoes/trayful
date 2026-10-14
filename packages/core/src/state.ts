@@ -1,4 +1,5 @@
 import {
+  byCodeUnit,
   FORMAT_VERSION,
   TableFile,
   flattenIssues,
@@ -72,7 +73,7 @@ export function toTableFile(state: TableState): TableFile {
     table: state.table,
     seed: state.seed,
     rng: state.rng,
-    objects: Object.values(state.objects).sort(byId),
+    objects: Object.values(state.objects).sort((a, b) => byCodeUnit(a.id, b.id)),
   };
 }
 
@@ -130,10 +131,4 @@ export function checkIntegrity(state: TableState): string[] {
     }
   }
   return problems;
-}
-
-/** Orders objects by id in plain code-unit order, so saved files do not depend on the machine's locale. */
-function byId(a: TableObject, b: TableObject): number {
-  if (a.id < b.id) return -1;
-  return a.id > b.id ? 1 : 0;
 }

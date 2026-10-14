@@ -6,6 +6,7 @@ import type { Piece, ServerMessage, Stack, TableView } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { isLocalOrigin, startServer, type RunningServer } from './server.js';
+import { frameText } from './frames.js';
 
 const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
 
@@ -41,7 +42,7 @@ async function connect(origin?: string, headers: Record<string, string> = {}) {
   const waiting: ((m: ServerMessage) => void)[] = [];
   const players: ServerMessage[] = [];
   socket.on('message', (data) => {
-    const message = JSON.parse((data as Buffer).toString()) as ServerMessage;
+    const message = JSON.parse(frameText(data)) as ServerMessage;
     if (message.type === 'players') {
       players.push(message);
       return;

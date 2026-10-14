@@ -25,6 +25,7 @@ import {
   type SetupStep,
   type SnapTarget,
 } from './schemas.js';
+import { byCodeUnit } from './order.js';
 import { SourceFile } from './source.js';
 
 export const MANIFEST_FILE = 'trayful.yaml';
@@ -623,12 +624,6 @@ function cartesian(each: Record<string, Scalar[]>): Record<string, Scalar>[] {
     combos = combos.flatMap((c) => values.map((v) => ({ ...c, [key]: v })));
   }
   return combos;
-}
-
-/** Plain code-unit order, so file order does not depend on the machine's locale. */
-function byCodeUnit(a: string, b: string): number {
-  if (a < b) return -1;
-  return a > b ? 1 : 0;
 }
 
 /** `base`, or `base~2`, `base~3`… when that id is already taken. */

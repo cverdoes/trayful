@@ -76,7 +76,8 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
   const play = (activity: string, commands: Command[]): CallToolResult => {
     const before = engine().state;
     try {
-      // Try every command first, so a tool call changes all or nothing.
+      // Try every command first, so a tool call changes all or nothing. Only a throw
+      // matters here; the resulting state is thrown away.
       let state = before;
       for (const command of commands) state = applyCommand(state, command, types());
     } catch (err) {

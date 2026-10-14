@@ -24,6 +24,7 @@ import { createMcpServer } from './mcp.js';
 import { PlayerError, tableKey, type Invite, type Player } from './players.js';
 import { ProjectLoadError, type TableSession } from './session.js';
 import { Workspace } from './workspace.js';
+import { frameText } from './frames.js';
 
 export const DEFAULT_PORT = 4317;
 
@@ -333,8 +334,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
         socket.on('message', (data) => {
           let message: ClientMessage | null;
           try {
-            // ws hands text frames over as a Buffer.
-            message = JSON.parse((data as Buffer).toString()) as ClientMessage | null;
+            message = JSON.parse(frameText(data)) as ClientMessage | null;
           } catch {
             send({ type: 'error', message: 'Messages must be JSON.' });
             return;

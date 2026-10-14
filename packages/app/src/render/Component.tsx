@@ -48,8 +48,7 @@ export function Component({ piece, type, palette, selected }: Readonly<Props>) {
   const outline = type.shape ?? (type.base === 'meeple' ? 'meeple' : 'rect');
   const corner = type.corner ?? (type.base === 'die' ? 2 : 0);
 
-  const typeFill = showBack ? plainBackFill(type) : resolveColor(type.fill, data, palette);
-  const fill = resolveColor(face?.fill, data, palette) ?? typeFill ?? defaultFill(type, showBack);
+  const fill = fillOf(type, showBack, (color) => resolveColor(color, data, palette));
   const stroke = selected ? '#2f81f7' : (resolveColor(face?.stroke, data, palette) ?? OUTLINE);
   const strokeWidth = selected ? 1.2 : 0.3;
 
@@ -179,12 +178,21 @@ function layerSize(
   return typeof size === 'number' ? [size, size] : size;
 }
 
-/** A two-sided type without its own back gets the plain back colour. */
-function plainBackFill(type: ComponentType): string | undefined {
-  return type.back ? undefined : BACK_FILL;
-}
-
-function defaultFill(type: ComponentType, showBack: boolean): string {
+/**
+ * The colour a component is filled with: the shown face's own fill, else the type's fill
+ * (front only), else a default. A back the type does not define is the plain back colour.
+ */
+function fillOf(
+  type: ComponentType,
+  showBack: boolean,
+  resolve: (color: string | undefined) => string | undefined,
+): string {
+  const face = showBack ? type.back : type.front;
+  const own = resolve(face?.fill);
+  if (own !== undefined) return own;
+  if (showBack && !type.back) return BACK_FILL;
+  const typeFill = showBack ? undefined : resolve(type.fill);
+  if (typeFill !== undefined) return typeFill;
   if (type.base === 'zone') return 'transparent';
   return showBack ? BACK_FILL : DEFAULT_FILL;
 }

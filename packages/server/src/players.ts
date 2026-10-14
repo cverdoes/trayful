@@ -2,6 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { byCodeUnit } from '@trayful/formats';
 
 /** Someone at the table: a person in a browser, or an agent over MCP. */
 export interface Player {
@@ -152,7 +153,7 @@ export class Players {
     if (!player) return;
     const tables = new Set([...(player.tables ?? []), ...keys]);
     if (tables.size === (player.tables?.length ?? 0)) return;
-    player.tables = [...tables].sort((a, b) => a.localeCompare(b));
+    player.tables = [...tables].sort(byCodeUnit);
     await this.store.save(this.data);
   }
 
