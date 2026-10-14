@@ -165,17 +165,25 @@ export function insideArea(spot: SnapSpot, point: Vec2): boolean {
   return local[0] >= 0 && local[1] >= 0 && local[0] <= spot.area[0] && local[1] <= spot.area[1];
 }
 
+/** A piece being dropped on the table, for finding the spot it snaps to. */
+export interface Drop {
+  /** The dropped piece's type; spots that do not accept it are skipped. */
+  type: ComponentType | undefined;
+  point: Vec2;
+  /** How far from `point` a spot may be, in millimetres. */
+  radius: number;
+  /** Objects being moved, which neither offer spots nor take them up. */
+  ignore?: ReadonlySet<string>;
+}
+
 /**
- * The spot a piece of `type` dropped at `point` snaps to: an area it lands in, or
- * else the nearest accepting spot within `radius`, preferring free spots.
+ * The spot a drop snaps to: an area it lands in, or else the nearest accepting
+ * spot within its radius, preferring free spots.
  */
 export function snapFor(
   state: TableState,
   catalog: Catalog,
-  type: ComponentType | undefined,
-  point: Vec2,
-  radius: number,
-  ignore: ReadonlySet<string> = new Set(),
+  { type, point, radius, ignore = new Set() }: Drop,
 ): SnapSpot | undefined {
   const candidates = allSpots(state, catalog).filter(
     (s) => !ignore.has(s.owner) && accepts(s, type),

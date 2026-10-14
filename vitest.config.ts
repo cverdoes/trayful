@@ -15,7 +15,7 @@ export default defineConfig({
       // suite instead.
       thresholds: {
         autoUpdate: (measured, previous) => Math.max(previous, Math.floor(measured) - 2),
-        'packages/core/src/**': { statements: 89, branches: 80, functions: 94, lines: 91 },
+        'packages/core/src/**': { statements: 94, branches: 87, functions: 96, lines: 95 },
         'packages/formats/src/**': { statements: 92, branches: 87, functions: 95, lines: 93 },
         'packages/server/src/**': { statements: 86, branches: 72, functions: 86, lines: 87 },
         'packages/cli/src/**': { statements: 42, branches: 37, functions: 48, lines: 42 },

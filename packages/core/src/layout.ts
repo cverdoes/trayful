@@ -40,3 +40,21 @@ export function objectSize(state: TableState, catalog: Catalog, object: TableObj
   const size = type ? sizeOf(type) : ([20, 20] as Vec2);
   return object.kind === 'stack' ? stackSize(object.layout, object.items.length, size) : size;
 }
+
+/** The box around some objects on the table, before rotation, from top-left to bottom-right. */
+export interface Bounds {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export function boundsOf(state: TableState, catalog: Catalog, objects: TableObject[]): Bounds {
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const o of objects) {
+    const [w, h] = objectSize(state, catalog, o);
+    [x0, y0] = [Math.min(x0, o.pos[0] - w / 2), Math.min(y0, o.pos[1] - h / 2)];
+    [x1, y1] = [Math.max(x1, o.pos[0] + w / 2), Math.max(y1, o.pos[1] + h / 2)];
+  }
+  return { x0, y0, x1, y1 };
+}

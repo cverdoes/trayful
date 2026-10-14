@@ -178,11 +178,19 @@ describe('snap targets', () => {
     const state = setUp();
     const worker = project.types.worker;
     // Field spot 0 is at [-190, 0], spot 1 at [-140, 0].
-    expect(snapFor(state, project.types, worker, [-185, 4], 20)?.ref).toBe('main-board/fields/0');
-    expect(snapFor(state, project.types, worker, [-165, 0], 10)).toBeUndefined();
+    expect(snapFor(state, project.types, { type: worker, point: [-185, 4], radius: 20 })?.ref).toBe(
+      'main-board/fields/0',
+    );
+    expect(
+      snapFor(state, project.types, { type: worker, point: [-165, 0], radius: 10 }),
+    ).toBeUndefined();
     const card = project.types['action-card'];
-    expect(snapFor(state, project.types, card, [-185, 4], 20)).toBeUndefined();
-    expect(snapFor(state, project.types, card, [215, 55], 5)?.ref).toBe('main-board/supply');
+    expect(
+      snapFor(state, project.types, { type: card, point: [-185, 4], radius: 20 }),
+    ).toBeUndefined();
+    expect(snapFor(state, project.types, { type: card, point: [215, 55], radius: 5 })?.ref).toBe(
+      'main-board/supply',
+    );
   });
 });
 
