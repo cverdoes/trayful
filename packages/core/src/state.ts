@@ -134,9 +134,10 @@ export function checkIntegrity(state: TableState): string[] {
 }
 
 /**
- * Takes an object off a table. Tables keep their objects in a plain record keyed by id,
- * because they are saved and sent as JSON. The lint rule against `delete` with a computed
- * key exists for maps like this one, so removals go through here instead of `delete`.
+ * Takes an object off a table, in place. `no-dynamic-delete` asks for a `Map` instead of
+ * deleting keys from a plain object, but that doesn't suit tables: they keep their objects
+ * in a plain record keyed by id because the record is saved and sent as JSON. So removals
+ * go through this one function rather than a `delete` scattered across core.
  */
 export function removeObject(objects: Record<string, TableObject>, id: string): void {
   Reflect.deleteProperty(objects, id);
