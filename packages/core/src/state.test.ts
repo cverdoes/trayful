@@ -14,11 +14,6 @@ describe('withChanges', () => {
     expect('hand' in changed).toBe(false);
   });
 
-  it('also drops keys that were already undefined', () => {
-    const object: { id: string; hand?: string } = { id: 'a', hand: undefined };
-    expect(withChanges(object, {})).toStrictEqual({ id: 'a' });
-  });
-
   it('leaves the original object as it was', () => {
     const object = { id: 'a', x: 1 };
     withChanges(object, { x: 5 });

@@ -241,7 +241,6 @@ function cleanName(name: unknown): string {
   return clean;
 }
 
-/** Runs of other characters become one dash, so trimming one dash at each end is enough. */
 function slug(name: string): string {
   return name
     .normalize('NFKD')
