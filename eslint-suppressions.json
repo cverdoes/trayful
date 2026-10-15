@@ -39,17 +39,6 @@
       "count": 1
     }
   },
-  "packages/cli/src/index.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    },
-    "sonarjs/function-return-type": {
-      "count": 1
-    }
-  },
   "scripts/generate.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 2
