@@ -10,6 +10,7 @@ Short guides for the things you do most when building a prototype. Each one star
 | [Add a board with snap spots](board-with-snap-spots.md)      | Make a board whose slots, spaces and tracks pieces snap onto     |
 | [Add meeples, dice and counters](meeples-dice-counters.md)   | Add the small pieces: workers, tokens, dice and counters         |
 | [Use your own images](your-own-images.md)                    | Put artwork on cards and boards, per type or per card            |
+| [Design components in the browser](design-components.md)     | Build card and piece types by clicking, with a live preview      |
 | [Write a setup](write-a-setup.md)                            | Have every new table laid out and dealt for you                  |
 | [Let an agent build components](agent-builds-components.md)  | Design card types together with an AI agent, live on the table   |
 | [Print and play](print-and-play.md)                          | Print your components at real size to cut out                    |

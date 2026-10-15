@@ -1,10 +1,20 @@
 /** Which project and table this page shows, from `?project=…&table=…` in its address. */
-export function route(): { project?: string; table?: string; print: boolean; join: boolean } {
+export function route(): {
+  project?: string;
+  table?: string;
+  print: boolean;
+  /** Design mode, showing the type named by `type` if any. */
+  design: boolean;
+  type?: string;
+  join: boolean;
+} {
   const params = new URLSearchParams(location.search);
   return {
     project: params.get('project') ?? undefined,
     table: params.get('table') ?? undefined,
     print: params.has('print'),
+    design: params.has('design'),
+    type: params.get('type') ?? undefined,
     // Set by an invite link: ask for a name even on the host's computer.
     join: params.has('join'),
   };
@@ -20,12 +30,26 @@ export function tableQuery(): string {
   return query ? `?${query}` : '';
 }
 
-/** Opens another table (or the print sheets) in this window. */
-export function go(to: { project: string; table?: string; print?: boolean }): void {
+/** Opens another table (or its print sheets, or design mode) in this window. */
+export function go(to: {
+  project: string;
+  table?: string;
+  print?: boolean;
+  design?: boolean;
+}): void {
   const params = new URLSearchParams({ project: to.project });
   if (to.table) params.set('table', to.table);
   if (to.print) params.set('print', '');
+  if (to.design) params.set('design', '');
   location.search = params.toString();
+}
+
+/** Puts the type shown in design mode in the address, so a reload or a shared link shows it again. */
+export function showTypeInAddress(id: string | undefined): void {
+  const params = new URLSearchParams(location.search);
+  if (id) params.set('type', id);
+  else params.delete('type');
+  history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
 }
 
 /** Drops `?join` from the address once the player has joined, so a reload goes straight in. */

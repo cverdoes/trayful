@@ -4,8 +4,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ServerMessage, Stack } from '@trayful/core';
+import type { ResolvedType } from '@trayful/formats';
 import { afterEach, describe, expect, it } from 'vitest';
-import { addAsset, AuthoringError, removeType, setInventory, upsertType } from './authoring.js';
+import {
+  addAsset,
+  AuthoringError,
+  ConflictError,
+  libraryFiles,
+  removeType,
+  setInventory,
+  upsertType,
+} from './authoring.js';
 import { createProjectFolder, Workspace } from './workspace.js';
 
 const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
@@ -31,6 +40,13 @@ async function open(options: Parameters<typeof Workspace.open>[1] = {}) {
   const root = await scratchWorkspace();
   workspace = await Workspace.open(root, { seed: 1, watch: false, ...options });
   return workspace;
+}
+
+/** A loaded type as its library file writes it, without what the loader adds. */
+function asWritten(type: ResolvedType) {
+  return Object.fromEntries(
+    Object.entries(type).filter(([key]) => key !== 'source' && key !== 'normalizedFields'),
+  );
 }
 
 describe('Workspace', () => {
@@ -159,6 +175,50 @@ describe('authoring', () => {
     expect(ws.project('starter-game').types['event-card']!.size).toEqual([70, 120]);
   });
 
+  it('changes a type in place, so the rest of its file stays as written', async () => {
+    const ws = await open({ project: 'harvest-moon' });
+    const file = path.join(ws.entry().dir, 'library', 'cards.yaml');
+    const before = await readFile(file, 'utf8');
+    const card = ws.project('harvest-moon').types['action-card']!;
+    await upsertType(ws, 'harvest-moon', { ...asWritten(card), corner: 4 });
+    expect(await readFile(file, 'utf8')).toBe(before.replace('corner: 3', 'corner: 4'));
+  });
+
+  it('refuses a change made against an older version of the file', async () => {
+    const ws = await open({ project: 'starter-game' });
+    const { files, types } = await libraryFiles(ws, 'starter-game');
+    expect(types.card).toBe('library/cards.yaml');
+    const baseHash = files['library/cards.yaml'];
+    const card = asWritten(ws.project('starter-game').types.card!);
+    await upsertType(ws, 'starter-game', { ...card, corner: 1 }, { baseHash });
+    await expect(
+      upsertType(ws, 'starter-game', { ...card, corner: 2 }, { baseHash }),
+    ).rejects.toThrow(ConflictError);
+    const { files: now } = await libraryFiles(ws, 'starter-game');
+    await upsertType(
+      ws,
+      'starter-game',
+      { ...card, corner: 2 },
+      { baseHash: now['library/cards.yaml'] },
+    );
+    expect(ws.project('starter-game').types.card!.corner).toBe(2);
+  });
+
+  it('lets only one of two changes made at once against the same version through', async () => {
+    const ws = await open({ project: 'starter-game' });
+    const baseHash = (await libraryFiles(ws, 'starter-game')).files['library/cards.yaml'];
+    const card = asWritten(ws.project('starter-game').types.card!);
+    const results = await Promise.allSettled([
+      upsertType(ws, 'starter-game', { ...card, corner: 1 }, { baseHash }),
+      upsertType(ws, 'starter-game', { ...card, corner: 2 }, { baseHash }),
+    ]);
+    expect(results.map((r) => r.status)).toEqual(['fulfilled', 'rejected']);
+    const first = results[0] as PromiseFulfilledResult<Awaited<ReturnType<typeof upsertType>>>;
+    // The version handed back is the one written, ready for the next change.
+    expect(first.value.library).toEqual(await libraryFiles(ws, 'starter-game'));
+    expect(ws.project('starter-game').types.card!.corner).toBe(1);
+  });
+
   it('refuses invalid types and changes that break the project', async () => {
     const ws = await open({ project: 'starter-game' });
     await expect(upsertType(ws, 'starter-game', { id: 'x', base: 'spaceship' })).rejects.toThrow(
@@ -173,13 +233,18 @@ describe('authoring', () => {
     expect(await readFile(file, 'utf8')).toBe(before);
     expect(ws.entry().problems).toEqual([]);
     await expect(
-      upsertType(ws, 'starter-game', { id: 'y', base: 'card', size: 10 }, '../outside.yaml'),
+      upsertType(
+        ws,
+        'starter-game',
+        { id: 'y', base: 'card', size: 10 },
+        { file: '../outside.yaml' },
+      ),
     ).rejects.toThrow(/outside the project/);
   });
 
   it('sets inventory entries and removes unused types', async () => {
     const ws = await open({ project: 'starter-game' });
-    await expect(removeType(ws, 'starter-game', 'token')).rejects.toThrow(/set_inventory/);
+    await expect(removeType(ws, 'starter-game', 'token')).rejects.toThrow(/out of the inventory/);
     const result = await setInventory(ws, 'starter-game', 'token', [
       { count: 2, each: { color: ['blue', 'orange'] } },
     ]);
