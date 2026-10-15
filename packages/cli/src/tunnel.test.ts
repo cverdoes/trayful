@@ -1,17 +1,6 @@
-import { chmod, mkdtemp, writeFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { fakeCloudflared } from './testing.js';
 import { startTunnel } from './tunnel.js';
-
-/** A stand-in for cloudflared that prints what the real one does, then waits. */
-async function fakeCloudflared(script: string): Promise<string> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-tunnel-'));
-  const file = path.join(dir, 'cloudflared');
-  await writeFile(file, `#!/usr/bin/env node\n${script}\n`);
-  await chmod(file, 0o755);
-  return file;
-}
 
 describe.skipIf(process.platform === 'win32')('startTunnel', () => {
   it('reads the quick tunnel address from cloudflared', async () => {

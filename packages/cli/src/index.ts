@@ -1,16 +1,11 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
-import { formatDiagnostic, hasErrors, loadProject } from '@trayful/formats';
-import {
-  createProjectFolder,
-  DEFAULT_PORT,
-  defaultAppDir,
-  ProjectLoadError,
-  startServer,
-} from '@trayful/server';
-import open from 'open';
+import { DEFAULT_PORT, ProjectLoadError } from '@trayful/server';
+import { CliError, UsageError } from './errors.js';
 import { mcp } from './mcp.js';
-import { startTunnel, TunnelError, type Tunnel } from './tunnel.js';
+import { newProject } from './new.js';
+import { parsePlayArgs } from './options.js';
+import { play } from './play.js';
+import { TunnelError } from './tunnel.js';
+import { validate } from './validate.js';
 
 const HELP = `Usage: trayful <command> [options]
 
@@ -38,242 +33,50 @@ Commands:
   help                     Show this message.
 `;
 
+const USAGE: Record<string, string> = {
+  new: 'trayful new <folder> [--name <name>]',
+  validate: 'trayful validate <project-dir> [--json]',
+  play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel]',
+  mcp: 'trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>]',
+};
+
 /** Runs the CLI and returns the process exit code. */
 export async function run(args: string[], out = console.log, err = console.error): Promise<number> {
   const [command, ...rest] = args;
-  switch (command) {
-    case 'validate':
-      return validate(rest, out, err);
-    case 'new':
-      return newProject(rest, out, err);
-    case 'play':
-      return play(rest, out, err);
-    case 'mcp': {
-      const options = parsePlayArgs(rest);
-      if (typeof options === 'string') {
-        err(
-          `${options}\nUsage: trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>]`,
-        );
+  try {
+    switch (command) {
+      case 'validate':
+        return await validate(rest, out, err);
+      case 'new':
+        return await newProject(rest, out);
+      case 'play':
+        return await play(parsePlayArgs(rest), out);
+      case 'mcp':
+        return await mcp(parsePlayArgs(rest), err);
+      case undefined:
+      case 'help':
+      case '--help':
+      case '-h':
+        out(HELP);
+        return 0;
+      default:
+        err(`Unknown command "${command}".\n\n${HELP}`);
         return 2;
-      }
-      return mcp(options, err);
     }
-    case undefined:
-    case 'help':
-    case '--help':
-    case '-h':
-      out(HELP);
-      return 0;
-    default:
-      err(`Unknown command "${command}".\n\n${HELP}`);
-      return 2;
-  }
-}
-
-async function newProject(
-  args: string[],
-  out: (s: string) => void,
-  err: (s: string) => void,
-): Promise<number> {
-  const nameAt = args.indexOf('--name');
-  const name = nameAt >= 0 ? args[nameAt + 1] : undefined;
-  const dir = args.find((a, i) => !a.startsWith('--') && (nameAt < 0 || i !== nameAt + 1));
-  if (!dir || (nameAt >= 0 && !name)) {
-    err('Usage: trayful new <folder> [--name <name>]');
-    return 2;
-  }
-  const title =
-    name ??
-    path
-      .basename(path.resolve(dir))
-      .replace(/[-_]+/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  try {
-    await createProjectFolder(path.resolve(dir), title);
   } catch (e) {
-    if (e instanceof ProjectLoadError) {
-      err(e.message);
-      return 1;
-    }
-    throw e;
+    return report(e, command!, err);
   }
-  out(`Created "${title}" in ${dir}. Play it with: trayful play ${dir}`);
-  return 0;
 }
 
-async function validate(
-  args: string[],
-  out: (s: string) => void,
-  err: (s: string) => void,
-): Promise<number> {
-  const json = args.includes('--json');
-  const dir = args.find((a) => !a.startsWith('--'));
-  if (!dir) {
-    err('Usage: trayful validate <project-dir> [--json]');
+/** Prints an error the person can act on and returns the exit code; rethrows any other. */
+function report(e: unknown, command: string, err: (s: string) => void): number {
+  if (e instanceof UsageError) {
+    err(`${e.message}\nUsage: ${USAGE[command]}`);
     return 2;
   }
-  const { project, diagnostics } = await loadProject(dir);
-  if (json) {
-    out(JSON.stringify({ ok: !hasErrors(diagnostics), diagnostics }, null, 2));
-    return hasErrors(diagnostics) ? 1 : 0;
-  }
-  for (const d of diagnostics) (d.severity === 'error' ? err : out)(formatDiagnostic(d));
-  if (!project) {
-    const errors = diagnostics.filter((d) => d.severity === 'error').length;
-    err(`\n${errors} ${errors === 1 ? 'error' : 'errors'} in ${dir}`);
+  if (e instanceof CliError || e instanceof ProjectLoadError || e instanceof TunnelError) {
+    err(e.message);
     return 1;
   }
-  const decks = Object.keys(project.decks).length;
-  const setups = Object.keys(project.setups).length;
-  out(
-    `✓ ${project.manifest.name}: ${Object.keys(project.types).length} types, ` +
-      `${project.components.length} components, ${decks} ${decks === 1 ? 'deck' : 'decks'}, ` +
-      `${setups} ${setups === 1 ? 'setup' : 'setups'}`,
-  );
-  return 0;
-}
-
-interface PlayOptions {
-  dir: string;
-  table?: string;
-  port?: number;
-  seed?: number;
-  setup?: string | false;
-  project?: string;
-  open: boolean;
-  share: boolean;
-  tunnel: boolean;
-}
-
-function parsePlayArgs(args: string[]): PlayOptions | string {
-  const options: PlayOptions = { dir: '.', open: true, share: false, tunnel: false };
-  const dirs: string[] = [];
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i]!;
-    const value = () => args[++i];
-    const number = (name: string) => {
-      const n = Number(value());
-      if (!Number.isInteger(n) || n < 0) throw new Error(`${name} needs a whole number.`);
-      return n;
-    };
-    try {
-      if (arg === '--table') options.table = value();
-      else if (arg === '--project') options.project = value();
-      else if (arg === '--port') options.port = number('--port');
-      else if (arg === '--seed') options.seed = number('--seed');
-      else if (arg === '--setup') {
-        const name = value();
-        if (!name) return '--setup needs a setup name, or "none".';
-        options.setup = name === 'none' ? false : name;
-      } else if (arg === '--no-open') options.open = false;
-      else if (arg === '--share') options.share = true;
-      else if (arg === '--tunnel') options.tunnel = true;
-      else if (arg.startsWith('--')) return `Unknown option "${arg}".`;
-      else dirs.push(arg);
-    } catch (e) {
-      return (e as Error).message;
-    }
-  }
-  if (dirs.length > 1) return 'Give one project folder.';
-  if (dirs[0]) options.dir = dirs[0];
-  return options;
-}
-
-async function play(
-  args: string[],
-  out: (s: string) => void,
-  err: (s: string) => void,
-): Promise<number> {
-  const options = parsePlayArgs(args);
-  if (typeof options === 'string') {
-    err(
-      `${options}\nUsage: trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel]`,
-    );
-    return 2;
-  }
-  if (!existsSync(path.join(defaultAppDir(), 'index.html'))) {
-    err(
-      'The browser app has not been built yet. Run `pnpm build` in the Trayful repository first.',
-    );
-    return 1;
-  }
-  let server: Awaited<ReturnType<typeof startServer>>;
-  try {
-    server = await startServer({
-      projectDir: path.resolve(options.dir),
-      project: options.project,
-      table: options.table,
-      port: options.port,
-      seed: options.seed,
-      setup: options.setup,
-      // Sharing on the network listens on every interface; a tunnel reaches us locally.
-      host: options.share ? '0.0.0.0' : undefined,
-    });
-  } catch (e) {
-    if (e instanceof ProjectLoadError) {
-      err(e.message);
-      return 1;
-    }
-    if ((e as NodeJS.ErrnoException).code === 'EADDRINUSE') {
-      err(
-        `Port ${options.port ?? DEFAULT_PORT} is in use. Is Trayful already running? Try --port <n>.`,
-      );
-      return 1;
-    }
-    throw e;
-  }
-  let tunnel: Tunnel | undefined;
-  if (options.tunnel) {
-    out('Opening a tunnel…');
-    try {
-      tunnel = await startTunnel(Number(new URL(server.url).port));
-      server.addShareBase(tunnel.url);
-    } catch (e) {
-      await server.close();
-      if (e instanceof TunnelError) {
-        err(e.message);
-        return 1;
-      }
-      throw e;
-    }
-  }
-  const { session, url } = server;
-  out(`${session.project.manifest.name} is on the table at ${url}`);
-  const saved = path.relative(process.cwd(), session.file);
-  out(`Saving to ${saved.startsWith('..') ? session.file : saved}.`);
-  const projects = server.workspace.projects().length;
-  if (projects > 1) out(`${projects} projects in this folder; switch between them in the browser.`);
-  if (server.shareBases.length) {
-    // Invites are per table; this one is for the table that opened. Invite in the
-    // browser to make links for other tables.
-    out(
-      `Invite others to ${session.tableName} with a link (anyone with it can join that table, so share it with care):`,
-    );
-    for (const link of await server.inviteLinks()) out(`  ${link}`);
-    out('Invite in the toolbar makes links for other tables.');
-  }
-  out('Edits to the project files show up on the table when you save. Press Ctrl+C to stop.');
-
-  // CI uses this to check that the server starts and serves the app, then exits.
-  if (process.env.TRAYFUL_SMOKE_TEST) {
-    const page = await fetch(url);
-    tunnel?.close();
-    await server.close();
-    if (!page.ok) {
-      err(`Smoke test failed: ${url} answered ${page.status}.`);
-      return 1;
-    }
-    out('Smoke test passed.');
-    return 0;
-  }
-
-  if (options.open) open(url).catch(() => out(`Open ${url} in your browser.`));
-  await new Promise<void>((resolve) => {
-    process.once('SIGINT', resolve);
-    process.once('SIGTERM', resolve);
-  });
-  out('\nSaving and stopping…');
-  tunnel?.close();
-  await server.close();
-  return 0;
+  throw e;
 }

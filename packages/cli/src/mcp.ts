@@ -1,15 +1,15 @@
 import path from 'node:path';
+import type { Readable, Writable } from 'node:stream';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createMcpServer, DEFAULT_PORT, ProjectLoadError, startServer } from '@trayful/server';
+import { createMcpServer, DEFAULT_PORT, startServer } from '@trayful/server';
+import { CliError } from './errors.js';
+import type { PlayOptions } from './options.js';
 
-export interface McpCommandOptions {
-  dir: string;
-  table?: string;
-  port?: number;
-  seed?: number;
-  setup?: string | false;
-  project?: string;
+/** Where the MCP messages come in and go out. Default: this process's stdin and stdout. */
+export interface Stdio {
+  stdin: Readable;
+  stdout: Writable;
 }
 
 /**
@@ -20,7 +20,11 @@ export interface McpCommandOptions {
  *
  * stdout carries the protocol, so every message for people goes to `err`.
  */
-export async function mcp(options: McpCommandOptions, err: (s: string) => void): Promise<number> {
+export async function mcp(
+  options: Omit<PlayOptions, 'open' | 'share' | 'tunnel'>,
+  err: (s: string) => void,
+  io: Stdio = { stdin: process.stdin, stdout: process.stdout },
+): Promise<number> {
   const port = options.port ?? DEFAULT_PORT;
   const projectDir = path.resolve(options.dir);
   const running = await health(port);
@@ -28,38 +32,28 @@ export async function mcp(options: McpCommandOptions, err: (s: string) => void):
   if (running) {
     const same = running.projectDir === projectDir || running.root === projectDir;
     if (!same || (options.table && options.table !== running.table)) {
-      err(
+      throw new CliError(
         `Port ${port} already has "${running.project}" (table ${running.table}) open. ` +
           'Stop it, or give this table another port with --port <n>.',
       );
-      return 1;
     }
     err(`Connecting to the open table at http://127.0.0.1:${port}`);
-    return relay(`http://127.0.0.1:${port}/mcp`);
+    return relay(`http://127.0.0.1:${port}/mcp`, io);
   }
 
-  let server: Awaited<ReturnType<typeof startServer>>;
-  try {
-    server = await startServer({
-      projectDir,
-      project: options.project,
-      table: options.table,
-      port,
-      seed: options.seed,
-      setup: options.setup,
-    });
-  } catch (e) {
-    if (e instanceof ProjectLoadError) {
-      err(e.message);
-      return 1;
-    }
-    throw e;
-  }
+  const server = await startServer({
+    projectDir,
+    project: options.project,
+    table: options.table,
+    port,
+    seed: options.seed,
+    setup: options.setup,
+  });
   err(`${server.session.project.manifest.name}: watch the table at ${server.url}`);
-  const stdio = new StdioServerTransport();
+  const stdio = new StdioServerTransport(io.stdin, io.stdout);
   const closed = new Promise<void>((resolve) => (stdio.onclose = resolve));
   await createMcpServer(server.workspace, { url: server.url }).connect(stdio);
-  process.stdin.once('end', () => void stdio.close());
+  io.stdin.once('end', () => void stdio.close());
   await closed;
   await server.close();
   return 0;
@@ -81,15 +75,15 @@ async function health(
 }
 
 /** Passes MCP messages between stdio and a running Trayful server. */
-async function relay(url: string): Promise<number> {
-  const stdio = new StdioServerTransport();
+async function relay(url: string, io: Stdio): Promise<number> {
+  const stdio = new StdioServerTransport(io.stdin, io.stdout);
   const http = new StreamableHTTPClientTransport(new URL(url));
   const closed = new Promise<void>((resolve) => (stdio.onclose = resolve));
   stdio.onmessage = (message) => void http.send(message).catch(() => void stdio.close());
   http.onmessage = (message) => void stdio.send(message);
   await http.start();
   await stdio.start();
-  process.stdin.once('end', () => void stdio.close());
+  io.stdin.once('end', () => void stdio.close());
   await closed;
   await http.close();
   return 0;
