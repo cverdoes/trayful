@@ -11,6 +11,13 @@ import {
 } from '@trayful/core';
 import { create } from 'zustand';
 
+/** Screen position of the table origin and pixels per millimetre. */
+export interface Viewport {
+  x: number;
+  y: number;
+  scale: number;
+}
+
 type ConnectionStatus = 'connecting' | 'online' | 'offline';
 
 /** Who this browser plays as, from `/api/me`. */
@@ -56,8 +63,7 @@ interface TrayfulStore {
   helpOpen: boolean;
   /** While dragging: the snap spots the dragged piece could go to, and the one it would snap to. */
   snapHint?: { spots: SnapSpot[]; size: [number, number]; active?: string };
-  /** Screen position of the table origin and pixels per millimetre. */
-  viewport: { x: number; y: number; scale: number };
+  viewport: Viewport;
 
   /** Sends a message to the server; set by the connection. */
   send: (message: ClientMessage) => void;

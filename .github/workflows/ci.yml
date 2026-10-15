@@ -23,7 +23,7 @@ jobs:
       - run: pnpm validate:examples
       # Architecture boundaries, unused code and copy-paste duplication.
       - run: pnpm quality
-      # Coverage, complexity, duplication and the lint backlog, on the run's summary page.
+      # Coverage, complexity and duplication, on the run's summary page.
       - run: pnpm quality:summary
         if: ${{ !cancelled() }}
       - uses: actions/upload-artifact@v4

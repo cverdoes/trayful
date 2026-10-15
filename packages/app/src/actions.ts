@@ -1,5 +1,5 @@
-import type { Command, TableObject } from '@trayful/core';
-import { baseOf, objectSize } from './render/geometry';
+import type { Command, TableObject, TableState } from '@trayful/core';
+import { baseOf, objectSize, type Types } from './render/geometry';
 import { useStore } from './store';
 
 /** What the toolbar and keyboard can do with the current selection. */
@@ -19,68 +19,71 @@ export interface Actions {
   lockLabel: 'Lock' | 'Unlock';
 }
 
+const NO_ACTIONS: Actions = { lockLabel: 'Lock', layoutLabel: 'Fan' };
+const NEXT_LAYOUT = { pile: 'fan', fan: 'spread', spread: 'pile' } as const;
 const LAYOUT_LABEL = { pile: 'Pile', fan: 'Fan', spread: 'Spread' } as const;
+const FLIPPABLE = new Set(['card', 'tile', 'token']);
 
-/** Works out which actions apply to the selected objects. Each action sends one command per kind of object. */
+/** Works out which actions apply to the selected objects. */
 export function selectionActions(): Actions {
   const { table, view, selection, command } = useStore.getState();
-  const none: Actions = { lockLabel: 'Lock', layoutLabel: 'Fan' };
-  if (!table || !view || selection.length === 0) return none;
+  if (!table || !view) return NO_ACTIONS;
+  return actionsFor(table, view.types, selection, command);
+}
+
+/** The actions for some objects on a table. Each action sends one command per kind of object. */
+export function actionsFor(
+  table: TableState,
+  types: Types,
+  selection: string[],
+  command: (command: Command) => void,
+): Actions {
   const objects = selection
     .map((id) => table.objects[id])
     .filter((o): o is TableObject => o !== undefined);
-  if (objects.length === 0) return none;
-  const base = (o: TableObject) => baseOf(table, view.types, o);
-  const ids = objects.map((o) => o.id);
-  const unlocked = objects.filter((o) => !o.locked).map((o) => o.id);
-  const flippable = objects.filter(
-    (o) => ['card', 'tile', 'token'].includes(base(o) ?? '') && !o.locked,
-  );
-  const stacks = objects.filter((o) => o.kind === 'stack' && !o.locked);
-  const dice = objects.filter((o) => o.kind === 'piece' && base(o) === 'die');
+  if (objects.length === 0) return NO_ACTIONS;
+  const base = (o: TableObject) => baseOf(table, types, o);
+  const unlocked = objects.filter((o) => !o.locked);
+  const stacks = unlocked.filter((o) => o.kind === 'stack');
   const counters = objects.filter((o) => o.kind === 'piece' && base(o) === 'counter');
-  const allLocked = objects.every((o) => o.locked);
-  const current = stacks[0]?.kind === 'stack' ? (stacks[0].layout ?? 'pile') : 'pile';
-  const next = ({ pile: 'fan', fan: 'spread', spread: 'pile' } as const)[current];
+  const allLocked = unlocked.length === 0;
+  const next = NEXT_LAYOUT[stacks[0]?.kind === 'stack' ? (stacks[0].layout ?? 'pile') : 'pile'];
 
-  const each = (list: TableObject[], make: (o: TableObject) => Command) => () => {
-    for (const o of list) command(make(o));
-  };
-  const step = (by: number) =>
-    each(counters, (o) => ({
-      type: 'setValue',
-      id: o.id,
-      value: (o.kind === 'piece' && typeof o.value === 'number' ? o.value : 0) + by,
-    }));
+  /** An action that sends the commands `make` gives, or none when there is nothing to act on. */
+  const when = (list: TableObject[], make: (list: TableObject[]) => Command[]) =>
+    list.length ? () => make(list).forEach(command) : undefined;
+  const ids = (list: TableObject[]) => list.map((o) => o.id);
+  const step = (by: number) => (list: TableObject[]) =>
+    list.map((o): Command => ({ type: 'setValue', id: o.id, value: valueOf(o) + by }));
 
   return {
-    flip: flippable.length
-      ? () => command({ type: 'flip', ids: flippable.map((o) => o.id) })
-      : undefined,
-    rotateLeft: unlocked.length
-      ? () => command({ type: 'rotate', ids: unlocked, steps: -1 })
-      : undefined,
-    rotateRight: unlocked.length
-      ? () => command({ type: 'rotate', ids: unlocked, steps: 1 })
-      : undefined,
-    shuffle: stacks.length ? each(stacks, (o) => ({ type: 'shuffle', id: o.id })) : undefined,
-    roll: dice.length ? each(dice, (o) => ({ type: 'roll', id: o.id })) : undefined,
-    draw:
-      stacks.length === 1
-        ? () => {
-            // Deal the top card just to the right of the pile.
-            const stack = stacks[0]!;
-            const [w] = objectSize(table, view.types, stack);
-            command({ type: 'draw', from: stack.id, to: [stack.pos[0] + w + 4, stack.pos[1]] });
-          }
-        : undefined,
-    layout: stacks.length
-      ? each(stacks, (o) => ({ type: 'layout', id: o.id, layout: next }))
-      : undefined,
+    flip: when(
+      unlocked.filter((o) => FLIPPABLE.has(base(o) ?? '')),
+      (list) => [{ type: 'flip', ids: ids(list) }],
+    ),
+    rotateLeft: when(unlocked, (list) => [{ type: 'rotate', ids: ids(list), steps: -1 }]),
+    rotateRight: when(unlocked, (list) => [{ type: 'rotate', ids: ids(list), steps: 1 }]),
+    shuffle: when(stacks, (list) => list.map((o) => ({ type: 'shuffle', id: o.id }))),
+    roll: when(
+      objects.filter((o) => o.kind === 'piece' && base(o) === 'die'),
+      (list) => list.map((o) => ({ type: 'roll', id: o.id })),
+    ),
+    draw: when(stacks.length === 1 ? stacks : [], ([stack]) => [drawBeside(table, types, stack!)]),
+    layout: when(stacks, (list) => list.map((o) => ({ type: 'layout', id: o.id, layout: next }))),
     layoutLabel: LAYOUT_LABEL[next],
-    lock: () => command({ type: 'lock', ids, locked: !allLocked }),
-    increment: counters.length ? step(1) : undefined,
-    decrement: counters.length ? step(-1) : undefined,
+    lock: () => command({ type: 'lock', ids: ids(objects), locked: !allLocked }),
+    increment: when(counters, step(1)),
+    decrement: when(counters, step(-1)),
     lockLabel: allLocked ? 'Unlock' : 'Lock',
   };
+}
+
+/** Deals the top card of a pile just to the right of it. */
+function drawBeside(table: TableState, types: Types, stack: TableObject): Command {
+  const [w] = objectSize(table, types, stack);
+  return { type: 'draw', from: stack.id, to: [stack.pos[0] + w + 4, stack.pos[1]] };
+}
+
+function valueOf(object: TableObject): number {
+  return object.kind === 'piece' && typeof object.value === 'number' ? object.value : 0;
 }
