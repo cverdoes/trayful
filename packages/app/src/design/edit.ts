@@ -246,11 +246,16 @@ export function droppedImage(
 /** A type with one field renamed, and every `{{field}}` that used it pointing at the new name. */
 export function withFieldRenamed(type: ComponentType, from: string, to: string): ComponentType {
   const renamed = setIn(type, ['fields'], renameKey(type.fields ?? {}, from, to));
-  return replaceTemplates(renamed, `{{${from}}}`, `{{${to}}}`) as ComponentType;
+  // Field names are letters, digits and underscores, so they need no escaping here.
+  return replaceTemplates(
+    renamed,
+    new RegExp(`\\{\\{\\s*${from}\\s*\\}\\}`, 'g'),
+    `{{${to}}}`,
+  ) as ComponentType;
 }
 
-function replaceTemplates(value: unknown, from: string, to: string): unknown {
-  if (typeof value === 'string') return value.split(from).join(to);
+function replaceTemplates(value: unknown, from: RegExp, to: string): unknown {
+  if (typeof value === 'string') return value.replace(from, to);
   if (Array.isArray(value)) return value.map((v) => replaceTemplates(v, from, to));
   if (!isTree(value)) return value;
   return Object.fromEntries(

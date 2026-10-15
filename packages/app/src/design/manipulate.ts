@@ -176,21 +176,38 @@ export function pivotOf(layer: Layer, face: Point): Point {
 const ROTATE_STEP = 15;
 
 /**
- * The layer turned so that its rotate handle, which sits straight above the pivot,
- * points at `point`. Close to a multiple of 15° it snaps to it; 0° removes the key.
+ * The layer turned by as much as the pointer has turned around its pivot since
+ * `from`, where the drag started. Close to a multiple of 15° it snaps to it; 0°
+ * removes the key.
  */
-export function rotatedLayer(layer: Layer, point: Point, face: Point): Layer {
-  const [px, py] = pivotOf(layer, face);
-  const raw = (Math.atan2(point[1] - py, point[0] - px) * 180) / Math.PI + 90;
+export function rotatedLayer(layer: Layer, from: Point, to: Point, face: Point): Layer {
+  const pivot = pivotOf(layer, face);
+  const raw = (layer.rotate ?? 0) + angle(pivot, to) - angle(pivot, from);
   const nearest = Math.round(raw / ROTATE_STEP) * ROTATE_STEP;
   const degrees = normalize(Math.abs(raw - nearest) <= 4 ? nearest : Math.round(raw));
   return setIn(layer, ['rotate'], degrees === 0 ? undefined : degrees);
 }
 
+const angle = ([px, py]: Point, [x, y]: Point) => (Math.atan2(y - py, x - px) * 180) / Math.PI;
+
 /** Degrees in (-180, 180]. */
 function normalize(degrees: number): number {
   const d = ((degrees % 360) + 360) % 360;
   return d > 180 ? d - 360 : d;
+}
+
+/**
+ * A resized layer moved so that the corner that stayed put in its own frame also
+ * stays put on the face, which it would not when the layer is turned: resizing
+ * moves the point it turns around.
+ */
+export function keepFixedCorner(before: Layer, after: Layer, handle: Handle, face: Point): Layer {
+  const degrees = before.rotate ?? 0;
+  if (!degrees) return after;
+  const corner = opposite(layerBounds(before, face), handle);
+  const was = unrotate(corner, pivotOf(before, face), -degrees);
+  const is = unrotate(corner, pivotOf(after, face), -degrees);
+  return movedLayer(after, [was[0] - is[0], was[1] - is[1]]);
 }
 
 /** A face point turned back around `pivot` by `degrees`, into the layer's unrotated frame. */

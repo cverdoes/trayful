@@ -1,7 +1,5 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
 import type { FastifyReply } from 'fastify';
-import { addAsset, inside, libraryFiles, removeType, upsertType } from '../authoring.js';
+import { addNewAsset, libraryFiles, removeType, upsertType } from '../authoring.js';
 import { renameField, renameType } from '../renaming.js';
 import type { RouteContext } from './context.js';
 
@@ -12,19 +10,6 @@ interface ProjectQuery {
 /** The body of a rename: the new id or name. */
 interface RenameBody {
   to?: unknown;
-}
-
-/**
- * `file`, or `name-2.png`, `name-3.png`… when that file is already in the project:
- * a picture dropped in the designer never replaces artwork already in use.
- */
-function unusedPath(dir: string, file: string): string {
-  const ext = path.extname(file);
-  const stem = file.slice(0, file.length - ext.length);
-  const numbered = (n: number) => (n === 1 ? file : `${stem}-${n}${ext}`);
-  let n = 1;
-  while (existsSync(inside(dir, numbered(n)))) n++;
-  return numbered(n);
 }
 
 /** Images dropped onto the designer arrive as base64, a third larger than the file. */
@@ -128,9 +113,7 @@ function registerAssetRoute(ctx: RouteContext): void {
           .code(400)
           .send({ error: 'Send the path as "file" and the contents as "base64".' });
       }
-      const projectId = projectOf(ctx, request.query);
-      const free = unusedPath(workspace.project(projectId).dir, file);
-      const result = await addAsset(workspace, projectId, free, { base64 });
+      const result = await addNewAsset(workspace, projectOf(ctx, request.query), file, base64);
       return { file: result.file };
     },
   );

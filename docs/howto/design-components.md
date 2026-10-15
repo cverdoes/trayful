@@ -48,8 +48,8 @@ Boards, tiles and zones get a **Snap spots** section: where other pieces snap wh
 
 Select a target in the list or by clicking one of its spots, then drag on the board:
 
-- A grid moves by spot 0, its spacing follows the spot diagonally next to it, and dragging its last spot adds or removes columns and rows.
-- Points move one by one; click anywhere on the board to add the next spot of the track.
+- A grid moves by spot 0. The handle halfway between spot 0 and its diagonal neighbour sets the spacing, and the handle just beyond the last spot adds or removes columns and rows.
+- Points move one by one; while a list of points is selected, click on the board to add the next spot of the track (click outside the board, or pick something else in the inspector, to stop).
 - An area moves by its top-left corner and changes size by the opposite one.
 
 **Accepts** limits a target to some types, such as `worker`, so other pieces pass over it.

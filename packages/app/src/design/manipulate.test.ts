@@ -2,6 +2,7 @@ import type { Layer } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
 import {
   handlesOf,
+  keepFixedCorner,
   movedLayer,
   pivotOf,
   resizedLayer,
@@ -70,10 +71,24 @@ describe('changing a layer', () => {
     expect(resizedLayer(text, 'e', [50, 20], face)).toMatchObject({ at: [10, 20], width: 40 });
   });
 
-  it('turns it towards the pointer, snapping to 15° steps, and drops a turn back to 0°', () => {
-    expect(rotatedLayer(rect, [20, 10], face)).toMatchObject({ rotate: 90 });
-    expect(rotatedLayer(rect, [30, 2], face)).toMatchObject({ rotate: 68 });
-    expect(rotatedLayer({ ...rect, rotate: 45 }, [10, 0], face)).not.toHaveProperty('rotate');
+  it('turns it as far as the pointer turns around it, snapping to 15° steps', () => {
+    expect(rotatedLayer(rect, [10, 0], [20, 10], face)).toMatchObject({ rotate: 90 });
+    expect(rotatedLayer(rect, [10, 0], [20, 2], face)).toMatchObject({ rotate: 51 });
+    // Pressing the handle without moving leaves it as it was.
+    expect(rotatedLayer(rect, [20, 7], [20, 7.1], face)).not.toHaveProperty('rotate');
+    expect(rotatedLayer({ ...rect, rotate: 45 }, [20, 10], [20, 0], face)).not.toHaveProperty(
+      'rotate',
+    );
+  });
+
+  it('keeps the fixed corner of a turned layer in place while resizing', () => {
+    const turned: Layer = { ...rect, rotate: 90 };
+    const resized = resizedLayer(turned, 'nw', [5, 5], face);
+    expect(keepFixedCorner(turned, resized, 'nw', face)).toMatchObject({
+      at: [15, 5],
+      size: [25, 15],
+    });
+    expect(keepFixedCorner(rect, resized, 'nw', face)).toBe(resized);
   });
 
   it('turns around the point the renderer turns it around', () => {

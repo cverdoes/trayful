@@ -257,27 +257,31 @@ export async function projectChanged(types: Record<string, ComponentType>): Prom
   if (!draft || !saved) openType(Object.values(types)[0]);
   else if (!current) openType(Object.values(types)[0]);
   else if (!sameValue(current, saved)) {
-    const { side, layer, sample } = useDesign.getState();
+    const { side, layer, target, sample } = useDesign.getState();
     openType(current);
-    useDesign.setState({ side, layer, sample });
+    useDesign.setState({ side, layer, target, sample });
   }
 }
 
-/** A type the server is changing (a rename), to show once the project has it. */
-let expected: { id: string; keepSelection: boolean } | undefined;
+/** A type the server is changing (a rename), to show once the project has the change. */
+interface Expected {
+  id: string;
+  /** Whether the type the project has is the changed one yet. */
+  ready: (type: ComponentType) => boolean;
+  /** Keeps the side and selection, for a change to the type already shown. */
+  keepSelection: boolean;
+}
+let expected: Expected | undefined;
 
-/**
- * Shows the type with id `id` once the project has it: now, if it already does,
- * else when the change reaches the designer. `keepSelection` keeps the side and layer.
- */
-export function expectType(id: string, keepSelection: boolean): void {
-  expected = { id, keepSelection };
+/** Shows a type the server is changing once the project has the change: now, or when it arrives. */
+export function expectType(change: Expected): void {
+  expected = change;
   showWhenLoaded(useStore.getState().view?.types ?? {});
 }
 
 function showWhenLoaded(types: Record<string, ComponentType>): boolean {
   const type = expected && types[expected.id];
-  if (!expected || !type) return false;
+  if (!expected || !type || !expected.ready(type)) return false;
   const { side, layer, target } = useDesign.getState();
   const keep = expected.keepSelection;
   expected = undefined;

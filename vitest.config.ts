@@ -20,7 +20,7 @@ export default defineConfig({
         'packages/server/src/**': { statements: 91, branches: 80, functions: 93, lines: 93 },
         'packages/cli/src/**': { statements: 92, branches: 87, functions: 84, lines: 94 },
         // Only the app's plain modules have unit tests; this floor guards those, not the app.
-        'packages/app/src/**': { statements: 32, branches: 34, functions: 24, lines: 32 },
+        'packages/app/src/**': { statements: 32, branches: 34, functions: 25, lines: 32 },
       },
     },
   },

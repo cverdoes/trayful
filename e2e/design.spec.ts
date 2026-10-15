@@ -131,12 +131,13 @@ test('a person lays out a board by dragging: a layer, a grid of spots and a trac
     .poll(async () => (await savedType(page, 'farm-board'))?.front?.layers?.[0])
     .toMatchObject({ at: [100, 50] });
 
-  // A grid: spot 0 moves it, spot 4 sets the spacing, the last spot the columns and rows.
+  // A grid: spot 0 moves it, the handle halfway to spot 3 sets the spacing, and the one
+  // past the last spot the columns and rows.
   const snaps = inspector.getByRole('region', { name: 'Snap spots' });
   await snaps.getByRole('button', { name: 'Grid' }).click();
-  await dragOnFront(page, [130, 140], [60, 60]);
-  await dragOnFront(page, [80, 80], [110, 110]);
-  await dragOnFront(page, [160, 110], [210, 110]);
+  await dragOnFront(page, [140, 140], [60, 60]);
+  await dragOnFront(page, [70, 70], [85, 85]);
+  await dragOnFront(page, [147.5, 147.5], [247.5, 147.5]);
   // A track: each click adds the next spot.
   await snaps.getByRole('button', { name: 'Points' }).click();
   await dragOnFront(page, [150, 150], [30, 270]);

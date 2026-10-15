@@ -132,8 +132,8 @@ function GridRows({ grid, at }: Readonly<{ grid: NonNullable<SnapTarget['grid']>
         {(id) => <SizeInput id={id} value={grid.cell} onChange={setValue(at('grid', 'cell'))} />}
       </Row>
       <p className="muted">
-        On the board, drag spot 0 to move the grid, its diagonal neighbour to change the spacing,
-        and the last spot to add columns and rows.
+        On the board, drag spot 0 to move the grid, the handle next to it to change the spacing, and
+        the handle past the last spot to add columns and rows.
       </p>
     </>
   );

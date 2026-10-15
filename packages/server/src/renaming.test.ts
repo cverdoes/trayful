@@ -60,6 +60,25 @@ describe('renaming a type', () => {
     expect(renamed).toContain('place: farm\n');
   });
 
+  it('renames snap targets named by a component id, as setups must with two boards', async () => {
+    const inventory = await read('inventory.yaml');
+    await writeFile(
+      path.join(dir, 'inventory.yaml'),
+      inventory.replace('  - type: main-board', '  - type: main-board\n    count: 2'),
+    );
+    const setup = (await read('setups/2-player.yaml'))
+      .replaceAll('main-board/', 'main-board.1/')
+      .replace('place: main-board\n', 'place: main-board.1\n');
+    await writeFile(path.join(dir, 'setups/2-player.yaml'), setup);
+    await workspace.reload(projectId());
+
+    await renameType(workspace, projectId(), 'main-board', 'farm');
+    const renamed = await read('setups/2-player.yaml');
+    expect(renamed).toContain('at: farm.1/score-track/0');
+    expect(renamed).toContain('place: farm.1\n');
+    expect(renamed).not.toContain('main-board');
+  });
+
   it('refuses ids that are taken, invalid or unknown', async () => {
     const rename = (from: string, to: string) => renameType(workspace, projectId(), from, to);
     await expect(rename('worker', 'd6')).rejects.toThrow(

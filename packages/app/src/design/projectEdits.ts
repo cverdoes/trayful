@@ -14,7 +14,7 @@ export async function renameDraftType(to: string): Promise<void> {
   if (!id || !to || to === id) return;
   await whenSaved(async () => {
     useDesign.setState({ library: await renameType(projectId(), id, to) });
-    expectType(to, false);
+    expectType({ id: to, ready: () => true, keepSelection: false });
   });
 }
 
@@ -35,7 +35,7 @@ export async function renameDraftField(
   }
   await whenSaved(async () => {
     useDesign.setState({ library: await renameField(projectId(), draft.id, from, to) });
-    expectType(draft.id, true);
+    expectType({ id: draft.id, ready: (t) => Boolean(t.fields?.[to]), keepSelection: true });
   });
 }
 

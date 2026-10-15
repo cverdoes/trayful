@@ -37,7 +37,12 @@ describe('pressing on a layer', () => {
   it('turns the selected layer by its rotate handle', () => {
     const handle = rotateHandle({ x: 10, y: 10, w: 20, h: 10 }, 1);
     const result = press(at(handle), { side: 'front', layer: 1 });
-    expect(result.gesture!([20, 10]).type.front?.layers?.[1]).toMatchObject({ rotate: 90 });
+    // Pressed and not moved, the layer stays upright.
+    expect(result.gesture!(handle).type.front?.layers?.[1]).not.toHaveProperty('rotate');
+    // A quarter turn of the pointer around the corner the rect turns around.
+    const [dx, dy] = [handle[0] - 10, handle[1] - 10];
+    const quarter: [number, number] = [10 - dy, 10 + dx];
+    expect(result.gesture!(quarter).type.front?.layers?.[1]).toMatchObject({ rotate: 90 });
   });
 
   it('selects nothing on empty space', () => {
@@ -69,6 +74,16 @@ describe('pressing with a snap target', () => {
   it('drags a handle of the selected target', () => {
     const result = press(at([50, 50], board), { side: 'front', target: 1 });
     expect(result.gesture!([20.4, 30]).type.snap?.[1]?.grid?.origin).toEqual([20, 30]);
+  });
+
+  it('adds no spot off the board, or on another target, and picks instead', () => {
+    expect(press(at([-5, 50], board), { side: 'front', target: 0 })).toEqual({
+      selection: { side: 'front' },
+    });
+    expect(press(at([60, 60], board), { side: 'front', target: 0 }).selection).toEqual({
+      side: 'front',
+      target: 1,
+    });
   });
 
   it('adds a spot to a selected track where it is pressed, kept even without a drag', () => {

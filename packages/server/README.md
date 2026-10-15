@@ -58,7 +58,7 @@ await server.close(); // saves every open table first
 | `PUT /api/types/<id>`, `DELETE /api/types/<id>` | Save a type from the designer (`definition`, `file`, `baseHash`; 409 when the file changed) or remove it (host only)                       |
 | `POST /api/types/<id>/rename`                   | Give a type a new id (`to`) in the library, inventory and setups; answers the new `id` and the library, as `/api/library` does (host only) |
 | `POST /api/types/<id>/fields/<field>/rename`    | Rename a field (`to`) in the type, its faces, its inventory rows and CSV headers; answers the new `field` and the library (host only)      |
-| `PUT /api/assets`                               | Save an image dropped onto the designer (`file`, `base64`, up to 20 MB); answers `{ file }` (host only)                                    |
+| `PUT /api/assets`                               | Save an image dropped onto the designer (`file`, `base64`, up to 20 MB) under an unused name; answers `{ file }` (host only)               |
 | `/mcp`                                          | MCP over Streamable HTTP (POST), for agents on this computer only                                                                          |
 | `/api/health`                                   | `{ ok, project, table }` for the active table, plus `projectDir` and `root` for the host                                                   |
 | `/project-files/<project>/<path>`               | Images from a project folder (other file types are refused)                                                                                |

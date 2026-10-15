@@ -45,8 +45,7 @@ export function newTarget(kind: TargetKind, type: ComponentType, face: Point): S
   const id = `${kind}-${n}`;
   const [cx, cy] = [round(face[0] / 2), round(face[1] / 2)];
   if (kind === 'grid')
-    // Three columns, so the spacing and size handles (spot 4 and the last spot) are apart.
-    return { id, grid: { origin: [cx - 20, cy - 10], cols: 3, rows: 2, cell: 20 } };
+    return { id, grid: { origin: [cx - 10, cy - 10], cols: 2, rows: 2, cell: 20 } };
   if (kind === 'points') return { id, points: [[cx, cy]] };
   return { id, area: { at: [cx - 20, cy - 20], size: 40 } };
 }
@@ -60,15 +59,21 @@ export type TargetHandle =
   | { kind: 'area' }
   | { kind: 'area-size' };
 
+/**
+ * Handles never sit on top of each other: spot 0 moves a grid, a handle halfway
+ * to the next spot diagonally sets the spacing, and one beyond the last spot, down
+ * and to the right, the number of columns and rows.
+ */
 export function targetHandles(target: SnapTarget): [TargetHandle, Point][] {
   if (target.grid) {
-    const spots = spotsOf(target);
     const { origin, cell } = target.grid;
     const [cw, ch] = pair(cell);
+    const [lx, ly] = spotsOf(target).at(-1)!;
     return [
-      [{ kind: 'extent' }, spots.at(-1)!],
-      [{ kind: 'cell' }, [origin[0] + cw, origin[1] + ch]],
       [{ kind: 'origin' }, origin],
+      [{ kind: 'cell' }, [origin[0] + cw / 2, origin[1] + ch / 2]],
+      // Three quarters of a cell out, so even a one-spot grid's handles stay apart.
+      [{ kind: 'extent' }, [lx + 0.75 * cw, ly + 0.75 * ch]],
     ];
   }
   if (target.points) {
@@ -82,10 +87,8 @@ export function targetHandles(target: SnapTarget): [TargetHandle, Point][] {
 }
 
 /**
- * The target with a handle dragged to `point`: the grid's first spot moves the
- * whole grid, its diagonal neighbour sets the spacing, and its last spot sets how
- * many columns and rows it has; a point moves; an area moves by its corner or
- * changes size by the opposite one.
+ * The target with a handle dragged to `point` (see `targetHandles` for a grid's);
+ * a point moves; an area moves by its corner or changes size by the opposite one.
  */
 export function draggedTarget(target: SnapTarget, handle: TargetHandle, point: Point): SnapTarget {
   const [px, py] = point;
@@ -95,11 +98,11 @@ export function draggedTarget(target: SnapTarget, handle: TargetHandle, point: P
     const [cw, ch] = pair(grid.cell);
     if (handle.kind === 'origin') return { ...target, grid: { ...grid, origin: point } };
     if (handle.kind === 'cell') {
-      const cell: Point = [round(Math.max(1, px - ox)), round(Math.max(1, py - oy))];
+      const cell: Point = [round(Math.max(1, 2 * (px - ox))), round(Math.max(1, 2 * (py - oy)))];
       return { ...target, grid: { ...grid, cell: cell[0] === cell[1] ? cell[0] : cell } };
     }
-    const cols = Math.max(1, Math.round((px - ox) / cw) + 1);
-    const rows = Math.max(1, Math.round((py - oy) / ch) + 1);
+    const cols = Math.max(1, Math.round((px - ox) / cw + 0.25));
+    const rows = Math.max(1, Math.round((py - oy) / ch + 0.25));
     return { ...target, grid: { ...grid, cols, rows } };
   }
   if (target.points && handle.kind === 'point') {

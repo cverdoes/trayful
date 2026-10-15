@@ -26,15 +26,23 @@ export function DesignCanvas() {
   const shown = useLastValidDraft();
   const [box, size] = useSize<HTMLDivElement>();
   const drop = (e: React.DragEvent<HTMLDivElement>) => {
-    const file = e.dataTransfer.files[0];
-    if (!shown || !file?.type.startsWith('image/')) return;
+    // Without this the browser would open the dropped file in place of the designer.
     e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!shown || !file) return;
+    if (!file.type.startsWith('image/')) {
+      useDesign.setState({ message: `"${file.name}" is not a picture; drop a PNG, JPEG or SVG.` });
+      return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     const { side, point } = layoutOf(shown, size).toFace([
       e.clientX - rect.left,
       e.clientY - rect.top,
     ]);
-    void readImage(file).then((image) => addImage(image, side, point));
+    readImage(file).then(
+      (image) => addImage(image, side, point),
+      () => useDesign.setState({ message: `"${file.name}" could not be read as a picture.` }),
+    );
   };
   useFaceToScreen(box, shown, size);
   return (
@@ -121,6 +129,8 @@ function Faces({ type, size }: Readonly<{ type: ComponentType; size: [number, nu
     const { side, point } = layout.toFace([pixel.x, pixel.y]);
     const result = press({ type, side, point, tolerance }, selection);
     useDesign.setState({ layer: undefined, target: undefined, ...result.selection });
+    // The canvas shows the last valid version; dragging it would undo later edits.
+    if (useDesign.getState().problems.length) return;
     if (result.gesture) drag.start(result.gesture, (p) => layout.toFace(p).point, result.changed);
   };
 
@@ -186,7 +196,11 @@ function useDrag(show: (preview: { type: ComponentType; guides: Guide[] } | unde
       if (result) editDraft(() => result);
     };
     window.addEventListener('pointerup', end);
-    return () => window.removeEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+    return () => {
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+    };
   }, [show]);
   return {
     start(gesture: Gesture, toFace: (pixel: Point) => Point, changed?: ComponentType) {

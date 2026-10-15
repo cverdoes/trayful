@@ -7,6 +7,7 @@ import { layersOf, setIn, type Side } from './edit';
 import { layerAt, layerBounds, type Box } from './layout';
 import {
   handlesOf,
+  keepFixedCorner,
   movedLayer,
   pivotOf,
   resizedLayer,
@@ -104,7 +105,10 @@ function pressLayer(input: Press, index: number): Gesture | undefined {
   const local = unrotate(point, pivot, layer.rotate ?? 0);
   const box = layerBounds(layer, face);
   if (near(local, rotateHandle(box, tolerance), tolerance)) {
-    return (p) => ({ type: withLayer(input, index, rotatedLayer(layer, p, face)), guides: [] });
+    return (p) => ({
+      type: withLayer(input, index, rotatedLayer(layer, point, p, face)),
+      guides: [],
+    });
   }
   const handle = handlesOf(layer, box).find(([, p]) => near(local, p, tolerance))?.[0];
   if (handle) {
@@ -115,7 +119,12 @@ function pressLayer(input: Press, index: number): Gesture | undefined {
       const snapped = layer.rotate
         ? { point: turned, guides: [] }
         : snapPoint(turned, lines, tolerance);
-      const resized = resizedLayer(layer, handle, snapped.point, face);
+      const resized = keepFixedCorner(
+        layer,
+        resizedLayer(layer, handle, snapped.point, face),
+        handle,
+        face,
+      );
       return { type: withLayer(input, index, resized), guides: snapped.guides };
     };
   }
@@ -155,7 +164,11 @@ function pressTarget(input: Press, index: number): PressResult | undefined {
   const selection = { side, target: index };
   const hit = targetHandles(target).find(([, p]) => near(p, point, tolerance));
   if (hit) return { selection, gesture: dragTarget(input, index, hit[0]) };
-  if (!target.points) return undefined;
+  // Only a press on the face, away from other targets, adds a spot; others pick as usual.
+  const [w, h] = sizeOf(type);
+  const onFace = point[0] >= 0 && point[0] <= w && point[1] >= 0 && point[1] <= h;
+  const other = targetAt(type, point, tolerance);
+  if (!target.points || !onFace || (other !== undefined && other !== index)) return undefined;
   const added = setIn(type, ['snap', index], withPoint(target, snap(input, point).point));
   const handle: TargetHandle = { kind: 'point', index: target.points.length };
   return {

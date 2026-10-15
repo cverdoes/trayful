@@ -65,8 +65,8 @@ async function changeTypeId(
       : text;
   // Component ids start with their type: `worker`, `worker.red.1`, `worker~2`.
   const component = leading(/^(?:$|[.~])/);
-  // Snap targets are `type/target` or `type/target/index`.
-  const target = leading(/^\//);
+  // Snap targets are `owner/target` or `owner/target/index`, the owner a type or component id.
+  const target = leading(/^(?:[.~][^/]*)?\//);
 
   const edits = new FileEdits(project.dir);
   for (const file of new Set(Object.values(project.types).map((t) => t.source.file))) {
