@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { addAsset, removeType, setInventory, upsertType } from '../authoring.js';
+import { renameType } from '../renaming.js';
 import { count, failure, projectParam, text, type ToolContext } from './context.js';
 
 const authored = (summary: string): CallToolResult =>
@@ -12,6 +13,7 @@ const authored = (summary: string): CallToolResult =>
 /** Tools for designing components: the library, the inventory and assets. */
 export function registerAuthoringTools(server: McpServer, ctx: ToolContext): void {
   registerTypeTools(server, ctx);
+  registerRenameTool(server, ctx);
   registerBoxTools(server, ctx);
   registerRender(server, ctx);
 }
@@ -64,6 +66,32 @@ function registerTypeTools(server: McpServer, ctx: ToolContext): void {
       try {
         const result = await removeType(workspace, project ?? session().projectId, type);
         return authored(`Removed type "${type}" from ${result.file}.`);
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+}
+
+/** Giving a type a new id everywhere it is used. */
+function registerRenameTool(server: McpServer, ctx: ToolContext): void {
+  const { workspace, session } = ctx;
+  server.registerTool(
+    'rename_type',
+    {
+      title: 'Rename a component type',
+      description:
+        'Give a component type a new id, and change every reference to it in one go: its library definition, `accepts` lists of snap targets, inventory entries, and setup steps that place its components or use its snap targets. Component ids change with it (`worker.red.1` becomes `farmer.red.1`).',
+      inputSchema: {
+        project: projectParam,
+        type: z.string().describe('Current type id.'),
+        to: z.string().describe('New type id: lowercase letters, digits and dashes.'),
+      },
+    },
+    async ({ project, type, to }) => {
+      try {
+        const result = await renameType(workspace, project ?? session().projectId, type, to);
+        return authored(`Renamed type "${type}" to "${result.id}" in ${result.files.join(', ')}.`);
       } catch (err) {
         return failure(err);
       }

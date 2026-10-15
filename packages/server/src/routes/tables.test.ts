@@ -92,3 +92,71 @@ describe('designing types', () => {
     expect(((await removed.json()) as { types: object }).types).not.toHaveProperty('coin');
   });
 });
+
+describe('renaming and uploading in the designer', () => {
+  interface Reply {
+    id?: string;
+    field?: string;
+    file?: string;
+    error?: string;
+    types?: Record<string, string>;
+  }
+  const send = async (method: string, route: string, body: unknown, headers = {}) => {
+    const response = await fetch(`${server.url}${route}`, {
+      method,
+      headers: { 'content-type': 'application/json', ...headers },
+      body: JSON.stringify(body),
+    });
+    return { status: response.status, reply: (await response.json()) as Reply };
+  };
+
+  it('renames a type and a field, and answers with the library', async () => {
+    const type = await send('POST', '/api/types/worker/rename', { to: 'farmer' });
+    expect(type.reply).toMatchObject({ id: 'farmer', types: { farmer: 'library/pieces.yaml' } });
+    expect(type.reply.types).not.toHaveProperty('worker');
+
+    const field = await send('POST', '/api/types/farmer/fields/color/rename', { to: 'colour' });
+    expect(field.reply).toMatchObject({
+      field: 'colour',
+      types: { farmer: 'library/pieces.yaml' },
+    });
+    expect(server.workspace.project().types.farmer!.fields).toHaveProperty('colour');
+  });
+
+  it('explains a rename it cannot make', async () => {
+    const missing = await send('POST', '/api/types/worker/rename', {});
+    expect(missing).toEqual({ status: 400, reply: { error: 'Send the new name as "to".' } });
+    const taken = await send('POST', '/api/types/worker/rename', { to: 'd6' });
+    expect(taken.status).toBe(400);
+    expect(taken.reply.error).toMatch(/already a type "d6"/);
+    const field = await send('POST', '/api/types/worker/fields/size/rename', { to: 'height' });
+    expect(field).toEqual({ status: 400, reply: { error: '"worker" has no field "size".' } });
+  });
+
+  it('saves a dropped image into the project', async () => {
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>').toString('base64');
+    const saved = await send('PUT', '/api/assets', { file: 'assets/dropped.svg', base64: svg });
+    expect(saved).toEqual({ status: 200, reply: { file: 'assets/dropped.svg' } });
+    // The same name again is saved next to it, so artwork in use is never replaced.
+    const again = await send('PUT', '/api/assets', { file: 'assets/dropped.svg', base64: svg });
+    expect(again).toEqual({ status: 200, reply: { file: 'assets/dropped-2.svg' } });
+    // Larger than the 1 MB other requests are limited to.
+    const photo = Buffer.alloc(2 * 1024 * 1024).toString('base64');
+    const large = await send('PUT', '/api/assets', { file: 'assets/photo.png', base64: photo });
+    expect(large.status).toBe(200);
+    const wrongKind = await send('PUT', '/api/assets', { file: 'notes.txt', base64: svg });
+    expect(wrongKind.status).toBe(400);
+    expect((await send('PUT', '/api/assets', { file: 'a.png' })).status).toBe(400);
+  });
+
+  it('lets only the host rename and upload', async () => {
+    const remote = { 'x-forwarded-for': '203.0.113.9' };
+    const rename = await send('POST', '/api/types/worker/rename', { to: 'farmer' }, remote);
+    expect(rename.status).toBe(403);
+    const field = await send('POST', '/api/types/worker/fields/color/rename', { to: 'c' }, remote);
+    expect(field.status).toBe(403);
+    const upload = await send('PUT', '/api/assets', { file: 'a.svg', base64: '' }, remote);
+    expect(upload.status).toBe(403);
+    expect(server.workspace.project().types.worker).toBeDefined();
+  });
+});

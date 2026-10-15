@@ -62,3 +62,34 @@ export async function deleteType(project: string, id: string): Promise<Library> 
     await fetch(`/api/types/${encodeURIComponent(id)}${query(project)}`, { method: 'DELETE' }),
   );
 }
+
+async function post<T>(url: string, body: unknown, method = 'POST'): Promise<T> {
+  return json<T>(
+    await fetch(url, {
+      method,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+/** Saves an image into the project's assets, returning the path it was saved under. */
+export async function uploadAsset(project: string, file: string, base64: string) {
+  return post<{ file: string }>(`/api/assets${query(project)}`, { file, base64 }, 'PUT');
+}
+
+/** Gives a type a new id, everywhere the project uses it: library, inventory and setups. */
+export async function renameType(project: string, id: string, to: string): Promise<Library> {
+  return post<Library>(`/api/types/${encodeURIComponent(id)}/rename${query(project)}`, { to });
+}
+
+/** Gives a field a new name in its type, the inventory rows and CSV files of that type. */
+export async function renameField(
+  project: string,
+  id: string,
+  field: string,
+  to: string,
+): Promise<Library> {
+  const path = `/api/types/${encodeURIComponent(id)}/fields/${encodeURIComponent(field)}/rename`;
+  return post<Library>(`${path}${query(project)}`, { to });
+}

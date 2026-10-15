@@ -11,6 +11,14 @@ export const Slug = z
   .string()
   .regex(/^[a-z0-9][a-z0-9-]*$/, 'Use lowercase letters, digits and dashes, e.g. "action-card".');
 
+/** A field name, usable as `{{name}}` in faces and as a CSV column. */
+export const FieldName = z
+  .string()
+  .regex(
+    /^[a-zA-Z_]\w*$/,
+    'Start with a letter or "_", then use letters, digits and "_", e.g. "cost" or "art_2".',
+  );
+
 export const Vec2 = z
   .tuple([z.number(), z.number()])
   .meta({ id: 'Vec2', description: 'An `[x, y]` pair in millimetres.' });

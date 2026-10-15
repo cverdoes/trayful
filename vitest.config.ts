@@ -17,10 +17,10 @@ export default defineConfig({
         autoUpdate: (measured, previous) => Math.max(previous, Math.floor(measured) - 2),
         'packages/core/src/**': { statements: 94, branches: 87, functions: 96, lines: 95 },
         'packages/formats/src/**': { statements: 92, branches: 88, functions: 96, lines: 93 },
-        'packages/server/src/**': { statements: 90, branches: 80, functions: 93, lines: 92 },
+        'packages/server/src/**': { statements: 91, branches: 80, functions: 93, lines: 93 },
         'packages/cli/src/**': { statements: 92, branches: 87, functions: 84, lines: 94 },
         // Only the app's plain modules have unit tests; this floor guards those, not the app.
-        'packages/app/src/**': { statements: 26, branches: 30, functions: 21, lines: 26 },
+        'packages/app/src/**': { statements: 32, branches: 34, functions: 25, lines: 32 },
       },
     },
   },

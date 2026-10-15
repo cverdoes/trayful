@@ -213,3 +213,52 @@ export function freeFieldName(type: ComponentType): string {
   while (taken.has(numbered(n))) n++;
   return numbered(n);
 }
+
+// ---------------------------------------------------------------------------
+// Dropped images
+// ---------------------------------------------------------------------------
+
+/** Where a dropped image file is saved: `assets/` and the file's name, made safe for a path. */
+export function assetPath(fileName: string): string {
+  const dot = fileName.lastIndexOf('.');
+  const ext = dot > 0 ? fileName.slice(dot + 1).toLowerCase() : 'png';
+  const words = (dot > 0 ? fileName.slice(0, dot) : fileName).toLowerCase().split(/[^a-z0-9]/);
+  const name = words.filter(Boolean).join('-');
+  return `assets/${name || 'image'}.${ext === 'jpeg' ? 'jpg' : ext}`;
+}
+
+/**
+ * An image layer for a picture dropped on a face: centred where it landed, keeping
+ * its shape, and no bigger than half the face each way.
+ */
+export function droppedImage(
+  image: string,
+  natural: [number, number],
+  at: [number, number],
+  face: [number, number],
+): Layer {
+  const scale = Math.min(face[0] / 2 / natural[0], face[1] / 2 / natural[1]);
+  const tenth = (mm: number) => Math.round(mm * 10) / 10;
+  const [w, h] = [tenth(natural[0] * scale), tenth(natural[1] * scale)];
+  return { image, at: [tenth(at[0] - w / 2), tenth(at[1] - h / 2)], size: [w, h] };
+}
+
+/** A type with one field renamed, and every `{{field}}` that used it pointing at the new name. */
+export function withFieldRenamed(type: ComponentType, from: string, to: string): ComponentType {
+  const renamed = setIn(type, ['fields'], renameKey(type.fields ?? {}, from, to));
+  // Field names are letters, digits and underscores, so they need no escaping here.
+  return replaceTemplates(
+    renamed,
+    new RegExp(`\\{\\{\\s*${from}\\s*\\}\\}`, 'g'),
+    `{{${to}}}`,
+  ) as ComponentType;
+}
+
+function replaceTemplates(value: unknown, from: RegExp, to: string): unknown {
+  if (typeof value === 'string') return value.replace(from, to);
+  if (Array.isArray(value)) return value.map((v) => replaceTemplates(v, from, to));
+  if (!isTree(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([k, v]) => [k, replaceTemplates(v, from, to)]),
+  );
+}

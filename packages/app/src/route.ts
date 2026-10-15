@@ -45,10 +45,9 @@ export function go(to: {
 }
 
 /** Puts the type shown in design mode in the address, so a reload or a shared link shows it again. */
-export function showTypeInAddress(id: string | undefined): void {
+export function showTypeInAddress(id: string): void {
   const params = new URLSearchParams(location.search);
-  if (id) params.set('type', id);
-  else params.delete('type');
+  params.set('type', id);
   history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
 }
 

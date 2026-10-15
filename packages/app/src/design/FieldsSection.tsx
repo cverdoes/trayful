@@ -6,11 +6,12 @@ import {
   freeFieldName,
   parseDefault,
   parseValues,
-  renameKey,
   setIn,
+  withFieldRenamed,
   type FieldSpec,
 } from './edit';
 import { Row, Select, TextInput } from './controls';
+import { renameDraftField } from './projectEdits';
 import { editDraft } from './store';
 
 const KINDS = [...FIELD_TYPES, 'enum'] as const;
@@ -114,7 +115,10 @@ function FieldName({ id, name }: Readonly<{ id: string; name: string }>) {
   const commit = () => {
     const next = text.trim();
     if (next && next !== name) {
-      editDraft((t) => setIn(t, ['fields'], renameKey(t.fields ?? {}, name, next)));
+      // When the rename works the field shows under its new name; otherwise the old one is back.
+      void renameDraftField(name, next, () =>
+        editDraft((t) => withFieldRenamed(t, name, next)),
+      ).then(() => setText(name));
     } else setText(name);
   };
   return (

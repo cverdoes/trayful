@@ -15,6 +15,7 @@ import {
   type SaveStatus,
 } from './store';
 import { TypeList } from './TypeList';
+import { UndoButtons } from './UndoButtons';
 import { YamlPane } from './YamlPane';
 
 /** Design mode: build the project's component types, saved to its library files as you go. */
@@ -24,7 +25,10 @@ export function Designer() {
   const newTypeOpen = useDesign((s) => s.newTypeOpen);
   useFollowProject();
   const shown = useDesign((s) => s.draft?.id);
-  useEffect(() => showTypeInAddress(shown), [shown]);
+  useEffect(() => {
+    // Until a type is open the address keeps the one it asks for.
+    if (shown) showTypeInAddress(shown);
+  }, [shown]);
   if (!view) return <div className="loading">Loading…</div>;
   if (!host) return <div className="loading">Only the host can design components.</div>;
   return (
@@ -45,6 +49,7 @@ export function Designer() {
             Components
           </button>
         </nav>
+        <UndoButtons />
         <SaveState />
       </header>
       <TypeList />

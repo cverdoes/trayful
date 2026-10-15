@@ -1,0 +1,69 @@
+// Designer changes that reach beyond the type being edited: renames, which the
+// server makes in every file that uses the name, and images saved into the assets.
+import { sizeOf } from '../render/geometry';
+import { renameField, renameType, uploadAsset } from './api';
+import { addLayer, assetPath, droppedImage, layersOf, type Side } from './edit';
+import { editDraft, expectType, projectId, settle, useDesign } from './store';
+
+/**
+ * Gives the type being edited a new id in the library, inventory and setups.
+ * Its changes are saved first; while it cannot be saved, nothing is renamed.
+ */
+export async function renameDraftType(to: string): Promise<void> {
+  const id = useDesign.getState().draft?.id;
+  if (!id || !to || to === id) return;
+  await whenSaved(async () => {
+    useDesign.setState({ library: await renameType(projectId(), id, to) });
+    expectType({ id: to, ready: () => true, keepSelection: false });
+  });
+}
+
+/**
+ * Renames a field of the type being edited. A field already in the file is renamed
+ * by the server, in the inventory and CSV files too; a new one only in the draft.
+ */
+export async function renameDraftField(
+  from: string,
+  to: string,
+  renameInDraft: () => void,
+): Promise<void> {
+  const { draft, saved } = useDesign.getState();
+  if (!draft || !to || to === from) return;
+  if (!saved?.fields?.[from]) {
+    renameInDraft();
+    return;
+  }
+  await whenSaved(async () => {
+    useDesign.setState({ library: await renameField(projectId(), draft.id, from, to) });
+    expectType({ id: draft.id, ready: (t) => Boolean(t.fields?.[to]), keepSelection: true });
+  });
+}
+
+async function whenSaved(change: () => Promise<void>): Promise<void> {
+  if (!(await settle())) {
+    useDesign.setState({ message: 'Fix the problems first: a rename needs the type saved.' });
+    return;
+  }
+  try {
+    await change();
+  } catch (err) {
+    useDesign.setState({ message: (err as Error).message });
+  }
+}
+
+/** A picture dropped on a face: saved into the project's assets, then added as a layer there. */
+export async function addImage(
+  image: { name: string; base64: string; natural: [number, number] },
+  side: Side,
+  at: [number, number],
+): Promise<void> {
+  try {
+    const { file } = await uploadAsset(projectId(), assetPath(image.name), image.base64);
+    editDraft((t) => addLayer(t, side, droppedImage(file, image.natural, at, sizeOf(t))));
+    const { draft } = useDesign.getState();
+    const layer = draft ? layersOf(draft, side).length - 1 : undefined;
+    useDesign.setState({ side, layer, target: undefined });
+  } catch (err) {
+    useDesign.setState({ message: `Could not add the image: ${(err as Error).message}` });
+  }
+}
