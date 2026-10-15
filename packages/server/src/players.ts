@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { byCodeUnit } from '@trayful/formats';
+import { byCodeUnit, slugify } from '@trayful/formats';
 
 /** Someone at the table: a person in a browser, or an agent over MCP. */
 export interface Player {
@@ -241,15 +241,9 @@ function cleanName(name: unknown): string {
   return clean;
 }
 
+/** A player id from a name: its slug, cut short so ids stay readable in URLs and logs. */
 function slug(name: string): string {
-  return name
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 24)
-    .replace(/-$/, '');
+  return slugify(name).slice(0, 24).replace(/-$/, '');
 }
 
 function publicPlayer({ secretHash: _secret, tables: _tables, ...player }: StoredPlayer): Player {
