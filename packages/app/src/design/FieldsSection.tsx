@@ -75,6 +75,16 @@ function FieldEditor({ name, field }: Readonly<{ name: string; field: Field }>) 
           />
         )}
       </Row>
+      <Row label="Description" path={['fields', name, 'description']}>
+        {(id) => (
+          <TextInput
+            id={id}
+            value={spec.description}
+            placeholder="What the field is for"
+            onChange={(text) => update({ description: text })}
+          />
+        )}
+      </Row>
       <div className="design-field-actions">
         <label>
           <input
