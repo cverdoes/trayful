@@ -196,7 +196,8 @@ test('renaming a type or a field changes every file that uses it', async ({ page
   await expect(inspector.locator('.design-field').first().getByLabel('Name')).toHaveValue(
     'heading',
   );
-  expect(await libraryFile(page, 'data/cards.csv')).toMatch(/^heading,text,value,count/);
+  // The name box shows what was typed straight away; the files change once the server is done.
+  await expect.poll(() => libraryFile(page, 'data/cards.csv')).toMatch(/^heading,text,value,count/);
   expect(await libraryFile(page, 'library/cards.yaml')).toContain('{{heading}}');
 });
 
