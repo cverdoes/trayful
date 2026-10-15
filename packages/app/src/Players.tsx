@@ -1,32 +1,15 @@
 import { handOf, type Piece } from '@trayful/core';
-import { useEffect, useState, type SubmitEvent } from 'react';
+import { useState, type SubmitEvent } from 'react';
 import { Group, Layer, Stage } from 'react-konva';
 import { connect, join } from './connection';
 import { Component } from './render/Component';
 import { sizeOf } from './render/geometry';
+import { HAND_DRAG } from './hand';
 import { useStore } from './store';
+import { windowCentre } from './viewport';
 
-/** Data a hand card carries while dragged onto the table. */
-export const HAND_DRAG = 'application/x-trayful-hand';
 /** Height of a card in the hand tray, in pixels. */
 const CARD_HEIGHT = 92;
-
-/** The id of the player this browser plays as. */
-export function myId(): string | undefined {
-  return useStore.getState().me?.player?.id;
-}
-
-/** Whether a screen point lies over the hand tray. */
-export function overHandTray(clientX: number, clientY: number): boolean {
-  const tray = document.querySelector('.hand-tray')?.getBoundingClientRect();
-  return (
-    !!tray &&
-    clientX >= tray.left &&
-    clientX <= tray.right &&
-    clientY >= tray.top &&
-    clientY <= tray.bottom
-  );
-}
 
 /** Asks for a name before someone with an invite sits down at the table. */
 export function JoinScreen() {
@@ -118,141 +101,6 @@ export function PlayerList() {
   );
 }
 
-/** Makes (or with `renew`, replaces) the invite link to one table. */
-async function fetchInvite(project: string, table: string, renew = false): Promise<string[]> {
-  const response = await fetch('/api/invites', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ project, table, renew }),
-  });
-  const body = (await response.json()) as { links?: string[]; error?: string };
-  if (!response.ok) throw new Error(body.error ?? response.statusText);
-  return body.links ?? [];
-}
-
-/**
- * The host's invite links to one table, to send to playtesters. Starts on the table
- * open in this window; another can be picked. A link lets people into that table only.
- */
-export function InviteDialog() {
-  const view = useStore((s) => s.view);
-  const [tables, setTables] = useState<{ project: string; name: string; tables: string[] }[]>([]);
-  const [chosen, setChosen] = useState(view ? `${view.project}/${view.table}` : '');
-  const [links, setLinks] = useState<string[]>();
-  const [error, setError] = useState<string>();
-  const [copied, setCopied] = useState<string>();
-  const [renewed, setRenewed] = useState(false);
-  const close = () => useStore.setState({ inviteOpen: false });
-  const [project, table] = chosen.split('/') as [string, string];
-
-  useEffect(() => {
-    fetch('/api/projects')
-      .then((r) => r.json())
-      .then((list: { id: string; name: string; tables: string[] }[]) =>
-        setTables(list.map((p) => ({ project: p.id, name: p.name, tables: p.tables }))),
-      )
-      .catch(() => {
-        // Without the list the dialog still offers the open table.
-      });
-  }, []);
-  useEffect(() => {
-    if (!project || !table) return;
-    setLinks(undefined);
-    setCopied(undefined);
-    setRenewed(false);
-    fetchInvite(project, table)
-      .then(setLinks)
-      .catch((err: unknown) => setError(messageOf(err)));
-  }, [project, table]);
-
-  const renew = () => {
-    if (
-      !window.confirm(
-        `Make a new link to ${table}? The old link stops working. Players who already joined keep their seat.`,
-      )
-    )
-      return;
-    fetchInvite(project, table, true)
-      .then((l) => {
-        setLinks(l);
-        setCopied(undefined);
-        setRenewed(true);
-      })
-      .catch((err: unknown) => setError(messageOf(err)));
-  };
-  // The clipboard is missing on plain-http pages, such as an invite opened over the LAN.
-  const clipboard = navigator.clipboard as Clipboard | undefined;
-  const copy = (link: string) => void clipboard?.writeText(link).then(() => setCopied(link));
-
-  return (
-    <div className="overlay" onClick={close}>
-      <div
-        className="help invite"
-        role="dialog"
-        aria-label="Invite players"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2>Invite players</h2>
-        <label className="row">
-          <span>Table</span>
-          <select
-            aria-label="Table to invite to"
-            value={chosen}
-            onChange={(e) => setChosen(e.target.value)}
-          >
-            {(tables.length ? tables : [{ project, name: project, tables: [table] }]).map((p) => (
-              <optgroup key={p.project} label={p.name}>
-                {p.tables.map((t) => (
-                  <option key={t} value={`${p.project}/${t}`}>
-                    {t}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-        {error && <p className="error">{error}</p>}
-        {links?.length === 0 && (
-          <p>
-            This table is only reachable from your computer. To play with others, restart with{' '}
-            <code>trayful play --share</code> (same network) or <code>trayful play --tunnel</code>{' '}
-            (anywhere, through Cloudflare).
-          </p>
-        )}
-        {links && links.length > 0 && (
-          <>
-            <p>
-              Send one of these links. Anyone who has it can join <strong>{table}</strong>, and only
-              that table, so share it only with your playtesters.
-              {renewed && ' This is a new link; the old one no longer works.'}
-            </p>
-            <ul className="links">
-              {links.map((link) => (
-                <li key={link}>
-                  <code>{link}</code>
-                  <button type="button" onClick={() => copy(link)}>
-                    {copied === link ? 'Copied' : 'Copy'}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-        <div className="row">
-          {links && links.length > 0 && (
-            <button type="button" onClick={renew} title="Stop the current link working">
-              New link
-            </button>
-          )}
-          <button type="button" onClick={close}>
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /**
  * The player's private hand along the bottom of the screen. Drag cards from the
  * table onto it to take them; drag them out onto the table to play them (hold Alt
@@ -291,10 +139,10 @@ function HandCard({ piece }: Readonly<{ piece: Piece }>) {
   const shown: Piece = { ...piece, pos: [0, 0], rot: 0, face: 'up' };
   const play = () => {
     // Double-click plays the card into the middle of the view.
-    const { viewport: v, command } = useStore.getState();
-    const x = (window.innerWidth / 2 - v.x) / v.scale;
-    const y = (window.innerHeight / 2 - v.y) / v.scale;
-    command({ type: 'move', ids: [piece.id], to: [Math.round(x), Math.round(y)] });
+    const [x, y] = windowCentre();
+    useStore
+      .getState()
+      .command({ type: 'move', ids: [piece.id], to: [Math.round(x), Math.round(y)] });
   };
   return (
     <div
@@ -317,8 +165,4 @@ function HandCard({ piece }: Readonly<{ piece: Piece }>) {
       </Stage>
     </div>
   );
-}
-
-function messageOf(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }

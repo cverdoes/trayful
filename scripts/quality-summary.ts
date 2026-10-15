@@ -1,6 +1,6 @@
 /**
  * Prints a Markdown summary of the code quality numbers: coverage per package, the most
- * complex functions, duplication and the lint backlog in eslint-suppressions.json.
+ * complex functions and duplication.
  * In GitHub Actions it also appends the summary to the run's page ($GITHUB_STEP_SUMMARY).
  *
  * Run after `pnpm test:coverage` and `pnpm quality`, which write the reports it reads.
@@ -14,14 +14,12 @@ import { COGNITIVE_COMPLEXITY_LIMIT } from '../eslint.config.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 const TOP_FUNCTIONS = 10;
-const TOP_RULES = 10;
 
 interface Metric {
   total: number;
   covered: number;
 }
 type FileCoverage = Record<'lines' | 'statements' | 'functions' | 'branches', Metric>;
-type Suppressions = Record<string, Record<string, { count: number }>>;
 
 async function readJson<T>(file: string): Promise<T | undefined> {
   try {
@@ -140,36 +138,10 @@ async function duplicationSection(): Promise<string> {
   return `${t.clones} clones, ${t.duplicatedLines} of ${t.lines} lines duplicated (${t.percentage}%).`;
 }
 
-/** Counts suppressed violations per rule, most common first. */
-export function backlogByRule(suppressions: Suppressions): [string, number][] {
-  const byRule = new Map<string, number>();
-  for (const rules of Object.values(suppressions)) {
-    for (const [rule, { count }] of Object.entries(rules)) {
-      byRule.set(rule, (byRule.get(rule) ?? 0) + count);
-    }
-  }
-  return [...byRule].sort((a, b) => b[1] - a[1]);
-}
-
-async function backlogSection(): Promise<string> {
-  const suppressions = (await readJson<Suppressions>('eslint-suppressions.json')) ?? {};
-  const byRule = backlogByRule(suppressions);
-  const total = byRule.reduce((sum, [, n]) => sum + n, 0);
-  if (total === 0) return 'No baselined lint violations left.';
-  return [
-    `${total} baselined violations in ${Object.keys(suppressions).length} files. Fix them, then run \`pnpm lint:prune\`.`,
-    '',
-    '| Rule | Count |',
-    '| --- | ---: |',
-    ...byRule.slice(0, TOP_RULES).map(([rule, n]) => `| \`${rule}\` | ${n} |`),
-  ].join('\n');
-}
-
 const sections: [string, () => Promise<string>][] = [
   ['Test coverage', coverageSection],
   ['Most complex functions', complexitySection],
   ['Duplication', duplicationSection],
-  ['Lint backlog', backlogSection],
 ];
 
 async function main() {

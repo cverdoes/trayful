@@ -1,6 +1,16 @@
 import type { ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
-import { BACK_FILL, boxStart, DEFAULT_FILL, fillOf, layerSize } from './face';
+import {
+  BACK_FILL,
+  boxStart,
+  DEFAULT_FILL,
+  fillOf,
+  fontStyle,
+  imageBox,
+  layerSize,
+  textBox,
+  type TextLayer,
+} from './face';
 
 const card = (fields: Partial<ComponentType> = {}) =>
   ({ id: 'card', base: 'card', ...fields }) as ComponentType;
@@ -51,5 +61,68 @@ describe('layerSize', () => {
 
   it('uses the fallback when a layer gives no size', () => {
     expect(layerSize(undefined, [63, 88])).toEqual([63, 88]);
+  });
+});
+
+describe('textBox', () => {
+  const text = (fields: Partial<TextLayer> = {}): TextLayer => ({ text: 'Hi', ...fields });
+
+  it('puts unwrapped text on its anchor as aligned', () => {
+    expect(textBox(text({ at: [50, 20] }))).toEqual({
+      x: 50,
+      y: 20,
+      width: 400,
+      height: undefined,
+      align: 'left',
+      valign: 'top',
+      wrap: 'none',
+    });
+    expect(textBox(text({ at: [50, 20], align: 'center', valign: 'middle' }))).toMatchObject({
+      x: -150,
+      y: -180,
+      height: 400,
+    });
+    expect(textBox(text({ at: [50, 20], align: 'right', valign: 'bottom' }))).toMatchObject({
+      x: -350,
+      y: -380,
+    });
+  });
+
+  it('wraps text with a width inside a box starting at its anchor', () => {
+    expect(textBox(text({ at: [5, 5], width: 30, align: 'center' }))).toMatchObject({
+      x: 5,
+      width: 30,
+      wrap: 'word',
+    });
+  });
+});
+
+describe('fontStyle', () => {
+  it('combines bold and italic', () => {
+    expect(fontStyle(undefined)).toBe('normal');
+    expect(fontStyle({ weight: 'bold' })).toBe('bold');
+    expect(fontStyle({ weight: 'bold', style: 'italic' })).toBe('bold italic');
+  });
+});
+
+describe('imageBox', () => {
+  const box: [number, number, number, number] = [10, 10, 40, 20];
+
+  it('stretches an image to its box', () => {
+    expect(imageBox('stretch', box, [100, 100])).toEqual({ x: 10, y: 10, width: 40, height: 20 });
+  });
+
+  it('fits a whole image in its box, centred', () => {
+    expect(imageBox('contain', box, [100, 100])).toEqual({ x: 20, y: 10, width: 20, height: 20 });
+  });
+
+  it('covers the box by default, cropping the image to the box’s shape', () => {
+    expect(imageBox(undefined, box, [100, 100])).toEqual({
+      x: 10,
+      y: 10,
+      width: 40,
+      height: 20,
+      crop: { x: 0, y: 25, width: 100, height: 50 },
+    });
   });
 });

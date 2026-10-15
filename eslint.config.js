@@ -5,8 +5,6 @@ import sonarjs from 'eslint-plugin-sonarjs';
 // Also read by scripts/quality-summary.ts, so the CI summary reports against the same limit.
 export const COGNITIVE_COMPLEXITY_LIMIT = 15;
 
-// Existing violations are recorded in eslint-suppressions.json, so CI fails only on new ones.
-// After fixing some, run `pnpm lint:prune` to shrink the file. Never add to it by hand.
 export default tseslint.config(
   { ignores: ['**/node_modules/**', '**/dist/**', 'packages/formats/schema/**', 'coverage/**'] },
   js.configs.recommended,

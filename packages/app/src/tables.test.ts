@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { tableChoices } from './tables';
+import { suggestName, tableChoices } from './tables';
 
 describe('tableChoices', () => {
   const view = { project: 'harvest', table: 'table-2' };
@@ -20,5 +20,13 @@ describe('tableChoices', () => {
 
   it('offers a first table for a project with none', () => {
     expect(tableChoices({ id: 'other', tables: [] }, view)).toEqual(['table-1']);
+  });
+});
+
+describe('suggestName', () => {
+  it('numbers a new table after the ones there are, skipping names in use', () => {
+    expect(suggestName([])).toBe('table-1');
+    expect(suggestName(['table-1'])).toBe('table-2');
+    expect(suggestName(['table-2', 'table-3'])).toBe('table-4');
   });
 });

@@ -7,3 +7,10 @@ export function tableChoices(
     return [...project.tables, view.table];
   return project.tables.length ? project.tables : ['table-1'];
 }
+
+/** A name for a new table that the project does not use yet: `table-<n>`. */
+export function suggestName(tables: string[]): string {
+  let n = tables.length + 1;
+  while (tables.includes(`table-${n}`)) n++;
+  return `table-${n}`;
+}

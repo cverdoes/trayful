@@ -4,7 +4,7 @@ The README's Development section describes the commands, the package layout and 
 
 ## Before opening a pull request, or pushing to one
 
-1. Run `pnpm check` and fix everything it reports. Never add entries to `eslint-suppressions.json`. When your change fixes baselined violations, run `pnpm lint:prune` and commit the smaller file.
+1. Run `pnpm check` and fix everything it reports. Fix lint findings in the code; never switch a rule off with an `eslint-disable` comment or a suppressions file.
 2. Review your own diff (`git diff origin/main...`) against [REVIEW.md](REVIEW.md). Read it as a reviewer seeing the code for the first time, not as its author.
 3. Fix every **Blocking** and **Should fix** finding before pushing. Fix **Nits** when they are cheap. If you decide to leave a finding, say why in the PR description.
 

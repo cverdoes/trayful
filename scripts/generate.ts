@@ -193,32 +193,33 @@ async function renderKind(entry: (typeof KINDS)[number], schema: Schema): Promis
   if (entry.kind === 'library') parts.push(primitivesSection());
 
   for (const [name, def] of Object.entries(defs)) {
-    if (name === rootName) continue;
-    parts.push(`## ${name}\n`);
-    if (def.description) parts.push(def.description + '\n');
-    if (def.properties) {
-      parts.push(propertyTable(def, defs, name));
-      continue;
-    }
-    parts.push(`Type: ${typeText(def, defs)}\n`);
-    // A union with an object branch written inline (such as a field's object form) gets its own table.
-    for (const branch of def.anyOf ?? []) {
-      if (!branch.properties) continue;
-      parts.push(`### ${name} object form\n`);
-      if (branch.description) parts.push(branch.description + '\n');
-      parts.push(propertyTable(branch, defs, name));
-    }
+    if (name !== rootName) parts.push(...definitionSection(name, def, defs));
   }
-
-  parts.push('## Example\n');
-  if (entry.example) {
-    const text = await readFile(path.join(root, example, entry.example), 'utf8');
-    const body = text.replace(/^# yaml-language-server:.*\n/, '');
-    parts.push(`From \`${example}/${entry.example}\`:\n\n\`\`\`yaml\n${body.trimEnd()}\n\`\`\`\n`);
-  } else {
-    parts.push(await tableExample());
-  }
+  parts.push('## Example\n', await exampleSection(entry));
   return parts.join('\n');
+}
+
+/** The reference for one named definition: its keys, or its type and any inline object forms. */
+function definitionSection(name: string, def: Schema, defs: Record<string, Schema>): string[] {
+  const parts = [`## ${name}\n`];
+  if (def.description) parts.push(def.description + '\n');
+  if (def.properties) return [...parts, propertyTable(def, defs, name)];
+  parts.push(`Type: ${typeText(def, defs)}\n`);
+  // A union with an object branch written inline (such as a field's object form) gets its own table.
+  for (const branch of def.anyOf ?? []) {
+    if (!branch.properties) continue;
+    parts.push(`### ${name} object form\n`);
+    if (branch.description) parts.push(branch.description + '\n');
+    parts.push(propertyTable(branch, defs, name));
+  }
+  return parts;
+}
+
+async function exampleSection(entry: (typeof KINDS)[number]): Promise<string> {
+  if (!entry.example) return tableExample();
+  const text = await readFile(path.join(root, example, entry.example), 'utf8');
+  const body = text.replace(/^# yaml-language-server:.*\n/, '');
+  return `From \`${example}/${entry.example}\`:\n\n\`\`\`yaml\n${body.trimEnd()}\n\`\`\`\n`;
 }
 
 function primitivesSection(): string {
@@ -304,28 +305,33 @@ function typeText(s: Schema, defs: Record<string, Schema>): string {
   if (s.anyOf) return s.anyOf.map((a) => typeText(a, defs)).join(' or ');
   if (s.prefixItems) return `[${s.prefixItems.map((p) => typeText(p, defs)).join(', ')}]`;
   if (s.type === 'array') return `list of ${s.items ? typeText(s.items, defs) : 'values'}`;
-  if (s.type === 'object') {
-    if (s.properties) return 'object';
-    if (typeof s.additionalProperties === 'object')
-      return `map of text to ${typeText(s.additionalProperties, defs)}`;
-    return 'object';
-  }
+  if (s.type === 'object') return objectTypeText(s, defs);
   if (Array.isArray(s.type)) return s.type.map((t) => typeText({ type: t }, defs)).join(' or ');
+  return (SCALAR_NAMES[s.type ?? ''] ?? 'value') + rangeText(s);
+}
+
+const SCALAR_NAMES: Record<string, string> = {
+  integer: 'whole number',
+  number: 'number',
+  string: 'text',
+  boolean: 'true or false',
+};
+
+function objectTypeText(s: Schema, defs: Record<string, Schema>): string {
+  if (!s.properties && typeof s.additionalProperties === 'object')
+    return `map of text to ${typeText(s.additionalProperties, defs)}`;
+  return 'object';
+}
+
+/** The bounds of a number, such as ` ≥ 1 ≤ 6`. */
+function rangeText(s: Schema): string {
   // Zod adds the safe-integer limits to every int; they are noise for authors.
   const meaningful = (n: number | undefined) =>
     n !== undefined && Math.abs(n) < Number.MAX_SAFE_INTEGER;
   let range = '';
   if (meaningful(s.exclusiveMinimum)) range = ` > ${s.exclusiveMinimum}`;
   else if (meaningful(s.minimum)) range = ` ≥ ${s.minimum}`;
-  const max = meaningful(s.maximum) ? ` ≤ ${s.maximum}` : '';
-  const names: Record<string, string> = {
-    integer: 'whole number',
-    number: 'number',
-    string: 'text',
-    boolean: 'true or false',
-  };
-  const name = names[s.type ?? ''] ?? 'value';
-  return name + range + max;
+  return range + (meaningful(s.maximum) ? ` ≤ ${s.maximum}` : '');
 }
 
 function refName(ref: string): string {

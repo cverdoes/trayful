@@ -9,7 +9,15 @@ import {
 import type Konva from 'konva';
 import { Circle, Ellipse, Group, Image, Path, Rect, RegularPolygon, Text } from 'react-konva';
 import { isShown, resolveColor, type Data } from './color';
-import { boxStart, fillOf, layerSize } from './face';
+import {
+  fillOf,
+  fontStyle,
+  imageBox,
+  layerSize,
+  textBox,
+  type ImageLayer,
+  type TextLayer,
+} from './face';
 import { sizeOf } from './geometry';
 import { useProjectImage } from './images';
 
@@ -156,11 +164,11 @@ function CenteredText({
   );
 }
 
-/** Large box used to anchor centred or right-aligned text on a point. */
-const ANCHOR_BOX = 400;
-
-const H_ALIGN = { left: 'start', center: 'center', right: 'end' } as const;
-const V_ALIGN = { top: 'start', middle: 'center', bottom: 'end' } as const;
+interface Common {
+  rotation: number;
+  opacity: number;
+  listening: boolean;
+}
 
 function LayerView({
   layer,
@@ -174,74 +182,76 @@ function LayerView({
   faceSize: [number, number];
 }>) {
   if (!isShown(layer.when, data)) return null;
-  const [ax, ay] = layer.at ?? [0, 0];
   const common = { rotation: layer.rotate ?? 0, opacity: layer.opacity ?? 1, listening: false };
-
-  if ('text' in layer) {
-    const text = renderTemplate(layer.text, data);
-    if (!text) return null;
-    const align = layer.align ?? 'left';
-    const valign = layer.valign ?? 'top';
-    const width = layer.width ?? ANCHOR_BOX;
-    const x = layer.width === undefined ? boxStart(ax, H_ALIGN[align], width) : ax;
-    const height = valign === 'top' ? undefined : ANCHOR_BOX;
-    const y = boxStart(ay, V_ALIGN[valign], ANCHOR_BOX);
-    const style = [
-      layer.font?.weight === 'bold' ? 'bold' : '',
-      layer.font?.style === 'italic' ? 'italic' : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-    return (
-      <Text
-        {...common}
-        text={text}
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        align={align}
-        verticalAlign={valign}
-        wrap={layer.width !== undefined ? 'word' : 'none'}
-        fontSize={(layer.font?.size ?? 10) * PT}
-        fontFamily={layer.font?.family ?? 'system-ui, sans-serif'}
-        fontStyle={style || 'normal'}
-        fill={resolveColor(layer.color, data, palette) ?? '#111'}
-      />
-    );
-  }
-
-  if ('image' in layer) {
+  if ('text' in layer)
+    return <TextLayerView layer={layer} data={data} palette={palette} common={common} />;
+  if ('image' in layer)
     return <ImageLayerView layer={layer} data={data} faceSize={faceSize} common={common} />;
-  }
+  return <ShapeLayerView layer={layer} data={data} palette={palette} common={common} />;
+}
 
+function TextLayerView({
+  layer,
+  data,
+  palette,
+  common,
+}: Readonly<{ layer: TextLayer; data: Data; palette: Record<string, string>; common: Common }>) {
+  const text = renderTemplate(layer.text, data);
+  if (!text) return null;
+  const { valign, ...box } = textBox(layer);
+  return (
+    <Text
+      {...common}
+      {...box}
+      text={text}
+      verticalAlign={valign}
+      fontSize={(layer.font?.size ?? 10) * PT}
+      fontFamily={layer.font?.family ?? 'system-ui, sans-serif'}
+      fontStyle={fontStyle(layer.font)}
+      fill={resolveColor(layer.color, data, palette) ?? '#111'}
+    />
+  );
+}
+
+function ShapeLayerView({
+  layer,
+  data,
+  palette,
+  common,
+}: Readonly<{
+  layer: Exclude<Layer, TextLayer | ImageLayer>;
+  data: Data;
+  palette: Record<string, string>;
+  common: Common;
+}>) {
+  const [ax, ay] = layer.at ?? [0, 0];
   const fill = resolveColor(layer.fill, data, palette);
   const stroke = resolveColor(layer.stroke, data, palette);
   const style = { ...common, fill, stroke, strokeWidth: layer.strokeWidth ?? (stroke ? 0.3 : 0) };
   const [sw, sh] = layerSize(layer.size, [0, 0]);
+  const ellipse = (
+    <Ellipse x={ax + sw / 2} y={ay + sh / 2} radiusX={sw / 2} radiusY={sh / 2} {...style} />
+  );
   switch (layer.shape) {
     case 'circle':
     case 'disc':
-      return layer.r !== undefined ? (
-        <Circle x={ax} y={ay} radius={layer.r} {...style} />
-      ) : (
-        <Ellipse x={ax + sw / 2} y={ay + sh / 2} radiusX={sw / 2} radiusY={sh / 2} {...style} />
-      );
+      return layer.r === undefined ? ellipse : <Circle x={ax} y={ay} radius={layer.r} {...style} />;
     case 'ellipse':
-      return (
-        <Ellipse x={ax + sw / 2} y={ay + sh / 2} radiusX={sw / 2} radiusY={sh / 2} {...style} />
-      );
+      return ellipse;
     case 'hex':
-    case 'triangle':
+    case 'triangle': {
+      // With a radius the polygon is centred on its anchor, else it fills its box.
+      const centred = layer.r !== undefined;
       return (
         <RegularPolygon
-          x={layer.r !== undefined ? ax : ax + sw / 2}
-          y={layer.r !== undefined ? ay : ay + sh / 2}
+          x={centred ? ax : ax + sw / 2}
+          y={centred ? ay : ay + sh / 2}
           sides={layer.shape === 'hex' ? 6 : 3}
           radius={layer.r ?? Math.min(sw, sh) / 2}
           {...style}
         />
       );
+    }
     case 'meeple':
       return <Path data={meeplePath(sw, sh)} x={ax} y={ay} {...style} />;
     default:
@@ -263,48 +273,12 @@ function ImageLayerView({
   data,
   faceSize,
   common,
-}: Readonly<{
-  layer: Extract<Layer, { image: string }>;
-  data: Data;
-  faceSize: [number, number];
-  common: { rotation: number; opacity: number; listening: boolean };
-}>) {
+}: Readonly<{ layer: ImageLayer; data: Data; faceSize: [number, number]; common: Common }>) {
   const path = renderTemplate(layer.image, data).trim();
   const image = useProjectImage(path || undefined);
   if (!image) return null;
   const [x, y] = layer.at ?? [0, 0];
   const [w, h] = layerSize(layer.size, faceSize);
-  const fit = layer.fit ?? 'cover';
-  const iw = image.naturalWidth || w;
-  const ih = image.naturalHeight || h;
-  if (fit === 'stretch')
-    return <Image {...common} image={image} x={x} y={y} width={w} height={h} />;
-  if (fit === 'contain') {
-    const scale = Math.min(w / iw, h / ih);
-    return (
-      <Image
-        {...common}
-        image={image}
-        x={x + (w - iw * scale) / 2}
-        y={y + (h - ih * scale) / 2}
-        width={iw * scale}
-        height={ih * scale}
-      />
-    );
-  }
-  // cover: crop the image to the box's aspect ratio.
-  const scale = Math.max(w / iw, h / ih);
-  const cw = w / scale;
-  const ch = h / scale;
-  return (
-    <Image
-      {...common}
-      image={image}
-      x={x}
-      y={y}
-      width={w}
-      height={h}
-      crop={{ x: (iw - cw) / 2, y: (ih - ch) / 2, width: cw, height: ch }}
-    />
-  );
+  const natural: [number, number] = [image.naturalWidth || w, image.naturalHeight || h];
+  return <Image {...common} image={image} {...imageBox(layer.fit, [x, y, w, h], natural)} />;
 }
