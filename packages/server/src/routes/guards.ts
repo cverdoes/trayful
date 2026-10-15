@@ -1,5 +1,6 @@
 import { SetupError } from '@trayful/core';
 import { allowed, allowedProject, caller, isTrustedOrigin } from '../access.js';
+import { AuthoringError, ConflictError } from '../authoring.js';
 import { PlayerError } from '../players.js';
 import { ProjectLoadError } from '../session.js';
 import { NOT_INVITED, type RouteContext, type TableQuery } from './context.js';
@@ -14,9 +15,7 @@ const OPEN = new Set(['/api/me', '/api/join', '/api/health']);
  */
 export function registerGuards({ app, players, shareBases, target }: RouteContext): void {
   app.setErrorHandler((err: Error, _request, reply) => {
-    const known =
-      err instanceof ProjectLoadError || err instanceof SetupError || err instanceof PlayerError;
-    void reply.code(known ? 400 : 500).send({ error: err.message });
+    void reply.code(statusFor(err)).send({ error: err.message });
   });
 
   app.addHook('onRequest', async (request, reply) => {
@@ -40,4 +39,15 @@ export function registerGuards({ app, players, shareBases, target }: RouteContex
     }
     if (!ok) return reply.code(403).send({ error: NOT_INVITED });
   });
+}
+
+/** The HTTP status for an error a route threw: the caller's mistake, a conflict, or ours. */
+function statusFor(err: Error): number {
+  if (err instanceof ConflictError) return 409;
+  const known =
+    err instanceof ProjectLoadError ||
+    err instanceof SetupError ||
+    err instanceof PlayerError ||
+    err instanceof AuthoringError;
+  return known ? 400 : 500;
 }

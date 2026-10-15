@@ -93,6 +93,15 @@ function TableButtons() {
       )}
       {host && (
         <Button
+          label="Design"
+          title="Design the components: types, fields and faces"
+          onClick={
+            view ? () => go({ project: view.project, table: view.table, design: true }) : undefined
+          }
+        />
+      )}
+      {host && (
+        <Button
           label="Invite"
           title="Invite players to this table"
           onClick={() => useStore.setState({ inviteOpen: true })}

@@ -123,11 +123,13 @@ pnpm trayful new ../my-game --name "My Game"
 pnpm trayful play ../my-game
 ```
 
+To build component types without writing YAML, click **Design** in the toolbar: the [designer](docs/howto/design-components.md) lays out fields and faces with a live preview and saves each change to your library files, keeping your comments.
+
 Keep the table open while you edit: every time you save a file, the table updates (new cards appear, changed text redraws, and the change is one step you can undo). If a file has a mistake, a bar on the table names the file, line and column, and the table keeps the last version that worked. `pnpm trayful validate ../my-game` checks a project from the command line.
 
 To keep several games together, put their folders in one folder and run `pnpm trayful play` on that folder; the table menu switches between them.
 
-The [HOWTO guides](docs/howto/README.md) walk through adding a deck, loading cards from a spreadsheet, boards with snap spots, meeples and dice, your own images, setups, designing with an agent and printing. Every key is documented in the [format reference](docs/reference/README.md).
+The [HOWTO guides](docs/howto/README.md) walk through adding a deck, designing components in the browser, loading cards from a spreadsheet, boards with snap spots, meeples and dice, your own images, setups, designing with an agent and printing. Every key is documented in the [format reference](docs/reference/README.md).
 
 Boards declare **snap targets** in their library type: a `grid` of spots (card slots, action spaces), a list of `points` (a score track) or a free `area` (a supply), each optionally limited to some types with `accepts`. A **setup** file places components on those targets and on the table, shuffles and deals; set `setup: <file name>` in `trayful.yaml` to start every new table from it. See [`library/pieces.yaml`](examples/harvest-moon/library/pieces.yaml) and [`setups/2-player.yaml`](examples/harvest-moon/setups/2-player.yaml) in the sample.
 
@@ -181,12 +183,13 @@ Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for
 
 ## Roadmap
 
-| Milestone                      | Scope                                                                                                         |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| 0. Foundations                 | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
-| 1. First playable table        | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
-| 2. Components and snapping     | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
-| 3. MCP                         | Agents read and play tables over the Model Context Protocol                                                   |
-| 4. Projects and authoring      | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
-| 5. Multiplayer                 | Players, invite links over the network or a tunnel, private hands, per-player hidden views                    |
-| **6. Invites and undo** (this) | Invite links to one table, made from the toolbar; each player undoes only their own moves                     |
+| Milestone                        | Scope                                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 0. Foundations                   | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
+| 1. First playable table          | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
+| 2. Components and snapping       | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
+| 3. MCP                           | Agents read and play tables over the Model Context Protocol                                                   |
+| 4. Projects and authoring        | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
+| 5. Multiplayer                   | Players, invite links over the network or a tunnel, private hands, per-player hidden views                    |
+| 6. Invites and undo              | Invite links to one table, made from the toolbar; each player undoes only their own moves                     |
+| **7. Component designer** (this) | Design mode: types, fields and faces in the browser with a live preview, saved with comments kept             |

@@ -53,3 +53,42 @@ describe('invite links', () => {
     expect(link).toMatch(/^https:\/\/tunnel\.example\/join\/\w+/);
   });
 });
+
+describe('designing types', () => {
+  const put = (id: string, body: unknown) =>
+    fetch(`${server.url}/api/types/${id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  const coin = { id: 'coin', base: 'token', size: 20, shape: 'circle' };
+
+  it('saves a type, then refuses a save made against an older file', async () => {
+    const library = (await (await fetch(`${server.url}/api/library`)).json()) as {
+      files: Record<string, string>;
+      types: Record<string, string>;
+    };
+    expect(library.types.worker).toBe('library/pieces.yaml');
+    const baseHash = library.files['library/pieces.yaml'];
+
+    const saved = await put('coin', { definition: coin, baseHash });
+    expect(await saved.json()).toMatchObject({ file: 'library/pieces.yaml', created: true });
+    expect(server.workspace.project().types.coin).toBeDefined();
+
+    const stale = await put('coin', { definition: { ...coin, size: 22 }, baseHash });
+    expect(stale.status).toBe(409);
+    expect(((await stale.json()) as { error: string }).error).toMatch(/changed since/);
+  });
+
+  it('explains what is wrong with a type it cannot save or remove', async () => {
+    expect((await put('coin', { definition: { ...coin, id: 'other' } })).status).toBe(400);
+    const invalid = await put('coin', { definition: { ...coin, size: 'big' } });
+    expect(invalid.status).toBe(400);
+    expect(((await invalid.json()) as { error: string }).error).toMatch(/Invalid component type/);
+    const inUse = await fetch(`${server.url}/api/types/worker`, { method: 'DELETE' });
+    expect(inUse.status).toBe(400);
+    await put('coin', { definition: coin });
+    const removed = await fetch(`${server.url}/api/types/coin`, { method: 'DELETE' });
+    expect(((await removed.json()) as { types: object }).types).not.toHaveProperty('coin');
+  });
+});

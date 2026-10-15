@@ -41,7 +41,7 @@ function registerTypeTools(server: McpServer, ctx: ToolContext): void {
     async ({ project, definition, file }) => {
       try {
         const projectId = project ?? session().projectId;
-        const result = await upsertType(workspace, projectId, definition, file);
+        const result = await upsertType(workspace, projectId, definition, { file });
         return authored(
           `${result.created ? 'Added' : 'Updated'} type "${String(definition.id)}" in ${result.file}.${result.created ? ' Add components of it with set_inventory.' : ''}`,
         );

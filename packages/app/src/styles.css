@@ -380,3 +380,267 @@ body.printing #root {
   background: #21262d;
   color: var(--bar-text);
 }
+
+/* Design mode: type list, canvas and inspector side by side under the toolbar. */
+.designer {
+  position: fixed;
+  inset: 56px 0 0 0;
+  display: grid;
+  grid-template-columns: 220px 1fr 360px;
+}
+
+.designer input,
+.designer select,
+.designer textarea {
+  font: inherit;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #0d1117;
+  color: var(--bar-text);
+}
+
+.designer h3 {
+  margin: 16px 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.designer h4 {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.design-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.design-tabs .tab.chosen,
+.design-types button.chosen,
+.design-layers li.chosen .layer-name {
+  border-color: var(--accent);
+  background: #1f3a5f;
+}
+
+.design-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 13px;
+}
+
+.save-saved {
+  color: #3fb950;
+}
+
+.save-invalid,
+.save-conflict,
+.save-failed {
+  color: #f85149;
+}
+
+.design-types,
+.design-inspector {
+  overflow-y: auto;
+  padding: 0 12px 24px;
+  background: var(--bar);
+}
+
+.design-types ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.design-types li button {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 2px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.design-type-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+.design-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.design-sample {
+  padding: 8px 12px;
+}
+
+.design-canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.design-yaml {
+  max-height: 40%;
+  overflow: auto;
+  padding: 8px 12px;
+  background: var(--bar);
+}
+
+.design-yaml pre {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.design-row {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 8px;
+  align-items: start;
+  margin-bottom: 6px;
+}
+
+.design-row > label {
+  padding-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.design-control {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.design-row.invalid input,
+.design-row.invalid select,
+.design-row.invalid textarea {
+  border-color: #f85149;
+}
+
+.design-problem {
+  margin: 0;
+  color: #f85149;
+  font-size: 12px;
+}
+
+.design-problems {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #f85149;
+  border-radius: 6px;
+}
+
+.design-problems h3 {
+  margin-top: 0;
+  color: #f85149;
+}
+
+.design-problems ul {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 13px;
+}
+
+.design-pair,
+.design-color {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.design-number {
+  width: 72px;
+}
+
+.design-color input[type='text'] {
+  flex: 1;
+}
+
+.design-color input[type='color'] {
+  width: 32px;
+  height: 28px;
+  padding: 0;
+}
+
+.design-color .swatch {
+  min-width: 20px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 4px;
+}
+
+.design-color .swatch.chosen {
+  outline: 2px solid var(--accent);
+}
+
+.design-field {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #30363d;
+}
+
+.design-field-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.design-layers ol {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.design-layers li {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.design-layers .layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+}
+
+.design-add {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--muted);
+}
+
+.design-layer {
+  margin-top: 12px;
+  padding-top: 4px;
+  border-top: 1px solid #30363d;
+}
+
+.new-type fieldset {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 12px 0;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+}
+
+.new-type input:not([type='radio']) {
+  font: inherit;
+  padding: 4px 6px;
+}

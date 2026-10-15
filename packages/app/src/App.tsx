@@ -3,6 +3,7 @@ import { Help } from './Help';
 import { useKeyboard } from './keyboard';
 import { Activity, ErrorToast, Problems } from './Notices';
 import { InviteDialog } from './Invite';
+import { Designer } from './design/Designer';
 import { ClosedScreen, HandTray, JoinScreen } from './Players';
 import { Print } from './Print';
 import { RenderJob } from './render/Preview';
@@ -18,7 +19,15 @@ export function App() {
   if (fatal) return <div className="loading">{fatal}</div>;
   if (gate === 'closed') return <ClosedScreen />;
   if (gate === 'join') return <JoinScreen />;
-  return route().print ? <Print /> : <TableApp />;
+  return <Page />;
+}
+
+/** The page the address asks for: the print sheets, design mode, or the table. */
+function Page() {
+  const { print, design } = route();
+  if (print) return <Print />;
+  if (design) return <Designer />;
+  return <TableApp />;
 }
 
 function TableApp() {
