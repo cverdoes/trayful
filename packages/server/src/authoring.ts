@@ -26,7 +26,7 @@ export class ConflictError extends AuthoringError {}
 
 const ASSET_FILE = /\.(svg|png|jpe?g|gif|webp|csv)$/i;
 
-interface FileChange {
+export interface FileChange {
   /** Path relative to the project folder. */
   file: string;
   /** New contents, or null to delete the file. */
@@ -34,7 +34,7 @@ interface FileChange {
 }
 
 /** Applies file changes, reloads the project and rolls back if it no longer loads. */
-async function commit(workspace: Workspace, projectId: string, changes: FileChange[]) {
+export async function commit(workspace: Workspace, projectId: string, changes: FileChange[]) {
   const entry = workspace.entry(projectId);
   const before: FileChange[] = [];
   for (const change of changes) {
@@ -59,7 +59,7 @@ async function commit(workspace: Workspace, projectId: string, changes: FileChan
  * second would overwrite the first.
  */
 const queues = new WeakMap<Workspace, Promise<unknown>>();
-function oneAtATime<A extends unknown[], R>(
+export function oneAtATime<A extends unknown[], R>(
   change: (workspace: Workspace, ...args: A) => Promise<R>,
 ): (workspace: Workspace, ...args: A) => Promise<R> {
   return (workspace, ...args) => {
@@ -85,7 +85,7 @@ async function write(dir: string, changes: FileChange[]): Promise<void> {
 }
 
 /** Resolves a project-relative path, refusing anything outside the project folder. */
-function inside(dir: string, file: string): string {
+export function inside(dir: string, file: string): string {
   const full = path.resolve(dir, file);
   if (!full.startsWith(dir + path.sep)) {
     throw new AuthoringError(`"${file}" is outside the project folder.`);
@@ -93,7 +93,7 @@ function inside(dir: string, file: string): string {
   return full;
 }
 
-async function readDocument(dir: string, file: string): Promise<Document> {
+export async function readDocument(dir: string, file: string): Promise<Document> {
   return parseYaml(await readFile(inside(dir, file), 'utf8'));
 }
 

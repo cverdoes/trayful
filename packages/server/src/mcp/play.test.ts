@@ -99,4 +99,14 @@ describe('MCP play tools', () => {
     expect(render.text).toBe('There is no type "lantern" in this project.');
     expect((await call('render_component', { type: 'coins' })).text).toMatch(/No browser/);
   });
+
+  it('renames a type everywhere it is used, and explains a name that is taken', async () => {
+    const renamed = await call('rename_type', { type: 'worker', to: 'farmer' });
+    expect(renamed.text).toMatch(
+      /^Renamed type "worker" to "farmer" in library\/pieces\.yaml, inventory\.yaml, setups\/2-player\.yaml\./,
+    );
+    expect(piece('farmer.red.1').type).toBe('farmer');
+    const taken = await call('rename_type', { type: 'farmer', to: 'd6' });
+    expect(taken).toMatchObject({ isError: true, text: expect.stringMatching(/already a type/) });
+  });
 });

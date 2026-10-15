@@ -3,6 +3,8 @@ import { parseValues } from './edit';
 import { ColorInput, NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
 import { FaceSection } from './FaceSection';
 import { FieldsSection } from './FieldsSection';
+import { renameDraftType } from './projectEdits';
+import { SnapSection } from './SnapSection';
 import { setValue, useDesign } from './store';
 
 /** The panel on the right: everything about the type being edited, top to bottom. */
@@ -16,6 +18,7 @@ export function Inspector() {
       <TypeSection type={draft} />
       <FieldsSection type={draft} />
       <FaceSection type={draft} />
+      <SnapSection type={draft} />
       <datalist id="design-fields">
         {Object.keys(draft.fields ?? {}).map((name) => (
           <option key={name} value={`{{${name}}}`} />
@@ -43,12 +46,28 @@ function Problems() {
   );
 }
 
+/** Asks for a new id; the inventory and setups that use the old one change with it. */
+function askRename(id: string) {
+  const to = window.prompt(
+    `New id for "${id}". The inventory and setups that use it are changed too.`,
+    id,
+  );
+  if (to) void renameDraftType(to.trim());
+}
+
 function TypeSection({ type }: Readonly<{ type: ComponentType }>) {
   return (
     <section>
       <h3>Type</h3>
       <Row label="Id" path={['id']}>
-        {(id) => <TextInput id={id} value={type.id} onChange={() => undefined} readOnly />}
+        {(id) => (
+          <div className="design-pair">
+            <TextInput id={id} value={type.id} onChange={() => undefined} readOnly />
+            <button type="button" onClick={() => askRename(type.id)}>
+              Rename…
+            </button>
+          </div>
+        )}
       </Row>
       <Row label="Name" path={['name']}>
         {(id) => (

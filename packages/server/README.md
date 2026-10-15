@@ -41,22 +41,27 @@ await server.close(); // saves every open table first
 
 ## Routes
 
-| Route                                    | What it serves                                                                                                                |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `/`                                      | The built browser app from `packages/app/dist` (503 with a hint until built)                                                  |
-| `/ws?project=&table=`                    | WebSocket: send `ClientMessage`s (commands, undo, redo, reset), get table states as this player sees them, and who is playing |
-| `/api/project?project=&table=`           | Project name, palette, component types and setups, for one table                                                              |
-| `/api/table?project=&table=`             | A table's state, as the asking player sees it                                                                                 |
-| `/api/projects`                          | Every project with its tables and any problems                                                                                |
-| `/api/components?project=`               | Every component in the box, for print-and-play (host only)                                                                    |
-| `POST /api/tables`, `DELETE /api/tables` | Create, duplicate (`from`) or delete a table (host only)                                                                      |
-| `/api/me`, `POST /api/me`                | Who this browser plays as, and whether it is the host; rename                                                                 |
-| `POST /api/join`                         | Join under a name, with an invite; sets the player cookie                                                                     |
-| `/join/<invite>`                         | An invite link: adds the invite to the invite cookie and opens its table                                                      |
-| `POST /api/invites`                      | Invite links to one table (`project`, `table`), or new ones with `renew` (host only)                                          |
-| `/mcp`                                   | MCP over Streamable HTTP (POST), for agents on this computer only                                                             |
-| `/api/health`                            | `{ ok, project, table }` for the active table, plus `projectDir` and `root` for the host                                      |
-| `/project-files/<project>/<path>`        | Images from a project folder (other file types are refused)                                                                   |
+| Route                                           | What it serves                                                                                                                             |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/`                                             | The built browser app from `packages/app/dist` (503 with a hint until built)                                                               |
+| `/ws?project=&table=`                           | WebSocket: send `ClientMessage`s (commands, undo, redo, reset), get table states as this player sees them, and who is playing              |
+| `/api/project?project=&table=`                  | Project name, palette, component types and setups, for one table                                                                           |
+| `/api/table?project=&table=`                    | A table's state, as the asking player sees it                                                                                              |
+| `/api/projects`                                 | Every project with its tables and any problems                                                                                             |
+| `/api/components?project=`                      | Every component in the box, for print-and-play (host only)                                                                                 |
+| `POST /api/tables`, `DELETE /api/tables`        | Create, duplicate (`from`) or delete a table (host only)                                                                                   |
+| `/api/me`, `POST /api/me`                       | Who this browser plays as, and whether it is the host; rename                                                                              |
+| `POST /api/join`                                | Join under a name, with an invite; sets the player cookie                                                                                  |
+| `/join/<invite>`                                | An invite link: adds the invite to the invite cookie and opens its table                                                                   |
+| `POST /api/invites`                             | Invite links to one table (`project`, `table`), or new ones with `renew` (host only)                                                       |
+| `/api/library?project=`                         | Each library file with its content hash, and the file of each type, for saving without conflicts (host only)                               |
+| `PUT /api/types/<id>`, `DELETE /api/types/<id>` | Save a type from the designer (`definition`, `file`, `baseHash`; 409 when the file changed) or remove it (host only)                       |
+| `POST /api/types/<id>/rename`                   | Give a type a new id (`to`) in the library, inventory and setups; answers the new `id` and the library, as `/api/library` does (host only) |
+| `POST /api/types/<id>/fields/<field>/rename`    | Rename a field (`to`) in the type, its faces, its inventory rows and CSV headers; answers the new `field` and the library (host only)      |
+| `PUT /api/assets`                               | Save an image dropped onto the designer (`file`, `base64`, up to 20 MB); answers `{ file }` (host only)                                    |
+| `/mcp`                                          | MCP over Streamable HTTP (POST), for agents on this computer only                                                                          |
+| `/api/health`                                   | `{ ok, project, table }` for the active table, plus `projectDir` and `root` for the host                                                   |
+| `/project-files/<project>/<path>`               | Images from a project folder (other file types are refused)                                                                                |
 
 The routes live in `src/routes/`, one module per group, sharing a `RouteContext`; `guards.ts` checks origins and invites before any route runs. Without `project` and `table`, routes use the active table. Tables are saved to `tables/<name>.json` shortly after every change, through a temporary file, so a crash never leaves half a file.
 
@@ -70,7 +75,7 @@ The server binds to `127.0.0.1` unless told otherwise (`trayful play --share` bi
 - Playing: `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `set_counter`, `lock`, with snap targets such as `main-board/market/2` wherever a position goes.
 - History: `undo`, `redo`, `get_history`, `reset_table`.
 - Projects and tables: `list_projects`, `open_table`, `duplicate_table`, `delete_table`, `create_project`, `validate_project`.
-- Authoring: `upsert_type`, `remove_type`, `set_inventory`, `add_asset`, `render_component`.
+- Authoring: `upsert_type`, `rename_type`, `remove_type`, `set_inventory`, `add_asset`, `render_component`.
 
 Resources: `trayful://projects`, each table's state and PNG snapshot, each project's manifest and component types, the JSON Schemas (`trayful://schema`), and the [docs](../../docs) (`trayful://docs` and `trayful://docs/<path>`, from `docs.ts`).
 

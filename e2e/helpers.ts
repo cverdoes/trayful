@@ -9,6 +9,7 @@ declare global {
     __trayful?: {
       store: { getState(): { status: string; selection: string[] } };
       worldToScreen(x: number, y: number): { x: number; y: number };
+      faceToScreen?(side: 'front' | 'back', x: number, y: number): { x: number; y: number };
     };
   }
 }

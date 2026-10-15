@@ -95,12 +95,12 @@ Agents can aim moves at board spots by name, such as `main-board/fields/3`, or d
 
 Agents can also build your prototype with you: ask Claude for "an event card type with a title, a rule text and a season band, and a deck of six events", and it writes the type into your library, puts the cards in the box and looks at a picture of the result, while the new deck appears on your table. Every change is checked first, so an agent cannot leave your project broken. See [Let an agent build components](docs/howto/agent-builds-components.md).
 
-| Projects and authoring tools                                     | What they do                                                      |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `list_projects`, `open_table`, `duplicate_table`, `delete_table` | Find projects and tables, and switch the table the agent plays on |
-| `create_project`, `validate_project`                             | Start a project from the starter template; check one after edits  |
-| `upsert_type`, `remove_type`, `set_inventory`, `add_asset`       | Change component types, what is in the box, and artwork           |
-| `render_component`                                               | A picture of one component type, as people will see it            |
+| Projects and authoring tools                                              | What they do                                                      |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `list_projects`, `open_table`, `duplicate_table`, `delete_table`          | Find projects and tables, and switch the table the agent plays on |
+| `create_project`, `validate_project`                                      | Start a project from the starter template; check one after edits  |
+| `upsert_type`, `rename_type`, `remove_type`, `set_inventory`, `add_asset` | Change component types, what is in the box, and artwork           |
+| `render_component`                                                        | A picture of one component type, as people will see it            |
 
 ## Make your own prototype
 
@@ -123,7 +123,7 @@ pnpm trayful new ../my-game --name "My Game"
 pnpm trayful play ../my-game
 ```
 
-To build component types without writing YAML, click **Design** in the toolbar: the [designer](docs/howto/design-components.md) lays out fields and faces with a live preview and saves each change to your library files, keeping your comments.
+To build component types without writing YAML, click **Design** in the toolbar: the [designer](docs/howto/design-components.md) lays out fields and faces with a live preview, lets you drag layers and board snap spots into place, drop in pictures and rename types everywhere they are used, and saves each change to your library files, keeping your comments.
 
 Keep the table open while you edit: every time you save a file, the table updates (new cards appear, changed text redraws, and the change is one step you can undo). If a file has a mistake, a bar on the table names the file, line and column, and the table keeps the last version that worked. `pnpm trayful validate ../my-game` checks a project from the command line.
 
@@ -183,13 +183,14 @@ Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for
 
 ## Roadmap
 
-| Milestone                        | Scope                                                                                                         |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 0. Foundations                   | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
-| 1. First playable table          | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
-| 2. Components and snapping       | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
-| 3. MCP                           | Agents read and play tables over the Model Context Protocol                                                   |
-| 4. Projects and authoring        | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
-| 5. Multiplayer                   | Players, invite links over the network or a tunnel, private hands, per-player hidden views                    |
-| 6. Invites and undo              | Invite links to one table, made from the toolbar; each player undoes only their own moves                     |
-| **7. Component designer** (this) | Design mode: types, fields and faces in the browser with a live preview, saved with comments kept             |
+| Milestone                         | Scope                                                                                                         |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 0. Foundations                    | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
+| 1. First playable table           | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
+| 2. Components and snapping        | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
+| 3. MCP                            | Agents read and play tables over the Model Context Protocol                                                   |
+| 4. Projects and authoring         | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
+| 5. Multiplayer                    | Players, invite links over the network or a tunnel, private hands, per-player hidden views                    |
+| 6. Invites and undo               | Invite links to one table, made from the toolbar; each player undoes only their own moves                     |
+| 7. Component designer             | Design mode: types, fields and faces in the browser with a live preview, saved with comments kept             |
+| **8. Hands on the canvas** (this) | Drag, resize and rotate layers with snapping; board snap spot editor; image drop; renames everywhere; undo    |

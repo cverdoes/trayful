@@ -1,18 +1,51 @@
-import { libraryFiles, removeType, upsertType } from '../authoring.js';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import type { FastifyReply } from 'fastify';
+import { addAsset, inside, libraryFiles, removeType, upsertType } from '../authoring.js';
+import { renameField, renameType } from '../renaming.js';
 import type { RouteContext } from './context.js';
 
 interface ProjectQuery {
   project?: string;
 }
 
-/** Designing component types in the browser: the host's library, saved through the authoring module. */
-export function registerAuthoringRoutes({ app, workspace, hostOnly }: RouteContext): void {
-  const projectOf = (query: ProjectQuery) => query.project ?? workspace.active.projectId;
+/** The body of a rename: the new id or name. */
+interface RenameBody {
+  to?: unknown;
+}
 
+/**
+ * `file`, or `name-2.png`, `name-3.png`… when that file is already in the project:
+ * a picture dropped in the designer never replaces artwork already in use.
+ */
+function unusedPath(dir: string, file: string): string {
+  const ext = path.extname(file);
+  const stem = file.slice(0, file.length - ext.length);
+  const numbered = (n: number) => (n === 1 ? file : `${stem}-${n}${ext}`);
+  let n = 1;
+  while (existsSync(inside(dir, numbered(n)))) n++;
+  return numbered(n);
+}
+
+/** Images dropped onto the designer arrive as base64, a third larger than the file. */
+const ASSET_BODY_LIMIT = 20 * 1024 * 1024;
+
+/** Designing component types in the browser: the host's library, saved through the authoring module. */
+export function registerAuthoringRoutes(ctx: RouteContext): void {
+  registerTypeRoutes(ctx);
+  registerRenameRoutes(ctx);
+  registerAssetRoute(ctx);
+}
+
+const projectOf = ({ workspace }: RouteContext, query: ProjectQuery) =>
+  query.project ?? workspace.active.projectId;
+
+function registerTypeRoutes(ctx: RouteContext): void {
+  const { app, workspace, hostOnly } = ctx;
   // Which file each type lives in, and the version of each file, for saving without conflicts.
   app.get<{ Querystring: ProjectQuery }>('/api/library', async (request, reply) => {
     if (hostOnly(request, reply)) return;
-    return libraryFiles(workspace, projectOf(request.query));
+    return libraryFiles(workspace, projectOf(ctx, request.query));
   });
 
   app.put<{
@@ -28,7 +61,7 @@ export function registerAuthoringRoutes({ app, workspace, hostOnly }: RouteConte
     if (definition.id !== request.params.id) {
       return reply.code(400).send({ error: 'The type in the request has a different id.' });
     }
-    const projectId = projectOf(request.query);
+    const projectId = projectOf(ctx, request.query);
     const result = await upsertType(workspace, projectId, definition, { file, baseHash });
     return { file: result.file, created: result.created, ...result.library };
   });
@@ -37,9 +70,68 @@ export function registerAuthoringRoutes({ app, workspace, hostOnly }: RouteConte
     '/api/types/:id',
     async (request, reply) => {
       if (hostOnly(request, reply)) return;
-      const projectId = projectOf(request.query);
+      const projectId = projectOf(ctx, request.query);
       await removeType(workspace, projectId, request.params.id);
       return libraryFiles(workspace, projectId);
+    },
+  );
+}
+
+/** The new name a rename asks for, or a 400 reply when it gives none. */
+function newName(body: RenameBody | undefined, reply: FastifyReply): string | undefined {
+  if (typeof body?.to === 'string') return body.to;
+  void reply.code(400).send({ error: 'Send the new name as "to".' });
+  return undefined;
+}
+
+/** Renaming types and fields, with every reference to them, as one change to the files. */
+function registerRenameRoutes(ctx: RouteContext): void {
+  const { app, workspace, hostOnly } = ctx;
+  app.post<{ Params: { id: string }; Querystring: ProjectQuery; Body: RenameBody | undefined }>(
+    '/api/types/:id/rename',
+    async (request, reply) => {
+      if (hostOnly(request, reply)) return;
+      const to = newName(request.body, reply);
+      if (to === undefined) return;
+      const projectId = projectOf(ctx, request.query);
+      const { id } = await renameType(workspace, projectId, request.params.id, to);
+      return { id, ...(await libraryFiles(workspace, projectId)) };
+    },
+  );
+
+  app.post<{
+    Params: { id: string; field: string };
+    Querystring: ProjectQuery;
+    Body: RenameBody | undefined;
+  }>('/api/types/:id/fields/:field/rename', async (request, reply) => {
+    if (hostOnly(request, reply)) return;
+    const to = newName(request.body, reply);
+    if (to === undefined) return;
+    const projectId = projectOf(ctx, request.query);
+    const { id, field: from } = request.params;
+    const { field } = await renameField(workspace, projectId, id, { from, to });
+    return { field, ...(await libraryFiles(workspace, projectId)) };
+  });
+}
+
+/** An image dropped onto the designer, saved into the project for faces to use. */
+function registerAssetRoute(ctx: RouteContext): void {
+  const { app, workspace, hostOnly } = ctx;
+  app.put<{ Querystring: ProjectQuery; Body: { file?: unknown; base64?: unknown } | undefined }>(
+    '/api/assets',
+    { bodyLimit: ASSET_BODY_LIMIT },
+    async (request, reply) => {
+      if (hostOnly(request, reply)) return;
+      const { file, base64 } = request.body ?? {};
+      if (typeof file !== 'string' || typeof base64 !== 'string') {
+        return reply
+          .code(400)
+          .send({ error: 'Send the path as "file" and the contents as "base64".' });
+      }
+      const projectId = projectOf(ctx, request.query);
+      const free = unusedPath(workspace.project(projectId).dir, file);
+      const result = await addAsset(workspace, projectId, free, { base64 });
+      return { file: result.file };
     },
   );
 }

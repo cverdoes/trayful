@@ -55,6 +55,8 @@ declare global {
     __trayful?: {
       store: typeof useStore;
       worldToScreen: (x: number, y: number) => { x: number; y: number };
+      /** In design mode: where a point on a face, in millimetres, is on the page. */
+      faceToScreen?: (side: 'front' | 'back', x: number, y: number) => { x: number; y: number };
     };
   }
 }

@@ -2,6 +2,8 @@ import type { ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
 import {
   addLayer,
+  assetPath,
+  droppedImage,
   fieldFromSpec,
   fieldSpec,
   freeFieldName,
@@ -16,6 +18,7 @@ import {
   renameKey,
   setIn,
   twoSided,
+  withFieldRenamed,
 } from './edit';
 
 const card = (fields: Partial<ComponentType> = {}): ComponentType => ({
@@ -144,5 +147,33 @@ describe('fields', () => {
   it('names a new field after the ones taken', () => {
     expect(freeFieldName(card())).toBe('field');
     expect(freeFieldName(card({ fields: { field: 'string', field2: 'int' } }))).toBe('field3');
+  });
+});
+
+describe('dropped images', () => {
+  it('are saved under the file’s name, made safe for a path', () => {
+    expect(assetPath('Moon Art (final).JPEG')).toBe('assets/moon-art-final.jpg');
+    expect(assetPath('???.png')).toBe('assets/image.png');
+  });
+
+  it('are centred where they land, keeping their shape, at most half the face', () => {
+    expect(droppedImage('assets/a.png', [200, 100], [30, 40], [60, 90])).toEqual({
+      image: 'assets/a.png',
+      at: [15, 32.5],
+      size: [30, 15],
+    });
+  });
+});
+
+it('renames a field and the templates that use it', () => {
+  const type = card({
+    fields: { title: 'string', cost: 'int' },
+    front: { layers: [{ text: '{{title}} ({{cost}})', when: '{{title}}' }] },
+  });
+  const renamed = withFieldRenamed(type, 'title', 'heading');
+  expect(Object.keys(renamed.fields!)).toEqual(['heading', 'cost']);
+  expect(renamed.front?.layers?.[0]).toEqual({
+    text: '{{heading}} ({{cost}})',
+    when: '{{heading}}',
   });
 });

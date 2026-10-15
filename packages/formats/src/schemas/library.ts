@@ -1,6 +1,6 @@
 // Component types and the library files that define them.
 import { z } from 'zod';
-import { Slug, Vec2, Size, Color, Template, PRIMITIVES, SHAPES } from './common.js';
+import { FieldName, Slug, Vec2, Size, Color, Template, PRIMITIVES, SHAPES } from './common.js';
 
 // ---------------------------------------------------------------------------
 // Fields
@@ -201,7 +201,7 @@ export const ComponentType = z
       .describe('Corner radius in millimetres, for rectangular shapes.'),
     fill: Color.optional().describe('Shorthand for `front.fill`.'),
     fields: z
-      .record(z.string().regex(/^[a-zA-Z_]\w*$/), Field)
+      .record(FieldName, Field)
       .optional()
       .describe('Per-component data, filled by the inventory and usable as `{{field}}` in faces.'),
     front: Face.optional().describe('The face-up side.'),

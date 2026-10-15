@@ -69,6 +69,7 @@ describe('MCP tools', () => {
         'query_objects',
         'redo',
         'remove_type',
+        'rename_type',
         'render_component',
         'reset_table',
         'roll',

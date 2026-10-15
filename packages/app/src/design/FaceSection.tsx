@@ -50,7 +50,7 @@ function SideTabs({ type, side }: Readonly<{ type: ComponentType; side: Side }>)
       type="button"
       className={side === to ? 'tab chosen' : 'tab'}
       aria-pressed={side === to}
-      onClick={() => useDesign.setState({ side: to, layer: undefined })}
+      onClick={() => useDesign.setState({ side: to, layer: undefined, target: undefined })}
     >
       {label}
     </button>
@@ -72,7 +72,7 @@ function LayerList({
   const layers = layersOf(type, side);
   const add = (kind: LayerKind) => {
     editDraft((t) => addLayer(t, side, newLayer(kind, t)));
-    useDesign.setState({ layer: layers.length });
+    useDesign.setState({ layer: layers.length, target: undefined });
   };
   const change = (edit: (t: ComponentType) => ComponentType, layer: number | undefined) => {
     editDraft(edit);
@@ -87,7 +87,7 @@ function LayerList({
             <button
               type="button"
               className="layer-name"
-              onClick={() => useDesign.setState({ layer: i })}
+              onClick={() => useDesign.setState({ layer: i, target: undefined })}
             >
               {layerLabel(layer)}
             </button>

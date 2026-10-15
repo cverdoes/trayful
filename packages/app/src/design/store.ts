@@ -40,6 +40,8 @@ interface DesignStore {
   side: Side;
   /** Index of the selected layer on `side`. */
   layer?: number;
+  /** Index of the selected snap target, when a target is selected instead of a layer. */
+  target?: number;
   /** Id of the component whose field values fill the faces; none means stand-in values. */
   sample?: string;
   problems: Problem[];
@@ -47,6 +49,10 @@ interface DesignStore {
   /** Why the last save or removal was refused. */
   message?: string;
   newTypeOpen: boolean;
+  /** Earlier versions of the draft, newest last, for undo. */
+  past: ComponentType[];
+  /** Versions undone, newest last, for redo. */
+  future: ComponentType[];
 }
 
 export const useDesign = create<DesignStore>(() => ({
@@ -55,6 +61,8 @@ export const useDesign = create<DesignStore>(() => ({
   problems: [],
   status: 'saved',
   newTypeOpen: false,
+  past: [],
+  future: [],
 }));
 
 /** How long after the last change a valid type is saved. */
@@ -67,7 +75,7 @@ let newTypeFile: string | undefined;
 /** Counts the types opened, so a save that ends after another type was opened is ignored. */
 let opened = 0;
 
-const projectId = () => useStore.getState().view?.project ?? '';
+export const projectId = () => useStore.getState().view?.project ?? '';
 
 /** The version of the file a type is in, as the library last listed it. */
 function fileHash(library: Library | undefined, id: string | undefined): string | undefined {
@@ -96,18 +104,59 @@ export function openType(type: ComponentType | undefined): void {
     baseHash: fileHash(library, type?.id),
     side: 'front',
     layer: undefined,
+    target: undefined,
     sample: type && components.find((c) => c.type === type.id)?.id,
     problems: type ? typeDraftProblems(type) : [],
     status: 'saved',
     message: undefined,
+    past: [],
+    future: [],
   });
 }
 
-/** Changes the type being edited, and saves it shortly after if it is valid. */
-export function editDraft(change: (type: ComponentType) => ComponentType): void {
-  const { draft } = useDesign.getState();
+/** Typed edits closer together than this are one step to undo, so typing a word is one step. */
+const UNDO_MERGE = 800;
+let lastEdit = 0;
+
+/**
+ * Changes the type being edited, and saves it shortly after if it is valid. Each
+ * change is a step to undo; with `typing`, it joins the typing just before it.
+ */
+export function editDraft(change: (type: ComponentType) => ComponentType, typing = false): void {
+  const { draft, past } = useDesign.getState();
   if (!draft) return;
   const next = change(draft);
+  if (next !== draft) {
+    const now = Date.now();
+    const merge = typing && now - lastEdit < UNDO_MERGE && past.length > 0;
+    lastEdit = typing ? now : 0;
+    useDesign.setState({ past: merge ? past : [...past, draft], future: [] });
+  }
+  showDraft(next);
+}
+
+/** Steps back to the type as it was before the last change. */
+export function undo(): void {
+  const { draft, past, future } = useDesign.getState();
+  const previous = past.at(-1);
+  if (!draft || !previous) return;
+  lastEdit = 0;
+  useDesign.setState({ past: past.slice(0, -1), future: [...future, draft] });
+  showDraft(previous);
+}
+
+/** Puts back the last change undone. */
+export function redo(): void {
+  const { draft, past, future } = useDesign.getState();
+  const next = future.at(-1);
+  if (!draft || !next) return;
+  lastEdit = 0;
+  useDesign.setState({ past: [...past, draft], future: future.slice(0, -1) });
+  showDraft(next);
+}
+
+/** Shows a new version of the draft with its problems, and saves it soon if it has none. */
+function showDraft(next: ComponentType): void {
   const problems = typeDraftProblems(next);
   useDesign.setState({
     draft: next,
@@ -121,7 +170,7 @@ export function editDraft(change: (type: ComponentType) => ComponentType): void 
 
 /** A change handler that sets one value of the type being edited; undefined removes it. */
 export const setValue = (path: Path) => (value: unknown) =>
-  editDraft((type) => setIn(type, path, value));
+  editDraft((type) => setIn(type, path, value), true);
 
 /**
  * Saves the type being edited, unless it is unchanged or invalid. While a save is on
@@ -130,7 +179,12 @@ export const setValue = (path: Path) => (value: unknown) =>
 export async function saveDraft(): Promise<void> {
   if (saving) return saving;
   const { draft, saved, status } = useDesign.getState();
-  if (!draft || status === 'invalid' || sameValue(draft, saved)) return;
+  if (!draft || status === 'invalid') return;
+  // Undoing back to the saved version leaves nothing to save.
+  if (sameValue(draft, saved)) {
+    if (status === 'unsaved') useDesign.setState({ status: 'saved' });
+    return;
+  }
   saving = send(draft).finally(() => (saving = undefined));
   return saving;
 }
@@ -196,6 +250,7 @@ export async function keepMine(): Promise<void> {
  */
 export async function projectChanged(types: Record<string, ComponentType>): Promise<void> {
   await loadLibrary();
+  if (showWhenLoaded(types)) return;
   const { draft, saved, status } = useDesign.getState();
   if (status !== 'saved') return;
   const current = draft && types[draft.id];
@@ -206,6 +261,29 @@ export async function projectChanged(types: Record<string, ComponentType>): Prom
     openType(current);
     useDesign.setState({ side, layer, sample });
   }
+}
+
+/** A type the server is changing (a rename), to show once the project has it. */
+let expected: { id: string; keepSelection: boolean } | undefined;
+
+/**
+ * Shows the type with id `id` once the project has it: now, if it already does,
+ * else when the change reaches the designer. `keepSelection` keeps the side and layer.
+ */
+export function expectType(id: string, keepSelection: boolean): void {
+  expected = { id, keepSelection };
+  showWhenLoaded(useStore.getState().view?.types ?? {});
+}
+
+function showWhenLoaded(types: Record<string, ComponentType>): boolean {
+  const type = expected && types[expected.id];
+  if (!expected || !type) return false;
+  const { side, layer, target } = useDesign.getState();
+  const keep = expected.keepSelection;
+  expected = undefined;
+  openType(type);
+  if (keep) useDesign.setState({ side, layer, target });
+  return true;
 }
 
 /**
