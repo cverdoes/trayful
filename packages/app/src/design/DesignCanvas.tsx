@@ -13,6 +13,7 @@ import { press, type Gesture } from './gestures';
 import { fitScale } from './layout';
 import { GRID, type Guide, type Point } from './manipulate';
 import { sampleData } from './samples';
+import { readImage } from './files';
 import { addImage } from './projectEdits';
 import { editDraft, useDesign } from './store';
 
@@ -35,12 +36,9 @@ export function DesignCanvas() {
       return;
     }
     const rect = e.currentTarget.getBoundingClientRect();
-    const { side, point } = layoutOf(shown, size).toFace([
-      e.clientX - rect.left,
-      e.clientY - rect.top,
-    ]);
+    const { side } = layoutOf(shown, size).toFace([e.clientX - rect.left, e.clientY - rect.top]);
     readImage(file).then(
-      (image) => addImage(image, side, point),
+      (image) => addImage(image, side),
       () => useDesign.setState({ message: `"${file.name}" could not be read as a picture.` }),
     );
   };
@@ -73,24 +71,6 @@ function useFaceToScreen(
       return { x: rect.left + left + (x + offset) * scale, y: rect.top + top + y * scale };
     };
   }, [box, type, size]);
-}
-
-/** A dropped image file's contents, as base64, and its size in pixels. */
-async function readImage(
-  file: File,
-): Promise<{ name: string; base64: string; natural: [number, number] }> {
-  const url = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error ?? new Error('The file could not be read.'));
-    reader.readAsDataURL(file);
-  });
-  const image = new Image();
-  image.src = url;
-  await image.decode();
-  // An SVG without a width and height decodes as 0 × 0; treat it as square.
-  const natural: [number, number] = [image.naturalWidth || 1, image.naturalHeight || 1];
-  return { name: file.name, base64: url.slice(url.indexOf(',') + 1), natural };
 }
 
 /** Where the faces sit in the stage: each side's left edge, the top, and pixels per millimetre. */

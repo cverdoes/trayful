@@ -4,6 +4,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { isLocalOrigin } from './access.js';
 import { routeContext, type TableQuery } from './routes/context.js';
+import { registerAssetRoutes } from './routes/assets.js';
 import { registerAuthoringRoutes } from './routes/authoring.js';
 import { registerFileRoutes } from './routes/files.js';
 import { registerGuards } from './routes/guards.js';
@@ -97,6 +98,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   registerPlayerRoutes(ctx);
   registerTableRoutes(ctx);
   registerAuthoringRoutes(ctx);
+  registerAssetRoutes(ctx);
   await registerFileRoutes(ctx, options.appDir ?? defaultAppDir());
   registerSocket(ctx);
   registerMcp(ctx);

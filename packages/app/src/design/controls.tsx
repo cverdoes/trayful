@@ -186,6 +186,7 @@ export function Select<T extends string>({
   options,
   onChange,
   empty,
+  labels,
 }: Readonly<{
   id?: string;
   value: T | undefined;
@@ -193,6 +194,8 @@ export function Select<T extends string>({
   onChange: (value: T | undefined) => void;
   /** Label for leaving the value out, when it may be left out. */
   empty?: string;
+  /** What to show for each option, when not the value itself. */
+  labels?: Partial<Record<T, string>>;
 }>) {
   return (
     <select
@@ -203,7 +206,7 @@ export function Select<T extends string>({
       {empty !== undefined && <option value="">{empty}</option>}
       {options.map((o) => (
         <option key={o} value={o}>
-          {o}
+          {labels?.[o] ?? o}
         </option>
       ))}
     </select>
@@ -239,6 +242,13 @@ export function ColorInput({
         aria-label="Pick a colour"
         value={/^#[0-9a-f]{6}$/i.test(hex ?? '') ? hex : '#ffffff'}
         onChange={(e) => onChange(e.target.value)}
+      />
+      <button
+        type="button"
+        className={value === 'transparent' ? 'swatch transparent chosen' : 'swatch transparent'}
+        title="transparent"
+        aria-label="Transparent"
+        onClick={() => onChange('transparent')}
       />
       {Object.entries(palette).map(([name, color]) => (
         <button

@@ -27,15 +27,20 @@ export async function imagesSettled(): Promise<void> {
 }
 
 /**
- * Loads a project image by its path inside the project folder. The project's
- * version is part of the address, so an edited image shows up after a reload.
+ * The address of a file in the project folder. The project's version is part of
+ * it, so an edited image shows up after a reload.
+ */
+export function projectFileUrl(view: { project: string; version: number }, path: string): string {
+  const file = path.split('/').map(encodeURIComponent).join('/');
+  return `/project-files/${encodeURIComponent(view.project)}/${file}?v=${view.version}`;
+}
+
+/**
+ * Loads a project image by its path inside the project folder.
  */
 export function useProjectImage(path: string | undefined): HTMLImageElement | undefined {
   const view = useStore((s) => s.view);
-  const src =
-    path && view
-      ? `/project-files/${encodeURIComponent(view.project)}/${path.split('/').map(encodeURIComponent).join('/')}?v=${view.version}`
-      : undefined;
+  const src = path && view ? projectFileUrl(view, path) : undefined;
   const [image, setImage] = useState(() => (src ? cache.get(src) : undefined));
   useEffect(() => {
     if (!src) return;

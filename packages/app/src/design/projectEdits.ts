@@ -1,8 +1,7 @@
 // Designer changes that reach beyond the type being edited: renames, which the
 // server makes in every file that uses the name, and images saved into the assets.
-import { sizeOf } from '../render/geometry';
-import { renameField, renameType, uploadAsset } from './api';
-import { addItem, assetPath, droppedImage, type Side } from './edit';
+import { addImageAsset, renameField, renameType } from './api';
+import { assetPath, editType, sidePath, type Side } from './edit';
 import { editDraft, expectType, projectId, settle, useDesign } from './store';
 
 /**
@@ -51,21 +50,15 @@ async function whenSaved(change: () => Promise<void>): Promise<void> {
   }
 }
 
-/** A picture dropped on a face: saved into the project's assets, then added as a layer there. */
-export async function addImage(
-  image: { name: string; base64: string; natural: [number, number] },
-  side: Side,
-  at: [number, number],
-): Promise<void> {
+/**
+ * A picture dropped on a side: saved into the project and named in its assets,
+ * then shown on that side, covering it, in place of any image it had.
+ */
+export async function addImage(image: { name: string; base64: string }, side: Side): Promise<void> {
   try {
-    const { file } = await uploadAsset(projectId(), assetPath(image.name), image.base64);
-    let layer: number | undefined;
-    editDraft((t) => {
-      const added = addItem(t, side, { layer: droppedImage(file, image.natural, at, sizeOf(t)) });
-      layer = added.index;
-      return added.type;
-    });
-    useDesign.setState({ side, layer, target: undefined });
+    const { name } = await addImageAsset(projectId(), assetPath(image.name), image.base64);
+    editDraft((t) => editType(t, [...sidePath(side), 'image'], name));
+    useDesign.setState({ side, layer: undefined, target: undefined });
   } catch (err) {
     useDesign.setState({ message: `Could not add the image: ${(err as Error).message}` });
   }

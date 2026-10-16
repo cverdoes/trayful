@@ -328,7 +328,7 @@ export function freeFieldName(type: ComponentType): string {
 }
 
 // ---------------------------------------------------------------------------
-// Dropped images
+// Pictures
 // ---------------------------------------------------------------------------
 
 /** Where a dropped image file is saved: `assets/` and the file's name, made safe for a path. */
@@ -338,22 +338,6 @@ export function assetPath(fileName: string): string {
   const words = (dot > 0 ? fileName.slice(0, dot) : fileName).toLowerCase().split(/[^a-z0-9]/);
   const name = words.filter(Boolean).join('-');
   return `assets/${name || 'image'}.${ext === 'jpeg' ? 'jpg' : ext}`;
-}
-
-/**
- * An image layer for a picture dropped on a face: centred where it landed, keeping
- * its shape, and no bigger than half the face each way.
- */
-export function droppedImage(
-  image: string,
-  natural: [number, number],
-  at: [number, number],
-  face: [number, number],
-): Layer {
-  const scale = Math.min(face[0] / 2 / natural[0], face[1] / 2 / natural[1]);
-  const tenth = (mm: number) => Math.round(mm * 10) / 10;
-  const [w, h] = [tenth(natural[0] * scale), tenth(natural[1] * scale)];
-  return { image, at: [tenth(at[0] - w / 2), tenth(at[1] - h / 2)], size: [w, h] };
 }
 
 /**

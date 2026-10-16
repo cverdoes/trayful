@@ -4,7 +4,6 @@ import {
   addItem,
   assetPath,
   canMove,
-  droppedImage,
   editType,
   fieldFromSpec,
   fieldSpec,
@@ -292,14 +291,6 @@ describe('dropped images', () => {
   it('are saved under the file’s name, made safe for a path', () => {
     expect(assetPath('Moon Art (final).JPEG')).toBe('assets/moon-art-final.jpg');
     expect(assetPath('???.png')).toBe('assets/image.png');
-  });
-
-  it('are centred where they land, keeping their shape, at most half the face', () => {
-    expect(droppedImage('assets/a.png', [200, 100], [30, 40], [60, 90])).toEqual({
-      image: 'assets/a.png',
-      at: [15, 32.5],
-      size: [30, 15],
-    });
   });
 });
 

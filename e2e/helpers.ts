@@ -1,4 +1,6 @@
-import type { Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { expect, type Page } from '@playwright/test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { TableState } from '@trayful/core';
@@ -77,4 +79,45 @@ export async function freshTable(baseURL: string, setup?: string | false) {
 export async function openTable(page: Page) {
   await page.goto('/');
   await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
+}
+
+/** A file of a project, as the server has written it. */
+export async function libraryFile(page: Page, project: string, file: string): Promise<string> {
+  const health = (await (await page.request.get('/api/health')).json()) as { root: string };
+  return readFile(path.join(health.root, project, file), 'utf8');
+}
+
+export async function waitSaved(page: Page) {
+  await expect(page.getByRole('status')).toContainText('Saved to');
+}
+
+/** Makes a component in the designer: its name, what to start like, and what it is. */
+export async function newComponent(page: Page, name: string, startLike: string) {
+  await page.getByRole('button', { name: '+ New component' }).click();
+  const dialog = page.getByRole('dialog', { name: 'New component' });
+  await dialog.getByRole('textbox', { name: 'Name' }).fill(name);
+  await dialog.getByLabel(startLike, { exact: true }).check();
+  await dialog.getByRole('button', { name: 'Next' }).click();
+  await dialog.getByRole('button', { name: 'Create' }).click();
+  await waitSaved(page);
+}
+
+interface SavedType {
+  is?: string;
+  container?: unknown;
+  values?: unknown;
+  face?: { image?: unknown; layers?: unknown[] };
+}
+
+/** The component as the table has it, once a save has reached it. */
+export function savedType(page: Page, id: string) {
+  return page.evaluate(
+    (id) =>
+      (
+        window.__trayful!.store.getState() as unknown as {
+          view?: { types: Record<string, SavedType> };
+        }
+      ).view?.types[id],
+    id,
+  );
 }

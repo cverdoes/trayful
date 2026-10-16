@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { checkImageName, setImage } from '../assets.js';
 import { addAsset, removeType, setInventory, upsertType } from '../authoring.js';
 import { migrateFolder } from '../migrate.js';
 import { renameType } from '../renaming.js';
@@ -139,21 +140,29 @@ function registerBoxTools(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Add an image or data file',
       description:
-        'Write an SVG, PNG, JPEG, GIF, WebP or CSV file into the project, for use in faces (name images in the assets file, assets.yaml, to tile them) or as card data (`from` in the inventory). SVG and CSV can be given as text, anything as base64. Replaces a file with the same path.',
+        'Write an SVG, PNG, JPEG, GIF, WebP or CSV file into the project, as card data (`from` in the inventory) or as an image. Give an image a `name` to use it on faces (`image: <name>`), and `rows` and `cols` to cut it into tiles, as on a sheet of cards or a die strip; that names it in the assets file. SVG and CSV can be given as text, anything as base64. Replaces a file with the same path.',
       inputSchema: {
         project: projectParam,
         path: z.string().describe('Path inside the project folder, such as `assets/storm.svg`.'),
         text: z.string().optional().describe('File contents as text (SVG or CSV).'),
         base64: z.string().optional().describe('File contents as base64 (images).'),
+        name: z
+          .string()
+          .optional()
+          .describe('For an image: the name faces use, such as `terrain` or `d6-faces`.'),
+        rows: z.int().positive().optional().describe('With `name`: rows of tiles. Default 1.'),
+        cols: z.int().positive().optional().describe('With `name`: columns of tiles. Default 1.'),
       },
     },
-    async ({ project, path: file, text: body, base64 }) => {
+    async ({ project, path: file, text: body, base64, name, rows, cols }) => {
       try {
-        const result = await addAsset(workspace, project ?? session().projectId, file, {
-          text: body,
-          base64,
-        });
-        return authored(`Wrote ${result.file} (${result.bytes} bytes).`);
+        const projectId = project ?? session().projectId;
+        // A bad name is refused before the file is written.
+        if (name !== undefined) checkImageName(name);
+        const result = await addAsset(workspace, projectId, file, { text: body, base64 });
+        if (name !== undefined) await setImage(workspace, projectId, name, { file, rows, cols });
+        const named = name === undefined ? '' : ` Faces use it as "${name}".`;
+        return authored(`Wrote ${result.file} (${result.bytes} bytes).${named}`);
       } catch (err) {
         return failure(err);
       }

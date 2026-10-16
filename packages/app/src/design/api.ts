@@ -73,9 +73,46 @@ async function post<T>(url: string, body: unknown, method = 'POST'): Promise<T> 
   );
 }
 
-/** Saves an image into the project's assets, returning the path it was saved under. */
-export async function uploadAsset(project: string, file: string, base64: string) {
-  return post<{ file: string }>(`/api/assets${query(project)}`, { file, base64 }, 'PUT');
+const assetUrl = (project: string, kind: 'images' | 'colors', name: string) =>
+  `/api/assets/${kind}/${encodeURIComponent(name)}${query(project)}`;
+
+/** An image file and how it is cut into tiles. */
+export interface ImageSettings {
+  file: string;
+  rows?: number;
+  cols?: number;
+}
+
+/** Saves a new image into the project and names it after its file; answers its name and path. */
+export async function addImageAsset(project: string, file: string, base64: string) {
+  return post<{ name: string; file: string }>(`/api/assets/images${query(project)}`, {
+    file,
+    base64,
+  });
+}
+
+/** Names an image in the project, or changes how it is cut into tiles. */
+export async function setImageAsset(project: string, name: string, image: ImageSettings) {
+  return post<{ name: string }>(assetUrl(project, 'images', name), image, 'PUT');
+}
+
+/** Takes the name off an image; refused while a component uses it. */
+export async function removeImageAsset(project: string, name: string) {
+  return json<{ name: string }>(
+    await fetch(assetUrl(project, 'images', name), { method: 'DELETE' }),
+  );
+}
+
+/** Names a colour, or changes the one of that name. */
+export async function setColorAsset(project: string, name: string, color: string) {
+  return post<{ name: string }>(assetUrl(project, 'colors', name), { color }, 'PUT');
+}
+
+/** Removes a named colour. */
+export async function removeColorAsset(project: string, name: string) {
+  return json<{ name: string }>(
+    await fetch(assetUrl(project, 'colors', name), { method: 'DELETE' }),
+  );
 }
 
 /** Gives a type a new id, everywhere the project uses it: library, inventory and setups. */

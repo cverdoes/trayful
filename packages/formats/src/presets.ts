@@ -5,6 +5,9 @@ import { ComponentType } from './schemas.js';
 import { typeProblems } from './type-checks.js';
 
 /** A common component to start a new type from: everything but its id. */
+// Names typed in the designer become ids and asset names the same way inventory ids do.
+export { slugify };
+
 export interface TypePreset {
   name: string;
   type: Omit<ComponentType, 'id'>;

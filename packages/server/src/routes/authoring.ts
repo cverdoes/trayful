@@ -1,10 +1,10 @@
 import type { FastifyReply } from 'fastify';
-import { addNewAsset, libraryFiles, removeType, upsertType } from '../authoring.js';
+import { libraryFiles, removeType, upsertType } from '../authoring.js';
 import { migrateFolder } from '../migrate.js';
 import { renameField, renameType } from '../renaming.js';
 import type { RouteContext } from './context.js';
 
-interface ProjectQuery {
+export interface ProjectQuery {
   project?: string;
 }
 
@@ -13,18 +13,14 @@ interface RenameBody {
   to?: unknown;
 }
 
-/** Images dropped onto the designer arrive as base64, a third larger than the file. */
-const ASSET_BODY_LIMIT = 20 * 1024 * 1024;
-
 /** Designing component types in the browser: the host's library, saved through the authoring module. */
 export function registerAuthoringRoutes(ctx: RouteContext): void {
   registerTypeRoutes(ctx);
   registerRenameRoutes(ctx);
-  registerAssetRoute(ctx);
   registerMigrateRoute(ctx);
 }
 
-const projectOf = ({ workspace }: RouteContext, query: ProjectQuery) =>
+export const projectOf = ({ workspace }: RouteContext, query: ProjectQuery) =>
   query.project ?? workspace.active.projectId;
 
 function registerTypeRoutes(ctx: RouteContext): void {
@@ -99,26 +95,6 @@ function registerRenameRoutes(ctx: RouteContext): void {
     const { field } = await renameField(workspace, projectId, id, { from, to });
     return { field, ...(await libraryFiles(workspace, projectId)) };
   });
-}
-
-/** An image dropped onto the designer, saved into the project for faces to use. */
-function registerAssetRoute(ctx: RouteContext): void {
-  const { app, workspace, hostOnly } = ctx;
-  app.put<{ Querystring: ProjectQuery; Body: { file?: unknown; base64?: unknown } | undefined }>(
-    '/api/assets',
-    { bodyLimit: ASSET_BODY_LIMIT },
-    async (request, reply) => {
-      if (hostOnly(request, reply)) return;
-      const { file, base64 } = request.body ?? {};
-      if (typeof file !== 'string' || typeof base64 !== 'string') {
-        return reply
-          .code(400)
-          .send({ error: 'Send the path as "file" and the contents as "base64".' });
-      }
-      const result = await addNewAsset(workspace, projectOf(ctx, request.query), file, base64);
-      return { file: result.file };
-    },
-  );
 }
 
 /** Moving a project in the first file format to the current one, so it can be designed. */

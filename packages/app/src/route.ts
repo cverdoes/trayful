@@ -3,8 +3,9 @@ export function route(): {
   project?: string;
   table?: string;
   print: boolean;
-  /** Design mode, showing the type named by `type` if any. */
+  /** Design mode, showing the type named by `type` if any, or the assets page. */
   design: boolean;
+  assets: boolean;
   type?: string;
   join: boolean;
 } {
@@ -14,6 +15,7 @@ export function route(): {
     table: params.get('table') ?? undefined,
     print: params.has('print'),
     design: params.has('design'),
+    assets: params.has('assets'),
     type: params.get('type') ?? undefined,
     // Set by an invite link: ask for a name even on the host's computer.
     join: params.has('join'),
@@ -42,6 +44,14 @@ export function go(to: {
   if (to.print) params.set('print', '');
   if (to.design) params.set('design', '');
   location.search = params.toString();
+}
+
+/** Puts the design page shown (components or assets) in the address, without reloading. */
+export function showDesignPage(assets: boolean): void {
+  const params = new URLSearchParams(location.search);
+  if (assets) params.set('assets', '');
+  else params.delete('assets');
+  history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
 }
 
 /** Puts the type shown in design mode in the address, so a reload or a shared link shows it again. */
