@@ -8,7 +8,9 @@ import {
   type SnapTarget,
 } from '@trayful/formats/browser';
 import { sizeOf } from '../render/geometry';
-import { parseValues, setIn } from './edit';
+import { useStore } from '../store';
+import { acceptOptions, ComponentPicker, NO_TYPES } from './ComponentPicker';
+import { setIn } from './edit';
 import { NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
 import { newTarget, spotsOf, targetKind, type NewTargetKind } from './snaps';
 import { editDraft, setValue, useDesign } from './store';
@@ -88,6 +90,7 @@ function describe(target: SnapTarget): string {
 
 function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: number }>) {
   const at = (...key: string[]) => ['container', index, ...key];
+  const types = useStore((s) => s.view?.types ?? NO_TYPES);
   const remove = () => {
     // A container has at least one area, so removing the last one stops it being one.
     editDraft((t) =>
@@ -105,14 +108,12 @@ function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: n
       </Row>
       <Row label="Accepts" path={at('accepts')}>
         {(id) => (
-          <TextInput
+          <ComponentPicker
             id={id}
-            value={target.accepts?.join(', ')}
+            value={target.accepts}
+            options={acceptOptions(types)}
             placeholder="anything"
-            onChange={(text) => {
-              const ids = parseValues(text ?? '').map(String);
-              setValue(at('accepts'))(ids.length ? ids : undefined);
-            }}
+            onChange={setValue(at('accepts'))}
           />
         )}
       </Row>

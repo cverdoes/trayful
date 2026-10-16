@@ -23,7 +23,10 @@ async function addArea(inspector: Locator, kind: string, id: string, accepts?: s
     .click();
   const editor = inspector.getByLabel('Selected drop area');
   await editor.getByLabel('Id', { exact: true }).fill(id);
-  if (accepts) await editor.getByLabel('Accepts').fill(accepts);
+  if (accepts) {
+    await editor.getByLabel('Accepts').fill(accepts);
+    await editor.getByLabel('Accepts').press('Enter');
+  }
   return editor;
 }
 

@@ -6,6 +6,8 @@ import {
   type ComponentType,
   type Control,
 } from '@trayful/formats/browser';
+import { useStore } from '../store';
+import { ComponentPicker, componentOptions, NO_TYPES } from './ComponentPicker';
 import { parseValues, setIn, withRepresentation, type Path } from './edit';
 import { Checkbox, NumberInput, PairInput, Row, SizeInput, TextInput } from './controls';
 import { FieldsSection } from './FieldsSection';
@@ -146,6 +148,7 @@ const toggle = (key: Path[number]) => (on: boolean) => {
 function BehaviourSection({ type }: Readonly<{ type: ComponentType }>) {
   const step = typeof type.rotates === 'object' ? type.rotates.step : undefined;
   const partners = typeof type.stackable === 'object' ? type.stackable.with : undefined;
+  const types = useStore((s) => s.view?.types ?? NO_TYPES);
   return (
     <section aria-label="Behaviour">
       <h3>Behaviour</h3>
@@ -175,14 +178,16 @@ function BehaviourSection({ type }: Readonly<{ type: ComponentType }>) {
       {type.stackable !== undefined && (
         <Row label="Stacks with" path={['stackable', 'with']}>
           {(id) => (
-            <TextInput
+            <ComponentPicker
               id={id}
-              value={partners?.join(', ')}
+              value={partners}
+              // Only stackable components can share a stack.
+              options={componentOptions(
+                types,
+                (t) => t.id !== type.id && t.stackable !== undefined,
+              )}
               placeholder="only its own kind"
-              onChange={(text) => {
-                const ids = parseValues(text ?? '').map(String);
-                setValue(['stackable', 'with'])(ids.length ? ids : undefined);
-              }}
+              onChange={setValue(['stackable', 'with'])}
             />
           )}
         </Row>

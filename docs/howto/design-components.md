@@ -28,7 +28,7 @@ Under **Behaviour**, pieces and zones switch on what they can do, each off until
 
 - **Flippable (has a back)** gives it a back side, which a **Back** section further down designs.
 - **Rotates** lets it turn on the table, by **Rotate step** degrees at a time (90 unless set).
-- **Stackable** lets it pile up into stacks and decks. **Stacks with** lists other components that may share its piles, such as coins of another value.
+- **Stackable** lets it pile up into stacks and decks. **Stacks with** lists other components that may share its piles, such as coins of another value: type a few letters of a stackable component's name and pick it, and click × on a chip to take it off.
 
 Dice and counters have **Values** instead: a **Range** of whole numbers or a list of values such as `sun, rain, frost`, and whether the value **Can be rolled** or **Steps up and down**.
 
@@ -81,7 +81,7 @@ Select a drop area in the list or by clicking one of its spots, then drag on the
 - Points move one by one; while a list of points is selected, click on the board to add the next spot of the track (click outside the board, or pick something else in the inspector, to stop).
 - An area moves by its top-left corner and changes size by the opposite one.
 
-**Accepts** limits a drop area to some components, such as `worker`, so other pieces pass over it.
+**Accepts** limits a drop area to some components, such as a worker, or to any component of a kind, such as any die, so other pieces pass over it. Pick them the same way as for **Stacks with**.
 
 **Holds** says what the drop area does with what lands in it. Spots hold one thing each, or a pile each. An area keeps things where they are dropped, lines them up in a row, or is a bag that hides them until someone draws one at random. See [modes](../reference/snapping.md#modes).
 
