@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../../packages/formats/schema/assets.schema.json
+kind: assets
+images:
+  die-suns: { file: assets/die-suns.svg, cols: 6 }
+  die-moons: { file: assets/die-moons.svg, cols: 6 }
+  die-crowns: { file: assets/die-crowns.svg, cols: 6 }
+  die-arms: { file: assets/die-arms.svg, cols: 6 }
+colors:
+  suns: '#c8322d'
+  moons: '#222233'
+  crowns: '#2e7d4f'
+  arms: '#2a5db0'
+  paper: '#fbf7ee'

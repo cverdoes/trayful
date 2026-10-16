@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/library.schema.json
+# Not part of the piecepack: drop areas laid over tiles, since a board made of
+# separate tiles cannot share spots between them.
+kind: library
+components:
+  - id: tablut-points
+    name: Tablut points
+    description: The 9 x 9 points where the lines of 4 x 4 face-down tiles cross.
+    size: 200
+    is: zone
+    container:
+      - id: point
+        grid: { origin: [0, 0], cols: 9, rows: 9, cell: 25 }
+        accepts: [coin, pawn]

@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../../packages/formats/schema/inventory.schema.json
+kind: inventory
+components:
+  - component: tile
+    from: data/suits-and-ranks.csv
+  - component: coin
+    from: data/suits-and-ranks.csv
+  - component: pawn
+    each: { suit: [suns, moons, crowns, arms] }
+  - component: die-suns
+  - component: die-moons
+  - component: die-crowns
+  - component: die-arms
+  - component: tablut-points
