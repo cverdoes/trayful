@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { addAsset, removeType, setInventory, upsertType } from '../authoring.js';
+import { migrateFolder } from '../migrate.js';
 import { renameType } from '../renaming.js';
 import { count, failure, projectParam, text, type ToolContext } from './context.js';
 
@@ -16,6 +17,7 @@ export function registerAuthoringTools(server: McpServer, ctx: ToolContext): voi
   registerRenameTool(server, ctx);
   registerBoxTools(server, ctx);
   registerRender(server, ctx);
+  registerMigrate(server, ctx);
 }
 
 /** Adding, changing and removing component types. */
@@ -26,18 +28,20 @@ function registerTypeTools(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Add or change a component type',
       description:
-        'Add a component type to the project library, or replace the type with the same id. The definition follows the library format (see trayful://docs/reference/library.md): id, base primitive, size in mm, fields, and front/back faces made of layers.',
+        'Add a component type to the project library, or replace the type with the same id. The definition follows the library format (see trayful://docs/reference/library.md): id, size in mm, what it `is` (piece, zone, die or counter), its `face`, and the behaviours it has (`flippable`, `rotates`, `stackable`, `container`, `values`).',
       inputSchema: {
         project: projectParam,
         definition: z
           .record(z.string(), z.unknown())
           .describe(
-            'The type, e.g. { "id": "event-card", "base": "card", "size": [63, 88], "fields": { "title": "string" }, "front": { "fill": "#fff", "layers": [{ "text": "{{title}}", "at": [5, 5] }] } }.',
+            'The type, e.g. { "id": "event-card", "size": [63, 88], "is": "piece", "flippable": true, "stackable": true, "face": { "fill": "#fff", "labels": [{ "field": "title", "at": [5, 5] }] } }.',
           ),
         file: z
           .string()
           .optional()
-          .describe('Library file for a new type. Default: next to types of the same primitive.'),
+          .describe(
+            'Library file for a new type. Default: next to types that are the same kind of thing (`is`).',
+          ),
       },
     },
     async ({ project, definition, file }) => {
@@ -81,7 +85,7 @@ function registerRenameTool(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Rename a component type',
       description:
-        'Give a component type a new id, and change every reference to it in one go: its library definition, `accepts` lists of snap targets, inventory entries, and setup steps that place its components or use its snap targets. Component ids change with it (`worker.red.1` becomes `farmer.red.1`).',
+        'Give a component type a new id, and change every reference to it in one go: its library definition, `accepts` lists of drop areas, `stackable.with` lists, inventory entries, and setup steps that place its components or use its drop areas. Component ids change with it (`worker.red.1` becomes `farmer.red.1`).',
       inputSchema: {
         project: projectParam,
         type: z.string().describe('Current type id.'),
@@ -107,7 +111,7 @@ function registerBoxTools(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Set what is in the box',
       description:
-        'Replace the inventory entries for one component type. Each entry is like an inventory entry without `type`: { count, deck, data, items: [rows], from: "data/file.csv", each: {...} } (see trayful://docs/reference/inventory.md). An empty list takes the type out of the box. New components appear on open tables.',
+        'Replace the inventory entries for one component type. Each entry is like an inventory entry without `component`: { count, deck, data, items: [rows], from: "data/file.csv", each: {...} } (see trayful://docs/reference/inventory.md). An empty list takes the type out of the box. New components appear on open tables.',
       inputSchema: {
         project: projectParam,
         type: z.string().describe('Component type id.'),
@@ -135,7 +139,7 @@ function registerBoxTools(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Add an image or data file',
       description:
-        'Write an SVG, PNG, JPEG, GIF, WebP or CSV file into the project, for use in faces (`image` layers) or as card data (`from` in the inventory). SVG and CSV can be given as text, anything as base64. Replaces a file with the same path.',
+        'Write an SVG, PNG, JPEG, GIF, WebP or CSV file into the project, for use in faces (name images in the assets file, assets.yaml, to tile them) or as card data (`from` in the inventory). SVG and CSV can be given as text, anything as base64. Replaces a file with the same path.',
       inputSchema: {
         project: projectParam,
         path: z.string().describe('Path inside the project folder, such as `assets/storm.svg`.'),
@@ -165,7 +169,7 @@ function registerRender(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Picture of a component',
       description:
-        'A PNG of one component type, front and back side by side, drawn by the browser exactly as on the table. Give field values to fill its `{{field}}` placeholders. Needs the table open in a browser.',
+        'A PNG of one component type, face and back side by side, drawn by the browser exactly as on the table. Give field values to fill its `{{field}}` placeholders. Needs the table open in a browser.',
       inputSchema: {
         type: z.string().describe('Component type id of the active project.'),
         data: z
@@ -184,6 +188,30 @@ function registerRender(server: McpServer, ctx: ToolContext): void {
         return {
           content: [{ type: 'image', data: png.toString('base64'), mimeType: 'image/png' }],
         };
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+}
+
+/** Moving a project made for an earlier Trayful to the current file format. */
+function registerMigrate(server: McpServer, ctx: ToolContext): void {
+  const { workspace, session } = ctx;
+  server.registerTool(
+    'migrate_project',
+    {
+      title: 'Move a project to the current format',
+      description:
+        'Rewrite a project made in the first file format (trayful/1) in the current one, as `trayful migrate` does. Such projects play as they are, but their components can only be changed after this.',
+      inputSchema: { project: projectParam },
+    },
+    async ({ project }) => {
+      try {
+        const projectId = project ?? session().projectId;
+        const files = await migrateFolder(workspace.entry(projectId).dir);
+        await workspace.reload(projectId);
+        return authored(`Rewrote ${files.join(', ')} in the current format.`);
       } catch (err) {
         return failure(err);
       }

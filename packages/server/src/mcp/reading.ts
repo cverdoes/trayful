@@ -30,10 +30,10 @@ function registerDescribe(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Find objects',
       description:
-        'Lists objects on the table as JSON, filtered by type, primitive, field values or region; or lists the cards inside a stack.',
+        'Lists objects on the table as JSON, filtered by type, representation, field values or region; or lists the cards inside a stack.',
       inputSchema: {
         type: z.string().optional().describe('Component type id, such as `action-card`.'),
-        base: z.string().optional().describe('Primitive such as `card`, `meeple`, `die`.'),
+        is: z.string().optional().describe('What it is: `piece`, `zone`, `die` or `counter`.'),
         where: z
           .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
           .optional()

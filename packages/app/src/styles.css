@@ -516,6 +516,12 @@ body.printing #root {
   font-size: 13px;
 }
 
+.design-check {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
 .design-control {
   display: flex;
   flex-direction: column;

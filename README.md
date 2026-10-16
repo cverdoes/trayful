@@ -2,7 +2,7 @@
 
 Trayful is a boardgame prototyping table. You describe your components (cards, boards, tokens, meeples, dice, counters) in plain YAML files, and Trayful lays them out on a table where people and AI agents can drag, flip, rotate, stack and shuffle them.
 
-> **Status: Milestones 1 to 6.** You can start a prototype from a template, play it on a table in your browser with pieces that snap onto boards and a setup that lays out the game, and see every file you save show up on the table at once. Playtesters can join a table from their own computers through an invite link to that table, each with a private hand and their own undo. An AI agent such as Claude can play on the same table over MCP, and design components with you. You can print everything at real size to play on paper. See the [roadmap](#roadmap).
+> **Status: Milestones 1 to 9.** You can start a prototype from a template, play it on a table in your browser with pieces that snap onto boards and a setup that lays out the game, and see every file you save show up on the table at once. Playtesters can join a table from their own computers through an invite link to that table, each with a private hand and their own undo. An AI agent such as Claude can play on the same table over MCP, and design components with you. You can design components in the browser, describing each one by what it is and what it can do, with artwork from tiled image sheets. You can print everything at real size to play on paper. See the [roadmap](#roadmap).
 
 ## Quick start
 
@@ -28,7 +28,7 @@ pnpm trayful play examples/harvest-moon
 
 ## Playing on the table
 
-Drag a piece to move it. While you drag, the board spots it may go to light up, and dropping it near one snaps it in; pieces on a board move along with the board. Drag the top card off a pile to draw it, and drop cards on a pile to stack them; hold Shift to drag a whole pile. Double-click a card to flip it or a die to roll it. Click to select, Shift+click or Shift+drag on empty table to select several, then use the toolbar or the keys: **F** flip, **Q**/**E** rotate, **D** draw, **S** shuffle, **V** fan or spread a pile out (then drag out any card), **R** roll, **+**/**−** counters, **L** lock (boards start locked), **Ctrl+Z** undo. Drag empty table to pan, scroll to zoom, **0** to fit, **?** for all shortcuts.
+Drag a piece to move it. While you drag, the board spots it may go to light up, and dropping it near one snaps it in; pieces on a board move along with the board. Drag the top card off a pile to draw it, and drop cards on a pile to stack them; hold Shift to drag a whole pile. Double-click a card to flip it or a die to roll it. Click to select, Shift+click or Shift+drag on empty table to select several, then use the toolbar or the keys: **F** flip, **Q**/**E** rotate, **D** draw, **S** shuffle, **V** fan or spread a pile out (then drag out any card), **R** roll, **+**/**−** counters, **L** lock or unlock (setups can lock a board in place), **Ctrl+Z** undo. Drag empty table to pan, scroll to zoom, **0** to fit, **?** for all shortcuts.
 
 A new table starts from the setup named in `trayful.yaml` (Harvest Moon's puts the board in the middle, deals the market and lines up the workers). The table is saved to `tables/table-1.json` inside the project folder as you play, and reopens where you left off. **Start over** in the toolbar sets the table up again from the project files (you can undo it). The menu next to the game's name switches tables: make a **new table** for another playtest, **duplicate** one to try two moves from the same position, or delete one. **Print** opens [print-and-play](docs/howto/print-and-play.md) sheets with every component at real size.
 
@@ -91,16 +91,17 @@ In Claude Desktop the same goes in `claude_desktop_config.json`:
 | `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `set_counter`, `lock` | Play, the same moves people make                  |
 | `undo`, `redo`, `get_history`, `reset_table`                                                                  | Its own undo, the history, and a fresh table      |
 
-Agents can aim moves at board spots by name, such as `main-board/fields/3`, or deal into a whole target such as `main-board/market`; `describe_table` lists every snap target and which spots are free. Face-down cards stay hidden from the agent unless it asks with `reveal: true`. The agent plays as **Claude**, with its own hand (`hand:claude`); it can deal into anyone's hand with `hand:<player>`, but never sees other players' hands. MCP is only offered on your own computer, never to guests. `snapshot` needs the table open in a browser, since the browser draws the picture. Resources give the full table state, the project, each component type, the file format schemas and these docs (`trayful://docs`).
+Agents can aim moves at board spots by name, such as `main-board/fields/3`, or deal into a whole drop area such as `main-board/market`; `describe_table` lists every drop area and which spots are free. Face-down cards stay hidden from the agent unless it asks with `reveal: true`. The agent plays as **Claude**, with its own hand (`hand:claude`); it can deal into anyone's hand with `hand:<player>`, but never sees other players' hands. MCP is only offered on your own computer, never to guests. `snapshot` needs the table open in a browser, since the browser draws the picture. Resources give the full table state, the project, each component, the file format schemas and these docs (`trayful://docs`).
 
-Agents can also build your prototype with you: ask Claude for "an event card type with a title, a rule text and a season band, and a deck of six events", and it writes the type into your library, puts the cards in the box and looks at a picture of the result, while the new deck appears on your table. Every change is checked first, so an agent cannot leave your project broken. See [Let an agent build components](docs/howto/agent-builds-components.md).
+Agents can also build your prototype with you: ask Claude for "an event card with a title, a rule text and a season band, and a deck of six events", and it writes the component into your library, puts the cards in the box and looks at a picture of the result, while the new deck appears on your table. Every change is checked first, so an agent cannot leave your project broken. See [Let an agent build components](docs/howto/agent-builds-components.md).
 
 | Projects and authoring tools                                              | What they do                                                      |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `list_projects`, `open_table`, `duplicate_table`, `delete_table`          | Find projects and tables, and switch the table the agent plays on |
 | `create_project`, `validate_project`                                      | Start a project from the starter template; check one after edits  |
-| `upsert_type`, `rename_type`, `remove_type`, `set_inventory`, `add_asset` | Change component types, what is in the box, and artwork           |
-| `render_component`                                                        | A picture of one component type, as people will see it            |
+| `migrate_project`                                                         | Rewrite a `trayful/1` project in the current file format          |
+| `upsert_type`, `rename_type`, `remove_type`, `set_inventory`, `add_asset` | Change components, what is in the box, and artwork                |
+| `render_component`                                                        | A picture of one component, as people will see it                 |
 
 ## Make your own prototype
 
@@ -109,7 +110,8 @@ A prototype is a folder:
 ```
 my-game/
   trayful.yaml            # project manifest: name and which files to load
-  library/*.yaml          # component types: size, fields, how each side looks
+  assets.yaml             # named images (whole or cut into tiles) and colours
+  library/*.yaml          # components: size, what each is and can do, fields, its face
   inventory.yaml          # what is in the box, and how many of each
   data/*.csv              # optional card data, one row per card
   setups/*.yaml           # optional scripted starting layouts
@@ -123,15 +125,37 @@ pnpm trayful new ../my-game --name "My Game"
 pnpm trayful play ../my-game
 ```
 
-To build component types without writing YAML, click **Design** in the toolbar: the [designer](docs/howto/design-components.md) lays out fields and faces with a live preview, lets you drag layers and board snap spots into place, drop in pictures and rename types everywhere they are used, and saves each change to your library files, keeping your comments.
+To build components without writing YAML, click **Design** in the toolbar: the [designer](docs/howto/design-components.md) switches behaviours on and off and lays out fields and faces with a live preview, lets you drag labels, layers and board drop areas into place, drop in pictures and rename components everywhere they are used, and saves each change to your library files, keeping your comments.
 
 Keep the table open while you edit: every time you save a file, the table updates (new cards appear, changed text redraws, and the change is one step you can undo). If a file has a mistake, a bar on the table names the file, line and column, and the table keeps the last version that worked. `pnpm trayful validate ../my-game` checks a project from the command line.
 
 To keep several games together, put their folders in one folder and run `pnpm trayful play` on that folder; the table menu switches between them.
 
-The [HOWTO guides](docs/howto/README.md) walk through adding a deck, designing components in the browser, loading cards from a spreadsheet, boards with snap spots, meeples and dice, your own images, setups, designing with an agent and printing. Every key is documented in the [format reference](docs/reference/README.md).
+The [HOWTO guides](docs/howto/README.md) walk through adding a deck, designing components in the browser, loading cards from a spreadsheet, boards with drop areas, meeples and dice, your own images and tiled sheets, setups, designing with an agent and printing. Every key is documented in the [format reference](docs/reference/README.md).
 
-Boards declare **snap targets** in their library type: a `grid` of spots (card slots, action spaces), a list of `points` (a score track) or a free `area` (a supply), each optionally limited to some types with `accepts`. A **setup** file places components on those targets and on the table, shuffles and deals; set `setup: <file name>` in `trayful.yaml` to start every new table from it. See [`library/pieces.yaml`](examples/harvest-moon/library/pieces.yaml) and [`setups/2-player.yaml`](examples/harvest-moon/setups/2-player.yaml) in the sample.
+A component describes what it `is` (a `piece`, `zone`, `die` or `counter`) and switches on what it can do: `flippable`, `rotates`, `stackable`, or `values` for dice and counters. A board is a piece that is a `container`: it declares **drop areas**, a `grid` of spots (card slots, action spaces), a list of `points` (a score track) or a free `area` (a supply), each optionally limited to some components with `accepts`. A **setup** file places components on those drop areas and on the table, locks the board, shuffles and deals; set `setup: <file name>` in `trayful.yaml` to start every new table from it. See [`library/pieces.yaml`](examples/harvest-moon/library/pieces.yaml) and [`setups/2-player.yaml`](examples/harvest-moon/setups/2-player.yaml) in the sample.
+
+### Projects from an earlier Trayful
+
+Projects made before milestone 9 are in the file format `trayful/1`. They still load and play, with a warning, but the designer and agents can only change their components once they are rewritten in `trayful/2`:
+
+```sh
+pnpm trayful migrate ../my-game
+```
+
+`migrate` rewrites the libraries in the new form, keeping the comment lines at their top; moves images and palette colours to a new `assets.yaml`; renames each inventory entry's `type` to `component`; and adds `lock: true` to the setup steps that place a board, since boards no longer start locked. The manifest, inventory and setups keep their comments. Commit the folder first if you want the old files. See [Versioning](docs/reference/versioning.md#moving-a-project-to-trayful2).
+
+## Command line
+
+| Command                                   | What it does                                                   |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| `trayful new <folder> [--name <name>]`    | A new project from the starter template                        |
+| `trayful play [project-dir]`              | Open the table in your browser; options above                  |
+| `trayful mcp [project-dir]`               | MCP server on stdio, for agents                                |
+| `trayful validate <project-dir> [--json]` | Check a project and report problems with file, line and column |
+| `trayful migrate <project-dir>`           | Rewrite a `trayful/1` project in the current file format       |
+
+From the repo root, run them as `pnpm trayful …`. See the [CLI README](packages/cli/README.md) for every option.
 
 ## Repository layout
 
@@ -183,14 +207,15 @@ Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for
 
 ## Roadmap
 
-| Milestone                         | Scope                                                                                                         |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 0. Foundations                    | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference |
-| 1. First playable table           | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                  |
-| 2. Components and snapping        | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                              |
-| 3. MCP                            | Agents read and play tables over the Model Context Protocol                                                   |
-| 4. Projects and authoring         | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                  |
-| 5. Multiplayer                    | Players, invite links over the network or a tunnel, private hands, per-player hidden views                    |
-| 6. Invites and undo               | Invite links to one table, made from the toolbar; each player undoes only their own moves                     |
-| 7. Component designer             | Design mode: types, fields and faces in the browser with a live preview, saved with comments kept             |
-| **8. Hands on the canvas** (this) | Drag, resize and rotate layers with snapping; board snap spot editor; image drop; renames everywhere; undo    |
+| Milestone                            | Scope                                                                                                                 |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| 0. Foundations                       | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference         |
+| 1. First playable table              | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                          |
+| 2. Components and snapping           | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                                      |
+| 3. MCP                               | Agents read and play tables over the Model Context Protocol                                                           |
+| 4. Projects and authoring            | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                          |
+| 5. Multiplayer                       | Players, invite links over the network or a tunnel, private hands, per-player hidden views                            |
+| 6. Invites and undo                  | Invite links to one table, made from the toolbar; each player undoes only their own moves                             |
+| 7. Component designer                | Design mode: types, fields and faces in the browser with a live preview, saved with comments kept                     |
+| 8. Hands on the canvas               | Drag, resize and rotate layers with snapping; board snap spot editor; image drop; renames everywhere; undo            |
+| **9. Components by property** (this) | File format `trayful/2`: `is` plus behaviours, faces with labels, an assets file with tiled images, `trayful migrate` |

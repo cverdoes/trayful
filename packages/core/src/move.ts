@@ -1,4 +1,4 @@
-import { PRIMITIVE_INFO, type Vec2 } from '@trayful/formats/browser';
+import { sidesOf, type Vec2 } from '@trayful/formats/browser';
 import { boundsOf } from './layout.js';
 import { occupants, snapOwner, type SnapSpot } from './snap.js';
 import { handTarget, sizeOf, type Piece, type TableObject } from './state.js';
@@ -156,7 +156,7 @@ function playFromHand(tx: Transaction, pieces: Piece[], to: Target, face: 'up' |
       pos: [x, place.pos[1]],
       rot: place.rot ?? 0,
       z: z++,
-      face: PRIMITIVE_INFO[type.base].sides === 2 ? face : piece.face,
+      face: sidesOf(type) === 2 ? face : piece.face,
       snap: pieces.length === 1 ? place.snap : undefined,
     });
     x += w / 2 + 2;

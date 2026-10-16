@@ -2,7 +2,7 @@ import { cp, mkdtemp, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Piece, ServerMessage, Stack, TableView } from '@trayful/core';
+import type { Piece, ProjectView, ServerMessage, Stack, TableView } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { isLocalOrigin, startServer, type RunningServer } from './server.js';
@@ -80,11 +80,12 @@ describe('server', () => {
       root: dir,
       table: 'table-1',
     });
-    const view = (await (await fetch(`${server.url}/api/project`)).json()) as {
-      types: Record<string, { source?: unknown }>;
-    };
+    const view = (await (await fetch(`${server.url}/api/project`)).json()) as ProjectView;
     expect(Object.keys(view.types)).toContain('action-card');
-    expect(view.types['action-card']!.source).toBeUndefined();
+    expect(view.types['action-card']).not.toHaveProperty('source');
+    expect(view.legacy).toBe(false);
+    expect(view.assets.colors.gold).toBe('#e2b33c');
+    expect(view.assets.images.dice).toMatchObject({ file: 'assets/dice.svg', rows: 2, cols: 3 });
     const table = (await (await fetch(`${server.url}/api/table`)).json()) as TableView;
     expect(table.table).toBe('table-1');
     // The seed predicts shuffles, so no one is shown it.
@@ -130,7 +131,7 @@ describe('server', () => {
     a.send({ type: 'command', command: { type: 'roll', id: 'coins' }, requestId: 'r1' });
     expect(await a.next()).toEqual({
       type: 'error',
-      message: '"coins" is a counter, not a die.',
+      message: '"coins" cannot be rolled.',
       requestId: 'r1',
     });
     a.socket.send('not json');

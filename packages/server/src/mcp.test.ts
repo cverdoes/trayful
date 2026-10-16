@@ -64,6 +64,7 @@ describe('MCP tools', () => {
         'layout',
         'list_projects',
         'lock',
+        'migrate_project',
         'move',
         'open_table',
         'query_objects',
@@ -199,7 +200,7 @@ describe('MCP tools', () => {
     const before = session.engine.state;
     const r = await call(client, 'roll', { ids: ['d6.1', 'coins'] });
     expect(r.isError).toBe(true);
-    expect(r.text).toContain('not a die');
+    expect(r.text).toContain('"coins" cannot be rolled.');
     expect(session.engine.state).toBe(before);
   });
 
@@ -240,10 +241,12 @@ describe('MCP tools', () => {
     const added = await call(client, 'upsert_type', {
       definition: {
         id: 'event-card',
-        base: 'card',
+        is: 'piece',
         size: [63, 88],
+        flippable: true,
+        stackable: true,
         fields: { title: 'string' },
-        front: { fill: '#ffffff', layers: [{ text: '{{title}}', at: [5, 5] }] },
+        face: { fill: '#ffffff', labels: [{ field: 'title', at: [5, 5] }] },
       },
     });
     expect(added.text).toMatch(/Added type "event-card" in library\/cards\.yaml/);
@@ -255,7 +258,7 @@ describe('MCP tools', () => {
     expect((session.engine.state.objects['deck:events'] as Stack).items).toHaveLength(3);
 
     const broken = await call(client, 'upsert_type', {
-      definition: { id: 'event-card', base: 'card', size: [63, 88] },
+      definition: { id: 'event-card', is: 'piece', size: [63, 88] },
     });
     expect(broken.isError).toBe(true);
     expect(broken.text).toMatch(/would break the project/);

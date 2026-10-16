@@ -1,4 +1,5 @@
 import { stackOffsets, type Piece, type Stack, type TableState } from '@trayful/core';
+import type { Assets } from '@trayful/formats/browser';
 import type Konva from 'konva';
 import { Circle, Group, Rect, Text } from 'react-konva';
 import type { Vec } from './drops';
@@ -8,7 +9,7 @@ import { useStore } from './store';
 
 interface ObjectViewProps {
   types: Types;
-  palette: Record<string, string>;
+  assets: Assets;
   selected: boolean;
   register: (node: Konva.Group | null) => void;
   onClick: (evt: MouseEvent) => void;
@@ -21,14 +22,14 @@ interface ObjectViewProps {
 export function PieceView({
   piece,
   types,
-  palette,
+  assets,
   selected,
   register,
   ...events
 }: ObjectViewProps & { piece: Piece }) {
   const type = types[piece.type];
   if (!type) return null;
-  const counter = type.base === 'counter';
+  const counter = type.is === 'counter';
   return (
     <Group
       ref={register}
@@ -59,7 +60,7 @@ export function PieceView({
       onMouseEnter={(e) => setCursor(e, piece.locked ? 'default' : 'grab')}
       onMouseLeave={(e) => setCursor(e, 'default')}
     >
-      <Component piece={piece} type={type} palette={palette} selected={selected} />
+      <Component piece={piece} type={type} assets={assets} selected={selected} />
     </Group>
   );
 }
@@ -75,7 +76,7 @@ export function StackView({
   stack,
   table,
   types,
-  palette,
+  assets,
   selected,
   wholeStack,
   register,
@@ -95,7 +96,7 @@ export function StackView({
   const [w, h] = sizeOf(type);
   const cards = {
     types,
-    palette,
+    assets,
     selected,
     drawable: !wholeStack && !stack.locked,
     events: { onDrawStart, onDrawMove, onDrawEnd },
@@ -140,7 +141,7 @@ export function StackView({
 
 type CardOptions = Readonly<{
   types: Types;
-  palette: Record<string, string>;
+  assets: Assets;
   selected: boolean;
   drawable: boolean;
   events: DrawEvents;
@@ -167,7 +168,7 @@ function Pile({
           y={-h / 2 + (depth - i) * 0.6}
           width={w}
           height={h}
-          cornerRadius={cards.types[top.type]?.corner ?? 0}
+          cornerRadius={cards.types[top.type]?.face?.corner ?? 0}
           fill="#e6e0d4"
           stroke="#8a8072"
           strokeWidth={0.25}
@@ -177,7 +178,7 @@ function Pile({
       {/* While the top card is dragged away, the next one shows underneath. */}
       {second && secondType && (
         <Group listening={false}>
-          <Component piece={second} type={secondType} palette={cards.palette} />
+          <Component piece={second} type={secondType} assets={cards.assets} />
         </Group>
       )}
       {/* Keyed by card, so a new top card gets a fresh node rather than the one dragged away. */}
@@ -191,7 +192,7 @@ function StackCard({
   piece,
   home,
   types,
-  palette,
+  assets,
   selected,
   drawable,
   events,
@@ -217,7 +218,7 @@ function StackCard({
         events.onDrawEnd(piece.id, e.currentTarget as Konva.Group, home);
       }}
     >
-      <Component piece={piece} type={type} palette={palette} selected={selected} />
+      <Component piece={piece} type={type} assets={assets} selected={selected} />
     </Group>
   );
 }

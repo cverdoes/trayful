@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { go, route, showTypeInAddress } from '../route';
 import { useStore } from '../store';
+import { migrateProject } from './api';
 import { DesignCanvas } from './DesignCanvas';
 import { Inspector } from './Inspector';
 import { NewTypeDialog } from './NewTypeDialog';
@@ -31,6 +32,7 @@ export function Designer() {
   }, [shown]);
   if (!view) return <div className="loading">Loading…</div>;
   if (!host) return <div className="loading">Only the host can design components.</div>;
+  if (view.legacy) return <MigrateNotice project={view.project} />;
   return (
     <div className="designer">
       <header className="toolbar">
@@ -112,6 +114,40 @@ function SaveState() {
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * A project in the first file format plays as it is, but is only designed after
+ * its files are rewritten in the current one.
+ */
+function MigrateNotice({ project }: Readonly<{ project: string }>) {
+  const [state, setState] = useState<{ busy: boolean; error?: string }>({ busy: false });
+  const migrate = () => {
+    setState({ busy: true });
+    migrateProject(project).then(
+      () => setState({ busy: false }),
+      (err: unknown) =>
+        setState({ busy: false, error: err instanceof Error ? err.message : String(err) }),
+    );
+  };
+  return (
+    <div className="loading migrate-notice">
+      <p>
+        This project was made for an earlier Trayful. It plays as it is, but its components can only
+        be designed once its files are in the current format.
+      </p>
+      <p>
+        <button type="button" disabled={state.busy} onClick={migrate}>
+          Update the project files
+        </button>
+      </p>
+      <p className="muted">
+        The same as <code>trayful migrate</code>. Keep a copy, or commit the folder first, if you
+        want the old files.
+      </p>
+      {state.error && <p className="error">{state.error}</p>}
     </div>
   );
 }

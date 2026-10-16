@@ -187,7 +187,8 @@ export class TableSession {
       version: this.version,
       name: this.project.manifest.name,
       table: this.tableName,
-      palette: this.project.palette,
+      assets: this.project.assets,
+      legacy: this.project.legacy,
       setups: Object.keys(this.project.setups),
       ...(this.project.manifest.setup ? { setup: this.project.manifest.setup } : {}),
       // Strip loader bookkeeping; clients only need the type definitions.

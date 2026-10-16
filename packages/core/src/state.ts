@@ -1,6 +1,6 @@
 import {
   byCodeUnit,
-  FORMAT_VERSION,
+  TABLE_FORMAT,
   TableFile,
   flattenIssues,
   formatPath,
@@ -16,7 +16,7 @@ export type TableObject = Piece | Stack;
 
 /** The in-memory table: the saved file's data, with objects keyed by id. */
 export interface TableState {
-  format: typeof FORMAT_VERSION;
+  format: typeof TABLE_FORMAT;
   table: string;
   seed: number;
   rng: number;
@@ -54,7 +54,7 @@ export function handTarget(target: unknown): string | undefined {
     : undefined;
 }
 
-/** What the engine needs to know about component types. */
+/** The components the engine works with, by id. */
 export type Catalog = Readonly<Record<string, ComponentType>>;
 
 /** `[width, height]` of a type in millimetres. */

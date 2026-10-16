@@ -1,11 +1,15 @@
 import type { ComponentType } from '@trayful/formats/browser';
 import {
-  addLayer,
-  layerLabel,
-  layersOf,
-  moveLayer,
+  addItem,
+  canMove,
+  itemLabel,
+  itemsOf,
+  moveItem,
+  newLabel,
   newLayer,
-  removeLayer,
+  removeItem,
+  sideOf,
+  sidePath,
   twoSided,
   type LayerKind,
   type Side,
@@ -14,31 +18,33 @@ import { ColorInput, Row } from './controls';
 import { LayerSection } from './LayerSection';
 import { editDraft, setValue, useDesign } from './store';
 
-/** One side of the type: its colours and its layers, and the selected layer. */
+/** One side of the type: its colours, its layers and labels, and the selected one. */
 export function FaceSection({ type }: Readonly<{ type: ComponentType }>) {
   const side = useDesign((s) => s.side);
   const layer = useDesign((s) => s.layer);
-  const layers = layersOf(type, side);
-  const selected = layer === undefined ? undefined : layers[layer];
+  const selected = layer === undefined ? undefined : itemsOf(type, side)[layer];
+  const at = (key: string) => [...sidePath(side), key];
   return (
     <section>
       <h3>
         <SideTabs type={type} side={side} />
       </h3>
-      <Row label="Fill" path={[side, 'fill']}>
+      <Row label="Fill" path={at('fill')}>
         {(id) => (
-          <ColorInput id={id} value={type[side]?.fill} onChange={setValue([side, 'fill'])} />
+          <ColorInput id={id} value={sideOf(type, side)?.fill} onChange={setValue(at('fill'))} />
         )}
       </Row>
-      <Row label="Outline" path={[side, 'stroke']}>
+      <Row label="Outline" path={at('stroke')}>
         {(id) => (
-          <ColorInput id={id} value={type[side]?.stroke} onChange={setValue([side, 'stroke'])} />
+          <ColorInput
+            id={id}
+            value={sideOf(type, side)?.stroke}
+            onChange={setValue(at('stroke'))}
+          />
         )}
       </Row>
       <LayerList type={type} side={side} selected={layer} />
-      {selected && layer !== undefined && (
-        <LayerSection layer={selected} path={[side, 'layers', layer]} />
-      )}
+      {selected && <LayerSection item={selected} />}
     </section>
   );
 }
@@ -63,16 +69,25 @@ function SideTabs({ type, side }: Readonly<{ type: ComponentType; side: Side }>)
   );
 }
 
-/** The face's layers, top of the drawing order last, with buttons to change them. */
+/** The face's layers and labels, top of the drawing order last, with buttons to change them. */
 function LayerList({
   type,
   side,
   selected,
 }: Readonly<{ type: ComponentType; side: Side; selected?: number }>) {
-  const layers = layersOf(type, side);
-  const add = (kind: LayerKind) => {
-    editDraft((t) => addLayer(t, side, newLayer(kind, t)));
-    useDesign.setState({ layer: layers.length, target: undefined });
+  const items = itemsOf(type, side);
+  const add = (kind: LayerKind | 'label') => {
+    let index: number | undefined;
+    editDraft((t) => {
+      const added = addItem(
+        t,
+        side,
+        kind === 'label' ? { label: newLabel(t) } : { layer: newLayer(kind, t) },
+      );
+      index = added.index;
+      return added.type;
+    });
+    useDesign.setState({ layer: index, target: undefined });
   };
   const change = (edit: (t: ComponentType) => ComponentType, layer: number | undefined) => {
     editDraft(edit);
@@ -81,7 +96,7 @@ function LayerList({
   return (
     <div className="design-layers">
       <ol aria-label="Layers">
-        {layers.map((layer, i) => (
+        {items.map((item, i) => (
           // Layers have no ids; their place in the list is what the file has too.
           <li key={i} className={i === selected ? 'chosen' : undefined}>
             <button
@@ -89,14 +104,14 @@ function LayerList({
               className="layer-name"
               onClick={() => useDesign.setState({ layer: i, target: undefined })}
             >
-              {layerLabel(layer)}
+              {itemLabel(item)}
             </button>
             <button
               type="button"
               title="Draw earlier (further down)"
               aria-label="Move down"
-              onClick={() => change((t) => moveLayer(t, side, i, -1), i - 1)}
-              disabled={i === 0}
+              onClick={() => change((t) => moveItem(t, side, i, -1), i - 1)}
+              disabled={!canMove(type, side, i, -1)}
             >
               ↓
             </button>
@@ -104,34 +119,43 @@ function LayerList({
               type="button"
               title="Draw later (on top)"
               aria-label="Move up"
-              onClick={() => change((t) => moveLayer(t, side, i, 1), i + 1)}
-              disabled={i === layers.length - 1}
+              onClick={() => change((t) => moveItem(t, side, i, 1), i + 1)}
+              disabled={!canMove(type, side, i, 1)}
             >
               ↑
             </button>
             <button
               type="button"
-              aria-label="Remove layer"
-              title="Remove layer"
-              onClick={() => change((t) => removeLayer(t, side, i), undefined)}
+              aria-label="Remove"
+              title="Remove"
+              onClick={() => change((t) => removeItem(t, side, i), undefined)}
             >
               ×
             </button>
           </li>
         ))}
       </ol>
-      <div className="design-add">
-        Add:{' '}
-        <button type="button" onClick={() => add('text')}>
-          Text
+      <AddButtons add={add} />
+    </div>
+  );
+}
+
+const ADDABLE: [LayerKind | 'label', string][] = [
+  ['label', 'Label'],
+  ['text', 'Text'],
+  ['shape', 'Shape'],
+  ['image', 'Image'],
+];
+
+function AddButtons({ add }: Readonly<{ add: (kind: LayerKind | 'label') => void }>) {
+  return (
+    <div className="design-add">
+      Add:{' '}
+      {ADDABLE.map(([kind, label]) => (
+        <button key={kind} type="button" onClick={() => add(kind)}>
+          {label}
         </button>
-        <button type="button" onClick={() => add('shape')}>
-          Shape
-        </button>
-        <button type="button" onClick={() => add('image')}>
-          Image
-        </button>
-      </div>
+      ))}
     </div>
   );
 }

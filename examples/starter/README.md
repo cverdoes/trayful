@@ -5,8 +5,9 @@ The smallest useful prototype: a deck of cards whose text comes from a spreadshe
 | File                  | Shows                                                        |
 | --------------------- | ------------------------------------------------------------ |
 | `trayful.yaml`        | Project manifest, starting new tables from the `start` setup |
-| `library/cards.yaml`  | A card type with a templated front and an image back         |
-| `library/pieces.yaml` | A round token in two colours                                 |
+| `assets.yaml`         | The card back image and the colours                          |
+| `library/cards.yaml`  | A card with labels, a coloured band and an image back        |
+| `library/pieces.yaml` | A round, flippable token in two colours                      |
 | `inventory.yaml`      | A deck loaded from CSV, and tokens made with `each`          |
 | `data/cards.csv`      | One row per card design, with a `count` column               |
 | `setups/start.yaml`   | Shuffling, dealing face up and placing tokens                |

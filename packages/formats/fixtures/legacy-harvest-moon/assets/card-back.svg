@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 63 88" width="63mm" height="88mm">
+  <rect width="63" height="88" rx="3" fill="#222233"/>
+  <rect x="4" y="4" width="55" height="80" rx="2" fill="none" stroke="#e2b33c" stroke-width="1"/>
+  <circle cx="31.5" cy="44" r="12" fill="none" stroke="#e2b33c" stroke-width="1.5"/>
+  <text x="31.5" y="48" font-family="sans-serif" font-size="10" text-anchor="middle" fill="#e2b33c">HM</text>
+</svg>

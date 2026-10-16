@@ -1,19 +1,21 @@
 import { SHAPES, type Layer } from '@trayful/formats/browser';
-import { layerKind, type Path } from './edit';
+import { editType, layerKind, type Item, type Path } from './edit';
 import { ColorInput, NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
-import { setValue } from './store';
+import { editDraft, setValue } from './store';
 
 type TextLayer = Extract<Layer, { text: string }>;
 type ImageLayer = Extract<Layer, { image: string }>;
 type ShapeLayer = Extract<Layer, { shape: string }>;
 
-/** The selected layer's settings: where it sits, then what its kind draws. */
-export function LayerSection({ layer, path }: Readonly<{ layer: Layer; path: Path }>) {
+/** The selected layer's or label's settings: where it sits, then what it draws. */
+export function LayerSection({ item }: Readonly<{ item: Item }>) {
+  const { layer, path, label } = item;
   const at = (...key: Path) => [...path, ...key];
   return (
     <div className="design-layer" aria-label="Selected layer">
-      <h4>Selected layer</h4>
-      {'text' in layer && <TextRows layer={layer} at={at} />}
+      <h4>{label ? 'Selected label' : 'Selected layer'}</h4>
+      {label && <LabelRows field={label.field} text={label.text} at={at} />}
+      {'text' in layer && <TextRows layer={layer} at={at} label={Boolean(label)} />}
       {'image' in layer && <ImageRows layer={layer} at={at} />}
       {layerKind(layer) === 'shape' && <ShapeRows layer={layer as ShapeLayer} at={at} />}
       <Row label="Position (mm)" path={at('at')}>
@@ -56,19 +58,47 @@ export function LayerSection({ layer, path }: Readonly<{ layer: Layer; path: Pat
 
 type At = (...key: Path) => Path;
 
-function TextRows({ layer, at }: Readonly<{ layer: TextLayer; at: At }>) {
+/**
+ * What a label shows: a field, filled per component, or its own fixed text.
+ * Giving a field drops the text, and clearing it brings text back.
+ */
+function LabelRows({ field, text, at }: Readonly<{ field?: string; text?: string; at: At }>) {
+  const setField = (name: string | undefined) =>
+    editDraft((t) => {
+      // Add the new key before dropping the old one, so the label is never left
+      // empty, which would tidy it out of the list.
+      if (name) return editType(editType(t, at('field'), name), at('text'), undefined);
+      return editType(editType(t, at('text'), text ?? 'Label'), at('field'), undefined);
+    }, true);
   return (
     <>
-      <Row label="Text" path={at('text')}>
-        {(id) => (
-          <textarea
-            id={id}
-            rows={2}
-            value={layer.text}
-            onChange={(e) => setValue(at('text'))(e.target.value)}
-          />
-        )}
+      <Row label="Field" path={at('field')}>
+        {(id) => <TextInput id={id} value={field} onChange={setField} placeholder="fixed text" />}
       </Row>
+      {field === undefined && (
+        <Row label="Text" path={at('text')}>
+          {(id) => <TextInput id={id} value={text} onChange={setValue(at('text'))} />}
+        </Row>
+      )}
+    </>
+  );
+}
+
+function TextRows({ layer, at, label }: Readonly<{ layer: TextLayer; at: At; label: boolean }>) {
+  return (
+    <>
+      {!label && (
+        <Row label="Text" path={at('text')}>
+          {(id) => (
+            <textarea
+              id={id}
+              rows={2}
+              value={layer.text}
+              onChange={(e) => setValue(at('text'))(e.target.value)}
+            />
+          )}
+        </Row>
+      )}
       <Row label="Wrap width (mm)" path={at('width')}>
         {(id) => (
           <NumberInput

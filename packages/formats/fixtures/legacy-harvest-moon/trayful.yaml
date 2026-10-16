@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../packages/formats/schema/manifest.schema.json
+name: Harvest Moon
+format: trayful/1
+version: '0.1'
+description: A small worker-placement and card-market sample used to exercise every file kind.
+units: mm
+libraries: [library/*.yaml]
+inventory: inventory.yaml
+setup: 2-player

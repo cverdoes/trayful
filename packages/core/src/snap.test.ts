@@ -78,7 +78,9 @@ describe('snap targets', () => {
     expect(spots[0]!.pos).toEqual([-190, 0]);
     expect(spots[5]!.pos).toEqual([-140, 50]);
     expect(() => resolveSpots(state, project.types, 'main-board/fields/8')).toThrow(/0 to 7/);
-    expect(() => resolveSpots(state, project.types, 'main-board/nope')).toThrow(/no snap target/);
+    expect(() => resolveSpots(state, project.types, 'main-board/nope')).toThrow(
+      /no drop area "nope"/,
+    );
   });
 
   it('moves a worker into a spot, and only where it is accepted', () => {

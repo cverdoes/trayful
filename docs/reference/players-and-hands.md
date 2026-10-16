@@ -4,11 +4,11 @@ Everyone at a Trayful table is a **player**: the host who runs `trayful play`, g
 
 ## Players
 
-| Player | How they get in | May |
-| ------ | --------------- | --- |
-| Host | Opens the table on the computer running Trayful; no sign-in | Everything: play, manage tables, print, invite |
-| Guest | Opens an invite link to a table, then picks a name | Play on the tables they were invited to, and start them over |
-| Agent | Connects to `/mcp` on the host's computer | Play and author, as player `claude` |
+| Player | How they get in                                             | May                                                          |
+| ------ | ----------------------------------------------------------- | ------------------------------------------------------------ |
+| Host   | Opens the table on the computer running Trayful; no sign-in | Everything: play, manage tables, print, invite               |
+| Guest  | Opens an invite link to a table, then picks a name          | Play on the tables they were invited to, and start them over |
+| Agent  | Connects to `/mcp` on the host's computer                   | Play and author, as player `claude`                          |
 
 A player id is made from the name: lowercase letters, digits and dashes, such as `bob` or `asa-oberg` (a second "Bob" becomes `bob-2`). A browser remembers its player in a cookie, so a guest who comes back with the same browser is the same player.
 
@@ -20,16 +20,16 @@ A piece in a hand has `hand: <player id>` in the saved table (see [Table state](
 
 Anywhere a command takes a place to go, `hand:<player id>` puts pieces into that player's hand:
 
-| Command | Example                                                                         |
-| ------- | ------------------------------------------------------------------------------- |
-| `draw`  | `{ "type": "draw", "from": "deck:actions", "count": 2, "to": "hand:bob" }`      |
-| `deal`  | `{ "type": "deal", "from": "deck:actions", "to": ["hand:alice", "hand:bob"] }`   |
-| `take`  | `{ "type": "take", "id": "action-card.harvest.2", "to": "hand:alice" }`          |
-| `move`  | `{ "type": "move", "ids": ["action-card.storm"], "to": "hand:claude" }`          |
+| Command | Example                                                                        |
+| ------- | ------------------------------------------------------------------------------ |
+| `draw`  | `{ "type": "draw", "from": "deck:actions", "count": 2, "to": "hand:bob" }`     |
+| `deal`  | `{ "type": "deal", "from": "deck:actions", "to": ["hand:alice", "hand:bob"] }` |
+| `take`  | `{ "type": "take", "id": "action-card.harvest.2", "to": "hand:alice" }`        |
+| `move`  | `{ "type": "move", "ids": ["action-card.storm"], "to": "hand:claude" }`        |
 
-Moving a pile into a hand puts each of its cards there. Boards and zones cannot go in a hand.
+Moving a pile into a hand puts each of its cards there. Zones and locked pieces, such as a board a setup locked, cannot go in a hand.
 
-To play pieces from a hand, `move` them `to` a position or snap spot (not in the same command as pieces on the table). They come out face up unless the command says `"face": "down"`; several pieces played together land side by side. `stack` a hand piece onto a pile to put it on top. Only the hand's owner can move, flip or play its pieces.
+To play pieces from a hand, `move` them `to` a position or a spot of a drop area (not in the same command as pieces on the table). They come out face up unless the command says `"face": "down"`; several pieces played together land side by side. `stack` a hand piece onto a pile to put it on top. Only the hand's owner can move, flip or play its pieces.
 
 ## What each player sees
 

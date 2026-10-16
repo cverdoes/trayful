@@ -68,7 +68,7 @@
               "additionalProperties": false
             }
           ],
-          "description": "A component type id (places every component of that type), a component id, or `{ deck: <name> }`."
+          "description": "A component id from a library (places every one of them in the inventory), the id of one of them, or `{ deck: <name> }`."
         },
         "at": {
           "$ref": "#/$defs/Target"
@@ -88,6 +88,10 @@
         "shuffle": {
           "description": "Shuffle a deck after placing it.",
           "type": "boolean"
+        },
+        "lock": {
+          "description": "Lock it in place, as a board usually is once it is where it belongs.",
+          "type": "boolean"
         }
       },
       "required": [
@@ -106,7 +110,7 @@
           "type": "string"
         }
       ],
-      "description": "Where something goes: an `[x, y]` table position, or a snap target as `type/target` or `type/target/index` (e.g. `main-board/market/2`)."
+      "description": "Where something goes: an `[x, y]` table position, or a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`)."
     },
     "Vec2": {
       "type": "array",

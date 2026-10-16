@@ -7,6 +7,7 @@ import {
   inside,
   oneAtATime,
   readDocument,
+  requireCurrentFormat,
   type FileChange,
 } from './authoring.js';
 import type { Workspace } from './workspace.js';
@@ -74,7 +75,7 @@ async function changeTypeId(
   }
   await edits.yaml(project.manifest.inventory, (doc) =>
     anyChanged(items(doc.get('components', true)), (entry) =>
-      rewrite(child(entry, 'type'), sameType),
+      rewrite(child(entry, 'component'), sameType),
     ),
   );
   for (const setup of Object.values(project.setups)) {
@@ -93,24 +94,26 @@ async function changeTypeId(
 }
 
 function checkNewTypeId(project: ResolvedProject, from: string, to: string): void {
-  if (!project.types[from]) throw new AuthoringError(`There is no type "${from}".`);
+  requireCurrentFormat(project);
+  if (!project.types[from]) throw new AuthoringError(`There is no component "${from}".`);
   if (project.types[to]) {
-    throw new AuthoringError(`There is already a type "${to}"; pick another id.`);
+    throw new AuthoringError(`There is already a component "${to}"; pick another id.`);
   }
   const valid = Slug.safeParse(to);
   if (!valid.success) {
-    throw new AuthoringError(`"${to}" is not a valid type id. ${valid.error.issues[0]?.message}`);
+    throw new AuthoringError(`"${to}" is not a valid id. ${valid.error.issues[0]?.message}`);
   }
 }
 
-/** Renames a type's own `id`, and the type in every snap target's `accepts`. */
+/** Renames a component's own `id`, and the component in every `accepts` and `stackable.with`. */
 function retypeLibrary(doc: Document, rename: (id: string) => string): boolean {
-  return anyChanged(items(doc.get('types', true)), (type) =>
+  return anyChanged(items(doc.get('components', true)), (type) =>
     [
       rewrite(child(type, 'id'), rename),
-      anyChanged(items(child(type, 'snap')), (target) =>
+      anyChanged(items(child(type, 'container')), (target) =>
         anyChanged(items(child(target, 'accepts')), (accepted) => rewrite(accepted, rename)),
       ),
+      anyChanged(items(child(child(type, 'stackable'), 'with')), (other) => rewrite(other, rename)),
     ].includes(true),
   );
 }
@@ -130,14 +133,15 @@ async function changeFieldName(
   field: { from: string; to: string },
 ): Promise<{ field: string; files: string[] }> {
   const project = workspace.project(projectId);
+  requireCurrentFormat(project);
   const type = project.types[typeId];
-  if (!type) throw new AuthoringError(`There is no type "${typeId}".`);
+  if (!type) throw new AuthoringError(`There is no component "${typeId}".`);
   checkNewFieldName(type, field.from, field.to);
   const { from, to } = field;
 
   const edits = new FileEdits(project.dir);
   await edits.yaml(type.source.file, (doc) =>
-    renameInType(items(doc.get('types', true))[type.source.index], from, to),
+    renameInType(items(doc.get('components', true))[type.source.index], from, to),
   );
   const inventory = await edits.yaml(project.manifest.inventory, (doc) =>
     anyChanged(entriesOf(doc, typeId), (entry) =>
@@ -173,10 +177,15 @@ function checkNewFieldName(type: ResolvedType, from: string, to: string): void {
   }
 }
 
-/** Renames the field in a type's `fields`, and its `{{placeholders}}` everywhere in the type. */
+/** Renames the field in a component's `fields`, its labels, and its `{{placeholders}}` everywhere in it. */
 function renameInType(type: unknown, from: string, to: string): boolean {
   const placeholder = new RegExp(String.raw`\{\{(\s*)${from}(\s*)\}\}`, 'g');
+  const sides = [child(type, 'face'), child(child(type, 'flippable'), 'back')];
+  const labels = sides.flatMap((side) => items(child(side, 'labels')));
   let changed = renameKey(child(type, 'fields'), from, to);
+  for (const label of labels) {
+    changed = rewrite(child(label, 'field'), (name) => (name === from ? to : name)) || changed;
+  }
   if (!isMap(type)) return changed;
   visit(type, {
     Scalar: (key, node) => {
@@ -229,7 +238,7 @@ function stringAt(node: unknown, key: string): string | undefined {
 
 function entriesOf(inventory: Document, typeId: string): unknown[] {
   return items(inventory.get('components', true)).filter(
-    (entry) => stringAt(entry, 'type') === typeId,
+    (entry) => stringAt(entry, 'component') === typeId,
   );
 }
 

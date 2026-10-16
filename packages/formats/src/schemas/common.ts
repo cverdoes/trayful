@@ -1,7 +1,12 @@
 // Building blocks shared by every file kind, and the built-in primitives.
 import { z } from 'zod';
 
-export const FORMAT_VERSION = 'trayful/1';
+/** Format of the files an author writes: the manifest, libraries, assets, inventory and setups. */
+export const FORMAT_VERSION = 'trayful/2';
+/** The first format, which Trayful still reads and can migrate with `trayful migrate`. */
+export const LEGACY_FORMAT = 'trayful/1';
+/** Format of saved table files, which did not change with the project format. */
+export const TABLE_FORMAT = 'trayful/1';
 
 // ---------------------------------------------------------------------------
 // Shared building blocks
@@ -34,7 +39,7 @@ export const Size = z
 export const Color = z.string().min(1).meta({
   id: 'Color',
   description:
-    'A CSS colour (`"#d94b3d"`, `"white"`), a name from the library `palette`, or a `{{field}}` template that resolves to one.',
+    'A CSS colour (`"#d94b3d"`, `"white"`, `"transparent"`), a colour name from the assets file, or a `{{field}}` template that resolves to one.',
 });
 
 /** A string that may contain `{{field}}` placeholders, filled from each component's data. */
@@ -45,64 +50,22 @@ export const Template = z.string().meta({
 });
 
 // ---------------------------------------------------------------------------
-// Primitives
+// Representations
 // ---------------------------------------------------------------------------
 
-export const PRIMITIVES = [
-  'card',
-  'board',
-  'tile',
-  'token',
-  'meeple',
-  'die',
-  'counter',
-  'zone',
-] as const;
-export type Primitive = (typeof PRIMITIVES)[number];
+/** What a component is on the table. Its behaviours (flipping, stacking...) are separate properties. */
+export const REPRESENTATIONS = ['piece', 'zone', 'die', 'counter'] as const;
+export type Representation = (typeof REPRESENTATIONS)[number];
 
-/** Behaviour of each built-in primitive. Used by the loader and by the core engine. */
-export const PRIMITIVE_INFO: Record<
-  Primitive,
-  { sides: 1 | 2; stackable: boolean; snapTargets: boolean; summary: string }
-> = {
-  card: { sides: 2, stackable: true, snapTargets: false, summary: 'Two-sided, stacks into decks.' },
-  board: {
-    sides: 1,
-    stackable: false,
-    snapTargets: true,
-    summary: 'Large surface that declares snap spots; locked by default.',
+/** What each representation is for, shown in the editor and the reference. */
+export const REPRESENTATION_INFO: Record<Representation, { summary: string; valued: boolean }> = {
+  piece: {
+    summary: 'Anything you pick up and move: cards, tiles, tokens, meeples, boards.',
+    valued: false,
   },
-  tile: {
-    sides: 2,
-    stackable: true,
-    snapTargets: true,
-    summary: 'Two-sided piece that can also hold snap spots.',
-  },
-  token: {
-    sides: 2,
-    stackable: true,
-    snapTargets: false,
-    summary: 'Small flat piece; may have two sides.',
-  },
-  meeple: {
-    sides: 1,
-    stackable: false,
-    snapTargets: false,
-    summary: 'Standing figure drawn from a silhouette.',
-  },
-  die: { sides: 1, stackable: false, snapTargets: false, summary: 'Rolls to one of its `faces`.' },
-  counter: {
-    sides: 1,
-    stackable: false,
-    snapTargets: false,
-    summary: 'Holds a number within its `range`.',
-  },
-  zone: {
-    sides: 1,
-    stackable: false,
-    snapTargets: true,
-    summary: 'Invisible or outlined table area with snap spots.',
-  },
+  zone: { summary: 'A marked area of the table, drawn as a dashed outline.', valued: false },
+  die: { summary: 'Shows one of its values; rolls to a random one.', valued: true },
+  counter: { summary: 'Shows one of its values; steps up and down.', valued: true },
 };
 
 export const SHAPES = [

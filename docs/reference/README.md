@@ -6,7 +6,8 @@ The technical reference for every Trayful file kind. Each page lists every key w
 | File kind | What it is |
 | --- | --- |
 | [Manifest](manifest.md) | Every project folder has a `trayful.yaml` at its root. |
-| [Library](library.md) | Library files define component types. |
+| [Library](library.md) | Library files define components. |
+| [Assets](assets.md) | The assets file (`assets.yaml` unless the manifest says otherwise) names the images and colours faces use. |
 | [Inventory](inventory.md) | The inventory lists what is in the box. |
 | [Setup](setup.md) | Setups are scripted starting layouts in `setups/*.yaml`. |
 | [Table state](table.md) | Tables are saved as JSON in `tables/`. |
@@ -16,10 +17,10 @@ How things work across file kinds:
 | Topic | What it covers |
 | --- | --- |
 | [Units and coordinates](units-and-coordinates.md) | Millimetres, where `[0, 0]` is, common sizes. |
-| [Faces and templates](faces-and-templates.md) | Layers, `{{field}}` placeholders, `when`, colours and palettes. |
-| [Snapping](snapping.md) | Snap targets, spot names, `accepts`, and what happens on drop. |
+| [Faces and templates](faces-and-templates.md) | Faces, labels, tiles, layers, `{{field}}` placeholders, `when` and colours. |
+| [Snapping](snapping.md) | Containers and their drop areas, spot names, `accepts`, and what happens on drop. |
 | [Players and hands](players-and-hands.md) | Private hands, `hand:<player>` targets, what each player sees, invites. |
 | [Validation errors](validation.md) | How problems are reported, and what the common ones mean. |
-| [Versioning](versioning.md) | The format version, stable component ids, and saved tables. |
+| [Versioning](versioning.md) | The format version, `trayful migrate`, stable component ids, and saved tables. |
 
 JSON Schemas for editor autocomplete live in [`packages/formats/schema/`](../../packages/formats/schema/). Add a comment such as `# yaml-language-server: $schema=<path to library.schema.json>` at the top of a YAML file to get completion and checking in editors with the YAML language server.

@@ -8,6 +8,7 @@ import {
   type TableObject,
   type TableState,
 } from '@trayful/core';
+import { sidesOf, valuesOf } from '@trayful/formats/browser';
 import { dropTarget, facePiece, pieceSize, type Types } from './render/geometry';
 
 export type Vec = [number, number];
@@ -137,18 +138,18 @@ export function handDropCommands(
   return target ? [play, { type: 'stack', ids: [id], onto: target.id }] : [play];
 }
 
-/** Double-click flips a card, tile or token, and rolls a die. */
+/** Double-click rolls a die that can be rolled, and flips anything flippable. */
 export function doubleClickCommand(
   table: TableState,
   types: Types,
   object: TableObject,
 ): Command | undefined {
   const piece = facePiece(table, object);
-  const base = piece && types[piece.type]?.base;
-  if (base === 'die' && object.kind === 'piece') return { type: 'roll', id: object.id };
-  if (base === 'card' || base === 'tile' || base === 'token')
-    return { type: 'flip', ids: [object.id] };
-  return undefined;
+  const type = piece && types[piece.type];
+  if (!type || object.locked) return undefined;
+  if (object.kind === 'piece' && valuesOf(type)?.controls.includes('roll'))
+    return { type: 'roll', id: object.id };
+  return sidesOf(type) === 2 ? { type: 'flip', ids: [object.id] } : undefined;
 }
 
 /** The unlocked objects whose centres lie in the box between two corners. */

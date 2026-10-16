@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=../../packages/formats/schema/assets.schema.json
+kind: assets
+images:
+  card-back: assets/card-back.svg
+colors:
+  ink: '#222233'
+  paper: '#f6f1e3'
+  accent: '#3a7ca5'
+  blue: '#3a7ca5'
+  orange: '#e08a2e'

@@ -1,6 +1,7 @@
-import { DEFAULT_PORT, ProjectLoadError } from '@trayful/server';
+import { DEFAULT_PORT, MigrateError, ProjectLoadError } from '@trayful/server';
 import { CliError, UsageError } from './errors.js';
 import { mcp } from './mcp.js';
+import { migrate } from './migrate.js';
 import { newProject } from './new.js';
 import { parsePlayArgs } from './options.js';
 import { play } from './play.js';
@@ -30,12 +31,15 @@ Commands:
                            Agents can also connect over HTTP at http://127.0.0.1:${DEFAULT_PORT}/mcp.
   validate <project-dir>   Check a project folder and report problems with file and line.
                            Add --json for machine-readable output.
+  migrate <project-dir>    Rewrite a project made for an earlier Trayful in the current
+                           file format.
   help                     Show this message.
 `;
 
 const USAGE: Record<string, string> = {
   new: 'trayful new <folder> [--name <name>]',
   validate: 'trayful validate <project-dir> [--json]',
+  migrate: 'trayful migrate <project-dir>',
   play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel]',
   mcp: 'trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>]',
 };
@@ -49,6 +53,8 @@ export async function run(args: string[], out = console.log, err = console.error
         return await validate(rest, out, err);
       case 'new':
         return await newProject(rest, out);
+      case 'migrate':
+        return await migrate(rest, out);
       case 'play':
         return await play(parsePlayArgs(rest), out);
       case 'mcp':
@@ -74,7 +80,12 @@ function report(e: unknown, command: string, err: (s: string) => void): number {
     err(`${e.message}\nUsage: ${USAGE[command]}`);
     return 2;
   }
-  if (e instanceof CliError || e instanceof ProjectLoadError || e instanceof TunnelError) {
+  if (
+    e instanceof CliError ||
+    e instanceof ProjectLoadError ||
+    e instanceof TunnelError ||
+    e instanceof MigrateError
+  ) {
     err(e.message);
     return 1;
   }

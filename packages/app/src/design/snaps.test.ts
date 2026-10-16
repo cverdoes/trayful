@@ -2,7 +2,7 @@ import type { ComponentType, SnapTarget } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
 import { draggedTarget, newTarget, spotsOf, targetHandles, withPoint } from './snaps';
 
-const board: ComponentType = { id: 'board', base: 'board', size: [300, 200] };
+const board: ComponentType = { id: 'board', is: 'piece', size: [300, 200] };
 const grid: SnapTarget = { id: 'fields', grid: { origin: [10, 20], cols: 3, rows: 2, cell: 10 } };
 
 it('numbers a grid’s spots row by row, as setups name them', () => {
@@ -18,7 +18,7 @@ it('numbers a grid’s spots row by row, as setups name them', () => {
 });
 
 it('starts new targets near the middle under ids not taken', () => {
-  const taken = { ...board, snap: [{ id: 'grid-1', points: [[0, 0]] }] } as ComponentType;
+  const taken = { ...board, container: [{ id: 'grid-1', points: [[0, 0]] }] } as ComponentType;
   expect(newTarget('grid', taken, [300, 200])).toEqual({
     id: 'grid-2',
     grid: { origin: [140, 90], cols: 2, rows: 2, cell: 20 },

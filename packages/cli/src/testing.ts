@@ -11,6 +11,13 @@ export function scratchProject(): Promise<string> {
   return scratchCopy(path.join(examples, 'harvest-moon'));
 }
 
+/** A copy of the Harvest Moon example as it was written in the first file format. */
+export function scratchLegacyProject(): Promise<string> {
+  return scratchCopy(
+    fileURLToPath(new URL('../../formats/fixtures/legacy-harvest-moon', import.meta.url)),
+  );
+}
+
 /** A copy of the examples folder, a folder of projects, without saved tables. */
 export function scratchExamples(): Promise<string> {
   return scratchCopy(examples);

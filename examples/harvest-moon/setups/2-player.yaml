@@ -5,6 +5,7 @@ description: The board in the middle, five market cards face up and every worker
 steps:
   - place: main-board
     at: [0, 0]
+    lock: true
   - place: { deck: actions }
     at: [350, -130]
     shuffle: true

@@ -1,9 +1,6 @@
-// Pure layout and colour rules for drawing a component's face, kept out of the
-// Konva components so they can be unit tested.
-import type { ComponentType, Layer } from '@trayful/formats/browser';
-
-export const DEFAULT_FILL = '#f4f1ea';
-export const BACK_FILL = '#3b4252';
+// Pure layout rules for drawing a component's face, kept out of the Konva
+// components so they can be unit tested.
+import type { Layer, Tile } from '@trayful/formats/browser';
 
 /** Where a box of `length` starts so that it sits on `at` with the given alignment. */
 export function boxStart(at: number, align: 'start' | 'center' | 'end', length: number): number {
@@ -20,27 +17,16 @@ export function layerSize(
   return typeof size === 'number' ? [size, size] : size;
 }
 
-/**
- * The colour a component is filled with: the shown face's own fill, else the type's fill
- * (front only), else a default. A back the type does not define is the plain back colour.
- */
-export function fillOf(
-  type: ComponentType,
-  showBack: boolean,
-  resolve: (color: string | undefined) => string | undefined,
-): string {
-  const face = showBack ? type.back : type.front;
-  const own = resolve(face?.fill);
-  if (own !== undefined) return own;
-  if (showBack && !type.back) return BACK_FILL;
-  const typeFill = showBack ? undefined : resolve(type.fill);
-  if (typeFill !== undefined) return typeFill;
-  if (type.base === 'zone') return 'transparent';
-  return showBack ? BACK_FILL : DEFAULT_FILL;
-}
-
 export type TextLayer = Extract<Layer, { text: string }>;
 export type ImageLayer = Extract<Layer, { image: string }>;
+
+/** What places a text: a layer, a label, or text in a drawing. */
+interface TextPlacement {
+  at?: [number, number];
+  width?: number;
+  align?: 'left' | 'center' | 'right';
+  valign?: 'top' | 'middle' | 'bottom';
+}
 
 /** Large box used to anchor centred or right-aligned text on a point. */
 const ANCHOR_BOX = 400;
@@ -52,7 +38,7 @@ const V_ALIGN = { top: 'start', middle: 'center', bottom: 'end' } as const;
  * Where a text layer's box goes. Text without a width does not wrap: it sits in a
  * wide box placed so the text lines up on its anchor point as aligned.
  */
-export function textBox(layer: TextLayer) {
+export function textBox(layer: TextPlacement) {
   const [ax, ay] = layer.at ?? [0, 0];
   const align = layer.align ?? 'left';
   const valign = layer.valign ?? 'top';
@@ -69,27 +55,44 @@ export function textBox(layer: TextLayer) {
 }
 
 /** Konva's font style for a text layer: `bold`, `italic`, both, or `normal`. */
-export function fontStyle(font: TextLayer['font']): string {
+export function fontStyle(font: TextLayer['font'] | undefined): string {
   const style = [font?.weight === 'bold' ? 'bold' : '', font?.style === 'italic' ? 'italic' : '']
     .filter(Boolean)
     .join(' ');
   return style || 'normal';
 }
 
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** The part of an image of natural size `[iw, ih]` that one tile takes up, or all of it. */
+export function tileRect([iw, ih]: [number, number], tile: Tile | undefined): Rect {
+  if (!tile) return { x: 0, y: 0, width: iw, height: ih };
+  const [width, height] = [iw / tile.cols, ih / tile.rows];
+  const [row, col] = [Math.floor(tile.index / tile.cols), tile.index % tile.cols];
+  return { x: col * width, y: row * height, width, height };
+}
+
 /**
- * Where an image goes in its box `[x, y, w, h]`, given its natural size: stretched to
- * the box, contained in it, or (the default) covering it, cropped to the box's shape.
+ * Where an image goes in its box `[x, y, w, h]`, and which part of the image
+ * (`source`: a tile, or the whole image) it shows: stretched to the box, contained
+ * in it, or (the default) covering it, cropped to the box's shape.
  */
 export function imageBox(
   fit: ImageLayer['fit'],
   [x, y, w, h]: [number, number, number, number],
-  [iw, ih]: [number, number],
+  source: Rect,
 ) {
-  if (fit === 'stretch') return { x, y, width: w, height: h };
+  const { width: iw, height: ih } = source;
+  if (fit === 'stretch') return { x, y, width: w, height: h, crop: source };
   if (fit === 'contain') {
     const scale = Math.min(w / iw, h / ih);
     const [width, height] = [iw * scale, ih * scale];
-    return { x: x + (w - width) / 2, y: y + (h - height) / 2, width, height };
+    return { x: x + (w - width) / 2, y: y + (h - height) / 2, width, height, crop: source };
   }
   const scale = Math.max(w / iw, h / ih);
   const [cw, ch] = [w / scale, h / scale];
@@ -98,6 +101,6 @@ export function imageBox(
     y,
     width: w,
     height: h,
-    crop: { x: (iw - cw) / 2, y: (ih - ch) / 2, width: cw, height: ch },
+    crop: { x: source.x + (iw - cw) / 2, y: source.y + (ih - ch) / 2, width: cw, height: ch },
   };
 }

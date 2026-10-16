@@ -1,3 +1,4 @@
+import { AssetsFile } from './schemas/assets.js';
 import { LibraryFile } from './schemas/library.js';
 import { InventoryFile, ManifestFile, SetupFile } from './schemas/project.js';
 import { TableFile } from './schemas/table.js';
@@ -11,6 +12,8 @@ import { TableFile } from './schemas/table.js';
 
 export * from './schemas/common.js';
 export * from './schemas/library.js';
+export * from './schemas/assets.js';
+export * from './schemas/legacy.js';
 export * from './schemas/project.js';
 export * from './schemas/table.js';
 
@@ -18,6 +21,7 @@ export * from './schemas/table.js';
 export const FILE_KINDS = {
   manifest: ManifestFile,
   library: LibraryFile,
+  assets: AssetsFile,
   inventory: InventoryFile,
   setup: SetupFile,
   table: TableFile,

@@ -1,49 +1,13 @@
-import type { ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
 import {
-  BACK_FILL,
   boxStart,
-  DEFAULT_FILL,
-  fillOf,
   fontStyle,
   imageBox,
   layerSize,
   textBox,
+  tileRect,
   type TextLayer,
 } from './face';
-
-const card = (fields: Partial<ComponentType> = {}) =>
-  ({ id: 'card', base: 'card', ...fields }) as ComponentType;
-// Colours are resolved as they are written; the resolver only has to pass them through.
-const asWritten = (color: string | undefined) => color;
-
-describe('fillOf', () => {
-  it('uses the shown face’s own fill first', () => {
-    const type = card({ fill: 'red', front: { fill: 'blue' } });
-    expect(fillOf(type, false, asWritten)).toBe('blue');
-  });
-
-  it('falls back to the type’s fill on the front', () => {
-    expect(fillOf(card({ fill: 'red' }), false, asWritten)).toBe('red');
-  });
-
-  it('gives a back the type does not define the plain back colour', () => {
-    expect(fillOf(card({ fill: 'red' }), true, asWritten)).toBe(BACK_FILL);
-  });
-
-  it('does not use the type’s fill on a back the type defines', () => {
-    const type = card({ fill: 'red', back: {} });
-    expect(fillOf(type, true, asWritten)).toBe(BACK_FILL);
-  });
-
-  it('leaves a zone without a fill transparent', () => {
-    expect(fillOf(card({ base: 'zone' }), false, asWritten)).toBe('transparent');
-  });
-
-  it('gives anything else without a fill the default colour', () => {
-    expect(fillOf(card(), false, asWritten)).toBe(DEFAULT_FILL);
-  });
-});
 
 describe('boxStart', () => {
   it('starts a box at its anchor, centred on it, or ending at it', () => {
@@ -105,24 +69,64 @@ describe('fontStyle', () => {
   });
 });
 
+describe('tileRect', () => {
+  it('takes the whole image when there is no tile', () => {
+    expect(tileRect([120, 80], undefined)).toEqual({ x: 0, y: 0, width: 120, height: 80 });
+  });
+
+  it('takes one tile, counted along each row, then down', () => {
+    const sheet = { rows: 2, cols: 3 };
+    expect(tileRect([120, 80], { ...sheet, index: 0 })).toEqual({
+      x: 0,
+      y: 0,
+      width: 40,
+      height: 40,
+    });
+    expect(tileRect([120, 80], { ...sheet, index: 4 })).toEqual({
+      x: 40,
+      y: 40,
+      width: 40,
+      height: 40,
+    });
+  });
+});
+
 describe('imageBox', () => {
   const box: [number, number, number, number] = [10, 10, 40, 20];
+  const whole = { x: 0, y: 0, width: 100, height: 100 };
+  const tile = { x: 100, y: 200, width: 100, height: 100 };
 
   it('stretches an image to its box', () => {
-    expect(imageBox('stretch', box, [100, 100])).toEqual({ x: 10, y: 10, width: 40, height: 20 });
+    expect(imageBox('stretch', box, whole)).toEqual({
+      x: 10,
+      y: 10,
+      width: 40,
+      height: 20,
+      crop: whole,
+    });
   });
 
   it('fits a whole image in its box, centred', () => {
-    expect(imageBox('contain', box, [100, 100])).toEqual({ x: 20, y: 10, width: 20, height: 20 });
+    expect(imageBox('contain', box, tile)).toEqual({
+      x: 20,
+      y: 10,
+      width: 20,
+      height: 20,
+      crop: tile,
+    });
   });
 
   it('covers the box by default, cropping the image to the box’s shape', () => {
-    expect(imageBox(undefined, box, [100, 100])).toEqual({
+    expect(imageBox(undefined, box, whole)).toEqual({
       x: 10,
       y: 10,
       width: 40,
       height: 20,
       crop: { x: 0, y: 25, width: 100, height: 50 },
     });
+  });
+
+  it('crops a tile within the tile, not the whole image', () => {
+    expect(imageBox('cover', box, tile).crop).toEqual({ x: 100, y: 225, width: 100, height: 50 });
   });
 });

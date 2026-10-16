@@ -2,9 +2,9 @@
 
 # Inventory
 
-The inventory lists what is in the box. Each entry names a type and how many components to make, with field values given inline, from a CSV file, or as combinations.
+The inventory lists what is in the box. Each entry names a component from the library and how many copies to make, with field values given inline, from a CSV file, or as combinations.
 
-Each component gets a stable id built from its type, its row and its copy number, such as `action-card.harvest.2` (third segment only when `count` is above 1). The row part is the slugged `id` column when given, else the `name` field, else the first text field, else the row number. Saved tables refer to these ids, so renaming a card changes its id; add an `id` to the row to keep it.
+Each component gets a stable id built from its library component, its row and its copy number, such as `action-card.harvest.2` (third segment only when `count` is above 1). The row part is the slugged `id` column when given, else the `name` field, else the first text field, else the row number. Saved tables refer to these ids, so renaming a card changes its id; add an `id` to the row to keep it.
 
 ## Top-level keys
 
@@ -15,11 +15,11 @@ Each component gets a stable id built from its type, its row and its copy number
 
 ## InventoryEntry
 
-A group of components of one type. Use at most one of `items`, `from` or `each`; with none, the entry is one design.
+A group of components of one kind. Use at most one of `items`, `from` or `each`; with none, the entry is one design.
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
-| `type` | text | yes | Component type id from a library. |
+| `component` | text | yes | Component id from a library. |
 | `count` | whole number > 0 |  | Copies of each design in this entry. Default 1. |
 | `deck` | text |  | Group these components into a named deck that spawns as one stack. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
 | `data` | map of text to text or number or true or false |  | Field values shared by every component in this entry. |
@@ -29,7 +29,7 @@ A group of components of one type. Use at most one of `items`, `from` or `each`;
 
 ## InventoryRow
 
-Field values for one design. Keys are the type's fields, plus optional `count` (copies, default 1) and `id` (a stable id prefix).
+Field values for one design. Keys are the component's fields (including `tile` when it picks its own tile), plus optional `count` (copies, default 1) and `id` (a stable id prefix).
 
 Type: map of text to text or number or true or false
 
@@ -40,7 +40,7 @@ From `examples/harvest-moon/inventory.yaml`:
 ```yaml
 kind: inventory
 components:
-  - type: action-card
+  - component: action-card
     deck: actions
     items:
       - name: Harvest
@@ -50,16 +50,16 @@ components:
         art: assets/art/harvest.svg
         count: 3
       - { name: Raid, cost: 2, suit: red, text: Steal 1 grain from a neighbour., count: 2 }
-  - type: action-card
+  - component: action-card
     deck: actions
     from: data/actions.csv
-  - type: worker
+  - component: worker
     each: { color: [red, green] }
     count: 5
-  - type: score-marker
+  - component: score-marker
     each: { color: [red, green] }
-  - type: coins
-  - type: d6
+  - component: coins
+  - component: d6
     count: 2
-  - type: main-board
+  - component: main-board
 ```

@@ -1,4 +1,4 @@
-// Checks that a setup's steps refer to types, components, decks and snap spots that exist.
+// Checks that a setup's steps refer to components, decks and drop areas that exist.
 import type { ComponentSpec, ResolvedType } from './resolved.js';
 import type { SetupStep, SnapTarget } from './schemas.js';
 import type { Problem } from './diagnostics.js';
@@ -36,7 +36,7 @@ function placeProblems(step: Extract<SetupStep, { place: unknown }>, known: Know
     if (!exists) {
       problems.push({
         path: ['place'],
-        message: `"${ref}" is neither a type id nor a component id.`,
+        message: `"${ref}" is not a component in the library or the inventory.`,
       });
     }
     if (step.shuffle) problems.push({ path: ['shuffle'], message: 'Only a deck can be shuffled.' });
@@ -62,7 +62,7 @@ function targetProblems(
   return message ? [{ path, message }] : [];
 }
 
-/** Checks a `piece/target[/index]` reference, where piece is a component id or a type with one component. */
+/** Checks a `piece/area[/index]` reference, where piece is one in the inventory, or a library component with one in it. */
 function targetProblem(ref: string, known: Known): string | undefined {
   const [owner, targetId, index, ...rest] = ref.split('/');
   if (!owner || !targetId || rest.length > 0) {
@@ -73,13 +73,13 @@ function targetProblem(ref: string, known: Known): string | undefined {
   const typeId = component?.type ?? (ofType.length > 0 ? owner : undefined);
   if (!typeId) {
     if (known.brokenTypes.has(owner)) return undefined;
-    return `"${owner}" is not a component id or a type in the inventory.`;
+    return `"${owner}" is not in the inventory.`;
   }
   if (!component && ofType.length > 1) {
-    return `There are ${ofType.length} components of type "${owner}"; use a component id such as "${ofType[0]!.id}".`;
+    return `There are ${ofType.length} "${owner}" components; use the id of one, such as "${ofType[0]!.id}".`;
   }
-  const target = known.types[typeId]?.snap?.find((t) => t.id === targetId);
-  if (!target) return `"${typeId}" has no snap target "${targetId}".`;
+  const target = known.types[typeId]?.container?.find((t) => t.id === targetId);
+  if (!target) return `"${typeId}" has no drop area "${targetId}".`;
   return index === undefined ? undefined : spotProblem(target, index);
 }
 
@@ -87,14 +87,14 @@ function spotProblem(target: SnapTarget, index: string): string | undefined {
   const spots = snapSpotCount(target);
   const i = Number(index);
   if (spots === undefined)
-    return `Snap target "${target.id}" is an area and has no numbered spots.`;
+    return `Drop area "${target.id}" is a free area and has no numbered spots.`;
   if (!Number.isInteger(i) || i < 0 || i >= spots) {
     return `Spot ${index} is out of range; "${target.id}" has spots 0 to ${spots - 1}.`;
   }
   return undefined;
 }
 
-/** Number of numbered spots in a snap target, or undefined for free areas. */
+/** Number of numbered spots in a drop area, or undefined for free areas. */
 export function snapSpotCount(target: SnapTarget): number | undefined {
   if (target.grid) return target.grid.cols * target.grid.rows;
   if (target.points) return target.points.length;

@@ -2,7 +2,7 @@
 // server makes in every file that uses the name, and images saved into the assets.
 import { sizeOf } from '../render/geometry';
 import { renameField, renameType, uploadAsset } from './api';
-import { addLayer, assetPath, droppedImage, layersOf, type Side } from './edit';
+import { addItem, assetPath, droppedImage, type Side } from './edit';
 import { editDraft, expectType, projectId, settle, useDesign } from './store';
 
 /**
@@ -59,9 +59,12 @@ export async function addImage(
 ): Promise<void> {
   try {
     const { file } = await uploadAsset(projectId(), assetPath(image.name), image.base64);
-    editDraft((t) => addLayer(t, side, droppedImage(file, image.natural, at, sizeOf(t))));
-    const { draft } = useDesign.getState();
-    const layer = draft ? layersOf(draft, side).length - 1 : undefined;
+    let layer: number | undefined;
+    editDraft((t) => {
+      const added = addItem(t, side, { layer: droppedImage(file, image.natural, at, sizeOf(t)) });
+      layer = added.index;
+      return added.type;
+    });
     useDesign.setState({ side, layer, target: undefined });
   } catch (err) {
     useDesign.setState({ message: `Could not add the image: ${(err as Error).message}` });

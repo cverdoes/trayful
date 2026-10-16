@@ -95,11 +95,11 @@ export const Target = z
     z
       .string()
       .describe(
-        "A snap target from describe_table: `board/target/index` for one spot, or `board/target` for its free spots in order (or its free area); or `hand:<player>` for a player's private hand.",
+        "A drop area from describe_table: `board/target/index` for one spot, or `board/target` for its free spots in order (or its free area); or `hand:<player>` for a player's private hand.",
       ),
   ])
   .describe(
-    'A position `[x, y]` in mm, a snap target such as `main-board/market/2`, or a hand such as `hand:claude`.',
+    'A position `[x, y]` in mm, a drop area such as `main-board/market/2`, or a hand such as `hand:claude`.',
   );
 export const tableName = z
   .string()

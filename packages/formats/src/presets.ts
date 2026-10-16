@@ -1,6 +1,5 @@
-// Starting points for new component types, and checks for a type while it is being edited.
+// Starting points for new components, and checks for a component while it is being edited.
 import { flattenIssues, type Problem } from './diagnostics.js';
-import { normalizeField } from './fields.js';
 import { slugify } from './inventory.js';
 import { ComponentType } from './schemas.js';
 import { typeProblems } from './type-checks.js';
@@ -18,19 +17,70 @@ const INK = '#222222';
 export const TYPE_PRESETS: readonly TypePreset[] = [
   {
     name: 'Poker card',
-    type: { base: 'card', size: [63, 88], corner: 3, front: { fill: PAPER }, back: { fill: INK } },
+    type: {
+      size: [63, 88],
+      is: 'piece',
+      face: { corner: 3, fill: PAPER },
+      flippable: { back: { fill: INK } },
+      rotates: true,
+      stackable: true,
+    },
   },
   {
     name: 'Mini card',
-    type: { base: 'card', size: [44, 63], corner: 3, front: { fill: PAPER }, back: { fill: INK } },
+    type: {
+      size: [44, 63],
+      is: 'piece',
+      face: { corner: 3, fill: PAPER },
+      flippable: { back: { fill: INK } },
+      rotates: true,
+      stackable: true,
+    },
   },
-  { name: 'Square tile', type: { base: 'tile', size: 50, front: { fill: PAPER } } },
-  { name: 'Hex tile', type: { base: 'tile', size: 50, shape: 'hex', front: { fill: PAPER } } },
-  { name: 'Round token', type: { base: 'token', size: 25, shape: 'circle', fill: '#e0b040' } },
-  { name: 'Meeple', type: { base: 'meeple', size: 16, fill: '#c0392b' } },
-  { name: 'Six-sided die', type: { base: 'die', size: 16, faces: [1, 2, 3, 4, 5, 6] } },
-  { name: 'Counter', type: { base: 'counter', size: [30, 20], range: [0, 99] } },
-  { name: 'Board', type: { base: 'board', size: [300, 300], front: { fill: '#e8dcc0' } } },
+  {
+    name: 'Square tile',
+    type: {
+      size: 50,
+      is: 'piece',
+      face: { fill: PAPER },
+      flippable: true,
+      rotates: true,
+      stackable: true,
+    },
+  },
+  {
+    name: 'Hex tile',
+    type: {
+      size: 50,
+      is: 'piece',
+      face: { shape: 'hex', fill: PAPER },
+      flippable: true,
+      rotates: { step: 60 },
+      stackable: true,
+    },
+  },
+  {
+    name: 'Round token',
+    type: { size: 25, is: 'piece', face: { shape: 'circle', fill: '#e0b040' }, stackable: true },
+  },
+  { name: 'Meeple', type: { size: 16, is: 'piece', face: { shape: 'meeple', fill: '#c0392b' } } },
+  {
+    name: 'Six-sided die',
+    type: { size: 16, is: 'die', face: { corner: 2 }, values: { range: [1, 6] } },
+  },
+  { name: 'Counter', type: { size: [30, 20], is: 'counter', values: { range: [0, 99] } } },
+  {
+    name: 'Board',
+    type: { size: [300, 300], is: 'piece', face: { fill: '#e8dcc0' }, rotates: true },
+  },
+  {
+    name: 'Zone',
+    type: {
+      size: [100, 70],
+      is: 'zone',
+      container: [{ id: 'area', area: { at: [0, 0], size: [100, 70] } }],
+    },
+  },
 ];
 
 /**
@@ -55,10 +105,7 @@ export function freeTypeId(name: string, taken: Iterable<string>): string {
 export function typeDraftProblems(draft: unknown): Problem[] {
   const result = ComponentType.safeParse(draft);
   if (!result.success) return flattenIssues(result.error.issues);
-  const fields = Object.fromEntries(
-    Object.entries(result.data.fields ?? {}).map(([name, field]) => [name, normalizeField(field)]),
-  );
-  return typeProblems(result.data, fields);
+  return typeProblems(result.data);
 }
 
 /**

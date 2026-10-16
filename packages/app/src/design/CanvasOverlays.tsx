@@ -1,5 +1,5 @@
 // What the designer draws over the faces: the selected layer's box and handles,
-// the snap targets with their numbered spots, and the guides a drag snapped to.
+// the drop areas with their numbered spots, and the guides a drag snapped to.
 // Sizes are in millimetres, divided by the scale where they should stay a fixed
 // number of pixels on screen.
 import type { ComponentType, SnapTarget } from '@trayful/formats/browser';
@@ -61,7 +61,7 @@ export function LayerHandles({
   );
 }
 
-/** Every snap target of the type: its spots numbered from 0, or its area; the selected one with handles. */
+/** Every drop area of the type: its spots numbered from 0, or its area; the selected one with handles. */
 export function SnapTargets({
   type,
   selected,
@@ -69,7 +69,7 @@ export function SnapTargets({
 }: Readonly<{ type: ComponentType; selected?: number; scale: number }>) {
   return (
     <Group listening={false}>
-      {(type.snap ?? []).map((target, i) => (
+      {(type.container ?? []).map((target, i) => (
         <TargetView key={target.id} target={target} chosen={i === selected} scale={scale} />
       ))}
     </Group>

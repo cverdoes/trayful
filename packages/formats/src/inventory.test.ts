@@ -26,7 +26,7 @@ function resolve(
     report: (field, message) => reports.push(field ? `${field}: ${message}` : message),
     ...options,
   };
-  const result = resolveRow(card, { type: 'card', ...entry }, row, 4);
+  const result = resolveRow(card, { component: 'card', ...entry }, row, 4);
   return { result, reports };
 }
 

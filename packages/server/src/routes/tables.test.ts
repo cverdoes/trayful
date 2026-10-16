@@ -6,13 +6,21 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { startServer, type RunningServer } from '../server.js';
 
 const example = fileURLToPath(new URL('../../../../examples/harvest-moon', import.meta.url));
+const legacy = fileURLToPath(
+  new URL('../../../formats/fixtures/legacy-harvest-moon', import.meta.url),
+);
 
 let server: RunningServer;
 
-beforeEach(async () => {
+/** Serves a copy of a project folder. */
+async function serve(source: string): Promise<RunningServer> {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-routes-'));
-  await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
-  server = await startServer({ projectDir: dir, port: 0, appDir: path.join(dir, 'no-app') });
+  await cp(source, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
+  return startServer({ projectDir: dir, port: 0, appDir: path.join(dir, 'no-app') });
+}
+
+beforeEach(async () => {
+  server = await serve(example);
 });
 
 afterEach(() => server.close());
@@ -61,18 +69,19 @@ describe('designing types', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
-  const coin = { id: 'coin', base: 'token', size: 20, shape: 'circle' };
+  const coin = { id: 'coin', is: 'piece', size: 20, face: { shape: 'circle' } };
 
   it('saves a type, then refuses a save made against an older file', async () => {
     const library = (await (await fetch(`${server.url}/api/library`)).json()) as {
       files: Record<string, string>;
       types: Record<string, string>;
     };
-    expect(library.types.worker).toBe('library/pieces.yaml');
-    const baseHash = library.files['library/pieces.yaml'];
+    // A new piece goes next to the first piece, the action card.
+    expect(library.types['action-card']).toBe('library/cards.yaml');
+    const baseHash = library.files['library/cards.yaml'];
 
     const saved = await put('coin', { definition: coin, baseHash });
-    expect(await saved.json()).toMatchObject({ file: 'library/pieces.yaml', created: true });
+    expect(await saved.json()).toMatchObject({ file: 'library/cards.yaml', created: true });
     expect(server.workspace.project().types.coin).toBeDefined();
 
     const stale = await put('coin', { definition: { ...coin, size: 22 }, baseHash });
@@ -84,7 +93,9 @@ describe('designing types', () => {
     expect((await put('coin', { definition: { ...coin, id: 'other' } })).status).toBe(400);
     const invalid = await put('coin', { definition: { ...coin, size: 'big' } });
     expect(invalid.status).toBe(400);
-    expect(((await invalid.json()) as { error: string }).error).toMatch(/Invalid component type/);
+    expect(((await invalid.json()) as { error: string }).error).toMatch(
+      /Invalid component:\n {2}size:/,
+    );
     const inUse = await fetch(`${server.url}/api/types/worker`, { method: 'DELETE' });
     expect(inUse.status).toBe(400);
     await put('coin', { definition: coin });
@@ -128,7 +139,7 @@ describe('renaming and uploading in the designer', () => {
     expect(missing).toEqual({ status: 400, reply: { error: 'Send the new name as "to".' } });
     const taken = await send('POST', '/api/types/worker/rename', { to: 'd6' });
     expect(taken.status).toBe(400);
-    expect(taken.reply.error).toMatch(/already a type "d6"/);
+    expect(taken.reply.error).toMatch(/already a component "d6"/);
     const field = await send('POST', '/api/types/worker/fields/size/rename', { to: 'height' });
     expect(field).toEqual({ status: 400, reply: { error: '"worker" has no field "size".' } });
   });
@@ -158,5 +169,39 @@ describe('renaming and uploading in the designer', () => {
     const upload = await send('PUT', '/api/assets', { file: 'a.svg', base64: '' }, remote);
     expect(upload.status).toBe(403);
     expect(server.workspace.project().types.worker).toBeDefined();
+  });
+});
+
+describe('migrating a project', () => {
+  beforeEach(async () => {
+    await server.close();
+    server = await serve(legacy);
+  });
+
+  it('moves a project in the first format to the current one, for the host only', async () => {
+    const coin = { id: 'coin', is: 'piece', size: 20 };
+    const refused = await fetch(`${server.url}/api/types/coin`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ definition: coin }),
+    });
+    expect(((await refused.json()) as { error: string }).error).toMatch(/Migrate it first/);
+
+    const remote = await fetch(`${server.url}/api/migrate`, {
+      method: 'POST',
+      headers: { 'x-forwarded-for': '203.0.113.9' },
+    });
+    expect(remote.status).toBe(403);
+    expect(server.workspace.project().legacy).toBe(true);
+
+    const migrated = await fetch(`${server.url}/api/migrate`, { method: 'POST' });
+    const { files } = (await migrated.json()) as { files: string[] };
+    expect(files).toContain('assets.yaml');
+    expect(files).toContain('trayful.yaml');
+    expect(server.workspace.project().legacy).toBe(false);
+
+    const again = await fetch(`${server.url}/api/migrate`, { method: 'POST' });
+    expect(again.status).toBe(400);
+    expect(await again.json()).toEqual({ error: 'This project is already in trayful/2.' });
   });
 });

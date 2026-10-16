@@ -1,5 +1,6 @@
 import type { FastifyReply } from 'fastify';
 import { addNewAsset, libraryFiles, removeType, upsertType } from '../authoring.js';
+import { migrateFolder } from '../migrate.js';
 import { renameField, renameType } from '../renaming.js';
 import type { RouteContext } from './context.js';
 
@@ -20,6 +21,7 @@ export function registerAuthoringRoutes(ctx: RouteContext): void {
   registerTypeRoutes(ctx);
   registerRenameRoutes(ctx);
   registerAssetRoute(ctx);
+  registerMigrateRoute(ctx);
 }
 
 const projectOf = ({ workspace }: RouteContext, query: ProjectQuery) =>
@@ -117,4 +119,16 @@ function registerAssetRoute(ctx: RouteContext): void {
       return { file: result.file };
     },
   );
+}
+
+/** Moving a project in the first file format to the current one, so it can be designed. */
+function registerMigrateRoute(ctx: RouteContext): void {
+  const { app, workspace, hostOnly } = ctx;
+  app.post<{ Querystring: ProjectQuery }>('/api/migrate', async (request, reply) => {
+    if (hostOnly(request, reply)) return;
+    const projectId = projectOf(ctx, request.query);
+    const files = await migrateFolder(workspace.entry(projectId).dir);
+    await workspace.reload(projectId);
+    return { files };
+  });
 }

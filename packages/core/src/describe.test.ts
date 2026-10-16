@@ -66,7 +66,7 @@ describe('describe and query', () => {
   it('hides face-down cards unless revealed', () => {
     const e = engine();
     const text = describeTable(e.state, project.types);
-    expect(text).toContain('deck:actions: 10 × Action card (action-card, card), top face down');
+    expect(text).toContain('deck:actions: 10 × Action card (action-card, piece), top face down');
     expect(text).not.toContain('Harvest');
     expect(text).toContain('coins: coins (counter), value 0');
     expect(describeTable(e.state, project.types, { reveal: true })).toContain('Harvest');
@@ -76,7 +76,7 @@ describe('describe and query', () => {
     const e = engine();
     e.dispatch({ type: 'draw', from: DECK, to: [0, 300], face: 'up' });
     const [card] = queryObjects(e.state, project.types, {
-      base: 'card',
+      is: 'piece',
       region: [-50, 250, 100, 100],
     });
     expect(card!.top.data).toMatchObject({ suit: expect.any(String) });

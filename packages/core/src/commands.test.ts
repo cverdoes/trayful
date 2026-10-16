@@ -72,7 +72,7 @@ describe('commands refuse what they cannot do', () => {
       ...setUp,
       objects: { ...setUp.objects, coins: { ...piece(setUp, 'coins'), type: 'gold' } },
     };
-    expect(() => run(odd, { type: 'roll', id: 'coins' })).toThrow('Unknown component type "gold".');
+    expect(() => run(odd, { type: 'roll', id: 'coins' })).toThrow('Unknown component "gold".');
   });
 });
 

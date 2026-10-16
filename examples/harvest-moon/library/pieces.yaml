@@ -1,23 +1,24 @@
 # yaml-language-server: $schema=../../../packages/formats/schema/library.schema.json
 kind: library
-types:
+components:
   - id: main-board
-    base: board
     name: Farm board
     size: [600, 400]
-    front:
-      layers:
-        - { image: assets/board.svg }
-    snap:
+    is: piece
+    rotates: true
+    face:
+      image: board
+    container:
       - id: market
-        grid: { origin: [85, 70], cols: 5, rows: 1, cell: [70, 95] }
         accepts: [action-card]
+        grid: { origin: [85, 70], cols: 5, rows: 1, cell: [70, 95] }
       - id: fields
-        grid: { origin: [110, 200], cols: 4, rows: 2, cell: 50 }
         accepts: [worker]
+        grid: { origin: [110, 200], cols: 4, rows: 2, cell: 50 }
       - id: supply
         area: { at: [440, 180], size: 140 }
       - id: score-track
+        accepts: [score-marker]
         points:
           - [30, 370]
           - [80, 370]
@@ -30,29 +31,33 @@ types:
           - [430, 370]
           - [480, 370]
           - [530, 370]
-        accepts: [score-marker]
-
   - id: worker
-    base: meeple
     size: 16
+    is: piece
+    rotates: true
     fields:
       color: { enum: [red, green] }
-    fill: '{{color}}'
-
+    face:
+      shape: meeple
+      fill: '{{color}}'
   - id: score-marker
-    base: token
-    shape: disc
     size: 12
+    is: piece
+    flippable: true
+    rotates: true
+    stackable: true
     fields:
       color: { enum: [red, green] }
-    fill: '{{color}}'
-
+    face:
+      shape: disc
+      fill: '{{color}}'
   - id: coins
-    base: counter
     size: [30, 20]
-    range: [0, 99]
-
+    is: counter
   - id: d6
-    base: die
     size: 16
-    faces: [1, 2, 3, 4, 5, 6]
+    is: die
+    face:
+      corner: 2
+      # A sheet of six tiles; a die shows the tile of its value.
+      image: dice

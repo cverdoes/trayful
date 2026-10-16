@@ -1,6 +1,6 @@
-// The files an author writes besides libraries: the manifest, the inventory and setups.
+// The files an author writes besides libraries and assets: the manifest, the inventory and setups.
 import { z } from 'zod';
-import { FORMAT_VERSION, Slug, Vec2, Scalar, FaceSide } from './common.js';
+import { FORMAT_VERSION, LEGACY_FORMAT, Slug, Vec2, Scalar, FaceSide } from './common.js';
 
 // ---------------------------------------------------------------------------
 // Manifest
@@ -11,7 +11,9 @@ export const ManifestFile = z
     name: z.string().min(1).describe('Name of the prototype.'),
     format: z
       .literal(FORMAT_VERSION)
-      .describe(`File format version. Currently always \`${FORMAT_VERSION}\`.`),
+      .describe(
+        `File format version, \`${FORMAT_VERSION}\`. Projects in \`${LEGACY_FORMAT}\` still open; \`trayful migrate\` rewrites them.`,
+      ),
     version: z
       .string()
       .optional()
@@ -21,6 +23,10 @@ export const ManifestFile = z
       .literal('mm')
       .optional()
       .describe('Unit for all sizes and positions. Only `mm` for now.'),
+    assets: z
+      .string()
+      .optional()
+      .describe('Path to the assets file. Default `assets.yaml`, when the project has one.'),
     libraries: z
       .array(z.string())
       .min(1)
@@ -50,12 +56,12 @@ export const ManifestFile = z
 export const InventoryRow = z.record(z.string(), Scalar).meta({
   id: 'InventoryRow',
   description:
-    "Field values for one design. Keys are the type's fields, plus optional `count` (copies, default 1) and `id` (a stable id prefix).",
+    "Field values for one design. Keys are the component's fields (including `tile` when it picks its own tile), plus optional `count` (copies, default 1) and `id` (a stable id prefix).",
 });
 
 export const InventoryEntry = z
   .strictObject({
-    type: z.string().describe('Component type id from a library.'),
+    component: z.string().describe('Component id from a library.'),
     count: z
       .int()
       .positive()
@@ -88,7 +94,7 @@ export const InventoryEntry = z
   .meta({
     id: 'InventoryEntry',
     description:
-      'A group of components of one type. Use at most one of `items`, `from` or `each`; with none, the entry is one design.',
+      'A group of components of one kind. Use at most one of `items`, `from` or `each`; with none, the entry is one design.',
   });
 
 export const InventoryFile = z
@@ -109,13 +115,13 @@ export const InventoryFile = z
 export const Target = z.union([Vec2, z.string()]).meta({
   id: 'Target',
   description:
-    'Where something goes: an `[x, y]` table position, or a snap target as `type/target` or `type/target/index` (e.g. `main-board/market/2`).',
+    'Where something goes: an `[x, y]` table position, or a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`).',
 });
 
 const Ref = z
   .union([z.string(), z.strictObject({ deck: z.string() })])
   .describe(
-    'A component type id (places every component of that type), a component id, or `{ deck: <name> }`.',
+    'A component id from a library (places every one of them in the inventory), the id of one of them, or `{ deck: <name> }`.',
   );
 
 export const PlaceStep = z
@@ -125,6 +131,10 @@ export const PlaceStep = z
     face: FaceSide.optional().describe('Turn face up or down.'),
     rot: z.number().optional().describe('Rotation in degrees.'),
     shuffle: z.boolean().optional().describe('Shuffle a deck after placing it.'),
+    lock: z
+      .boolean()
+      .optional()
+      .describe('Lock it in place, as a board usually is once it is where it belongs.'),
   })
   .meta({ id: 'PlaceStep', description: 'Put components or a deck somewhere on the table.' });
 

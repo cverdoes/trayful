@@ -38,7 +38,7 @@ describe('createTable', () => {
     expect(pieces).toHaveLength(26);
     expect(stack(table, DECK).items).toHaveLength(10);
     expect(piece(table, 'action-card.harvest.1')).toMatchObject({ face: 'down', parent: DECK });
-    expect(piece(table, 'main-board').locked).toBe(true);
+    expect(piece(table, 'main-board').locked).toBeUndefined();
     expect(piece(table, 'coins').value).toBe(0);
     expect(piece(table, 'd6.1').value).toBe(1);
     expect(checkIntegrity(table)).toEqual([]);
@@ -62,7 +62,11 @@ describe('commands', () => {
   });
 
   it('refuses to move locked objects or pieces inside a stack', () => {
-    const s = fresh();
+    const s = applyCommand(
+      fresh(),
+      { type: 'lock', ids: ['main-board'], locked: true },
+      project.types,
+    );
     expect(() =>
       applyCommand(s, { type: 'move', ids: ['main-board'], by: [1, 1] }, project.types),
     ).toThrow(/locked/);
@@ -153,12 +157,24 @@ describe('commands', () => {
     expect([1, 2, 3, 4, 5, 6]).toContain(piece(e.state, 'd6.1').value);
     e.dispatch({ type: 'setValue', id: 'coins', value: 250 });
     expect(piece(e.state, 'coins').value).toBe(99);
-    expect(() => e.dispatch({ type: 'setValue', id: 'd6.1', value: 7 })).toThrow(CommandError);
-    expect(() => e.dispatch({ type: 'roll', id: 'coins' })).toThrow(/not a die/);
+    e.dispatch({ type: 'setValue', id: 'd6.1', value: 7 });
+    expect(piece(e.state, 'd6.1').value).toBe(6);
+    e.dispatch({ type: 'setValue', id: 'coins', value: -3 });
+    expect(piece(e.state, 'coins').value).toBe(0);
+    expect(() => e.dispatch({ type: 'setValue', id: 'd6.1', value: 2.5 })).toThrow(CommandError);
+    expect(() => e.dispatch({ type: 'setValue', id: 'd6.1', value: 'six' })).toThrow(
+      /whole number/,
+    );
+    expect(() => e.dispatch({ type: 'setValue', id: 'worker.red.1', value: 1 })).toThrow(
+      /has no value/,
+    );
+    expect(() => e.dispatch({ type: 'roll', id: 'coins' })).toThrow(/cannot be rolled/);
   });
 
   it('locks and unlocks', () => {
     const e = engine();
+    e.dispatch({ type: 'lock', ids: ['main-board'], locked: true });
+    expect(piece(e.state, 'main-board').locked).toBe(true);
     e.dispatch({ type: 'lock', ids: ['main-board'], locked: false });
     expect(piece(e.state, 'main-board').locked).toBeUndefined();
     e.dispatch({ type: 'move', ids: ['main-board'], by: [10, 0] });
@@ -228,6 +244,31 @@ describe('TableEngine', () => {
     );
     expect(e.state).toBe(s0);
     expect(e.canUndo).toBe(false);
+  });
+
+  it('replaces the whole table as one undoable step', () => {
+    const e = engine();
+    const s0 = e.state;
+    const other = createTable(project, { name: 'other', seed: 1 });
+    e.replace(other, 'alice');
+    expect(e.state).toBe(other);
+    expect(e.entries).toMatchObject([{ command: { type: 'replace' }, player: 'alice' }]);
+    expect(e.undo('alice')).toBe(true);
+    expect(e.state).toBe(s0);
+  });
+
+  it('uses the component types it was last given', () => {
+    const e = engine();
+    e.setCatalog({ ...project.types, worker: { ...project.types.worker!, rotates: undefined } });
+    expect(() => e.dispatch({ type: 'rotate', ids: ['worker.red.1'], steps: 1 })).toThrow(
+      /does not rotate/,
+    );
+  });
+
+  it('forgets the oldest steps beyond its history limit', () => {
+    const e = new TableEngine(fresh(), project.types, 2);
+    for (const n of [1, 2, 3]) e.dispatch({ type: 'move', ids: ['worker.red.1'], by: [n, 0] });
+    expect(e.history).toHaveLength(2);
   });
 
   it('notifies subscribers', () => {

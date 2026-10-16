@@ -22,7 +22,7 @@ One component on the table.
 | --- | --- | --- | --- |
 | `kind` | `"piece"` | yes | Marks a single piece. |
 | `id` | text | yes | Stable component id from the inventory. |
-| `type` | text | yes | Component type id. |
+| `type` | text | yes | Id of the component in the library. |
 | `data` | map of text to text or number or true or false |  | Field values of this component. |
 | `pos` | [Vec2](#vec2) | yes | Centre position on the table, in millimetres. |
 | `rot` | number | yes | Rotation in degrees. |

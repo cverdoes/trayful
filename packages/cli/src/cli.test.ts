@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { run } from './index.js';
-import { examples } from './testing.js';
+import { examples, scratchLegacyProject, scratchProject } from './testing.js';
 
 const example = path.join(examples, 'harvest-moon');
 const notAProject = fileURLToPath(new URL('.', import.meta.url));
@@ -48,6 +48,34 @@ describe('trayful validate', () => {
     expect(r.err).toBe(
       'Give the project folder to check.\nUsage: trayful validate <project-dir> [--json]',
     );
+  });
+});
+
+describe('trayful migrate', () => {
+  it('rewrites a project in the first format and lists the files it wrote', async () => {
+    const dir = await scratchLegacyProject();
+    const r = await capture(['migrate', dir]);
+    expect(r.code).toBe(0);
+    expect(r.out).toMatch(
+      new RegExp(`^Migrated ${dir} to the current file format\\. Wrote:\n {2}library/`),
+    );
+    expect(r.out).toContain('\n  assets.yaml\n');
+    expect(await readFile(path.join(dir, 'trayful.yaml'), 'utf8')).toContain('format: trayful/2');
+    expect(JSON.parse((await capture(['validate', dir, '--json'])).out)).toEqual({
+      ok: true,
+      diagnostics: [],
+    });
+  });
+
+  it('needs a folder, and says when a project is already current', async () => {
+    const usage = await capture(['migrate']);
+    expect(usage.code).toBe(2);
+    expect(usage.err).toBe(
+      'Give the project folder to migrate.\nUsage: trayful migrate <project-dir>',
+    );
+    const r = await capture(['migrate', await scratchProject()]);
+    expect(r.code).toBe(1);
+    expect(r.err).toBe('This project is already in trayful/2.');
   });
 });
 

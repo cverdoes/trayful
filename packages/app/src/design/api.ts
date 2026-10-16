@@ -93,3 +93,8 @@ export async function renameField(
   const path = `/api/types/${encodeURIComponent(id)}/fields/${encodeURIComponent(field)}/rename`;
   return post<Library>(`${path}${query(project)}`, { to });
 }
+
+/** Rewrites a project made in the first file format in the current one. */
+export async function migrateProject(project: string): Promise<{ files: string[] }> {
+  return post<{ files: string[] }>(`/api/migrate${query(project)}`, {});
+}

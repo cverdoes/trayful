@@ -1,4 +1,4 @@
-import { PRIMITIVE_INFO } from '@trayful/formats/browser';
+import { isStackable, stacksWith, type ComponentType } from '@trayful/formats/browser';
 import type { StackLayout } from './layout.js';
 import { shuffled } from './rng.js';
 import type { Stack, TableObject } from './state.js';
@@ -19,12 +19,7 @@ export function stack(tx: Transaction, ids: string[], ontoId: string): void {
   if (sources.some((s) => s.id === ontoId))
     throw new CommandError('Cannot stack an object onto itself.');
   const onto = tx.onTable(ontoId);
-  for (const piece of [onto, ...sources].flatMap((o) => tx.piecesOf(o))) {
-    const type = tx.typeOf(piece);
-    if (!PRIMITIVE_INFO[type.base].stackable) {
-      throw new CommandError(`"${piece.id}" is a ${type.base}, which cannot be stacked.`);
-    }
-  }
+  checkStackable(tx, [onto, ...sources]);
   const target = asStack(tx, onto);
   const items = [...target.items];
   for (const source of sources) {
@@ -38,6 +33,21 @@ export function stack(tx: Transaction, ids: string[], ontoId: string): void {
     }
   }
   tx.update(target, { items, z: tx.topZ() });
+}
+
+/** Every piece must be stackable, and every kind of piece must stack with every other. */
+function checkStackable(tx: Transaction, objects: TableObject[]): void {
+  const kinds = new Map<string, { type: ComponentType; piece: string }>();
+  for (const piece of objects.flatMap((o) => tx.piecesOf(o))) {
+    const type = tx.typeOf(piece);
+    if (!isStackable(type)) throw new CommandError(`"${piece.id}" cannot be stacked.`);
+    if (!kinds.has(type.id)) kinds.set(type.id, { type, piece: piece.id });
+  }
+  const list = [...kinds.values()];
+  for (const [i, a] of list.entries()) {
+    const b = list.slice(i + 1).find((other) => !stacksWith(a.type, other.type));
+    if (b) throw new CommandError(`"${a.piece}" and "${b.piece}" cannot share a stack.`);
+  }
 }
 
 /** A stack as it is, or a piece turned into a one-card stack where it lies. */

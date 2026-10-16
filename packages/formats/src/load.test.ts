@@ -13,35 +13,37 @@ async function project(files: Record<string, string>): Promise<string> {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-'));
   const defaults: Record<string, string> = {
     'trayful.yaml':
-      'name: Test\nformat: trayful/1\nlibraries: [lib.yaml]\ninventory: inventory.yaml\n',
+      'name: Test\nformat: trayful/2\nlibraries: [lib.yaml]\ninventory: inventory.yaml\n',
     'lib.yaml': [
       'kind: library',
-      'types:',
+      'components:',
       '  - id: card',
-      '    base: card',
       '    size: [63, 88]',
+      '    is: piece',
+      '    flippable: true',
+      '    stackable: true',
       '    fields:',
       '      name: string',
       '      suit: { enum: [red, blue] }',
       '      cost: { type: int, default: 0 }',
-      '    front:',
-      '      layers:',
-      "        - { text: '{{name}}' }",
+      '    face:',
+      '      labels:',
+      '        - { field: name }',
       '  - id: board',
-      '    base: board',
       '    size: [300, 200]',
-      '    snap:',
+      '    is: piece',
+      '    container:',
       '      - { id: row, grid: { origin: [10, 10], cols: 3, rows: 1, cell: 70 } }',
     ].join('\n'),
     'inventory.yaml': [
       'kind: inventory',
       'components:',
-      '  - type: card',
+      '  - component: card',
       '    deck: main',
       '    items:',
       '      - { name: Alpha, suit: red, count: 2 }',
       '      - { name: Beta, suit: blue }',
-      '  - type: board',
+      '  - component: board',
     ].join('\n'),
   };
   for (const [file, text] of Object.entries({ ...defaults, ...files })) {
@@ -58,7 +60,7 @@ describe('loadProject', () => {
   it('reports a default setup that does not exist', async () => {
     const dir = await project({
       'trayful.yaml':
-        'name: Test\nformat: trayful/1\nlibraries: [lib.yaml]\ninventory: inventory.yaml\nsetup: start\n',
+        'name: Test\nformat: trayful/2\nlibraries: [lib.yaml]\ninventory: inventory.yaml\nsetup: start\n',
     });
     const result = await loadProject(dir);
     expect(messages(result).join('\n')).toMatch(
@@ -115,53 +117,53 @@ describe('loadProject', () => {
     const dir = await project({
       'lib.yaml': [
         'kind: library',
-        'types:',
+        'components:',
         '  - id: card',
-        '    base: card',
+        '    is: piece',
         '    size: [63, wide]',
         '    colour: red',
       ].join('\n'),
       'inventory.yaml': 'kind: inventory\ncomponents: []\n',
     });
     expect(messages(await loadProject(dir))).toEqual([
-      'lib.yaml:5:16  error  expected number, received string (at types[0].size[1])',
-      'lib.yaml:6:5  error  Unknown key: "colour". (at types[0].colour)',
+      'lib.yaml:5:16  error  expected number, received string (at components[0].size[1])',
+      'lib.yaml:6:5  error  Unknown key: "colour". (at components[0].colour)',
     ]);
   });
 
   it('reports YAML syntax errors', async () => {
     const dir = await project({
-      'inventory.yaml': 'kind: inventory\ncomponents:\n  - type: [card\n',
+      'inventory.yaml': 'kind: inventory\ncomponents:\n  - component: [card\n',
     });
     const [first] = (await loadProject(dir)).diagnostics;
     expect(first).toMatchObject({ file: 'inventory.yaml', severity: 'error' });
     expect(first!.line).toBeGreaterThan(0);
   });
 
-  it('checks inventory rows against the type fields', async () => {
+  it('checks inventory rows against the component fields', async () => {
     const dir = await project({
       'inventory.yaml': [
         'kind: inventory',
         'components:',
-        '  - type: card',
+        '  - component: card',
         '    items:',
         '      - { name: Alpha, suit: green }',
         '      - { name: Beta, suit: red, colour: red }',
         '      - { suit: red }',
-        '  - type: crad',
+        '  - component: crad',
       ].join('\n'),
     });
     expect(messages(await loadProject(dir))).toEqual([
       'inventory.yaml:5:24  error  "suit" must be one of "red", "blue". (at components[0].items[0].suit)',
       'inventory.yaml:6:34  error  "colour" is not a field of "card". (at components[0].items[1].colour)',
       'inventory.yaml:7:9  error  Missing value for field "name". (at components[0].items[2])',
-      'inventory.yaml:8:5  error  Unknown type "crad". Define it in a library first. (at components[1].type)',
+      'inventory.yaml:8:5  error  Unknown component "crad". Define it in a library first. (at components[1].component)',
     ]);
   });
 
   it('reports CSV problems by CSV line', async () => {
     const dir = await project({
-      'inventory.yaml': 'kind: inventory\ncomponents:\n  - type: card\n    from: cards.csv\n',
+      'inventory.yaml': 'kind: inventory\ncomponents:\n  - component: card\n    from: cards.csv\n',
       'cards.csv': 'name,suit,cost\nAlpha,red,1\nBeta,blue,lots\n',
     });
     expect(messages(await loadProject(dir))).toEqual([
@@ -169,32 +171,32 @@ describe('loadProject', () => {
     ]);
   });
 
-  it('checks library rules per primitive and template fields', async () => {
+  it('checks library rules per representation and template fields', async () => {
     const dir = await project({
       'lib.yaml': [
         'kind: library',
-        'types:',
+        'components:',
         '  - id: pawn',
-        '    base: meeple',
         '    size: 16',
-        '    back: { fill: red }',
-        '    range: [0, 5]',
-        '    front:',
-        "      layers: [{ text: '{{label}}' }]",
+        '    is: die',
+        '    flippable: { back: { fill: red } }',
+        '    values: { range: [5, 0] }',
+        '    face:',
+        "      labels: [{ text: '{{label}}' }]",
       ].join('\n'),
       'inventory.yaml': 'kind: inventory\ncomponents: []\n',
     });
     expect(messages(await loadProject(dir))).toEqual([
-      'lib.yaml:6:5  error  A meeple has one side, so it cannot have a "back". (at types[0].back)',
-      'lib.yaml:7:5  error  "range" is only for counters. (at types[0].range)',
-      'lib.yaml:9:18  error  "{{label}}" is not a field of "pawn". (at types[0].front.layers[0].text)',
+      'lib.yaml:6:5  error  A die cannot have "flippable". (at components[0].flippable)',
+      'lib.yaml:7:15  error  The minimum is larger than the maximum. (at components[0].values.range)',
+      'lib.yaml:9:18  error  "{{label}}" is not a field of "pawn". (at components[0].face.labels[0].text)',
     ]);
   });
 
-  it('does not cascade errors from a broken type', async () => {
+  it('does not cascade errors from a broken component', async () => {
     const dir = await project({
-      'lib.yaml': 'kind: library\ntypes:\n  - id: card\n    base: card\n    size: oops\n',
-      'inventory.yaml': 'kind: inventory\ncomponents:\n  - type: card\n    deck: main\n',
+      'lib.yaml': 'kind: library\ncomponents:\n  - id: card\n    is: piece\n    size: oops\n',
+      'inventory.yaml': 'kind: inventory\ncomponents:\n  - component: card\n    deck: main\n',
       'setups/start.yaml': 'kind: setup\nsteps:\n  - shuffle: main\n',
     });
     const result = await loadProject(dir);
@@ -202,7 +204,7 @@ describe('loadProject', () => {
     expect(result.diagnostics[0]!.file).toBe('lib.yaml');
   });
 
-  it('checks setup references to decks and snap spots', async () => {
+  it('checks setup references to decks and drop area spots', async () => {
     const dir = await project({
       'setups/start.yaml': [
         'kind: setup',
@@ -219,7 +221,7 @@ describe('loadProject', () => {
     expect(messages(await loadProject(dir))).toEqual([
       'setups/start.yaml:5:13  error  Unknown deck "side". (at steps[1].deal.from)',
       'setups/start.yaml:7:5  error  Spot 3 is out of range; "row" has spots 0 to 2. (at steps[2].at)',
-      'setups/start.yaml:9:5  error  "board" has no snap target "column". (at steps[3].at)',
+      'setups/start.yaml:9:5  error  "board" has no drop area "column". (at steps[3].at)',
     ]);
   });
 

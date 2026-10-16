@@ -16,7 +16,7 @@ import {
   type BoxComponent,
   type Library,
 } from './api';
-import { setIn, type Path, type Side } from './edit';
+import { editType, type Path, type Side } from './edit';
 
 /**
  * Where the type being edited stands: saved to its file, waiting to be saved,
@@ -40,7 +40,7 @@ interface DesignStore {
   side: Side;
   /** Index of the selected layer on `side`. */
   layer?: number;
-  /** Index of the selected snap target, when a target is selected instead of a layer. */
+  /** Index of the selected drop area, when a target is selected instead of a layer. */
   target?: number;
   /** Id of the component whose field values fill the faces; none means stand-in values. */
   sample?: string;
@@ -170,7 +170,7 @@ function showDraft(next: ComponentType): void {
 
 /** A change handler that sets one value of the type being edited; undefined removes it. */
 export const setValue = (path: Path) => (value: unknown) =>
-  editDraft((type) => setIn(type, path, value), true);
+  editDraft((type) => editType(type, path, value), true);
 
 /**
  * Saves the type being edited, unless it is unchanged or invalid. While a save is on

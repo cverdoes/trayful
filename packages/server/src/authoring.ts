@@ -119,9 +119,21 @@ function contentHash(content: string | Buffer): string {
   return createHash('sha256').update(content).digest('hex').slice(0, 16);
 }
 
-/** Where to put a type, and the version of its file the change was made against. */
+/**
+ * Projects in the first file format are read but not edited: an edit would write the
+ * new format into old files. `trayful migrate` moves them to the current format.
+ */
+export function requireCurrentFormat(project: ResolvedProject): void {
+  if (project.legacy) {
+    throw new AuthoringError(
+      'This project is still in the first file format (trayful/1). Migrate it first, with `trayful migrate` or the migrate_project tool, then edit it.',
+    );
+  }
+}
+
+/** Where to put a component, and the version of its file the change was made against. */
 export interface UpsertOptions {
-  /** Library file for a new type. Default: next to types of the same primitive. */
+  /** Library file for a new component. Default: next to components of the same kind. */
   file?: string;
   /**
    * `contentHash` of the type's file when the editor read it. When the file has
@@ -136,8 +148,9 @@ async function writeType(
   definition: unknown,
   options: UpsertOptions = {},
 ): Promise<{ file: string; created: boolean; project: ResolvedProject; library: Library }> {
-  const type = check(ComponentType, definition, 'component type');
+  const type = check(ComponentType, definition, 'component');
   const project = workspace.project(projectId);
+  requireCurrentFormat(project);
   const existing = project.types[type.id];
   const target = typeFile(project, type, options.file);
 
@@ -150,9 +163,9 @@ async function writeType(
   }
   const doc = original
     ? parseYaml(original.toString('utf8'))
-    : parseYaml('kind: library\ntypes: []\n');
-  const types = doc.get('types');
-  if (!isSeq(types)) throw new AuthoringError(`${target} has no "types" list.`);
+    : parseYaml('kind: library\ncomponents: []\n');
+  const types = doc.get('components');
+  if (!isSeq(types)) throw new AuthoringError(`${target} has no "components" list.`);
   if (existing) {
     const node = types.get(existing.source.index, true);
     const patched = patchNode(doc, node, type);
@@ -166,7 +179,7 @@ async function writeType(
     // The manifest's `libraries` patterns do not load this file.
     await commit(workspace, projectId, [{ file: target, content: original }]);
     throw new AuthoringError(
-      `${target} is not loaded by the manifest's "libraries" patterns; put the type in one of the library files.`,
+      `${target} is not loaded by the manifest's "libraries" patterns; put the component in one of the library files.`,
     );
   }
   return {
@@ -180,7 +193,7 @@ async function writeType(
 /**
  * Adds a component type, or changes the type with the same id. A changed type is
  * edited in place, key by key, so comments inside it survive. A new type goes into
- * `options.file` if given, else next to other types of the same primitive.
+ * `options.file` if given, else next to other components of the same kind (`is`).
  */
 export const upsertType = oneAtATime(writeType);
 
@@ -195,9 +208,9 @@ function typeFile(project: ResolvedProject, type: ComponentType, file?: string):
   const target =
     existing?.source.file ??
     file ??
-    Object.values(project.types).find((t) => t.base === type.base)?.source.file ??
+    Object.values(project.types).find((t) => t.is === type.is)?.source.file ??
     Object.values(project.types)[0]?.source.file;
-  if (!target) throw new AuthoringError('Give a library file to put the new type in.');
+  if (!target) throw new AuthoringError('Give a library file to put the new component in.');
   return target;
 }
 
@@ -225,8 +238,9 @@ async function deleteType(
   id: string,
 ): Promise<{ file: string }> {
   const project = workspace.project(projectId);
+  requireCurrentFormat(project);
   const type = project.types[id];
-  if (!type) throw new AuthoringError(`There is no type "${id}".`);
+  if (!type) throw new AuthoringError(`There is no component "${id}".`);
   const used = project.components.filter((c) => c.type === id).length;
   if (used) {
     throw new AuthoringError(
@@ -234,7 +248,7 @@ async function deleteType(
     );
   }
   const doc = await readDocument(project.dir, type.source.file);
-  const types = doc.get('types') as YAMLSeq;
+  const types = doc.get('components') as YAMLSeq;
   types.delete(type.source.index);
   await commit(workspace, projectId, [{ file: type.source.file, content: yamlText(doc) }]);
   return { file: type.source.file };
@@ -250,17 +264,18 @@ async function writeInventory(
   entries: unknown[],
 ): Promise<{ count: number; file: string }> {
   const project = workspace.project(projectId);
-  if (!project.types[type]) throw new AuthoringError(`There is no type "${type}".`);
+  requireCurrentFormat(project);
+  if (!project.types[type]) throw new AuthoringError(`There is no component "${type}".`);
   const checked = entries.map((e, i) =>
-    check(InventoryEntry, { ...(e as object), type }, `inventory entry ${i + 1}`),
+    check(InventoryEntry, { ...(e as object), component: type }, `inventory entry ${i + 1}`),
   );
   const file = project.manifest.inventory;
   const doc = await readDocument(project.dir, file);
   const components = doc.get('components');
   if (!isSeq(components)) throw new AuthoringError(`${file} has no "components" list.`);
   const items = components.items;
-  const first = items.findIndex((n: unknown) => isMap(n) && n.get('type') === type);
-  const kept = items.filter((n: unknown) => !(isMap(n) && n.get('type') === type));
+  const first = items.findIndex((n: unknown) => isMap(n) && n.get('component') === type);
+  const kept = items.filter((n: unknown) => !(isMap(n) && n.get('component') === type));
   const at =
     first === -1
       ? kept.length
@@ -276,7 +291,7 @@ async function writeInventory(
 
 /**
  * Replaces every inventory entry for one type with the given entries (each like
- * an inventory entry, without `type`). An empty list takes the type out of the box.
+ * an inventory entry, without `component`). An empty list takes the component out of the box.
  */
 export const setInventory = oneAtATime(writeInventory);
 

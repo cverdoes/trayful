@@ -19,22 +19,20 @@ describe('freeTypeId', () => {
 
 describe('typeDraftProblems', () => {
   it('points at the value that causes each problem', () => {
-    expect(typeDraftProblems({ id: 'c', base: 'card', size: 'big' })).toEqual([
+    expect(typeDraftProblems({ id: 'c', is: 'piece', size: 'big' })).toEqual([
       { path: ['size'], message: expect.any(String) },
     ]);
-    expect(typeDraftProblems({ id: 'm', base: 'meeple', size: 16, back: {} })).toEqual([
-      { path: ['back'], message: 'A meeple has one side, so it cannot have a "back".' },
+    expect(typeDraftProblems({ id: 'd', is: 'die', size: 16, flippable: true })).toEqual([
+      { path: ['flippable'], message: 'A die cannot have "flippable".' },
     ]);
     expect(
       typeDraftProblems({
         id: 'c',
-        base: 'card',
+        is: 'piece',
         size: [63, 88],
-        front: { layers: [{ text: '{{title}}' }] },
+        face: { layers: [{ text: '{{title}}' }] },
       }),
-    ).toEqual([
-      { path: ['front', 'layers', 0, 'text'], message: expect.stringContaining('title') },
-    ]);
+    ).toEqual([{ path: ['face', 'layers', 0, 'text'], message: expect.stringContaining('title') }]);
   });
 });
 

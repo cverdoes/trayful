@@ -5,14 +5,14 @@ Short guides for the things you do most when building a prototype. Each one star
 | Guide                                                        | You will                                                         |
 | ------------------------------------------------------------ | ---------------------------------------------------------------- |
 | [Start a project](start-a-project.md)                        | Make a new prototype folder and open it on a table               |
-| [Add a deck of cards](add-a-deck.md)                         | Define a card type and put a deck of it in the box               |
+| [Add a deck of cards](add-a-deck.md)                         | Define a card and put a deck of it in the box                    |
 | [Load cards from a spreadsheet](cards-from-a-spreadsheet.md) | Keep card text in a CSV file you edit in any spreadsheet app     |
-| [Add a board with snap spots](board-with-snap-spots.md)      | Make a board whose slots, spaces and tracks pieces snap onto     |
+| [Add a board with drop areas](board-with-snap-spots.md)      | Make a board whose slots, spaces and tracks pieces snap onto     |
 | [Add meeples, dice and counters](meeples-dice-counters.md)   | Add the small pieces: workers, tokens, dice and counters         |
-| [Use your own images](your-own-images.md)                    | Put artwork on cards and boards, per type or per card            |
-| [Design components in the browser](design-components.md)     | Build card and piece types by clicking, with a live preview      |
+| [Use your own images](your-own-images.md)                    | Put artwork on cards, boards and dice, including tiled sheets    |
+| [Design components in the browser](design-components.md)     | Build cards and pieces by clicking, with a live preview          |
 | [Write a setup](write-a-setup.md)                            | Have every new table laid out and dealt for you                  |
-| [Let an agent build components](agent-builds-components.md)  | Design card types together with an AI agent, live on the table   |
+| [Let an agent build components](agent-builds-components.md)  | Design cards together with an AI agent, live on the table        |
 | [Print and play](print-and-play.md)                          | Print your components at real size to cut out                    |
 | [Play with others](play-with-others.md)                      | Let playtesters join from their own computers, with hidden hands |
 
