@@ -47,7 +47,7 @@ The [library reference](../reference/library.md) lists every key, and [Faces and
 
 ## 2. Put the cards in the box
 
-In `inventory.yaml`, add an entry with `deck`, so the cards start as one pile, and one item per card design:
+In the designer's **Tray**, add **Designs in rows** and fill in a row per card, or, in `inventory.yaml`, add an entry with `deck`, so the cards start as one pile, and one item per card design:
 
 <!-- example: examples/harvest-moon/inventory.yaml -->
 

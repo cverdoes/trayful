@@ -73,6 +73,7 @@ export function TextInput({
   placeholder,
   list,
   readOnly,
+  label,
 }: Readonly<{
   id?: string;
   value: string | undefined;
@@ -80,10 +81,13 @@ export function TextInput({
   placeholder?: string;
   list?: string;
   readOnly?: boolean;
+  /** For a box with no label of its own next to it, such as a table cell. */
+  label?: string;
 }>) {
   return (
     <input
       id={id}
+      aria-label={label}
       type="text"
       value={value ?? ''}
       placeholder={placeholder}
@@ -103,17 +107,21 @@ export function NumberInput({
   value,
   onChange,
   placeholder,
+  label,
 }: Readonly<{
   id?: string;
   value: number | undefined;
   onChange: (value: number | undefined) => void;
   placeholder?: string;
+  /** For a box with no label of its own next to it, such as a table cell. */
+  label?: string;
 }>) {
   const [typed, setTyped] = useState<string>();
   const shown = typed !== undefined && showsTyped(typed, value) ? typed : (value?.toString() ?? '');
   return (
     <input
       id={id}
+      aria-label={label}
       type="text"
       inputMode="decimal"
       className="design-number"
@@ -221,10 +229,12 @@ export function ColorInput({
   id,
   value,
   onChange,
+  label,
 }: Readonly<{
   id?: string;
   value: string | undefined;
   onChange: (value: string | undefined) => void;
+  label?: string;
 }>) {
   const palette: Record<string, string> = useStore((s) => s.view?.assets.colors ?? {});
   const hex = /^#[0-9a-f]{6}$/i.test(value ?? '') ? value : (palette[value ?? ''] ?? '#ffffff');
@@ -232,6 +242,7 @@ export function ColorInput({
     <span className="design-color">
       <TextInput
         id={id}
+        label={label}
         value={value}
         onChange={onChange}
         placeholder="none"

@@ -6,6 +6,7 @@ import { isLocalOrigin } from './access.js';
 import { routeContext, type TableQuery } from './routes/context.js';
 import { registerAssetRoutes } from './routes/assets.js';
 import { registerAuthoringRoutes } from './routes/authoring.js';
+import { registerTrayRoutes } from './routes/tray.js';
 import { registerFileRoutes } from './routes/files.js';
 import { registerGuards } from './routes/guards.js';
 import { registerMcp } from './routes/mcp.js';
@@ -98,6 +99,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   registerPlayerRoutes(ctx);
   registerTableRoutes(ctx);
   registerAuthoringRoutes(ctx);
+  registerTrayRoutes(ctx);
   registerAssetRoutes(ctx);
   await registerFileRoutes(ctx, options.appDir ?? defaultAppDir());
   registerSocket(ctx);

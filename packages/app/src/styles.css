@@ -822,3 +822,94 @@ body.printing #root {
   color: var(--muted);
   cursor: pointer;
 }
+
+/* The Tray: the component list on the left, its entries across the rest. */
+.designer.tray {
+  grid-template-columns: 220px 1fr;
+}
+
+.tray-page {
+  overflow-y: auto;
+  padding: 0 24px 32px;
+}
+
+.tray-header {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.tray-entry {
+  margin: 16px 0;
+  padding: 8px 12px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+}
+
+.tray-entry header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.tray-entry h3 {
+  margin: 0;
+  font-size: 1em;
+}
+
+.tray-entry header input {
+  width: 8em;
+}
+
+.tray-table {
+  margin-top: 8px;
+  border-collapse: collapse;
+}
+
+.tray-table th {
+  padding: 2px 6px;
+  color: var(--muted);
+  font-weight: normal;
+  text-align: left;
+}
+
+.tray-table td {
+  padding: 2px;
+  vertical-align: top;
+}
+
+.tray-each {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.tray-each input {
+  width: 24em;
+}
+
+.tray-tile summary {
+  cursor: pointer;
+}
+
+.tray-tile .tile-picker {
+  width: 320px;
+}
+
+/* A file picker that looks like the buttons next to it. */
+label.button {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #21262d;
+  color: var(--bar-text);
+  cursor: pointer;
+}
+
+label.button:hover {
+  background: #30363d;
+}

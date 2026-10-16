@@ -64,6 +64,8 @@ await server.close(); // saves every open table first
 | `POST /api/assets/images?project=`              | Save an image (`file`, `base64`, up to 20 MB; `rows`, `cols`) under an unused path and name it after its file; answers `{ name, file }` (host only) |
 | `PUT`, `DELETE /api/assets/images/<name>`       | Name an image, or change its file and tiles (`file`, `rows`, `cols`); or take the name off (host only)                                              |
 | `PUT`, `DELETE /api/assets/colors/<name>`       | Name a colour (`color`) or remove it (host only)                                                                                                    |
+| `GET`, `PUT /api/tray/<id>`                     | One type's inventory entries (without `component`) and the CSV files they read as `{ header, rows }`; `PUT` saves both at once (host only)          |
+| `POST /api/tray/<id>/csv`                       | Copy a CSV file (`name`, `text`) into `data/` and add an entry that reads it; answers the Tray (host only)                                          |
 | `/mcp`                                          | MCP over Streamable HTTP (POST), for agents on this computer only                                                                                   |
 | `/api/health`                                   | `{ ok, project, table }` for the active table, plus `projectDir` and `root` for the host                                                            |
 | `/project-files/<project>/<path>`               | Images from a project folder (other file types are refused)                                                                                         |

@@ -4,7 +4,7 @@ The designer lets you build components by clicking instead of writing YAML: name
 
 ## Open the designer
 
-Open your project on a table and click **Design** in the toolbar. Only the host (the person who ran `trayful play`) can design; players who joined by invite link see the table only. At the top, **Components** and **Assets** switch between the components and the project's images and colours, and **Table** goes back to playing.
+Open your project on a table and click **Design** in the toolbar. Only the host (the person who ran `trayful play`) can design; players who joined by invite link see the table only. At the top, **Components**, **Tray** and **Assets** switch between how the components look, how many of each are in the box, and the project's images and colours; **Table** goes back to playing.
 
 The components page has three parts:
 
@@ -107,4 +107,14 @@ A project still in the first file format (`format: trayful/1` in its manifest) p
 
 ## Put the components in the box
 
-The designer makes the component; the inventory says how many of it are in the box. Add an entry to `inventory.yaml` as in [Add a deck of cards](add-a-deck.md), load the cards from a spreadsheet as in [Load cards from a spreadsheet](cards-from-a-spreadsheet.md), or ask an agent as in [Let an agent build components](agent-builds-components.md). The new components appear on the table as soon as the file is saved.
+The designer makes the component; the **Tray** says how many of it are in the box. Pick a component on the left, and add to the box:
+
+- **One of every tile**, for a component that picks its tile from a sheet: one design per tile, as a deck named after the component. A sheet of 24 terrain tiles becomes a deck of 24 in one click.
+- **One design**, with its field values.
+- **Designs in rows**: a table with a column per field and a row per design, each with its own number of copies. Click a `tile` cell to pick the tile from the sheet.
+- **Every combination**: values for each field, with commas between them, such as `red, green`; every combination is a design.
+- **From a CSV file…**: copies a spreadsheet into the project's `data` folder; its rows show as a table you can edit cell by cell.
+
+Each entry has a **Deck**, which makes its designs start as one pile, and **Copies of each**. Every change is saved to `inventory.yaml` (and the CSV file) as you go, and the components appear on the table at once. A change that would break the project is not saved, and the Tray says why.
+
+You can also edit `inventory.yaml` by hand as in [Add a deck of cards](add-a-deck.md), load cards from a spreadsheet as in [Load cards from a spreadsheet](cards-from-a-spreadsheet.md), or ask an agent as in [Let an agent build components](agent-builds-components.md).

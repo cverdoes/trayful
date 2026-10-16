@@ -263,7 +263,20 @@ async function writeInventory(
   type: string,
   entries: unknown[],
 ): Promise<{ count: number; file: string }> {
-  const project = workspace.project(projectId);
+  const change = await inventoryChange(workspace.project(projectId), type, entries);
+  const updated = await commit(workspace, projectId, [change]);
+  return { count: updated.components.filter((c) => c.type === type).length, file: change.file };
+}
+
+/**
+ * The inventory file with one type's entries replaced by `entries` (each without
+ * `component`), where its first entry was, or at the end.
+ */
+export async function inventoryChange(
+  project: ResolvedProject,
+  type: string,
+  entries: unknown[],
+): Promise<FileChange> {
   requireCurrentFormat(project);
   if (!project.types[type]) throw new AuthoringError(`There is no component "${type}".`);
   const checked = entries.map((e, i) =>
@@ -285,8 +298,7 @@ async function writeInventory(
     ...checked.map((entry) => doc.createNode(entry, { flow: false })),
     ...kept.slice(at),
   ];
-  const updated = await commit(workspace, projectId, [{ file, content: yamlText(doc) }]);
-  return { count: updated.components.filter((c) => c.type === type).length, file };
+  return { file, content: yamlText(doc) };
 }
 
 /**

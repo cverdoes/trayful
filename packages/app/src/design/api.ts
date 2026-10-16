@@ -1,5 +1,6 @@
 // The server's authoring routes, as the designer calls them.
 import type { ComponentType, Scalar } from '@trayful/formats/browser';
+import type { TrayData } from './tray';
 
 /** Which library file each type is in, and the version of each file. */
 export interface Library {
@@ -134,4 +135,26 @@ export async function renameField(
 /** Rewrites a project made in the first file format in the current one. */
 export async function migrateProject(project: string): Promise<{ files: string[] }> {
   return post<{ files: string[] }>(`/api/migrate${query(project)}`, {});
+}
+
+const trayUrl = (project: string, id: string, rest = '') =>
+  `/api/tray/${encodeURIComponent(id)}${rest}${query(project)}`;
+
+/** One component's inventory entries, and the CSV files they read. */
+export async function fetchTray(project: string, id: string): Promise<TrayData> {
+  return json<TrayData>(await fetch(trayUrl(project, id)));
+}
+
+/** Saves one component's entries and the CSV files they read, all or nothing. */
+export async function saveTray(project: string, id: string, tray: TrayData): Promise<TrayData> {
+  return post<TrayData>(trayUrl(project, id), tray, 'PUT');
+}
+
+/** Copies a CSV file into the project and adds an entry that reads it. */
+export async function importCsv(
+  project: string,
+  id: string,
+  csv: { name: string; text: string },
+): Promise<TrayData> {
+  return post<TrayData>(trayUrl(project, id, '/csv'), csv);
 }

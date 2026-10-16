@@ -1,29 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
-import { libraryFile, newComponent, savedType, waitSaved } from './helpers.js';
+import { expect, test } from '@playwright/test';
+import { addImage, libraryFile, newComponent, savedType, waitSaved } from './helpers.js';
 
 const PROJECT = 'workshop';
-
-// A one-pixel PNG: the tiles an image is cut into are only rows and columns.
-const PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-  'base64',
-);
-
-/** Adds an image on the Assets page and cuts it into `rows` by `cols` tiles. */
-async function addImage(page: Page, file: string, [rows, cols]: [number, number]) {
-  const name = file
-    .toLowerCase()
-    .replace(/\.png$/, '')
-    .replace(/ /g, '-');
-  await page
-    .getByLabel('Add images')
-    .setInputFiles({ name: file, mimeType: 'image/png', buffer: PNG });
-  const card = page.getByRole('listitem', { name });
-  await card.getByLabel('Rows').fill(String(rows));
-  await expect(card.locator('.tile')).toHaveCount(rows);
-  await card.getByLabel('Columns').fill(String(cols));
-  await expect(card.locator('.tile')).toHaveCount(rows * cols);
-}
 
 test('a card, a hex tile, a die and a counter are made without touching YAML', async ({ page }) => {
   // Images first: a strip of die faces and a sheet of hexes, each cut into tiles.
