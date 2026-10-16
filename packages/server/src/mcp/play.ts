@@ -22,7 +22,7 @@ function registerMoves(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Move',
       description:
-        'Move objects. `to` a position puts the first object there and keeps the others in place relative to it; `to` a snap target puts each object in a free spot; `by` shifts them all.',
+        'Move objects. `to` a position puts the first object there and keeps the others in place relative to it; `to` a drop area puts each object in a free spot; `by` shifts them all.',
       inputSchema: {
         ids: Ids,
         to: Target.optional(),
@@ -30,7 +30,7 @@ function registerMoves(server: McpServer, ctx: ToolContext): void {
         into: z
           .string()
           .optional()
-          .describe('With `by`: also mark the objects as sitting in this snap spot or area.'),
+          .describe('With `by`: also mark the objects as sitting in this drop spot or area.'),
       },
     },
     ({ ids, to, by, into }) =>
@@ -75,7 +75,7 @@ function registerDrawAndDeal(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Draw',
       description:
-        'Take cards off the top of a stack to a position or snap spot. Several cards land there as a new pile.',
+        'Take cards off the top of a stack to a position or drop spot. Several cards land there as a new pile.',
       inputSchema: {
         from: z.string().describe('Stack id, such as `deck:actions`.'),
         count: z.int().positive().optional().describe('Default 1.'),
@@ -92,12 +92,12 @@ function registerDrawAndDeal(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Deal',
       description:
-        'Deal cards from the top of a stack, one at a time to each place in turn, `count` times round. Use one position per player, or a snap target such as `main-board/market` to fill each of its spots.',
+        'Deal cards from the top of a stack, one at a time to each place in turn, `count` times round. Use one position per player, or a drop area such as `main-board/market` to fill each of its spots.',
       inputSchema: {
         from: z.string().describe('Stack id, such as `deck:actions`.'),
         to: z
           .union([Target, z.array(Target).min(1)])
-          .describe('Where the piles go: a list of positions or spots, or one snap target.'),
+          .describe('Where the piles go: a list of positions or spots, or one drop area.'),
         count: z.int().positive().optional().describe('Cards per place. Default 1.'),
         face: Face.optional().describe('Deal face up or down. Default: as they were.'),
       },

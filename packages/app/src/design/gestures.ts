@@ -3,7 +3,7 @@
 // is a `Gesture` that turns each pointer position into the type as it would be.
 import type { ComponentType, Layer } from '@trayful/formats/browser';
 import { sizeOf } from '../render/geometry';
-import { layersOf, setIn, type Side } from './edit';
+import { itemsOf, layersOf, setIn, withItem, type Side } from './edit';
 import { layerAt, layerBounds, type Box } from './layout';
 import {
   handlesOf,
@@ -21,7 +21,7 @@ import {
 } from './manipulate';
 import { draggedTarget, spotsOf, targetHandles, withPoint, type TargetHandle } from './snaps';
 
-/** What is selected on the canvas: a layer on one side, or a snap target on the front. */
+/** What is selected on the canvas: a layer on one side, or a drop area on the front. */
 export interface Selection {
   side: Side;
   layer?: number;
@@ -75,7 +75,7 @@ export function press(input: Press, selection: Selection): PressResult {
   return pick(input);
 }
 
-/** Picks the topmost layer under the pointer and starts moving it, else a snap target's spot. */
+/** Picks the topmost layer under the pointer and starts moving it, else a drop area's spot. */
 function pick(input: Press): PressResult {
   const { type, side, point, tolerance } = input;
   const face = sizeOf(type);
@@ -87,7 +87,7 @@ function pick(input: Press): PressResult {
 }
 
 function targetAt(type: ComponentType, point: Point, tolerance: number): number | undefined {
-  const index = (type.snap ?? []).findIndex(
+  const index = (type.container ?? []).findIndex(
     (t) =>
       targetHandles(t).some(([, p]) => near(p, point, tolerance)) ||
       spotsOf(t).some((p) => near(p, point, tolerance)),
@@ -150,16 +150,16 @@ function otherLayers({ type, side }: Press, index: number): Layer[] {
 }
 
 function withLayer({ type, side }: Press, index: number, layer: Layer): ComponentType {
-  return setIn(type, [side, 'layers', index], layer);
+  return withItem(type, itemsOf(type, side)[index]!, layer);
 }
 
 /**
- * A press with a snap target selected: one of its handles drags that handle; in a
+ * A press with a drop area selected: one of its handles drags that handle; in a
  * list of points, a press anywhere else adds a spot there and drags it.
  */
 function pressTarget(input: Press, index: number): PressResult | undefined {
   const { type, side, point, tolerance } = input;
-  const target = type.snap?.[index];
+  const target = type.container?.[index];
   if (!target) return undefined;
   const selection = { side, target: index };
   const hit = targetHandles(target).find(([, p]) => near(p, point, tolerance));
@@ -169,7 +169,7 @@ function pressTarget(input: Press, index: number): PressResult | undefined {
   const onFace = point[0] >= 0 && point[0] <= w && point[1] >= 0 && point[1] <= h;
   const other = targetAt(type, point, tolerance);
   if (!target.points || !onFace || (other !== undefined && other !== index)) return undefined;
-  const added = setIn(type, ['snap', index], withPoint(target, snap(input, point).point));
+  const added = setIn(type, ['container', index], withPoint(target, snap(input, point).point));
   const handle: TargetHandle = { kind: 'point', index: target.points.length };
   return {
     selection,
@@ -179,11 +179,11 @@ function pressTarget(input: Press, index: number): PressResult | undefined {
 }
 
 function dragTarget(input: Press, index: number, handle: TargetHandle): Gesture {
-  const target = input.type.snap![index]!;
+  const target = input.type.container![index]!;
   return (p) => {
     const snapped = snap(input, p);
     const moved = draggedTarget(target, handle, snapped.point);
-    return { type: setIn(input.type, ['snap', index], moved), guides: snapped.guides };
+    return { type: setIn(input.type, ['container', index], moved), guides: snapped.guides };
   };
 }
 

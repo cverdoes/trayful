@@ -146,13 +146,32 @@ describe('handDropCommands', () => {
 });
 
 describe('doubleClickCommand', () => {
-  it('rolls dice and flips cards, tiles, tokens and the top card of a pile', () => {
-    const on = (id: string) => doubleClickCommand(table, types(), table.objects[id]!);
+  const on = (id: string, on = types()) => doubleClickCommand(table, on, table.objects[id]!);
+
+  it('rolls dice and flips anything flippable, a pile by its top card', () => {
     expect(on('d6.1')).toEqual({ type: 'roll', id: 'd6.1' });
     expect(on('action-card.raid.1')).toEqual({ type: 'flip', ids: ['action-card.raid.1'] });
     expect(on('score-marker.red')).toEqual({ type: 'flip', ids: ['score-marker.red'] });
     expect(on('deck:actions')).toEqual({ type: 'flip', ids: ['deck:actions'] });
     expect(on('worker.red.1')).toBeUndefined();
+    expect(on('coins')).toBeUndefined();
+  });
+
+  it('leaves locked objects alone', () => {
+    const locked = { ...table.objects['d6.1']!, locked: true };
+    expect(doubleClickCommand(table, types(), locked)).toBeUndefined();
+  });
+
+  it('rolls whatever has the roll control, and flips a die without it', () => {
+    const coins = project.types.coins!;
+    const rolling = { ...types(), coins: { ...coins, values: { controls: ['roll' as const] } } };
+    expect(on('coins', rolling)).toEqual({ type: 'roll', id: 'coins' });
+    const d6 = project.types.d6!;
+    const stepped = {
+      ...types(),
+      d6: { ...d6, flippable: true as const, values: { controls: ['step' as const] } },
+    };
+    expect(on('d6.1', stepped)).toEqual({ type: 'flip', ids: ['d6.1'] });
   });
 });
 

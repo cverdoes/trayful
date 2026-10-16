@@ -2,64 +2,50 @@
 
 # Library
 
-Library files define component types. A type picks a built-in primitive for its behaviour, gives a physical size in millimetres, declares data fields, and describes how each side looks as layers of shapes, text and images.
+Library files define components. A component has a name and a size in millimetres, says what it `is` (a piece, a zone, a die or a counter), describes its `face`, and switches on the behaviours it needs: `flippable`, `rotates`, `stackable`, `container`, or `values` for dice and counters. Each behaviour is off unless written, and `true` turns one on with its defaults.
 
 ## Top-level keys
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
 | `kind` | `"library"` | yes | Marks this file as a library. |
-| `palette` | map of text to text |  | Named colours usable anywhere a colour is expected. |
-| `types` | list of [ComponentType](#componenttype) | yes | Component types defined in this file. |
+| `components` | list of [Component](#component) | yes | Components defined in this file. |
 
-## Primitives
+## Representations
 
-A type's `base` decides how it behaves on the table.
+A component's `is` says what kind of thing it is on the table.
 
-| Base | Sides | Stacks | Snap targets | Notes |
-| --- | --- | --- | --- | --- |
-| `card` | 2 | yes |  | Two-sided, stacks into decks. |
-| `board` | 1 |  | yes | Large surface that declares snap spots; locked by default. |
-| `tile` | 2 | yes | yes | Two-sided piece that can also hold snap spots. |
-| `token` | 2 | yes |  | Small flat piece; may have two sides. |
-| `meeple` | 1 |  |  | Standing figure drawn from a silhouette. |
-| `die` | 1 |  |  | Rolls to one of its `faces`. |
-| `counter` | 1 |  |  | Holds a number within its `range`. |
-| `zone` | 1 |  | yes | Invisible or outlined table area with snap spots. |
+| is | Has a value | Notes |
+| --- | --- | --- |
+| `piece` |  | Anything you pick up and move: cards, tiles, tokens, meeples, boards. |
+| `zone` |  | A marked area of the table, drawn as a dashed outline. |
+| `die` | yes | Shows one of its values; rolls to a random one. |
+| `counter` | yes | Shows one of its values; steps up and down. |
 
-## ComponentType
+## Component
 
-A kind of component: what it is, its data fields and how it looks.
+A kind of component: its size, what it is, how it looks and which behaviours it has.
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
-| `id` | text | yes | Unique id of the type within the project. Referenced from the inventory and setups. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
-| `base` | `"card"`, `"board"`, `"tile"`, `"token"`, `"meeple"`, `"die"`, `"counter"`, `"zone"` | yes | The built-in primitive this type behaves like. |
+| `id` | text | yes | Unique id of the component within the project. Referenced from the inventory and setups. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
 | `name` | text |  | Display name. Default: the id. |
 | `description` | text |  |  |
-| `size` | [Size](#size) | yes | Physical size in millimetres. |
-| `shape` | `"rect"`, `"circle"`, `"ellipse"`, `"hex"`, `"triangle"`, `"meeple"`, `"cube"`, `"disc"` |  | Outline for tokens, meeples and tiles. Default `rect` (`meeple` for meeples). |
-| `corner` | number ≥ 0 |  | Corner radius in millimetres, for rectangular shapes. |
-| `fill` | [Color](#color) |  | Shorthand for `front.fill`. |
+| `size` | [Size](#size) | yes | Width and height in millimetres, or one number for a square. |
+| `is` | `"piece"`, `"zone"`, `"die"`, `"counter"` | yes | What the component is on the table. |
 | `fields` | map of text to [Field](#field) |  | Per-component data, filled by the inventory and usable as `{{field}}` in faces. |
-| `front` | [Face](#face) |  | The face-up side. |
-| `back` | [Face](#face) |  | The face-down side. Only for two-sided primitives (card, tile, token). |
-| `rotationStep` | number > 0 ≤ 360 |  | Degrees per rotate step. Default 90. |
-| `snap` | list of [SnapTarget](#snaptarget) |  | Snap targets. Only for boards, tiles and zones. |
-| `range` | [whole number, whole number] |  | `[min, max]` for counters. Default `[0, 99]`. |
-| `faces` | list of text or number |  | Die faces, e.g. `[1, 2, 3, 4, 5, 6]`. Only for dice. Default six faces 1 to 6. |
+| `face` | [Face](#face) |  | Its outline and front side. |
+| `flippable` | [Flippable](#flippable) |  | Pieces and zones only. |
+| `rotates` | [Rotates](#rotates) |  | Pieces and zones only. |
+| `stackable` | [Stackable](#stackable) |  | Pieces and zones only. |
+| `container` | list of [SnapTarget](#snaptarget) |  | Drop areas: other components dropped there snap to this one and move with it. Pieces and zones only. |
+| `values` | [Values](#values) |  | Dice and counters only. |
 
 ## Size
 
 A size in millimetres: one number for square or round pieces, or `[width, height]`.
 
 Type: number > 0 or [number > 0, number > 0]
-
-## Color
-
-A CSS colour (`"#d94b3d"`, `"white"`), a name from the library `palette`, or a `{{field}}` template that resolves to one.
-
-Type: text
 
 ## Field
 
@@ -81,13 +67,80 @@ Full field definition.
 
 ## Face
 
-How one side of a component looks.
+How a component looks: its outline and its front side.
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
-| `fill` | [Color](#color) |  | Background colour of the face. |
+| `shape` | `"rect"`, `"circle"`, `"ellipse"`, `"hex"`, `"triangle"`, `"meeple"`, `"cube"`, `"disc"` |  | Outline of the component. Default `rect`. |
+| `corner` | number ≥ 0 |  | Corner radius in millimetres, for rectangles. |
+| `fill` | [Color](#color) |  | Background colour. `transparent` shows the table through. |
 | `stroke` | [Color](#color) |  | Outline colour. |
-| `layers` | list of [Layer](#layer) |  | Drawn in order, so later layers sit on top. |
+| `image` | [ImageRef](#imageref) |  | An image covering the face. |
+| `labels` | list of [Label](#label) |  | Text drawn over the face, in order. |
+| `layers` | list of [Layer](#layer) |  | Advanced: shapes, images and text drawn in order over the image and under the labels. |
+
+## Color
+
+A CSS colour (`"#d94b3d"`, `"white"`, `"transparent"`), a colour name from the assets file, or a `{{field}}` template that resolves to one.
+
+Type: text
+
+## ImageRef
+
+An image from the assets file: its name for the whole image, or `{ asset, tile }` (or `row` and `col`) for one tile of a tiled image.
+
+Type: text or object
+
+### ImageRef object form
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `asset` | text | yes | Name of an image in the assets file. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
+| `tile` | whole number ≥ 0 or `"instance"` or `"value"` |  | One tile of a tiled image, counted left to right, then top to bottom, from 0. `instance` lets each component pick its tile with a `tile` value in the inventory; `value` shows the tile of a die or counter value. |
+| `row` | whole number ≥ 0 |  | Row of the tile, from 0. Use with `col`. |
+| `col` | whole number ≥ 0 |  | Column of the tile, from 0. Use with `row`. |
+| `fit` | `"cover"`, `"contain"`, `"stretch"` |  | How the image fills the face. Default `cover`. |
+
+## Label
+
+Text on a face: fixed `text`, or the value of a `field`. Give one of the two.
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `text` | [Template](#template) |  | Fixed text. May hold `{{field}}` placeholders. |
+| `field` | text |  | A field whose value each component shows. A field the component does not declare becomes a text field. Pattern: `^[a-zA-Z_]\w*$`. |
+| `at` | [Vec2](#vec2) |  | Position of the layer's anchor, from the face's top-left corner. Default `[0, 0]`. |
+| `rotate` | number |  | Rotation in degrees, clockwise. |
+| `opacity` | number ≥ 0 ≤ 1 |  |  |
+| `when` | [Template](#template) |  | Only draw this layer when the template resolves to a non-empty value other than `false` or `0`. |
+| `width` | number > 0 |  | Wrap width in millimetres. Default: no wrapping. |
+| `align` | `"left"`, `"center"`, `"right"` |  | Default `left`. |
+| `valign` | `"top"`, `"middle"`, `"bottom"` |  | Default `top`. |
+| `font` | object, see [`font`](#label-font) |  |  |
+| `color` | [Color](#color) |  | Text colour. Default black. |
+
+### Label font
+
+<a id="label-font"></a>
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `size` | number > 0 |  | Font size in points. Default 10. |
+| `weight` | `"normal"`, `"bold"` |  | Default `normal`. |
+| `family` | text |  | CSS font family. Default is the app's sans-serif. |
+| `style` | `"normal"`, `"italic"` |  |  |
+
+## Template
+
+Text that may contain `{{field}}` placeholders, filled in from each component's data.
+
+Type: text
+
+## Vec2
+
+An `[x, y]` pair in millimetres.
+
+Type: [number, number]
 
 ## Layer
 
@@ -123,18 +176,6 @@ Draws text.
 | `family` | text |  | CSS font family. Default is the app's sans-serif. |
 | `style` | `"normal"`, `"italic"` |  |  |
 
-## Template
-
-Text that may contain `{{field}}` placeholders, filled in from each component's data.
-
-Type: text
-
-## Vec2
-
-An `[x, y]` pair in millimetres.
-
-Type: [number, number]
-
 ## ImageLayer
 
 Draws an image file.
@@ -162,21 +203,69 @@ Draws a filled or outlined shape.
 | `when` | [Template](#template) |  | Only draw this layer when the template resolves to a non-empty value other than `false` or `0`. |
 | `size` | [Size](#size) |  | Bounding size. Use this or `r`. |
 | `r` | number > 0 |  | Radius, for circles and hexes. `at` is then the centre. |
-| `fill` | [Color](#color) |  | A CSS colour (`"#d94b3d"`, `"white"`), a name from the library `palette`, or a `{{field}}` template that resolves to one. |
-| `stroke` | [Color](#color) |  | A CSS colour (`"#d94b3d"`, `"white"`), a name from the library `palette`, or a `{{field}}` template that resolves to one. |
+| `fill` | [Color](#color) |  | A CSS colour (`"#d94b3d"`, `"white"`, `"transparent"`), a colour name from the assets file, or a `{{field}}` template that resolves to one. |
+| `stroke` | [Color](#color) |  | A CSS colour (`"#d94b3d"`, `"white"`, `"transparent"`), a colour name from the assets file, or a `{{field}}` template that resolves to one. |
 | `strokeWidth` | number ≥ 0 |  | Outline width in millimetres. |
 
-## SnapTarget
+## Flippable
 
-Where pieces snap on a board, tile or zone. Give exactly one of `grid`, `points` or `area`.
+The component has a back and can be turned over.
+
+Type: `true` or object
+
+### Flippable object form
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
-| `id` | text | yes | Name of the snap target, used in setups and by agents as `type/target/index`. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
-| `accepts` | list of text |  | Type ids or primitive names that may snap here. Default: anything. |
+| `back` | [Back](#back) |  | How the back looks. Default: a plain back. |
+
+## Back
+
+The back of a flippable component. It has the front's outline.
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `fill` | [Color](#color) |  | Background colour. `transparent` shows the table through. |
+| `stroke` | [Color](#color) |  | Outline colour. |
+| `image` | [ImageRef](#imageref) |  | An image covering the face. |
+| `labels` | list of [Label](#label) |  | Text drawn over the face, in order. |
+| `layers` | list of [Layer](#layer) |  | Advanced: shapes, images and text drawn in order over the image and under the labels. |
+
+## Rotates
+
+The component can be turned on the table.
+
+Type: `true` or object
+
+### Rotates object form
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `step` | number > 0 ≤ 360 |  | Degrees per turn. Default 90. |
+
+## Stackable
+
+Components of this kind pile up into stacks, like decks.
+
+Type: `true` or object
+
+### Stackable object form
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `with` | list of text |  | Other components it may share a stack with. It always stacks with itself. |
+
+## SnapTarget
+
+A drop area of a container: where other components snap when dropped on it. Give exactly one of `grid`, `points` or `area`.
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | text | yes | Name of the drop area, used in setups and by agents as `component/area/index`. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
+| `accepts` | list of text |  | Component ids, or representations (`piece`, `zone`, `die`, `counter`), that may snap here. Default: anything. |
 | `grid` | object, see [`grid`](#snaptarget-grid) |  | A regular grid of spots, numbered left to right, then top to bottom, from 0. |
 | `points` | list of [Vec2](#vec2) |  | An ordered list of spots, such as a score track. |
-| `area` | object, see [`area`](#snaptarget-area) |  | A free area: pieces snap inside it but keep their own position. |
+| `area` | object, see [`area`](#snaptarget-area) |  | A free area: components dropped inside it keep their own position. |
 
 ### SnapTarget grid
 
@@ -198,40 +287,47 @@ Where pieces snap on a board, tile or zone. Give exactly one of `grid`, `points`
 | `at` | [Vec2](#vec2) | yes | Top-left corner. |
 | `size` | [Size](#size) | yes | A size in millimetres: one number for square or round pieces, or `[width, height]`. |
 
+## Values
+
+The values of a die or counter: a `range` or a `list`. Default `range: [1, 6]` for dice and `range: [0, 99]` for counters.
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `range` | [whole number, whole number] |  | `[min, max]`: every whole number from min to max. |
+| `list` | list of text or number |  | The values in order, e.g. `[sword, shield, sword, skull, blank, blank]`. |
+| `controls` | list of `"roll"`, `"step"` |  | `roll` picks a random value, `step` goes up or down. Default: `roll` for dice, `step` for counters. |
+
 ## Example
 
 From `examples/harvest-moon/library/cards.yaml`:
 
 ```yaml
 kind: library
-palette:
-  red: '#d94b3d'
-  green: '#4a9b5f'
-  gold: '#e2b33c'
-  ink: '#222233'
-
-types:
+components:
   - id: action-card
-    base: card
     name: Action card
     size: [63, 88]
-    corner: 3
+    is: piece
+    flippable:
+      back:
+        fill: ink
+        image: card-back
+    rotates: true
+    stackable: true
     fields:
       name: string
       cost: { type: int, default: 0 }
       suit: { enum: [red, green], description: Which market row the card belongs to. }
       text: string?
       art: image?
-    front:
+    face:
+      corner: 3
       fill: '{{suit}}'
       layers:
-        - { text: '{{name}}', at: [5, 5], font: { size: 14, weight: bold }, color: white }
-        - { image: '{{art}}', at: [5, 15], size: [53, 40], when: '{{art}}' }
-        - { text: '{{text}}', at: [5, 60], width: 53, font: { size: 9 }, color: white }
+        - { image: '{{art}}', at: [5, 15], when: '{{art}}', size: [53, 40] }
         - { shape: circle, at: [55, 8], r: 5, fill: gold }
-        - { text: '{{cost}}', at: [55, 8], align: center, valign: middle, font: { weight: bold } }
-    back:
-      fill: ink
-      layers:
-        - { image: assets/card-back.svg }
+      labels:
+        - { field: name, at: [5, 5], font: { size: 14, weight: bold }, color: white }
+        - { field: text, at: [5, 60], width: 53, font: { size: 9 }, color: white }
+        - { field: cost, at: [55, 8], align: center, valign: middle, font: { weight: bold } }
 ```

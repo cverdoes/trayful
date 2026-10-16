@@ -39,7 +39,7 @@ describe('renaming a type', () => {
       pieces.replace('accepts: [worker]', 'accepts: [farmer]').replace('id: worker', 'id: farmer'),
     );
     expect(await read('library/cards.yaml')).toBe(cards);
-    expect(await read('inventory.yaml')).toContain('  - type: farmer\n');
+    expect(await read('inventory.yaml')).toContain('  - component: farmer\n');
     expect(await read('setups/2-player.yaml')).toContain('  - place: farmer\n');
     expect(workspace.project().types.worker).toBeUndefined();
     expect(componentsOf('farmer').map((c) => c.id)).toContain('farmer.red.1');
@@ -64,7 +64,7 @@ describe('renaming a type', () => {
     const inventory = await read('inventory.yaml');
     await writeFile(
       path.join(dir, 'inventory.yaml'),
-      inventory.replace('  - type: main-board', '  - type: main-board\n    count: 2'),
+      inventory.replace('  - component: main-board', '  - component: main-board\n    count: 2'),
     );
     const setup = (await read('setups/2-player.yaml'))
       .replaceAll('main-board/', 'main-board.1/')
@@ -79,13 +79,33 @@ describe('renaming a type', () => {
     expect(renamed).not.toContain('main-board');
   });
 
+  it('renames it in the stacks other components share with it', async () => {
+    const pieces = await read('library/pieces.yaml');
+    await writeFile(
+      path.join(dir, 'library/pieces.yaml'),
+      pieces
+        .replace(
+          '    size: 16\n    is: piece\n    rotates: true\n',
+          '    size: 16\n    is: piece\n    rotates: true\n    stackable: true\n',
+        )
+        .replace(
+          '    flippable: true\n    rotates: true\n    stackable: true\n',
+          '    flippable: true\n    rotates: true\n    stackable: { with: [worker] }\n',
+        ),
+    );
+    expect(await workspace.reload(projectId())).toEqual([]);
+    await renameType(workspace, projectId(), 'worker', 'farmer');
+    expect(await read('library/pieces.yaml')).toContain('stackable: { with: [farmer] }');
+    expect(workspace.project().types['score-marker']!.stackable).toEqual({ with: ['farmer'] });
+  });
+
   it('refuses ids that are taken, invalid or unknown', async () => {
     const rename = (from: string, to: string) => renameType(workspace, projectId(), from, to);
     await expect(rename('worker', 'd6')).rejects.toThrow(
-      'There is already a type "d6"; pick another id.',
+      'There is already a component "d6"; pick another id.',
     );
     await expect(rename('worker', 'Farmer Joe')).rejects.toThrow(
-      /"Farmer Joe" is not a valid type id\. Use lowercase letters/,
+      /"Farmer Joe" is not a valid id\. Use lowercase letters/,
     );
     await expect(rename('lantern', 'lamp')).rejects.toThrow(AuthoringError);
     expect(workspace.project().types.worker).toBeDefined();
@@ -97,7 +117,12 @@ describe('renaming a field', () => {
     const cards = await read('library/cards.yaml');
     await writeFile(
       path.join(dir, 'library/cards.yaml'),
-      cards.replace('      cost:', '      # Paid in coins when the card is taken.\n      cost:'),
+      cards
+        .replace('      cost:', '      # Paid in coins when the card is taken.\n      cost:')
+        .replace(
+          '        - { field: cost,',
+          "        - { text: 'Costs {{ cost }}', at: [5, 80] }\n        - { field: cost,",
+        ),
     );
     // A quoted header and Windows line endings, which must come through untouched.
     const csv = (await read('data/actions.csv'))
@@ -116,7 +141,8 @@ describe('renaming a field', () => {
     });
     const library = await read('library/cards.yaml');
     expect(library).toContain('# Paid in coins when the card is taken.\n      price: {');
-    expect(library).toContain("text: '{{price}}'");
+    expect(library).toContain("text: 'Costs {{ price }}'");
+    expect(library).toContain('{ field: price,');
     expect(library).not.toContain('cost');
     const inventory = await read('inventory.yaml');
     expect(inventory).toContain('        price: 1\n');
@@ -152,6 +178,6 @@ describe('renaming a field', () => {
     await expect(rename('action-card', 'weight', 'mass')).rejects.toThrow(
       '"action-card" has no field "weight".',
     );
-    await expect(rename('lantern', 'a', 'b')).rejects.toThrow('There is no type "lantern".');
+    await expect(rename('lantern', 'a', 'b')).rejects.toThrow('There is no component "lantern".');
   });
 });

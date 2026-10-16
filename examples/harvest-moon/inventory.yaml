@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../../packages/formats/schema/inventory.schema.json
 kind: inventory
 components:
-  - type: action-card
+  - component: action-card
     deck: actions
     items:
       - name: Harvest
@@ -11,15 +11,15 @@ components:
         art: assets/art/harvest.svg
         count: 3
       - { name: Raid, cost: 2, suit: red, text: Steal 1 grain from a neighbour., count: 2 }
-  - type: action-card
+  - component: action-card
     deck: actions
     from: data/actions.csv
-  - type: worker
+  - component: worker
     each: { color: [red, green] }
     count: 5
-  - type: score-marker
+  - component: score-marker
     each: { color: [red, green] }
-  - type: coins
-  - type: d6
+  - component: coins
+  - component: d6
     count: 2
-  - type: main-board
+  - component: main-board

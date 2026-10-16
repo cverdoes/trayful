@@ -1,28 +1,31 @@
-import type { ComponentType, SnapTarget } from '@trayful/formats/browser';
+import { isValued, type ComponentType, type SnapTarget } from '@trayful/formats/browser';
 import { sizeOf } from '../render/geometry';
 import { parseValues, setIn } from './edit';
 import { NumberInput, PairInput, Row, SizeInput, TextInput } from './controls';
-import { newTarget, SNAPPING_BASES, spotsOf, targetKind, type TargetKind } from './snaps';
+import { newTarget, spotsOf, targetKind, type TargetKind } from './snaps';
 import { editDraft, setValue, useDesign } from './store';
 
 const KIND_LABEL: Record<TargetKind, string> = { grid: 'Grid', points: 'Points', area: 'Area' };
 
 /**
- * Where other pieces snap onto a board, tile or zone. Targets are drawn on the
- * front, where they can also be picked and dragged.
+ * A container's drop areas: where other pieces land when dropped on it. Areas are
+ * drawn on the face, where they can also be picked and dragged.
  */
 export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
   const selected = useDesign((s) => s.target);
-  if (!SNAPPING_BASES.has(type.base)) return null;
-  const targets = type.snap ?? [];
+  if (isValued(type)) return null;
+  const targets = type.container ?? [];
   const add = (kind: TargetKind) => {
-    editDraft((t) => setIn(t, ['snap', targets.length], newTarget(kind, t, sizeOf(t))));
+    editDraft((t) => setIn(t, ['container', targets.length], newTarget(kind, t, sizeOf(t))));
     useDesign.setState({ side: 'front', layer: undefined, target: targets.length });
   };
   return (
-    <section aria-label="Snap spots">
-      <h3>Snap spots</h3>
-      <p className="muted">Where pieces snap when dropped on this {type.base}.</p>
+    <section aria-label="Drop areas">
+      <h3>Drop areas</h3>
+      <p className="muted">
+        Where pieces land when dropped on this {type.is}. With one, it is a container: what lies on
+        it moves with it.
+      </p>
       <ul className="design-targets">
         {targets.map((t, i) => (
           <li key={t.id} className={i === selected ? 'chosen' : undefined}>
@@ -59,13 +62,16 @@ function describe(target: SnapTarget): string {
 }
 
 function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: number }>) {
-  const at = (...key: string[]) => ['snap', index, ...key];
+  const at = (...key: string[]) => ['container', index, ...key];
   const remove = () => {
-    editDraft((t) => setIn(t, ['snap', index], undefined));
+    // A container has at least one area, so removing the last one stops it being one.
+    editDraft((t) =>
+      setIn(t, (t.container ?? []).length > 1 ? ['container', index] : ['container'], undefined),
+    );
     useDesign.setState({ target: undefined });
   };
   return (
-    <div className="design-layer" aria-label="Selected snap target">
+    <div className="design-layer" aria-label="Selected drop area">
       <h4>{KIND_LABEL[targetKind(target)]} spots</h4>
       <Row label="Id" path={at('id')}>
         {(id) => (

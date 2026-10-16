@@ -29,9 +29,9 @@
     "InventoryEntry": {
       "type": "object",
       "properties": {
-        "type": {
+        "component": {
           "type": "string",
-          "description": "Component type id from a library."
+          "description": "Component id from a library."
         },
         "count": {
           "description": "Copies of each design in this entry. Default 1.",
@@ -89,10 +89,10 @@
         }
       },
       "required": [
-        "type"
+        "component"
       ],
       "additionalProperties": false,
-      "description": "A group of components of one type. Use at most one of `items`, `from` or `each`; with none, the entry is one design."
+      "description": "A group of components of one kind. Use at most one of `items`, `from` or `each`; with none, the entry is one design."
     },
     "InventoryRow": {
       "type": "object",
@@ -106,7 +106,7 @@
           "boolean"
         ]
       },
-      "description": "Field values for one design. Keys are the type's fields, plus optional `count` (copies, default 1) and `id` (a stable id prefix)."
+      "description": "Field values for one design. Keys are the component's fields (including `tile` when it picks its own tile), plus optional `count` (copies, default 1) and `id` (a stable id prefix)."
     }
   },
   "$id": "https://github.com/cverdoes/trayful/blob/main/packages/formats/schema/inventory.schema.json"

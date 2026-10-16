@@ -1,4 +1,4 @@
-import type { ComponentType } from '@trayful/formats/browser';
+import type { Assets, ComponentType } from '@trayful/formats/browser';
 import type { Command } from './commands.js';
 import type { TableView } from './privacy.js';
 
@@ -81,7 +81,10 @@ export interface ProjectView {
   version: number;
   name: string;
   table: string;
-  palette: Record<string, string>;
+  /** The images and colours faces refer to by name. */
+  assets: Assets;
+  /** True while the project is in the first file format, which the designer does not change. */
+  legacy: boolean;
   types: Record<string, ComponentType>;
   /** Setup names, and the one a new table starts from. */
   setups: string[];

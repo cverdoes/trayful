@@ -10,6 +10,7 @@ pnpm trayful play examples/harvest-moon --tunnel     # with an invite link for p
 pnpm trayful mcp examples/harvest-moon               # MCP server on stdio, for agents
 pnpm trayful validate examples/harvest-moon          # human-readable report
 pnpm trayful validate examples/harvest-moon --json   # for tools and agents
+pnpm trayful migrate ../old-game                     # rewrite a trayful/1 project in trayful/2
 ```
 
 `new <folder> [--name <name>]` copies [`examples/starter`](../../examples/starter) into a new folder, names the game and points the editor schema hints at this checkout.
@@ -31,10 +32,12 @@ pnpm trayful validate examples/harvest-moon --json   # for tools and agents
 
 `mcp [project-dir]` takes the same options, apart from `--share` and `--tunnel`. It speaks MCP on stdin and stdout. If `trayful play` already serves the project (or the folder of projects) on that port, it relays to that server; otherwise it opens the table itself, so people can watch at the printed address. Messages for people go to stderr.
 
+`migrate <project-dir>` rewrites a project in the first file format, `trayful/1`, in the current one, `trayful/2`, and lists the files it wrote (`migrateFolder` in the server package). Libraries are written afresh, keeping the comment lines at their top; images and palette colours move to a new `assets.yaml`; inventory entries name their `component` instead of their `type`; and setup steps that place a board get `lock: true`. The manifest, inventory and setups are edited in place, so their comments stay. It exits with `1` for a project that is already current or has errors, and changes nothing then. See [Versioning](../../docs/reference/versioning.md#moving-a-project-to-trayful2).
+
 `bin/trayful.js` runs the CLI from source without `pnpm`, for MCP client configs: `node /path/to/trayful/packages/cli/bin/trayful.js mcp /path/to/project`.
 
 With `TRAYFUL_SMOKE_TEST=1` set, `play` starts, checks that the app is served, and exits; CI uses this.
 
-Exit codes: `0` success, `1` the project has errors (or the server could not start), `2` wrong usage.
+Exit codes: `0` success, `1` the project has errors (or the server could not start, or there is nothing to migrate), `2` wrong usage.
 
 Test with `pnpm vitest run packages/cli` from the repo root.

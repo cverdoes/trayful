@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Assets",
+  "$defs": {
+    "Assets": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "assets",
+          "description": "Marks this file as the assets file."
+        },
+        "images": {
+          "description": "Images by name, for faces to refer to.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/ImageAsset"
+          }
+        },
+        "colors": {
+          "description": "Colours by name, usable anywhere a colour is expected.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "additionalProperties": false,
+      "title": "Trayful assets",
+      "description": "Names the images and colours that components use."
+    },
+    "ImageAsset": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to the image, relative to the project folder."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Path to the image, relative to the project folder."
+            },
+            "rows": {
+              "description": "Rows of tiles the image is cut into. Default 1.",
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "cols": {
+              "description": "Columns of tiles the image is cut into. Default 1.",
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "file"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "An image file, given as its path, or as `{ file, rows, cols }` to cut it into equal tiles, as on a sheet of cards or a die strip."
+    }
+  },
+  "$id": "https://github.com/cverdoes/trayful/blob/main/packages/formats/schema/assets.schema.json"
+}

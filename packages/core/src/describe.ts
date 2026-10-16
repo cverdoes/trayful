@@ -19,8 +19,10 @@ import {
 
 export interface PieceSummary {
   id: string;
+  /** Id of the component in the library. */
   type: string;
-  base: string;
+  /** What it is: `piece`, `zone`, `die` or `counter`. */
+  is: string;
   face?: 'up' | 'down';
   /** The component's fields; left out while it lies face down, unless revealed. */
   data?: Record<string, unknown>;
@@ -50,10 +52,10 @@ export interface ObjectSummary {
 }
 
 export interface ObjectQuery {
-  /** Only objects whose (top) piece has this component type. */
+  /** Only objects whose (top) piece is this library component. */
   type?: string;
-  /** Only objects whose (top) piece has this primitive, such as `card` or `die`. */
-  base?: string;
+  /** Only objects whose (top) piece is a `piece`, `zone`, `die` or `counter`. */
+  is?: string;
   /** Only objects whose visible data matches all these fields. */
   where?: Record<string, string | number | boolean>;
   /** Only objects whose centre lies in this rectangle: `[x, y, width, height]` in mm. */
@@ -72,7 +74,7 @@ export function summarizePiece(piece: Piece, catalog: Catalog, reveal = false): 
   return {
     id: piece.id,
     type: piece.type,
-    base: type?.base ?? 'unknown',
+    is: type?.is ?? 'unknown',
     face: piece.face,
     ...(piece.data && !hidden ? { data: piece.data } : {}),
     ...(piece.value !== undefined ? { value: piece.value } : {}),
@@ -140,7 +142,7 @@ export function queryObjects(
     .map((o) => summarize(state, catalog, o, query.reveal === true || hand !== undefined))
     .filter((s) => {
       if (query.type && s.top.type !== query.type) return false;
-      if (query.base && s.top.base !== query.base) return false;
+      if (query.is && s.top.is !== query.is) return false;
       if (query.where) {
         for (const [key, value] of Object.entries(query.where)) {
           if (s.top.data?.[key] !== value) return false;
@@ -295,7 +297,7 @@ function ranges(numbers: number[]): string {
 
 function typeName(p: PieceSummary, catalog: Catalog): string {
   const name = catalog[p.type]?.name;
-  return name ? `${name} (${p.type}, ${p.base})` : `${p.type} (${p.base})`;
+  return name ? `${name} (${p.type}, ${p.is})` : `${p.type} (${p.is})`;
 }
 
 function pieceText(p: PieceSummary, catalog: Catalog): string {

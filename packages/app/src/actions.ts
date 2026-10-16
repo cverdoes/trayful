@@ -1,5 +1,13 @@
 import type { Command, TableObject, TableState } from '@trayful/core';
-import { baseOf, objectSize, type Types } from './render/geometry';
+import {
+  rotationStep,
+  sidesOf,
+  stepValue,
+  valuesOf,
+  type ComponentType,
+  type Control,
+} from '@trayful/formats/browser';
+import { objectSize, typeOf, type Types } from './render/geometry';
 import { useStore } from './store';
 
 /** What the toolbar and keyboard can do with the current selection. */
@@ -22,7 +30,6 @@ export interface Actions {
 const NO_ACTIONS: Actions = { lockLabel: 'Lock', layoutLabel: 'Fan' };
 const NEXT_LAYOUT = { pile: 'fan', fan: 'spread', spread: 'pile' } as const;
 const LAYOUT_LABEL = { pile: 'Pile', fan: 'Fan', spread: 'Spread' } as const;
-const FLIPPABLE = new Set(['card', 'tile', 'token']);
 
 /** Works out which actions apply to the selected objects. */
 export function selectionActions(): Actions {
@@ -42,10 +49,14 @@ export function actionsFor(
     .map((id) => table.objects[id])
     .filter((o): o is TableObject => o !== undefined);
   if (objects.length === 0) return NO_ACTIONS;
-  const base = (o: TableObject) => baseOf(table, types, o);
+  const has = (test: (type: ComponentType) => boolean) => (o: TableObject) => {
+    const type = typeOf(table, types, o);
+    return type !== undefined && test(type);
+  };
   const unlocked = objects.filter((o) => !o.locked);
   const stacks = unlocked.filter((o) => o.kind === 'stack');
-  const counters = objects.filter((o) => o.kind === 'piece' && base(o) === 'counter');
+  const turning = unlocked.filter(has((t) => rotationStep(t) !== undefined));
+  const counters = objects.filter((o) => o.kind === 'piece' && has(controls('step'))(o));
   const allLocked = unlocked.length === 0;
   const next = NEXT_LAYOUT[stacks[0]?.kind === 'stack' ? (stacks[0].layout ?? 'pile') : 'pile'];
 
@@ -54,18 +65,17 @@ export function actionsFor(
     list.length ? () => make(list).forEach(command) : undefined;
   const ids = (list: TableObject[]) => list.map((o) => o.id);
   const step = (by: number) => (list: TableObject[]) =>
-    list.map((o): Command => ({ type: 'setValue', id: o.id, value: valueOf(o) + by }));
+    list.map((o): Command => ({ type: 'setValue', id: o.id, value: stepped(types, o, by) }));
 
   return {
-    flip: when(
-      unlocked.filter((o) => FLIPPABLE.has(base(o) ?? '')),
-      (list) => [{ type: 'flip', ids: ids(list) }],
-    ),
-    rotateLeft: when(unlocked, (list) => [{ type: 'rotate', ids: ids(list), steps: -1 }]),
-    rotateRight: when(unlocked, (list) => [{ type: 'rotate', ids: ids(list), steps: 1 }]),
+    flip: when(unlocked.filter(has((t) => sidesOf(t) === 2)), (list) => [
+      { type: 'flip', ids: ids(list) },
+    ]),
+    rotateLeft: when(turning, (list) => [{ type: 'rotate', ids: ids(list), steps: -1 }]),
+    rotateRight: when(turning, (list) => [{ type: 'rotate', ids: ids(list), steps: 1 }]),
     shuffle: when(stacks, (list) => list.map((o) => ({ type: 'shuffle', id: o.id }))),
     roll: when(
-      objects.filter((o) => o.kind === 'piece' && base(o) === 'die'),
+      objects.filter((o) => o.kind === 'piece' && has(controls('roll'))(o)),
       (list) => list.map((o) => ({ type: 'roll', id: o.id })),
     ),
     draw: when(stacks.length === 1 ? stacks : [], ([stack]) => [drawBeside(table, types, stack!)]),
@@ -84,6 +94,13 @@ function drawBeside(table: TableState, types: Types, stack: TableObject): Comman
   return { type: 'draw', from: stack.id, to: [stack.pos[0] + w + 4, stack.pos[1]] };
 }
 
-function valueOf(object: TableObject): number {
-  return object.kind === 'piece' && typeof object.value === 'number' ? object.value : 0;
+/** Whether a die or counter has a control. */
+const controls = (control: Control) => (type: ComponentType) =>
+  valuesOf(type)?.controls.includes(control) ?? false;
+
+/** A counter's value stepped up or down, within its values. */
+function stepped(types: Types, object: TableObject, by: number): string | number {
+  const piece = object.kind === 'piece' ? object : undefined;
+  const spec = piece && types[piece.type] && valuesOf(types[piece.type]!);
+  return spec ? stepValue(spec, piece.value, by) : 0;
 }

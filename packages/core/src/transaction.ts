@@ -129,7 +129,7 @@ export class Transaction {
 
   typeOf(piece: Piece) {
     const type = this.catalog[piece.type];
-    if (!type) throw new CommandError(`Unknown component type "${piece.type}".`);
+    if (!type) throw new CommandError(`Unknown component "${piece.type}".`);
     return type;
   }
 
@@ -203,10 +203,11 @@ export class Transaction {
       if (object.kind === 'piece' && object.hand === player) z = Math.max(z, object.z + 1);
     }
     for (const piece of pieces) {
-      const type = this.typeOf(piece);
-      if (type.base === 'board' || type.base === 'zone') {
-        throw new CommandError(`"${piece.id}" is a ${type.base}, which cannot go in a hand.`);
+      if (this.typeOf(piece).is === 'zone') {
+        throw new CommandError(`"${piece.id}" is a zone, which cannot go in a hand.`);
       }
+      if (piece.locked)
+        throw new CommandError(`"${piece.id}" is locked, so it stays on the table.`);
       // Whatever rode on the piece stays on the table.
       for (const rider of this.riders([piece.id])) {
         this.update(this.get(rider), { snap: undefined });

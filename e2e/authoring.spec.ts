@@ -33,23 +33,25 @@ test('an agent designs a card type while a person watches it appear', async ({ p
   await claude.call('upsert_type', {
     definition: {
       id: 'event-card',
-      base: 'card',
       name: 'Event',
       size: [88, 63],
-      corner: 3,
+      is: 'piece',
+      flippable: { back: { fill: 'ink', image: 'card-back' } },
+      stackable: true,
       fields: {
         title: 'string',
         season: { enum: ['spring', 'summer', 'autumn', 'winter'] },
         band: { enum: ['yellowgreen', 'gold', 'darkorange', 'lightsteelblue'] },
       },
-      front: {
+      face: {
+        corner: 3,
         fill: 'paper',
         stroke: 'ink',
-        layers: [
-          { shape: 'rect', at: [0, 0], size: [88, 12], fill: '{{band}}' },
-          { text: '{{title}}', at: [5, 3], font: { size: 16, weight: 'bold' }, color: 'ink' },
+        layers: [{ shape: 'rect', at: [0, 0], size: [88, 12], fill: '{{band}}' }],
+        labels: [
+          { field: 'title', at: [5, 3], font: { size: 16, weight: 'bold' }, color: 'ink' },
           {
-            text: '{{season}}',
+            field: 'season',
             at: [83, 58],
             align: 'right',
             valign: 'bottom',
@@ -58,7 +60,6 @@ test('an agent designs a card type while a person watches it appear', async ({ p
           },
         ],
       },
-      back: { fill: 'ink', layers: [{ image: 'assets/card-back.svg' }] },
     },
   });
   await claude.call('set_inventory', {
@@ -90,7 +91,7 @@ test('an agent designs a card type while a person watches it appear', async ({ p
 
   // A change that would break the project is refused and leaves the files alone.
   await expect(
-    claude.call('upsert_type', { definition: { id: 'event-card', base: 'card', size: [88, 63] } }),
+    claude.call('upsert_type', { definition: { id: 'event-card', is: 'piece', size: [88, 63] } }),
   ).rejects.toThrow(/would break the project/);
 
   await page.keyboard.press('0');

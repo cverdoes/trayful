@@ -15,7 +15,8 @@ This copies [`examples/starter`](../../examples/starter) to `../my-game` and nam
 ```
 my-game/
   trayful.yaml          # the manifest: the game's name and which files to load
-  library/cards.yaml    # component types: a card...
+  assets.yaml           # named images and colours
+  library/cards.yaml    # components: a card...
   library/pieces.yaml   # ...and a token
   inventory.yaml        # what is in the box
   data/cards.csv        # the card texts, one row per card
@@ -29,16 +30,17 @@ The manifest ties it together:
 
 ```yaml
 name: Starter
-format: trayful/1
+format: trayful/2
 version: '0.1'
 description: A small deck and some tokens to build your own prototype from.
 units: mm
+assets: assets.yaml
 libraries: [library/*.yaml]
 inventory: inventory.yaml
 setup: start
 ```
 
-`libraries` loads every YAML file in `library/`, so you can split types over as many files as you like. `setup: start` means new tables start from `setups/start.yaml`.
+`libraries` loads every YAML file in `library/`, so you can split components over as many files as you like. `assets` names the file that gives the project's images and colours their names (see [Use your own images](your-own-images.md)). `setup: start` means new tables start from `setups/start.yaml`.
 
 ## Open it on a table
 
@@ -50,7 +52,7 @@ Your browser opens the table with the deck shuffled, two cards dealt face up and
 
 ## Edit while it is open
 
-Leave the table open and edit any file in the folder: change a card's text in `data/cards.csv`, a colour in `library/cards.yaml`, or a count in `inventory.yaml`. When you save, the table updates at once. New components appear below the table, removed ones leave it, and the change is one step you can undo.
+Leave the table open and edit any file in the folder: change a card's text in `data/cards.csv`, a colour in `assets.yaml`, or a count in `inventory.yaml`. When you save, the table updates at once. New components appear below the table, removed ones leave it, and the change is one step you can undo.
 
 If a file has a mistake, a bar at the top of the table says what and where (file, line and column), and the table keeps the last version that worked until you fix it. You can also check a project from the command line:
 

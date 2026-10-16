@@ -12,8 +12,8 @@
         },
         "format": {
           "type": "string",
-          "const": "trayful/1",
-          "description": "File format version. Currently always `trayful/1`."
+          "const": "trayful/2",
+          "description": "File format version, `trayful/2`. Projects in `trayful/1` still open; `trayful migrate` rewrites them."
         },
         "version": {
           "description": "Your own version label for the prototype, e.g. `0.3`.",
@@ -26,6 +26,10 @@
           "description": "Unit for all sizes and positions. Only `mm` for now.",
           "type": "string",
           "const": "mm"
+        },
+        "assets": {
+          "description": "Path to the assets file. Default `assets.yaml`, when the project has one.",
+          "type": "string"
         },
         "libraries": {
           "minItems": 1,

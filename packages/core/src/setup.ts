@@ -1,4 +1,4 @@
-import { FORMAT_VERSION, PRIMITIVE_INFO, type SetupStep } from '@trayful/formats/browser';
+import { TABLE_FORMAT, sidesOf, type SetupStep } from '@trayful/formats/browser';
 import type { ResolvedProject } from '@trayful/formats';
 import { BOX_WIDTH, deckStackId, MARGIN, newDeck, newPiece, rows, type Sized } from './box.js';
 import { applyCommand, CommandError, type Command } from './commands.js';
@@ -73,7 +73,7 @@ function outOfTheBox(project: ResolvedProject, name: string, seed: number): Tabl
   for (const [id, pos] of rows(sized, [0, 0], BOX_WIDTH)) {
     objects[id] = { ...objects[id]!, pos };
   }
-  return { format: FORMAT_VERSION, table: name, seed, rng: seedState(seed), objects };
+  return { format: TABLE_FORMAT, table: name, seed, rng: seedState(seed), objects };
 }
 
 /**
@@ -157,12 +157,12 @@ class SetupRunner {
     this.command({ type: 'move', ids, to: step.at });
 
     for (const id of ids) {
-      const delta = step.rot === undefined ? 0 : step.rot - this.state.objects[id]!.rot;
-      if (delta !== 0) this.command({ type: 'rotate', ids: [id], degrees: delta });
+      // Set directly: a setup may lay out at an angle what players cannot turn.
+      if (step.rot !== undefined) this.edit(id, { rot: step.rot });
       if (step.face) this.setFace(this.state.objects[id]!, step.face);
       if (step.shuffle) this.command({ type: 'shuffle', id });
     }
-    for (const id of locked) this.edit(id, { locked: true });
+    for (const id of step.lock ? ids : locked) this.edit(id, { locked: true });
     for (const id of ids) this.used.add(id);
   }
 
@@ -215,9 +215,9 @@ class SetupRunner {
     for (const id of pieces) {
       const piece = this.state.objects[id] as Piece;
       if (piece.face === face) continue;
-      const base = this.catalog[piece.type]?.base;
-      if (!base || PRIMITIVE_INFO[base].sides !== 2) {
-        throw new SetupError(`"${piece.id}" is a ${base ?? 'piece'} and has only one side.`);
+      const type = this.catalog[piece.type];
+      if (!type || sidesOf(type) !== 2) {
+        throw new SetupError(`"${piece.id}" has only one side.`);
       }
       this.edit(id, { face });
     }

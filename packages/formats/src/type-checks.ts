@@ -1,35 +1,49 @@
+import { backOf, componentFields, isValued } from './component.js';
 import { coerceValue, templateRefs, type NormalizedField } from './fields.js';
 import type { Problem } from './diagnostics.js';
-import { PRIMITIVE_INFO, type ComponentType, type Face, type Layer } from './schemas.js';
+import type { Back, ComponentType, Face, ImageRef, Label, Layer } from './schemas.js';
 
-/** Checks a component type for problems its schema cannot see on its own. */
-export function typeProblems(
-  type: ComponentType,
-  fields: Record<string, NormalizedField>,
-): Problem[] {
+/**
+ * Checks a component for problems its schema cannot see on its own. Problems that
+ * need the rest of the project (an unknown asset, an `accepts` naming nothing) are
+ * found by the loader.
+ */
+export function typeProblems(type: ComponentType): Problem[] {
+  const fields = componentFields(type);
   return [
-    ...primitiveProblems(type),
+    ...representationProblems(type),
+    ...valueProblems(type),
     ...defaultProblems(fields),
     ...snapProblems(type),
+    ...faceProblems(type),
     ...templateProblems(type, fields),
   ];
 }
 
-/** Keys that do not suit the primitive, or that contradict each other. */
-function primitiveProblems(type: ComponentType): Problem[] {
-  const info = PRIMITIVE_INFO[type.base];
+const BEHAVIOURS = ['flippable', 'rotates', 'stackable', 'container'] as const;
+
+/** Behaviours belong to pieces and zones, values to dice and counters. */
+function representationProblems(type: ComponentType): Problem[] {
   const problems: Problem[] = [];
-  const report = (key: string, message: string) => problems.push({ path: [key], message });
-  if (type.back && info.sides === 1)
-    report('back', `A ${type.base} has one side, so it cannot have a "back".`);
-  if (type.snap && !info.snapTargets)
-    report('snap', 'Only boards, tiles and zones can have snap targets.');
-  if (type.range && type.base !== 'counter') report('range', '"range" is only for counters.');
-  if (type.faces && type.base !== 'die') report('faces', '"faces" is only for dice.');
-  if (type.range && type.range[0] > type.range[1])
-    report('range', 'The minimum is larger than the maximum.');
-  if (type.fill && type.front?.fill) report('fill', 'Use either "fill" or "front.fill", not both.');
+  if (isValued(type)) {
+    for (const key of BEHAVIOURS) {
+      if (type[key] !== undefined)
+        problems.push({ path: [key], message: `A ${type.is} cannot have "${key}".` });
+    }
+  } else if (type.values) {
+    problems.push({ path: ['values'], message: 'Only dice and counters have values.' });
+  }
   return problems;
+}
+
+function valueProblems(type: ComponentType): Problem[] {
+  const values = type.values;
+  if (!values) return [];
+  if (values.range && values.list)
+    return [{ path: ['values'], message: 'Give either "range" or "list", not both.' }];
+  if (values.range && values.range[0] > values.range[1])
+    return [{ path: ['values', 'range'], message: 'The minimum is larger than the maximum.' }];
+  return [];
 }
 
 /** Every default must be a valid value of its field. */
@@ -48,22 +62,22 @@ function defaultProblems(fields: Record<string, NormalizedField>): Problem[] {
   return problems;
 }
 
-/** Each snap target has exactly one kind of spot, and a unique id. */
+/** Each drop area has exactly one kind of spot, and a unique id. */
 function snapProblems(type: ComponentType): Problem[] {
   const problems: Problem[] = [];
   const ids = new Set<string>();
-  for (const [i, target] of (type.snap ?? []).entries()) {
+  for (const [i, target] of (type.container ?? []).entries()) {
     const kinds = [target.grid, target.points, target.area].filter(Boolean).length;
     if (kinds !== 1) {
       problems.push({
-        path: ['snap', i],
+        path: ['container', i],
         message: 'Give exactly one of "grid", "points" or "area".',
       });
     }
     if (ids.has(target.id)) {
       problems.push({
-        path: ['snap', i, 'id'],
-        message: `Snap target "${target.id}" is defined twice.`,
+        path: ['container', i, 'id'],
+        message: `Drop area "${target.id}" is defined twice.`,
       });
     }
     ids.add(target.id);
@@ -71,19 +85,52 @@ function snapProblems(type: ComponentType): Problem[] {
   return problems;
 }
 
-/** A text that may hold `{{field}}` placeholders, and where it is in the type. */
+/** The faces a component has, each with its path inside the component. */
+function sides(type: ComponentType): { side: Face | Back; path: (string | number)[] }[] {
+  const back = backOf(type);
+  return [
+    ...(type.face ? [{ side: type.face, path: ['face'] }] : []),
+    ...(back ? [{ side: back, path: ['flippable', 'back'] }] : []),
+  ];
+}
+
+/** Labels need one of `text` and `field`; image tiles need a way to pick them. */
+function faceProblems(type: ComponentType): Problem[] {
+  const problems: Problem[] = [];
+  for (const { side, path } of sides(type)) {
+    for (const [i, label] of (side.labels ?? []).entries()) {
+      if ((label.text === undefined) === (label.field === undefined))
+        problems.push({ path: [...path, 'labels', i], message: 'Give one of "text" or "field".' });
+    }
+    if (side.image) problems.push(...imageProblems(type, side.image, [...path, 'image']));
+  }
+  return problems;
+}
+
+function imageProblems(type: ComponentType, ref: ImageRef, path: (string | number)[]): Problem[] {
+  if (typeof ref === 'string') return [];
+  const problems: Problem[] = [];
+  if ((ref.row === undefined) !== (ref.col === undefined))
+    problems.push({ path, message: 'Give both "row" and "col".' });
+  if (ref.row !== undefined && ref.tile !== undefined)
+    problems.push({ path, message: 'Give either "tile" or "row" and "col", not both.' });
+  if (ref.tile === 'value' && !isValued(type))
+    problems.push({
+      path: [...path, 'tile'],
+      message: 'Only dice and counters show their value as a tile.',
+    });
+  return problems;
+}
+
+/** A text that may hold `{{field}}` placeholders, and where it is in the component. */
 interface TemplateAt {
   text: string;
   path: (string | number)[];
 }
 
-/** Every `{{field}}` used in a face must be a declared field. */
+/** Every `{{field}}` used in a face must be a field of the component. */
 function templateProblems(type: ComponentType, fields: Record<string, NormalizedField>): Problem[] {
-  const templates = present([{ text: type.fill, path: ['fill'] }]);
-  for (const side of ['front', 'back'] as const) {
-    const face = type[side];
-    if (face) templates.push(...faceTemplates(face, side));
-  }
+  const templates = sides(type).flatMap(({ side, path }) => faceTemplates(side, path));
   return templates.flatMap(({ text, path }) =>
     templateRefs(text)
       .filter((ref) => !fields[ref])
@@ -92,14 +139,19 @@ function templateProblems(type: ComponentType, fields: Record<string, Normalized
 }
 
 /** The texts in a face that may hold `{{field}}` placeholders, with their paths. */
-function faceTemplates(face: Face, side: string): TemplateAt[] {
+function faceTemplates(face: Face | Back, path: (string | number)[]): TemplateAt[] {
   const templates = present([
-    { text: face.fill, path: [side, 'fill'] },
-    { text: face.stroke, path: [side, 'stroke'] },
+    { text: face.fill, path: [...path, 'fill'] },
+    { text: face.stroke, path: [...path, 'stroke'] },
   ]);
   for (const [i, layer] of (face.layers ?? []).entries()) {
-    for (const { text, path } of layerTemplates(layer)) {
-      templates.push({ text, path: [side, 'layers', i, ...path] });
+    for (const t of layerTemplates(layer)) {
+      templates.push({ text: t.text, path: [...path, 'layers', i, ...t.path] });
+    }
+  }
+  for (const [i, label] of (face.labels ?? []).entries()) {
+    for (const t of labelTemplates(label)) {
+      templates.push({ text: t.text, path: [...path, 'labels', i, ...t.path] });
     }
   }
   return templates;
@@ -117,7 +169,15 @@ function layerTemplates(layer: Layer): TemplateAt[] {
   ]);
 }
 
-/** Leaves out the texts a type or layer does not set. */
+function labelTemplates(label: Label): TemplateAt[] {
+  return present([
+    { text: label.text, path: ['text'] },
+    { text: label.color, path: ['color'] },
+    { text: label.when, path: ['when'] },
+  ]);
+}
+
+/** Leaves out the texts a component or layer does not set. */
 function present(
   templates: { text: string | undefined; path: (string | number)[] }[],
 ): TemplateAt[] {

@@ -6,7 +6,7 @@ import { typeYaml } from './yaml';
 
 const type = {
   id: 'card',
-  base: 'card',
+  is: 'piece',
   size: [63, 88],
   fields: {
     title: 'string',
@@ -25,7 +25,7 @@ it('makes up a value for each field, or takes its default', () => {
     rare: true,
     tint: '#ff0000',
   });
-  expect(sampleData({ id: 'x', base: 'meeple', size: 16 })).toEqual({});
+  expect(sampleData({ id: 'x', is: 'piece', size: 16, face: { shape: 'meeple' } })).toEqual({});
 });
 
 it('lists each design in the box once, by a readable name', () => {
@@ -41,7 +41,7 @@ it('lists each design in the box once, by a readable name', () => {
 });
 
 it('shows a type as a library file holds it', () => {
-  const yaml = typeYaml({ ...type, front: { fill: '#ffffff' } });
+  const yaml = typeYaml({ ...type, face: { fill: '#ffffff' } });
   expect(yaml).toContain('- id: card\n');
   expect(yaml).toContain('size: [63, 88]');
   expect(yaml).toContain("fill: '#ffffff'");

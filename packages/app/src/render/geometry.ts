@@ -5,7 +5,7 @@ import {
   type TableObject,
   type TableState,
 } from '@trayful/core';
-import { PRIMITIVE_INFO, type ComponentType } from '@trayful/formats/browser';
+import { isStackable, stacksWith, type ComponentType } from '@trayful/formats/browser';
 
 export type Types = Record<string, ComponentType>;
 
@@ -45,19 +45,19 @@ export function topLevel(table: TableState): TableObject[] {
     .sort((a, b) => a.z - b.z || (a.id < b.id ? -1 : 1));
 }
 
-export function baseOf(table: TableState, types: Types, object: TableObject) {
+/** The library component of an object: its own, or that of the top piece of a stack. */
+export function typeOf(
+  table: TableState,
+  types: Types,
+  object: TableObject,
+): ComponentType | undefined {
   const piece = facePiece(table, object);
-  return piece ? types[piece.type]?.base : undefined;
-}
-
-function isStackable(table: TableState, types: Types, object: TableObject): boolean {
-  const base = baseOf(table, types, object);
-  return base !== undefined && PRIMITIVE_INFO[base].stackable;
+  return piece ? types[piece.type] : undefined;
 }
 
 /**
  * The object a dragged selection would stack onto when dropped at `point`:
- * the topmost stackable object of the same primitive under the point.
+ * the topmost unlocked object under the point that it may share a stack with.
  */
 export function dropTarget(
   table: TableState,
@@ -66,11 +66,12 @@ export function dropTarget(
   point: [number, number],
 ): TableObject | undefined {
   const first = table.objects[dragged[0]!];
-  if (!first || !isStackable(table, types, first)) return undefined;
-  const base = baseOf(table, types, first);
-  const candidates = topLevel(table).filter(
-    (o) => !dragged.includes(o.id) && baseOf(table, types, o) === base && !o.locked,
-  );
+  const type = first && typeOf(table, types, first);
+  if (!type || !isStackable(type)) return undefined;
+  const candidates = topLevel(table).filter((o) => {
+    const other = typeOf(table, types, o);
+    return !dragged.includes(o.id) && !o.locked && other !== undefined && stacksWith(type, other);
+  });
   for (const o of candidates.toReversed()) {
     const b = bounds(table, types, o);
     if (point[0] >= b.x && point[0] <= b.x + b.w && point[1] >= b.y && point[1] <= b.y + b.h)

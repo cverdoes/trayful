@@ -1,10 +1,12 @@
 // Pure edits to a component type in the designer. Each returns a new type and
 // leaves the one it was given alone, so the store can tell what changed.
 import {
-  PRIMITIVE_INFO,
+  REPRESENTATION_INFO,
+  sidesOf,
   type ComponentType,
   type Field,
   type FieldType,
+  type Label,
   type Layer,
   type Scalar,
 } from '@trayful/formats/browser';
@@ -67,19 +69,93 @@ export function renameKey<V>(record: Record<string, V>, from: string, to: string
   return Object.fromEntries(Object.entries(record).map(([k, v]) => [k === from ? to : k, v]));
 }
 
-/** Whether a type has a back to design. */
-export const twoSided = (type: ComponentType) => PRIMITIVE_INFO[type.base].sides === 2;
+/** Behaviours written as `true` or as an object of settings. */
+const TOGGLES = new Set(['flippable', 'rotates', 'stackable']);
 
-// ---------------------------------------------------------------------------
-// Layers
-// ---------------------------------------------------------------------------
-
-export function layersOf(type: ComponentType, side: Side): Layer[] {
-  return type[side]?.layers ?? [];
+/**
+ * `setIn` for a component, keeping a behaviour on when an edit empties its
+ * settings: `rotates: {}` is tidied away, but the component still rotates.
+ */
+export function editType(type: ComponentType, path: Path, value: unknown): ComponentType {
+  const next = setIn(type, path, value);
+  const key = path[0] as keyof ComponentType;
+  if (path.length > 1 && TOGGLES.has(key) && type[key] !== undefined && next[key] === undefined)
+    return { ...next, [key]: true };
+  return next;
 }
 
-function withLayers(type: ComponentType, side: Side, layers: Layer[]): ComponentType {
-  return setIn(type, [side, 'layers'], layers.length ? layers : undefined);
+/** Behaviours of pieces and zones, which dice and counters do not have. */
+const PIECE_BEHAVIOURS = ['flippable', 'rotates', 'stackable', 'container'] as const;
+
+/**
+ * The component as another kind of thing, without the behaviours that kind cannot
+ * have: a die or counter keeps no flipping or drop areas, a piece or zone no values.
+ */
+export function withRepresentation(type: ComponentType, is: ComponentType['is']): ComponentType {
+  const dropped: readonly string[] = REPRESENTATION_INFO[is].valued ? PIECE_BEHAVIOURS : ['values'];
+  const kept = Object.entries(type).filter(([key]) => !dropped.includes(key));
+  return { ...Object.fromEntries(kept), is } as ComponentType;
+}
+
+/** Whether a type has a back to design. */
+export const twoSided = (type: ComponentType) => sidesOf(type) === 2;
+
+/** Where a side lives in a component: its face, or the back of a flippable one. */
+export function sidePath(side: Side): Path {
+  return side === 'front' ? ['face'] : ['flippable', 'back'];
+}
+
+/** A side of a component as written, if it has one. */
+export function sideOf(type: ComponentType, side: Side) {
+  return getIn(type, sidePath(side)) as NonNullable<ComponentType['face']> | undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Layers and labels
+// ---------------------------------------------------------------------------
+
+/**
+ * What the designer lists and moves on a side: its layers, then its labels, in
+ * the order they are drawn. A label shows as a text layer, a field label as the
+ * placeholder its field fills.
+ */
+export interface Item {
+  layer: Layer;
+  /** Where the layer or label is in the component. */
+  path: Path;
+  label?: Label;
+}
+
+export function itemsOf(type: ComponentType, side: Side): Item[] {
+  const base = sidePath(side);
+  const face = sideOf(type, side);
+  return [
+    ...(face?.layers ?? []).map((layer, i) => ({ layer, path: [...base, 'layers', i] })),
+    ...(face?.labels ?? []).map((label, i) => ({
+      layer: labelLayer(label),
+      path: [...base, 'labels', i],
+      label,
+    })),
+  ];
+}
+
+function labelLayer(label: Label): Layer {
+  const { field, text, ...rest } = label;
+  return { ...rest, text: field === undefined ? (text ?? '') : `{{${field}}}` };
+}
+
+/** The layers drawn on a side, labels included, for hit testing and snapping. */
+export function layersOf(type: ComponentType, side: Side): Layer[] {
+  return itemsOf(type, side).map((item) => item.layer);
+}
+
+/** The component with an item replaced by a moved, resized or turned copy of its layer. */
+export function withItem(type: ComponentType, item: Item, layer: Layer): ComponentType {
+  if (!item.label) return editType(type, item.path, layer);
+  const { text, ...rest } = layer as Extract<Layer, { text: string }>;
+  const label =
+    item.label.field === undefined ? { ...rest, text } : { ...rest, field: item.label.field };
+  return editType(type, item.path, label);
 }
 
 /** A new layer of a kind, placed near the face's top-left corner. */
@@ -92,30 +168,61 @@ export function newLayer(kind: LayerKind, type: ComponentType): Layer {
   return { image: imageField ? `{{${imageField[0]}}}` : '', at: [5, 5], size: [20, 20] };
 }
 
-export function addLayer(type: ComponentType, side: Side, layer: Layer): ComponentType {
-  return withLayers(type, side, [...layersOf(type, side), layer]);
+/** A new label, showing the first declared field when there is one. */
+export function newLabel(type: ComponentType): Label {
+  const field = Object.keys(type.fields ?? {})[0];
+  return field ? { field, at: [5, 5] } : { text: 'Label', at: [5, 5] };
 }
 
-export function removeLayer(type: ComponentType, side: Side, index: number): ComponentType {
-  return withLayers(
-    type,
-    side,
-    layersOf(type, side).filter((_, i) => i !== index),
-  );
+/** Adds a layer or label to a side and returns the component and the new item's index. */
+export function addItem(
+  type: ComponentType,
+  side: Side,
+  item: { layer: Layer } | { label: Label },
+): { type: ComponentType; index: number } {
+  const face = sideOf(type, side);
+  const [list, value] = 'layer' in item ? ['layers', item.layer] : ['labels', item.label];
+  const items = (face?.[list as 'layers'] ?? []) as unknown[];
+  const next = editType(type, [...sidePath(side), list, items.length], value);
+  const index = list === 'layers' ? items.length : itemsOf(type, side).length;
+  return { type: next, index };
 }
 
-/** Moves a layer up (+1, drawn later, so on top) or down (-1) the face's list. */
-export function moveLayer(
+/** Removes an item; a list left empty goes too. */
+export function removeItem(type: ComponentType, side: Side, index: number): ComponentType {
+  const item = itemsOf(type, side)[index];
+  if (!item) return type;
+  const listPath = item.path.slice(0, -1);
+  const list = getIn(type, listPath) as unknown[];
+  return list.length === 1
+    ? editType(type, listPath, undefined)
+    : editType(type, item.path, undefined);
+}
+
+/**
+ * Moves an item up (+1, drawn later, so on top) or down (-1) its list. Labels are
+ * always drawn over layers, so an item stays among its own kind.
+ */
+export function moveItem(
   type: ComponentType,
   side: Side,
   index: number,
   by: 1 | -1,
 ): ComponentType {
-  const layers = [...layersOf(type, side)];
-  const to = index + by;
-  if (to < 0 || to >= layers.length) return type;
-  [layers[index], layers[to]] = [layers[to]!, layers[index]!];
-  return withLayers(type, side, layers);
+  const items = itemsOf(type, side);
+  const item = items[index];
+  const other = items[index + by];
+  if (!item || !other || Boolean(item.label) !== Boolean(other.label)) return type;
+  const a = getIn(type, item.path);
+  const b = getIn(type, other.path);
+  return editType(editType(type, item.path, b), other.path, a);
+}
+
+/** Whether an item can move one place up (+1) or down (-1) among its own kind. */
+export function canMove(type: ComponentType, side: Side, index: number, by: 1 | -1): boolean {
+  const items = itemsOf(type, side);
+  const other = items[index + by];
+  return other !== undefined && Boolean(other.label) === Boolean(items[index]?.label);
 }
 
 /** What kind a layer is, from the key that decides it. */
@@ -125,7 +232,13 @@ export function layerKind(layer: Layer): LayerKind {
 }
 
 /** A short label for a layer in the layer list: its kind and what it shows. */
-export function layerLabel(layer: Layer): string {
+export function itemLabel(item: Item): string {
+  if (item.label)
+    return `Label ${item.label.field === undefined ? item.label.text : `{{${item.label.field}}}`}`;
+  return layerLabel(item.layer);
+}
+
+function layerLabel(layer: Layer): string {
   if ('text' in layer) return `Text ${layer.text}`;
   if ('image' in layer) return `Image ${layer.image || '(no file)'}`;
   return `Shape ${layer.shape}`;
@@ -243,9 +356,17 @@ export function droppedImage(
   return { image, at: [tenth(at[0] - w / 2), tenth(at[1] - h / 2)], size: [w, h] };
 }
 
-/** A type with one field renamed, and every `{{field}}` that used it pointing at the new name. */
+/**
+ * A type with one field renamed, and every `{{field}}` and label that used it
+ * pointing at the new name.
+ */
 export function withFieldRenamed(type: ComponentType, from: string, to: string): ComponentType {
-  const renamed = setIn(type, ['fields'], renameKey(type.fields ?? {}, from, to));
+  let renamed = setIn(type, ['fields'], renameKey(type.fields ?? {}, from, to));
+  for (const side of ['front', 'back'] as const) {
+    for (const item of itemsOf(renamed, side)) {
+      if (item.label?.field === from) renamed = editType(renamed, [...item.path, 'field'], to);
+    }
+  }
   // Field names are letters, digits and underscores, so they need no escaping here.
   return replaceTemplates(
     renamed,

@@ -1,5 +1,5 @@
 // Taking components out of the box: new pieces and decks, laid out in rows.
-import { PRIMITIVE_INFO, type ComponentType, type Vec2 } from '@trayful/formats/browser';
+import { sidesOf, startValue, type ComponentType, type Vec2 } from '@trayful/formats/browser';
 import type { ComponentSpec } from '@trayful/formats';
 import type { Piece, Stack } from './state.js';
 
@@ -25,10 +25,9 @@ export function newPiece(
   const piece: Piece = { kind: 'piece', id, type: type.id, data, pos: [0, 0], rot: 0, face, z: 0 };
   if (Object.keys(data).length === 0) delete piece.data;
   if (parent) piece.parent = parent;
-  if (type.base === 'board') piece.locked = true;
-  if (type.base === 'counter') piece.value = type.range?.[0] ?? 0;
-  if (type.base === 'die') piece.value = type.faces?.[0] ?? 1;
-  if (PRIMITIVE_INFO[type.base].sides === 1) piece.face = 'up';
+  const value = startValue(type);
+  if (value !== undefined) piece.value = value;
+  if (sidesOf(type) === 1) piece.face = 'up';
   return piece;
 }
 

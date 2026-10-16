@@ -1,32 +1,29 @@
 # yaml-language-server: $schema=../../../packages/formats/schema/library.schema.json
 kind: library
-palette:
-  red: '#d94b3d'
-  green: '#4a9b5f'
-  gold: '#e2b33c'
-  ink: '#222233'
-
-types:
+components:
   - id: action-card
-    base: card
     name: Action card
     size: [63, 88]
-    corner: 3
+    is: piece
+    flippable:
+      back:
+        fill: ink
+        image: card-back
+    rotates: true
+    stackable: true
     fields:
       name: string
       cost: { type: int, default: 0 }
       suit: { enum: [red, green], description: Which market row the card belongs to. }
       text: string?
       art: image?
-    front:
+    face:
+      corner: 3
       fill: '{{suit}}'
       layers:
-        - { text: '{{name}}', at: [5, 5], font: { size: 14, weight: bold }, color: white }
-        - { image: '{{art}}', at: [5, 15], size: [53, 40], when: '{{art}}' }
-        - { text: '{{text}}', at: [5, 60], width: 53, font: { size: 9 }, color: white }
+        - { image: '{{art}}', at: [5, 15], when: '{{art}}', size: [53, 40] }
         - { shape: circle, at: [55, 8], r: 5, fill: gold }
-        - { text: '{{cost}}', at: [55, 8], align: center, valign: middle, font: { weight: bold } }
-    back:
-      fill: ink
-      layers:
-        - { image: assets/card-back.svg }
+      labels:
+        - { field: name, at: [5, 5], font: { size: 14, weight: bold }, color: white }
+        - { field: text, at: [5, 60], width: 53, font: { size: 9 }, color: white }
+        - { field: cost, at: [55, 8], align: center, valign: middle, font: { weight: bold } }

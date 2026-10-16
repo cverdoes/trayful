@@ -9,10 +9,11 @@ Every project folder has a `trayful.yaml` at its root. It names the prototype an
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | text | yes | Name of the prototype. |
-| `format` | `"trayful/1"` | yes | File format version. Currently always `trayful/1`. |
+| `format` | `"trayful/2"` | yes | File format version, `trayful/2`. Projects in `trayful/1` still open; `trayful migrate` rewrites them. |
 | `version` | text |  | Your own version label for the prototype, e.g. `0.3`. |
 | `description` | text |  |  |
 | `units` | `"mm"` |  | Unit for all sizes and positions. Only `mm` for now. |
+| `assets` | text |  | Path to the assets file. Default `assets.yaml`, when the project has one. |
 | `libraries` | list of text | yes | Library files to load, as paths or glob patterns relative to the project folder. |
 | `inventory` | text | yes | Path to the inventory file. |
 | `setups` | list of text |  | Setup files, as paths or globs. Default `["setups/*.yaml"]`. |
@@ -24,10 +25,11 @@ From `examples/harvest-moon/trayful.yaml`:
 
 ```yaml
 name: Harvest Moon
-format: trayful/1
+format: trayful/2
 version: '0.1'
 description: A small worker-placement and card-market sample used to exercise every file kind.
 units: mm
+assets: assets.yaml
 libraries: [library/*.yaml]
 inventory: inventory.yaml
 setup: 2-player

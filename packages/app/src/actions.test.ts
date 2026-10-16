@@ -1,7 +1,9 @@
 import type { Command, TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
+import type { ComponentType } from '@trayful/formats/browser';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { actionsFor } from './actions';
+import type { Types } from './render/geometry';
 import { after, exampleTable } from './testing';
 
 let project: ResolvedProject;
@@ -12,9 +14,9 @@ beforeAll(async () => {
 });
 
 /** The actions for a selection, and the commands each one sends. */
-function actions(selection: string[], on = table) {
+function actions(selection: string[], on = table, types: Types = project.types) {
   const sent: Command[] = [];
-  const result = actionsFor(on, project.types, selection, (c) => sent.push(c));
+  const result = actionsFor(on, types, selection, (c) => sent.push(c));
   const run = (action: (() => void) | undefined) => {
     sent.length = 0;
     action?.();
@@ -92,10 +94,47 @@ describe('actionsFor', () => {
     ]);
   });
 
-  it('counts a counter up and down from its value', () => {
+  it('rotates only components that turn', () => {
+    const die = actions(['d6.1']);
+    expect([die.rotateLeft, die.rotateRight]).toEqual([undefined, undefined]);
+    const mixed = actions(['d6.1', 'worker.red.1']);
+    expect(mixed.run(mixed.rotateRight)).toEqual([
+      { type: 'rotate', ids: ['worker.red.1'], steps: 1 },
+    ]);
+  });
+
+  it('counts a counter up and down from its value, within its range', () => {
     const a = actions(['coins']);
     expect(a.run(a.increment)).toEqual([{ type: 'setValue', id: 'coins', value: 1 }]);
-    expect(a.run(a.decrement)).toEqual([{ type: 'setValue', id: 'coins', value: -1 }]);
+    expect(a.run(a.decrement)).toEqual([{ type: 'setValue', id: 'coins', value: 0 }]);
     expect(actions(['d6.1']).increment).toBeUndefined();
   });
+
+  it('steps a counter through its listed values', () => {
+    const types = withCoins({ values: { list: ['low', 'mid', 'high'] } });
+    const at = (value: string) => withValue('coins', value);
+    const mid = actions(['coins'], at('mid'), types);
+    expect(mid.run(mid.increment)).toEqual([{ type: 'setValue', id: 'coins', value: 'high' }]);
+    expect(mid.run(mid.decrement)).toEqual([{ type: 'setValue', id: 'coins', value: 'low' }]);
+    const high = actions(['coins'], at('high'), types);
+    expect(high.run(high.increment)).toEqual([{ type: 'setValue', id: 'coins', value: 'high' }]);
+  });
+
+  it('rolls and steps by the controls a component has', () => {
+    const rolled = actions(['coins'], table, withCoins({ values: { controls: ['roll'] } }));
+    expect(rolled.run(rolled.roll)).toEqual([{ type: 'roll', id: 'coins' }]);
+    expect(rolled.increment).toBeUndefined();
+    expect(actions(['coins']).roll).toBeUndefined();
+  });
 });
+
+/** The example's components, with the coins counter changed. */
+function withCoins(changes: Partial<ComponentType>): Types {
+  return { ...project.types, coins: { ...project.types.coins!, ...changes } };
+}
+
+/** The table with one piece showing another value. */
+function withValue(id: string, value: string): TableState {
+  const piece = table.objects[id]!;
+  return { ...table, objects: { ...table.objects, [id]: { ...piece, value } as typeof piece } };
+}

@@ -1,16 +1,24 @@
 // Field values to draw a type with: a design from the box, or stand-ins.
-import type { ComponentType, Scalar } from '@trayful/formats/browser';
+import { componentFields, type ComponentType, type Scalar } from '@trayful/formats/browser';
 import type { BoxComponent } from './api';
 import { fieldSpec, type FieldSpec } from './edit';
 
-/** Stand-in values for a type's fields, to draw it before the inventory has any. */
+/**
+ * Stand-in values for a type's fields, to draw it before the inventory has any:
+ * those it declares, and those its labels and tiles imply.
+ */
 export function sampleData(type: ComponentType): Record<string, Scalar> {
-  return Object.fromEntries(
-    Object.entries(type.fields ?? {}).map(([name, field]) => {
-      const spec = fieldSpec(field);
-      return [name, spec.default ?? sampleValue(name, spec)];
-    }),
-  );
+  const implied = Object.entries(componentFields(type))
+    .filter(([name]) => !(name in (type.fields ?? {})))
+    .map(([name, field]): [string, Scalar] => {
+      const spec = { type: field.type, values: field.enum ?? [], optional: field.optional };
+      return [name, field.default ?? sampleValue(name, spec)];
+    });
+  const declared = Object.entries(type.fields ?? {}).map(([name, field]): [string, Scalar] => {
+    const spec = fieldSpec(field);
+    return [name, spec.default ?? sampleValue(name, spec)];
+  });
+  return Object.fromEntries<Scalar>([...implied, ...declared]);
 }
 
 const SAMPLE_VALUES: Partial<Record<FieldSpec['type'], Scalar>> = {

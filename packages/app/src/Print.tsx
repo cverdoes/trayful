@@ -1,4 +1,4 @@
-import { PRIMITIVE_INFO, type ComponentType } from '@trayful/formats/browser';
+import { sidesOf, type Assets, type ComponentType } from '@trayful/formats/browser';
 import Konva from 'konva';
 import { useEffect, useState } from 'react';
 import { Group, Layer, Stage } from 'react-konva';
@@ -87,7 +87,7 @@ export function Print() {
   const backs = fronts
     .map((page) =>
       page
-        .filter((p) => PRIMITIVE_INFO[p.type.base].sides === 2)
+        .filter((p) => sidesOf(p.type) === 2)
         .map((p) => ({ ...p, x: PAGE[0] - 2 * MARGIN - p.x - sizeOf(p.type)[0] * p.scale })),
     )
     .filter((page) => page.length > 0);
@@ -109,10 +109,10 @@ export function Print() {
         </button>
       </header>
       {fronts.map((page, i) => (
-        <Sheet key={`f${i}`} items={page} face="up" palette={view.palette} />
+        <Sheet key={`f${i}`} items={page} face="up" assets={view.assets} />
       ))}
       {backs.map((page, i) => (
-        <Sheet key={`b${i}`} items={page} face="down" palette={view.palette} />
+        <Sheet key={`b${i}`} items={page} face="down" assets={view.assets} />
       ))}
     </div>
   );
@@ -121,11 +121,11 @@ export function Print() {
 function Sheet({
   items,
   face,
-  palette,
+  assets,
 }: Readonly<{
   items: Placed[];
   face: 'up' | 'down';
-  palette: Record<string, string>;
+  assets: Assets;
 }>) {
   return (
     <section className="sheet" data-face={face}>
@@ -149,7 +149,7 @@ function Sheet({
                   <Component
                     piece={previewPiece(type, spec.data, face)}
                     type={type}
-                    palette={palette}
+                    assets={assets}
                   />
                 </Group>
               </Layer>

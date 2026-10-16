@@ -1,4 +1,4 @@
-import type { ComponentType, Vec2 } from '@trayful/formats/browser';
+import { areaAccepts, dropAreas, type ComponentType, type Vec2 } from '@trayful/formats/browser';
 import {
   onTable,
   sizeOf,
@@ -9,9 +9,9 @@ import {
 } from './state.js';
 
 /**
- * Snap targets live on boards, tiles and zones. A numbered spot is written
- * `owner/target/index` and a free area `owner/target`, where owner is the id
- * of the piece that declares them.
+ * Containers declare drop areas, made of numbered spots or a free area. A spot
+ * is written `owner/target/index` and a free area `owner/target`, where owner is
+ * the id of the piece that declares them.
  */
 export interface SnapSpot {
   ref: string;
@@ -23,7 +23,7 @@ export interface SnapSpot {
   pos: Vec2;
   /** Rotation of the owner, which snapped pieces take on. */
   rot: number;
-  /** Type ids or primitive names allowed here; undefined allows anything. */
+  /** Component ids or representations allowed here; undefined allows anything. */
   accepts?: string[];
   /** Free areas only: width and height before rotation. */
   area?: Vec2;
@@ -55,7 +55,7 @@ export function toLocal(owner: { pos: Vec2; rot: number }, size: Vec2, point: Ve
 export function spotsOf(piece: Piece, type: ComponentType): SnapSpot[] {
   const size = sizeOf(type);
   const spots: SnapSpot[] = [];
-  for (const target of type.snap ?? []) {
+  for (const target of dropAreas(type)) {
     const common = { owner: piece.id, target: target.id, rot: piece.rot, accepts: target.accepts };
     let locals: Vec2[] = [];
     if (target.grid) {
@@ -99,7 +99,7 @@ export function allSpots(state: TableState, catalog: Catalog): SnapSpot[] {
   for (const object of Object.values(state.objects)) {
     if (object.kind !== 'piece' || !onTable(object)) continue;
     const type = catalog[object.type];
-    if (type?.snap) spots.push(...spotsOf(object, type));
+    if (type?.container) spots.push(...spotsOf(object, type));
   }
   return spots;
 }
@@ -116,7 +116,7 @@ export function resolveSpots(state: TableState, catalog: Catalog, ref: string): 
   const owner = findOwner(state, ownerRef);
   const type = catalog[owner.type];
   const spots = type ? spotsOf(owner, type).filter((s) => s.target === targetId) : [];
-  if (spots.length === 0) throw new SnapError(`"${ownerRef}" has no snap target "${targetId}".`);
+  if (spots.length === 0) throw new SnapError(`"${ownerRef}" has no drop area "${targetId}".`);
   if (index === undefined) return spots;
   const spot = spots.find((s) => s.index === Number(index));
   if (!spot) {
@@ -141,16 +141,16 @@ function findOwner(state: TableState, ref: string): Piece {
   if (ofType.length === 1) return ofType[0]!;
   if (ofType.length > 1) {
     throw new SnapError(
-      `There are ${ofType.length} pieces of type "${ref}"; use an id such as "${ofType[0]!.id}".`,
+      `There are ${ofType.length} "${ref}" pieces; use an id such as "${ofType[0]!.id}".`,
     );
   }
   throw new SnapError(`No piece "${ref}" on the table.`);
 }
 
-/** Whether a piece of this type may snap to the spot. */
+/** Whether a piece of this kind may snap to the spot. */
 export function accepts(spot: SnapSpot, type: ComponentType | undefined): boolean {
   if (!spot.accepts) return true;
-  return !!type && (spot.accepts.includes(type.id) || spot.accepts.includes(type.base));
+  return !!type && areaAccepts(spot, type);
 }
 
 /** Objects on the table that sit in a spot. */

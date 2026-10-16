@@ -37,6 +37,31 @@ export function Row({
   );
 }
 
+/** A checkbox with its label, for switching something on or off. */
+export function Checkbox({
+  label,
+  checked,
+  disabled,
+  onChange,
+}: Readonly<{
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}>) {
+  return (
+    <label className="design-check">
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />{' '}
+      {label}
+    </label>
+  );
+}
+
 /**
  * A text box that keeps what is typed while it is being typed, and reports it
  * on every change. Empty text is reported as undefined, which removes the key.
@@ -186,8 +211,8 @@ export function Select<T extends string>({
 }
 
 /**
- * A colour: typed as a CSS colour, a palette name or a `{{field}}`, or picked
- * from the palette swatches and the colour picker.
+ * A colour: typed as a CSS colour, `transparent`, a colour named in the assets
+ * file or a `{{field}}`, or picked from those named colours and the colour picker.
  */
 export function ColorInput({
   id,
@@ -198,7 +223,7 @@ export function ColorInput({
   value: string | undefined;
   onChange: (value: string | undefined) => void;
 }>) {
-  const palette = useStore((s) => s.view?.palette ?? {});
+  const palette: Record<string, string> = useStore((s) => s.view?.assets.colors ?? {});
   const hex = /^#[0-9a-f]{6}$/i.test(value ?? '') ? value : (palette[value ?? ''] ?? '#ffffff');
   return (
     <span className="design-color">
@@ -221,7 +246,7 @@ export function ColorInput({
           type="button"
           className={name === value ? 'swatch chosen' : 'swatch'}
           title={name}
-          aria-label={`Palette colour ${name}`}
+          aria-label={`Named colour ${name}`}
           style={{ background: color }}
           onClick={() => onChange(name)}
         />

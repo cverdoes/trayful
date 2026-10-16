@@ -5,15 +5,15 @@ import { snapSpotCount, stepProblems, type Known } from './setup-checks.js';
 
 const board = {
   id: 'board',
-  base: 'board',
-  snap: [
+  is: 'piece',
+  container: [
     { id: 'row', grid: { origin: [0, 0], cols: 3, rows: 1, cell: 10 } },
     { id: 'pool', area: { at: [0, 0], size: 10 } },
   ],
 } as unknown as ResolvedType;
 
 const known: Known = {
-  types: { board, card: { id: 'card', base: 'card' } as unknown as ResolvedType },
+  types: { board, card: { id: 'card', is: 'piece' } as unknown as ResolvedType },
   components: [
     { id: 'board', type: 'board', data: {} },
     { id: 'card.a', type: 'card', data: {} },
@@ -36,7 +36,7 @@ describe('stepProblems', () => {
 
   it('reports unknown pieces and decks, and shuffling a single piece', () => {
     expect(stepProblems({ place: 'nope', at: [0, 0], shuffle: true }, known)).toEqual([
-      { path: ['place'], message: '"nope" is neither a type id nor a component id.' },
+      { path: ['place'], message: '"nope" is not a component in the library or the inventory.' },
       { path: ['shuffle'], message: 'Only a deck can be shuffled.' },
     ]);
     expect(stepProblems({ deal: { from: 'side', to: [0, 0], count: 1 } }, known)).toEqual([
@@ -44,25 +44,23 @@ describe('stepProblems', () => {
     ]);
   });
 
-  it('stays quiet about types and decks already reported as broken', () => {
+  it('stays quiet about components and decks already reported as broken', () => {
     expect(messages({ place: 'typo', at: 'typo/row' })).toEqual([]);
     expect(messages({ shuffle: 'broken' })).toEqual([]);
   });
 
-  it('checks snap target references', () => {
+  it('checks drop area references', () => {
     const target = (at: string) => messages({ place: 'board', at });
     expect(target('board')).toEqual([
       '"board" should look like "board/target" or "board/target/index".',
     ]);
-    expect(target('table/row')).toEqual([
-      '"table" is not a component id or a type in the inventory.',
-    ]);
+    expect(target('table/row')).toEqual(['"table" is not in the inventory.']);
     expect(target('card/row')).toEqual([
-      'There are 2 components of type "card"; use a component id such as "card.a".',
+      'There are 2 "card" components; use the id of one, such as "card.a".',
     ]);
-    expect(target('board/column')).toEqual(['"board" has no snap target "column".']);
+    expect(target('board/column')).toEqual(['"board" has no drop area "column".']);
     expect(target('board/pool/0')).toEqual([
-      'Snap target "pool" is an area and has no numbered spots.',
+      'Drop area "pool" is a free area and has no numbered spots.',
     ]);
     expect(target('board/row/3')).toEqual(['Spot 3 is out of range; "row" has spots 0 to 2.']);
   });

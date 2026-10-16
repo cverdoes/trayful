@@ -1,4 +1,4 @@
-import type { ComponentType } from '@trayful/formats/browser';
+import { NO_ASSETS, type ComponentType } from '@trayful/formats/browser';
 import type Konva from 'konva';
 import { useEffect, useRef, useState } from 'react';
 import { Group, Layer, Line, Stage } from 'react-konva';
@@ -21,7 +21,7 @@ const GAP = 12;
 /** Pixels within which the pointer is on a handle, and things snap. */
 const REACH_PX = 7;
 
-/** The type at real proportions: each side, its grid, its snap targets and the selection. */
+/** The type at real proportions: each side, its grid, its drop areas and the selection. */
 export function DesignCanvas() {
   const shown = useLastValidDraft();
   const [box, size] = useSize<HTMLDivElement>();
@@ -111,7 +111,7 @@ function layoutOf(type: ComponentType, size: [number, number]) {
 }
 
 function Faces({ type, size }: Readonly<{ type: ComponentType; size: [number, number] }>) {
-  const palette = useStore((s) => s.view?.palette ?? {});
+  const assets = useStore((s) => s.view?.assets ?? NO_ASSETS);
   const selection = useDesign(
     useShallow((s) => ({ side: s.side, layer: s.layer, target: s.target })),
   );
@@ -154,7 +154,7 @@ function Faces({ type, size }: Readonly<{ type: ComponentType; size: [number, nu
               <Component
                 piece={previewPiece(shown, data, s === 'front' ? 'up' : 'down')}
                 type={shown}
-                palette={palette}
+                assets={assets}
               />
             </Group>
             <FaceGrid w={face[0]} h={face[1]} />

@@ -1,9 +1,10 @@
 # yaml-language-server: $schema=../../packages/formats/schema/manifest.schema.json
 name: Starter
-format: trayful/1
+format: trayful/2
 version: '0.1'
 description: A small deck and some tokens to build your own prototype from.
 units: mm
+assets: assets.yaml
 libraries: [library/*.yaml]
 inventory: inventory.yaml
 setup: start

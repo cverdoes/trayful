@@ -1,6 +1,6 @@
 // Table state, which Trayful writes and reads back.
 import { z } from 'zod';
-import { FORMAT_VERSION, Vec2, Scalar, FaceSide } from './common.js';
+import { TABLE_FORMAT, Vec2, Scalar, FaceSide } from './common.js';
 
 // ---------------------------------------------------------------------------
 // Table state (written by Trayful)
@@ -10,7 +10,7 @@ export const PieceObject = z
   .strictObject({
     kind: z.literal('piece').describe('Marks a single piece.'),
     id: z.string().describe('Stable component id from the inventory.'),
-    type: z.string().describe('Component type id.'),
+    type: z.string().describe('Id of the component in the library.'),
     data: z.record(z.string(), Scalar).optional().describe('Field values of this component.'),
     pos: Vec2.describe('Centre position on the table, in millimetres.'),
     rot: z.number().describe('Rotation in degrees.'),
@@ -61,7 +61,7 @@ export const StackObject = z
 
 export const TableFile = z
   .strictObject({
-    format: z.literal(FORMAT_VERSION).describe(`File format version, \`${FORMAT_VERSION}\`.`),
+    format: z.literal(TABLE_FORMAT).describe(`File format version, \`${TABLE_FORMAT}\`.`),
     table: z.string().describe('Table name.'),
     seed: z.int().describe('Seed the table was created with.'),
     rng: z.int().describe('Current random generator state, so shuffles and rolls replay exactly.'),

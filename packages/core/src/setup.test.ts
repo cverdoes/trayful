@@ -55,11 +55,31 @@ describe('applySetup', () => {
     expect((table.objects['deck:actions'] as Stack).items).not.toContain(card.id);
   });
 
+  it('lays out at an angle what players cannot turn', () => {
+    expect(piece(run({ place: 'd6.1', at: [0, 0], rot: 45 }), 'd6.1').rot).toBe(45);
+  });
+
   it('moves what the setup did not use below what it placed', () => {
     const table = run({ place: 'main-board', at: [0, 0] });
     const board = piece(table, 'main-board');
-    expect(board.locked).toBe(true);
+    expect(board.locked).toBeUndefined();
     expect(piece(table, 'coins').pos[1]).toBeGreaterThan(board.pos[1]);
+  });
+
+  it('locks what a step places when it says lock', () => {
+    const table = run({ place: 'main-board', at: [0, 0], lock: true });
+    expect(piece(table, 'main-board').locked).toBe(true);
+    expect(piece(run({ place: 'worker', at: [0, 0], lock: true }), 'worker.red.3').locked).toBe(
+      true,
+    );
+  });
+
+  it('places a locked piece again, and keeps it locked', () => {
+    const table = run(
+      { place: 'main-board', at: [0, 0], lock: true },
+      { place: 'main-board', at: [100, 50] },
+    );
+    expect(piece(table, 'main-board')).toMatchObject({ pos: [100, 50], locked: true });
   });
 
   it('deals one card to each of the first spots of a snap target', () => {
@@ -85,10 +105,7 @@ describe('applySetup', () => {
     const cases: [SetupStep[], string][] = [
       [[{ shuffle: 'events' }], 'step 1: Deck "events" is not on the table any more.'],
       [[{ place: 'lantern', at: [0, 0] }], 'step 1: No "lantern" left to place.'],
-      [
-        [{ place: 'coins', at: [0, 0], face: 'down' }],
-        '"coins" is a counter and has only one side.',
-      ],
+      [[{ place: 'coins', at: [0, 0], face: 'down' }], 'step 1: "coins" has only one side.'],
       [
         [
           { place: 'main-board', at: [0, 0] },

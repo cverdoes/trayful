@@ -1,6 +1,6 @@
-// Component types and the library files that define them.
+// Components and the library files that define them.
 import { z } from 'zod';
-import { FieldName, Slug, Vec2, Size, Color, Template, PRIMITIVES, SHAPES } from './common.js';
+import { FieldName, Slug, Vec2, Size, Color, Template, REPRESENTATIONS, SHAPES } from './common.js';
 
 // ---------------------------------------------------------------------------
 // Fields
@@ -131,13 +131,85 @@ export const Layer = z.union([TextLayer, ImageLayer, ShapeLayer]).meta({
     'One drawing step on a face. Exactly one of `text`, `image` or `shape` decides the kind.',
 });
 
+// ---------------------------------------------------------------------------
+// Faces
+// ---------------------------------------------------------------------------
+
+const FIT = z.enum(['cover', 'contain', 'stretch']);
+
+export const ImageRef = z
+  .union([
+    Slug.describe('An image asset by name: the whole image.'),
+    z.strictObject({
+      asset: Slug.describe('Name of an image in the assets file.'),
+      tile: z
+        .union([z.int().nonnegative(), z.literal('instance'), z.literal('value')])
+        .optional()
+        .describe(
+          'One tile of a tiled image, counted left to right, then top to bottom, from 0. `instance` lets each component pick its tile with a `tile` value in the inventory; `value` shows the tile of a die or counter value.',
+        ),
+      row: z.int().nonnegative().optional().describe('Row of the tile, from 0. Use with `col`.'),
+      col: z.int().nonnegative().optional().describe('Column of the tile, from 0. Use with `row`.'),
+      fit: FIT.optional().describe('How the image fills the face. Default `cover`.'),
+    }),
+  ])
+  .meta({
+    id: 'ImageRef',
+    description:
+      'An image from the assets file: its name for the whole image, or `{ asset, tile }` (or `row` and `col`) for one tile of a tiled image.',
+  });
+
+export const Label = z
+  .strictObject({
+    text: Template.optional().describe('Fixed text. May hold `{{field}}` placeholders.'),
+    field: FieldName.optional().describe(
+      'A field whose value each component shows. A field the component does not declare becomes a text field.',
+    ),
+    ...LayerCommon,
+    width: z
+      .number()
+      .positive()
+      .optional()
+      .describe('Wrap width in millimetres. Default: no wrapping.'),
+    align: z.enum(['left', 'center', 'right']).optional().describe('Default `left`.'),
+    valign: z.enum(['top', 'middle', 'bottom']).optional().describe('Default `top`.'),
+    font: Font.optional(),
+    color: Color.optional().describe('Text colour. Default black.'),
+  })
+  .meta({
+    id: 'Label',
+    description: 'Text on a face: fixed `text`, or the value of a `field`. Give one of the two.',
+  });
+
+const SideCommon = {
+  fill: Color.optional().describe('Background colour. `transparent` shows the table through.'),
+  stroke: Color.optional().describe('Outline colour.'),
+  image: ImageRef.optional().describe('An image covering the face.'),
+  labels: z.array(Label).optional().describe('Text drawn over the face, in order.'),
+  layers: z
+    .array(Layer)
+    .optional()
+    .describe(
+      'Advanced: shapes, images and text drawn in order over the image and under the labels.',
+    ),
+};
+
 export const Face = z
   .strictObject({
-    fill: Color.optional().describe('Background colour of the face.'),
-    stroke: Color.optional().describe('Outline colour.'),
-    layers: z.array(Layer).optional().describe('Drawn in order, so later layers sit on top.'),
+    shape: z.enum(SHAPES).optional().describe('Outline of the component. Default `rect`.'),
+    corner: z
+      .number()
+      .nonnegative()
+      .optional()
+      .describe('Corner radius in millimetres, for rectangles.'),
+    ...SideCommon,
   })
-  .meta({ id: 'Face', description: 'How one side of a component looks.' });
+  .meta({ id: 'Face', description: 'How a component looks: its outline and its front side.' });
+
+export const Back = z.strictObject(SideCommon).meta({
+  id: 'Back',
+  description: "The back of a flippable component. It has the front's outline.",
+});
 
 // ---------------------------------------------------------------------------
 // Snap targets
@@ -146,12 +218,14 @@ export const Face = z
 export const SnapTarget = z
   .strictObject({
     id: Slug.describe(
-      'Name of the snap target, used in setups and by agents as `type/target/index`.',
+      'Name of the drop area, used in setups and by agents as `component/area/index`.',
     ),
     accepts: z
       .array(z.string())
       .optional()
-      .describe('Type ids or primitive names that may snap here. Default: anything.'),
+      .describe(
+        'Component ids, or representations (`piece`, `zone`, `die`, `counter`), that may snap here. Default: anything.',
+      ),
     grid: z
       .strictObject({
         origin: Vec2.describe('Centre of the first cell.'),
@@ -169,88 +243,127 @@ export const SnapTarget = z
     area: z
       .strictObject({ at: Vec2.describe('Top-left corner.'), size: Size })
       .optional()
-      .describe('A free area: pieces snap inside it but keep their own position.'),
+      .describe('A free area: components dropped inside it keep their own position.'),
   })
   .meta({
     id: 'SnapTarget',
     description:
-      'Where pieces snap on a board, tile or zone. Give exactly one of `grid`, `points` or `area`.',
+      'A drop area of a container: where other components snap when dropped on it. Give exactly one of `grid`, `points` or `area`.',
   });
 
 // ---------------------------------------------------------------------------
-// Library
+// Behaviours
+// ---------------------------------------------------------------------------
+
+/** A behaviour switched on with `true`, or with an object of its options. */
+function toggle<S extends z.ZodType>(options: S) {
+  return z.union([z.literal(true), options]);
+}
+
+export const Flippable = toggle(
+  z.strictObject({ back: Back.optional().describe('How the back looks. Default: a plain back.') }),
+).meta({ id: 'Flippable', description: 'The component has a back and can be turned over.' });
+
+export const Rotates = toggle(
+  z.strictObject({
+    step: z.number().positive().max(360).optional().describe('Degrees per turn. Default 90.'),
+  }),
+).meta({ id: 'Rotates', description: 'The component can be turned on the table.' });
+
+export const Stackable = toggle(
+  z.strictObject({
+    with: z
+      .array(Slug)
+      .optional()
+      .describe('Other components it may share a stack with. It always stacks with itself.'),
+  }),
+).meta({
+  id: 'Stackable',
+  description: 'Components of this kind pile up into stacks, like decks.',
+});
+
+export const CONTROLS = ['roll', 'step'] as const;
+
+export const Values = z
+  .strictObject({
+    range: z
+      .tuple([z.int(), z.int()])
+      .optional()
+      .describe('`[min, max]`: every whole number from min to max.'),
+    list: z
+      .array(z.union([z.string(), z.number()]))
+      .min(2)
+      .optional()
+      .describe('The values in order, e.g. `[sword, shield, sword, skull, blank, blank]`.'),
+    controls: z
+      .array(z.enum(CONTROLS))
+      .min(1)
+      .optional()
+      .describe(
+        '`roll` picks a random value, `step` goes up or down. Default: `roll` for dice, `step` for counters.',
+      ),
+  })
+  .meta({
+    id: 'Values',
+    description:
+      'The values of a die or counter: a `range` or a `list`. Default `range: [1, 6]` for dice and `range: [0, 99]` for counters.',
+  });
+
+// ---------------------------------------------------------------------------
+// Components
 // ---------------------------------------------------------------------------
 
 export const ComponentType = z
   .strictObject({
     id: Slug.describe(
-      'Unique id of the type within the project. Referenced from the inventory and setups.',
+      'Unique id of the component within the project. Referenced from the inventory and setups.',
     ),
-    base: z.enum(PRIMITIVES).describe('The built-in primitive this type behaves like.'),
     name: z.string().optional().describe('Display name. Default: the id.'),
     description: z.string().optional(),
-    size: Size.describe('Physical size in millimetres.'),
-    shape: z
-      .enum(SHAPES)
-      .optional()
-      .describe('Outline for tokens, meeples and tiles. Default `rect` (`meeple` for meeples).'),
-    corner: z
-      .number()
-      .nonnegative()
-      .optional()
-      .describe('Corner radius in millimetres, for rectangular shapes.'),
-    fill: Color.optional().describe('Shorthand for `front.fill`.'),
+    size: Size.describe('Width and height in millimetres, or one number for a square.'),
+    is: z.enum(REPRESENTATIONS).describe('What the component is on the table.'),
     fields: z
       .record(FieldName, Field)
       .optional()
       .describe('Per-component data, filled by the inventory and usable as `{{field}}` in faces.'),
-    front: Face.optional().describe('The face-up side.'),
-    back: Face.optional().describe(
-      'The face-down side. Only for two-sided primitives (card, tile, token).',
-    ),
-    rotationStep: z
-      .number()
-      .positive()
-      .max(360)
-      .optional()
-      .describe('Degrees per rotate step. Default 90.'),
-    snap: z
+    face: Face.optional().describe('Its outline and front side.'),
+    flippable: Flippable.optional().describe('Pieces and zones only.'),
+    rotates: Rotates.optional().describe('Pieces and zones only.'),
+    stackable: Stackable.optional().describe('Pieces and zones only.'),
+    container: z
       .array(SnapTarget)
+      .min(1)
       .optional()
-      .describe('Snap targets. Only for boards, tiles and zones.'),
-    range: z
-      .tuple([z.int(), z.int()])
-      .optional()
-      .describe('`[min, max]` for counters. Default `[0, 99]`.'),
-    faces: z
-      .array(z.union([z.string(), z.number()]))
-      .min(2)
-      .optional()
-      .describe('Die faces, e.g. `[1, 2, 3, 4, 5, 6]`. Only for dice. Default six faces 1 to 6.'),
+      .describe(
+        'Drop areas: other components dropped there snap to this one and move with it. Pieces and zones only.',
+      ),
+    values: Values.optional().describe('Dice and counters only.'),
   })
   .meta({
-    id: 'ComponentType',
-    description: 'A kind of component: what it is, its data fields and how it looks.',
+    id: 'Component',
+    description:
+      'A kind of component: its size, what it is, how it looks and which behaviours it has.',
   });
 
 export const LibraryFile = z
   .strictObject({
     kind: z.literal('library').describe('Marks this file as a library.'),
-    palette: z
-      .record(z.string(), z.string())
-      .optional()
-      .describe('Named colours usable anywhere a colour is expected.'),
-    types: z.array(ComponentType).describe('Component types defined in this file.'),
+    components: z.array(ComponentType).describe('Components defined in this file.'),
   })
   .meta({
     id: 'Library',
     title: 'Trayful library',
-    description: 'Defines component types: their primitive, size, data fields and faces.',
+    description: 'Defines components: their size, what they are, how they look and behave.',
   });
 
 export type Field = z.infer<typeof Field>;
 export type Layer = z.infer<typeof Layer>;
+export type ImageRef = z.infer<typeof ImageRef>;
+export type Label = z.infer<typeof Label>;
 export type Face = z.infer<typeof Face>;
+export type Back = z.infer<typeof Back>;
 export type SnapTarget = z.infer<typeof SnapTarget>;
+export type Values = z.infer<typeof Values>;
+export type Control = (typeof CONTROLS)[number];
 export type ComponentType = z.infer<typeof ComponentType>;
 export type LibraryFile = z.infer<typeof LibraryFile>;

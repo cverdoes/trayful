@@ -85,7 +85,7 @@ function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
   return topLevel(table).map((object) => {
     const common = {
       types,
-      palette: view.palette,
+      assets: view.assets,
       selected: selected.has(object.id),
       register: (node: Konva.Group | null) => {
         if (node) drag.nodes.set(object.id, node);

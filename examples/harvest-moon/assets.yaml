@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=../../packages/formats/schema/assets.schema.json
+kind: assets
+images:
+  card-back: assets/card-back.svg
+  board: assets/board.svg
+  dice: { file: assets/dice.svg, rows: 2, cols: 3 }
+colors:
+  red: '#d94b3d'
+  green: '#4a9b5f'
+  gold: '#e2b33c'
+  ink: '#222233'

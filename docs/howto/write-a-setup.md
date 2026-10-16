@@ -15,6 +15,7 @@ description: The board in the middle, five market cards face up and every worker
 steps:
   - place: main-board
     at: [0, 0]
+    lock: true
   - place: { deck: actions }
     at: [350, -130]
     shuffle: true
@@ -34,11 +35,13 @@ steps:
 
 ## The steps
 
-- **`place`** puts something somewhere. Name a type (`worker` places every worker, side by side), one component by id (`score-marker.red`) or a deck (`{ deck: actions }`). Add `face`, `rot`, or for a deck `shuffle: true`.
-- **`deal`** takes cards off the top of a deck. Dealing to a snap target such as `main-board/market` fills its free spots in order; dealing to a position makes a pile there.
+- **`place`** puts something somewhere. Name a component from the library (`worker` places every worker in the box, side by side), one of them by id (`score-marker.red`) or a deck (`{ deck: actions }`). Add `face`, `rot`, `lock: true` to fix it in place, or for a deck `shuffle: true`.
+- **`deal`** takes cards off the top of a deck. Dealing to a drop area such as `main-board/market` fills its free spots in order; dealing to a position makes a pile there.
 - **`shuffle`** shuffles a deck, e.g. `- shuffle: actions`.
 
-`at` and `to` are either an `[x, y]` position on the table in millimetres (the centre of what is placed; y grows downwards) or a snap target, as described in [Add a board with snap spots](board-with-snap-spots.md). Anything a setup does not place is laid out in rows below the table, so nothing in the box goes missing.
+`at` and `to` are either an `[x, y]` position on the table in millimetres (the centre of what is placed; y grows downwards) or a drop area, as described in [Add a board with drop areas](board-with-snap-spots.md). Anything a setup does not place is laid out in rows below the table, so nothing in the box goes missing.
+
+Nothing is locked unless a step says so. Lock the board, as above, so that dragging across it pans the table instead of moving the board and everything on it; press **L** on the table to unlock it.
 
 ## Use it
 

@@ -45,10 +45,10 @@ test('a person builds a card type in the designer and deals it onto the table', 
   await expect.poll(() => libraryFile(page, file)).toContain("text: '{{title}}'");
   const written = await libraryFile(page, file);
   // Written the way a person would: fields before the faces, short lists inline.
-  expect(written).toContain('  - id: season-card\n    base: card\n    name: Season card\n');
+  expect(written).toContain('  - id: season-card\n    name: Season card\n');
   expect(written).toContain('size: [63, 88]');
   expect(written.indexOf('fields:')).toBeLessThan(
-    written.indexOf('front:', written.indexOf('season-card')),
+    written.indexOf('face:', written.indexOf('season-card')),
   );
 
   // The YAML pane shows the same type.
@@ -105,14 +105,14 @@ function savedType(page: Page, id: string) {
     (id) =>
       (
         window.__trayful!.store.getState() as unknown as {
-          view?: { types: Record<string, { snap?: unknown; front?: { layers?: unknown[] } }> };
+          view?: { types: Record<string, { container?: unknown; face?: { layers?: unknown[] } }> };
         }
       ).view?.types[id],
     id,
   );
 }
 
-test('a person lays out a board by dragging: a layer, a grid of spots and a track', async ({
+test('a person lays out a board by dragging: a layer, a grid of drop spots and a track', async ({
   page,
 }) => {
   await page.goto(`/?project=${PROJECT}&design`);
@@ -128,12 +128,12 @@ test('a person lays out a board by dragging: a layer, a grid of spots and a trac
   await inspector.getByRole('button', { name: 'Text', exact: true }).click();
   await dragOnFront(page, [8, 8], [101, 52]);
   await expect
-    .poll(async () => (await savedType(page, 'farm-board'))?.front?.layers?.[0])
+    .poll(async () => (await savedType(page, 'farm-board'))?.face?.layers?.[0])
     .toMatchObject({ at: [100, 50] });
 
   // A grid: spot 0 moves it, the handle halfway to spot 3 sets the spacing, and the one
   // past the last spot the columns and rows.
-  const snaps = inspector.getByRole('region', { name: 'Snap spots' });
+  const snaps = inspector.getByRole('region', { name: 'Drop areas' });
   await snaps.getByRole('button', { name: 'Grid' }).click();
   await dragOnFront(page, [140, 140], [60, 60]);
   await dragOnFront(page, [70, 70], [85, 85]);
@@ -146,7 +146,7 @@ test('a person lays out a board by dragging: a layer, a grid of spots and a trac
   await waitSaved(page);
 
   await expect
-    .poll(async () => (await savedType(page, 'farm-board'))?.snap)
+    .poll(async () => (await savedType(page, 'farm-board'))?.container)
     .toEqual([
       { id: 'grid-1', grid: { origin: [60, 60], cols: 4, rows: 2, cell: 50 } },
       {
@@ -163,7 +163,7 @@ test('a person lays out a board by dragging: a layer, a grid of spots and a trac
   await page.getByRole('button', { name: 'Undo' }).click();
   await waitSaved(page);
   await expect
-    .poll(async () => (await savedType(page, 'farm-board'))?.snap)
+    .poll(async () => (await savedType(page, 'farm-board'))?.container)
     .toContainEqual({
       id: 'points-1',
       points: [
@@ -181,7 +181,7 @@ test('renaming a type or a field changes every file that uses it', async ({ page
   await inspector.getByRole('button', { name: 'Rename…' }).click();
   await expect(inspector.getByLabel('Id')).toHaveValue('coin');
   expect(await libraryFile(page, 'library/pieces.yaml')).toContain('- id: coin');
-  expect(await libraryFile(page, 'inventory.yaml')).toContain('- type: coin');
+  expect(await libraryFile(page, 'inventory.yaml')).toContain('- component: coin');
   expect(await libraryFile(page, 'setups/start.yaml')).toContain('- place: coin');
 
   // A field the cards' spreadsheet fills: its column is renamed too.
@@ -198,7 +198,7 @@ test('renaming a type or a field changes every file that uses it', async ({ page
   );
   // The name box shows what was typed straight away; the files change once the server is done.
   await expect.poll(() => libraryFile(page, 'data/cards.csv')).toMatch(/^heading,text,value,count/);
-  expect(await libraryFile(page, 'library/cards.yaml')).toContain('{{heading}}');
+  expect(await libraryFile(page, 'library/cards.yaml')).toContain('field: heading');
 });
 
 test('an image dropped on a face is saved with the project and drawn there', async ({ page }) => {
@@ -221,7 +221,7 @@ test('an image dropped on a face is saved with the project and drawn there', asy
     .dispatchEvent('drop', { dataTransfer: drop, clientX: at.x, clientY: at.y });
   await waitSaved(page);
   await expect
-    .poll(async () => (await savedType(page, 'card'))?.front?.layers?.at(-1))
+    .poll(async () => (await savedType(page, 'card'))?.face?.layers?.at(-1))
     .toMatchObject({ image: 'assets/moon-art.png', size: [31.5, 31.5] });
   expect(await libraryFile(page, 'assets/moon-art.png')).toBeTruthy();
 });

@@ -159,7 +159,7 @@ function HandCard({ piece }: Readonly<{ piece: Piece }>) {
       <Stage width={w * scale + 4} height={h * scale + 4} listening={false}>
         <Layer>
           <Group x={2 + (w * scale) / 2} y={2 + (h * scale) / 2} scaleX={scale} scaleY={scale}>
-            <Component piece={shown} type={type} palette={view.palette} />
+            <Component piece={shown} type={type} assets={view.assets} />
           </Group>
         </Layer>
       </Stage>

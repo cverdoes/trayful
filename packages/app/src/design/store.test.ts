@@ -13,7 +13,7 @@ import {
   useDesign,
 } from './store';
 
-const card: ComponentType = { id: 'card', base: 'card', size: [63, 88] };
+const card: ComponentType = { id: 'card', is: 'piece', size: [63, 88] };
 const FILE = 'library/cards.yaml';
 
 interface Sent {
@@ -81,24 +81,24 @@ afterEach(() => {
 describe('editing a type', () => {
   it('saves a valid change shortly after, against the version it started from', async () => {
     openType(card);
-    setValue(['corner'])(3);
+    setValue(['face', 'corner'])(3);
     expect(useDesign.getState().status).toBe('unsaved');
     await vi.runAllTimersAsync();
     expect(server.sent).toEqual([
-      { definition: { ...card, corner: 3 }, baseHash: 'v1', file: FILE },
+      { definition: { ...card, face: { corner: 3 } }, baseHash: 'v1', file: FILE },
     ]);
     expect(useDesign.getState()).toMatchObject({
       status: 'saved',
-      saved: { corner: 3 },
+      saved: { face: { corner: 3 } },
       baseHash: 'v2',
     });
   });
 
   it('does not save a type with problems', async () => {
     openType(card);
-    setValue(['corner'])(-1);
+    setValue(['face', 'corner'])(-1);
     expect(useDesign.getState().status).toBe('invalid');
-    expect(useDesign.getState().problems[0]?.path).toEqual(['corner']);
+    expect(useDesign.getState().problems[0]?.path).toEqual(['face', 'corner']);
     await vi.runAllTimersAsync();
     expect(server.sent).toHaveLength(0);
   });
@@ -112,14 +112,14 @@ describe('editing a type', () => {
   it('saves changes made during a save after it, not alongside it', async () => {
     openType(card);
     server.hold = true;
-    setValue(['corner'])(3);
+    setValue(['face', 'corner'])(3);
     await vi.advanceTimersByTimeAsync(1000);
-    setValue(['corner'])(4);
+    setValue(['face', 'corner'])(4);
     await vi.advanceTimersByTimeAsync(1000);
     expect(server.sent).toHaveLength(1);
     server.release();
     await vi.runAllTimersAsync();
-    expect(server.sent.map((s) => [s.definition.corner, s.baseHash])).toEqual([
+    expect(server.sent.map((s) => [s.definition.face?.corner, s.baseHash])).toEqual([
       [3, 'v1'],
       [4, 'v2'],
     ]);
@@ -130,45 +130,45 @@ describe('editing a type', () => {
 describe('a file changed by someone else', () => {
   it('is not overwritten by unsaved changes, even after the designer hears of it', async () => {
     openType(card);
-    setValue(['corner'])(3);
+    setValue(['face', 'corner'])(3);
     server.version++;
-    await projectChanged({ card: { ...card, corner: 9 } });
+    await projectChanged({ card: { ...card, face: { corner: 9 } } });
     await vi.runAllTimersAsync();
     expect(useDesign.getState()).toMatchObject({
       status: 'conflict',
       message: `${FILE} changed`,
-      draft: { corner: 3 },
+      draft: { face: { corner: 3 } },
     });
   });
 
   it('is shown when there is nothing unsaved', async () => {
     openType(card);
     server.version++;
-    await projectChanged({ card: { ...card, corner: 9 } });
-    expect(useDesign.getState()).toMatchObject({ draft: { corner: 9 }, baseHash: 'v2' });
+    await projectChanged({ card: { ...card, face: { corner: 9 } } });
+    expect(useDesign.getState()).toMatchObject({ draft: { face: { corner: 9 } }, baseHash: 'v2' });
   });
 });
 
 describe('switching types', () => {
   it('saves the type shown first', async () => {
     openType(card);
-    setValue(['corner'])(3);
+    setValue(['face', 'corner'])(3);
     expect(await settle()).toBe(true);
     expect(server.sent).toHaveLength(1);
   });
 
   it('says when changes would be lost', async () => {
     openType(card);
-    setValue(['corner'])(-1);
+    setValue(['face', 'corner'])(-1);
     expect(await settle()).toBe(false);
   });
 
   it('ignores a save that comes back after another type was opened', async () => {
     openType(card);
     server.hold = true;
-    setValue(['corner'])(3);
+    setValue(['face', 'corner'])(3);
     await vi.advanceTimersByTimeAsync(1000);
-    const token: ComponentType = { id: 'token', base: 'token', size: 20 };
+    const token: ComponentType = { id: 'token', is: 'piece', size: 20 };
     openType(token);
     server.release();
     await vi.runAllTimersAsync();
@@ -181,7 +181,7 @@ describe('new types', () => {
     await createType(TYPE_PRESETS[0]!.type, 'Card');
     const [sent] = server.sent;
     expect(sent!.baseHash).toBeUndefined();
-    expect(sent!.definition).toMatchObject({ id: 'card-2', name: 'Card', base: 'card' });
+    expect(sent!.definition).toMatchObject({ id: 'card-2', name: 'Card', is: 'piece' });
     expect(Object.keys(sent!.definition).slice(0, 2)).toEqual(['id', 'name']);
     expect(useDesign.getState().status).toBe('saved');
   });

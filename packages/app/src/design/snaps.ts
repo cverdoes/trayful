@@ -1,13 +1,10 @@
-// Snap targets in the designer: where their spots are, and the edits dragging
+// A container's drop areas in the designer: where their spots are, and the edits dragging
 // their handles makes. Positions are millimetres from the face's top-left corner,
 // as the library file has them.
 import type { ComponentType, SnapTarget } from '@trayful/formats/browser';
 import { round, type Point } from './manipulate';
 
 export type TargetKind = 'grid' | 'points' | 'area';
-
-/** Primitives whose components other pieces can snap onto. */
-export const SNAPPING_BASES = new Set(['board', 'tile', 'zone']);
 
 export function targetKind(target: SnapTarget): TargetKind {
   if (target.grid) return 'grid';
@@ -39,7 +36,7 @@ export function areaBox(target: SnapTarget): [number, number, number, number] | 
 
 /** A new target of a kind near the middle of the face, under an id no other target has. */
 export function newTarget(kind: TargetKind, type: ComponentType, face: Point): SnapTarget {
-  const taken = new Set((type.snap ?? []).map((t) => t.id));
+  const taken = new Set((type.container ?? []).map((t) => t.id));
   let n = 1;
   while (taken.has(`${kind}-${n}`)) n++;
   const id = `${kind}-${n}`;

@@ -1,27 +1,27 @@
-import { access, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseCsv } from 'csv-parse/sync';
 import fg from 'fast-glob';
-import type { Diagnostic } from './diagnostics.js';
-import { isTemplate, normalizeField } from './fields.js';
-import { z } from 'zod';
+import { isStackable, stacksWith } from './component.js';
+import { cartesian, componentIds, resolveRow, type Row } from './inventory.js';
+import { LibraryLoader, tileChoices } from './library-loader.js';
+import { byCodeUnit } from './order.js';
+import { ProjectFiles } from './project-files.js';
+import type { ComponentSpec, LoadResult, ResolvedSetup, ResolvedType } from './resolved.js';
 import {
-  ComponentType as ComponentTypeSchema,
   InventoryFile,
-  LibraryFile,
+  FORMAT_VERSION,
+  LEGACY_FORMAT,
+  LegacyInventoryFile,
+  LegacyManifestFile,
   ManifestFile,
-  PRIMITIVE_INFO,
-  PRIMITIVES,
   SetupFile,
   type InventoryEntry,
   type Scalar,
 } from './schemas.js';
-import { cartesian, componentIds, resolveRow, type Row } from './inventory.js';
-import { byCodeUnit } from './order.js';
-import type { ComponentSpec, LoadResult, ResolvedSetup, ResolvedType } from './resolved.js';
 import { stepProblems, type Known } from './setup-checks.js';
-import { SourceFile } from './source.js';
-import { typeProblems } from './type-checks.js';
+import type { SourceFile } from './source.js';
+import { upgradeEntry, upgradeManifest, upgradeSetup } from './upgrade.js';
 
 export type {
   ComponentSpec,
@@ -34,6 +34,8 @@ export { slugify } from './inventory.js';
 export { snapSpotCount } from './setup-checks.js';
 
 export const MANIFEST_FILE = 'trayful.yaml';
+/** The assets file a project uses when its manifest names none. */
+export const ASSETS_FILE = 'assets.yaml';
 
 /** Loads and validates a project folder. Never throws for problems in the files. */
 export async function loadProject(dir: string): Promise<LoadResult> {
@@ -41,53 +43,51 @@ export async function loadProject(dir: string): Promise<LoadResult> {
   return loader.load();
 }
 
+/** Where an inventory entry's component id is: `component`, or `type` in the first format. */
+type EntryKey = 'component' | 'type';
+
 class ProjectLoader {
-  private diagnostics: Diagnostic[] = [];
-  private types: Record<string, ResolvedType> = {};
-  private palette: Record<string, string> = {};
+  private readonly files: ProjectFiles;
+  private readonly library: LibraryLoader;
+  private legacy = false;
   private components: ComponentSpec[] = [];
   private decks: Record<string, string[]> = {};
   private setups: Record<string, ResolvedSetup> = {};
-  private sources = new Map<string, SourceFile>();
-  /**
-   * Ids of types and decks that exist but failed validation. References to them
-   * are not reported again, so one typo produces one error instead of a cascade.
-   */
-  private brokenTypes = new Set<string>();
+  /** Decks that exist but are incomplete; setups that use them are not reported again. */
   private brokenDecks = new Set<string>();
+  /** The components each deck holds so far, to check that they can share its stack. */
+  private deckKinds: Record<string, ResolvedType[]> = {};
+  private libraryFiles: string[] = [];
 
-  constructor(private readonly dir: string) {}
+  constructor(private readonly dir: string) {
+    this.files = new ProjectFiles(dir);
+    this.library = new LibraryLoader(this.files);
+  }
+
+  private get diagnostics() {
+    return this.files.diagnostics;
+  }
+
+  private get types(): Record<string, ResolvedType> {
+    return this.library.types;
+  }
 
   async load(): Promise<LoadResult> {
-    const manifestSource = await this.readSource(MANIFEST_FILE);
+    const manifestSource = await this.files.read(MANIFEST_FILE);
     if (!manifestSource) return { diagnostics: this.diagnostics };
-    const { data: manifest, diagnostics } = manifestSource.validate(ManifestFile);
-    this.diagnostics.push(...diagnostics);
+    const manifest = this.readManifest(manifestSource);
     if (!manifest) return { diagnostics: this.diagnostics };
 
-    const libraryFiles = await this.expandGlobs(manifest.libraries, manifestSource, ['libraries']);
-    for (const file of libraryFiles) await this.loadLibrary(file);
-    this.checkTypeReferences();
-    await this.checkLibraryAssets();
+    const libraryFiles = await this.files.expandGlobs(manifest.libraries, manifestSource, [
+      'libraries',
+    ]);
+    this.libraryFiles = libraryFiles;
+    if (this.legacy) await this.library.loadLegacy(libraryFiles);
+    else
+      await this.library.load(libraryFiles, await this.assetsFile(manifest.assets, manifestSource));
 
     await this.loadInventory(manifest.inventory, manifestSource);
-
-    const setupFiles = manifest.setups
-      ? await this.expandGlobs(manifest.setups, manifestSource, ['setups'])
-      : await fg('setups/*.yaml', { cwd: this.dir });
-    const known = this.known();
-    for (const file of setupFiles.toSorted(byCodeUnit)) await this.loadSetup(file, known);
-    if (manifest.setup !== undefined) {
-      const names = setupFiles.map((f) => path.basename(f).replace(/\.ya?ml$/, ''));
-      if (!names.includes(manifest.setup)) {
-        const known = names.length
-          ? `Known setups: ${names.join(', ')}.`
-          : 'There are no setup files.';
-        this.diagnostics.push(
-          manifestSource.diagnostic(['setup'], `Unknown setup "${manifest.setup}". ${known}`),
-        );
-      }
-    }
+    await this.loadSetups(manifest, manifestSource);
 
     const ok = !this.diagnostics.some((d) => d.severity === 'error');
     return {
@@ -96,7 +96,9 @@ class ProjectLoader {
         ? {
             dir: this.dir,
             manifest,
-            palette: this.palette,
+            legacy: this.legacy,
+            libraries: this.libraryFiles,
+            assets: this.library.assets,
             types: this.types,
             components: this.components,
             decks: this.decks,
@@ -106,158 +108,37 @@ class ProjectLoader {
     };
   }
 
-  // -------------------------------------------------------------------------
-  // Files
-  // -------------------------------------------------------------------------
-
-  private async readSource(file: string): Promise<SourceFile | undefined> {
-    try {
-      const source = await SourceFile.read(path.join(this.dir, file), file);
-      this.sources.set(file, source);
-      return source;
-    } catch (err) {
-      const missing = (err as NodeJS.ErrnoException).code === 'ENOENT';
-      this.error(
-        file,
-        missing ? 'File not found.' : `Could not read file: ${(err as Error).message}`,
-      );
-      return undefined;
+  /** The manifest in the current format; one in the first format is converted. */
+  private readManifest(source: SourceFile): ManifestFile | undefined {
+    const format = (source.toJS() as { format?: unknown } | null)?.format;
+    this.legacy = format === LEGACY_FORMAT;
+    if (!this.legacy) {
+      const { data, diagnostics } = source.validate(ManifestFile);
+      this.diagnostics.push(...diagnostics);
+      return data;
     }
-  }
-
-  private async expandGlobs(
-    patterns: string[],
-    source: SourceFile,
-    path_: (string | number)[],
-  ): Promise<string[]> {
-    const files: string[] = [];
-    for (const [i, pattern] of patterns.entries()) {
-      const matches = await this.matchPattern(pattern);
-      if (matches.length === 0) {
-        this.diagnostics.push(source.diagnostic([...path_, i], `No files match "${pattern}".`));
-      }
-      files.push(...matches.toSorted(byCodeUnit));
-    }
-    return [...new Set(files)];
-  }
-
-  private async matchPattern(pattern: string): Promise<string[]> {
-    if (fg.isDynamicPattern(pattern)) return fg(pattern, { cwd: this.dir });
-    return (await this.exists(pattern)) ? [pattern] : [];
-  }
-
-  private async exists(file: string): Promise<boolean> {
-    try {
-      await access(path.join(this.dir, file));
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  private error(file: string, message: string, extra: Partial<Diagnostic> = {}): void {
-    this.diagnostics.push({ severity: 'error', file, message, ...extra });
-  }
-
-  // -------------------------------------------------------------------------
-  // Libraries
-  // -------------------------------------------------------------------------
-
-  private async loadLibrary(file: string): Promise<void> {
-    const source = await this.readSource(file);
-    if (!source) return;
-    // Validate the envelope first, then each type on its own, so one broken
-    // type does not hide the others.
-    const envelope = LibraryFile.extend({ types: z.array(z.unknown()) });
-    const { data, diagnostics } = source.validate(envelope);
+    const { data, diagnostics } = source.validate(LegacyManifestFile);
     this.diagnostics.push(...diagnostics);
-    if (!data) return;
-
-    this.mergePalette(data.palette ?? {}, source);
-    for (const [index, raw] of data.types.entries()) this.loadType(raw, file, index, source);
-  }
-
-  private mergePalette(palette: Record<string, string>, source: SourceFile): void {
-    for (const [name, color] of Object.entries(palette)) {
-      if (this.palette[name] !== undefined && this.palette[name] !== color) {
-        this.diagnostics.push(
-          source.diagnostic(
-            ['palette', name],
-            `Palette colour "${name}" is already defined with a different value.`,
-            'warning',
-          ),
-        );
-      }
-      this.palette[name] = color;
-    }
-  }
-
-  private loadType(raw: unknown, file: string, index: number, source: SourceFile): void {
-    const at = (...p: (string | number)[]) => ['types', index, ...p];
-    const { data: type, diagnostics } = source.validateValue(ComponentTypeSchema, raw, at());
-    this.diagnostics.push(...diagnostics);
-    if (!type) {
-      const id = (raw as { id?: unknown } | null)?.id;
-      if (typeof id === 'string') this.brokenTypes.add(id);
-      return;
-    }
-    const existing = this.types[type.id];
-    if (existing) {
-      this.diagnostics.push(
-        source.diagnostic(
-          at('id'),
-          `Type "${type.id}" is already defined in ${existing.source.file}.`,
-        ),
-      );
-      return;
-    }
-    const normalizedFields = Object.fromEntries(
-      Object.entries(type.fields ?? {}).map(([k, f]) => [k, normalizeField(f)]),
+    this.diagnostics.push(
+      source.diagnostic(
+        ['format'],
+        `This project is in ${LEGACY_FORMAT}. It plays as it is; run \`trayful migrate\` to move it to ${FORMAT_VERSION} before changing its components.`,
+        'warning',
+      ),
     );
-    this.types[type.id] = { ...type, source: { file, index }, normalizedFields };
-    for (const problem of typeProblems(type, normalizedFields)) {
-      this.diagnostics.push(source.diagnostic(at(...problem.path), problem.message));
-    }
+    return data && upgradeManifest(data, undefined);
   }
 
-  /** `accepts` lists must name known types or primitives. Runs once all libraries are loaded. */
-  private checkTypeReferences(): void {
-    for (const type of Object.values(this.types)) {
-      const source = this.sources.get(type.source.file)!;
-      for (const [i, target] of (type.snap ?? []).entries()) {
-        for (const [j, name] of (target.accepts ?? []).entries()) {
-          if (this.brokenTypes.has(name)) continue;
-          if (!this.types[name] && !(PRIMITIVES as readonly string[]).includes(name)) {
-            this.diagnostics.push(
-              source.diagnostic(
-                ['types', type.source.index, 'snap', i, 'accepts', j],
-                `"${name}" is neither a type id nor a primitive (${PRIMITIVES.join(', ')}).`,
-              ),
-            );
-          }
-        }
-      }
-    }
-  }
-
-  /** Image paths written directly in a library (not via a field) must exist. */
-  private async checkLibraryAssets(): Promise<void> {
-    for (const type of Object.values(this.types)) {
-      const source = this.sources.get(type.source.file)!;
-      for (const side of ['front', 'back'] as const) {
-        for (const [i, layer] of (type[side]?.layers ?? []).entries()) {
-          if (!('image' in layer) || isTemplate(layer.image)) continue;
-          if (!(await this.exists(layer.image))) {
-            this.diagnostics.push(
-              source.diagnostic(
-                ['types', type.source.index, side, 'layers', i, 'image'],
-                `Image "${layer.image}" not found in the project folder.`,
-              ),
-            );
-          }
-        }
-      }
-    }
+  /** The assets file the manifest names, else `assets.yaml` when there is one. */
+  private async assetsFile(
+    named: string | undefined,
+    manifest: SourceFile,
+  ): Promise<string | undefined> {
+    if (named === undefined)
+      return (await this.files.exists(ASSETS_FILE)) ? ASSETS_FILE : undefined;
+    if (await this.files.exists(named)) return named;
+    this.diagnostics.push(manifest.diagnostic(['assets'], `Assets file "${named}" not found.`));
+    return undefined;
   }
 
   // -------------------------------------------------------------------------
@@ -265,35 +146,51 @@ class ProjectLoader {
   // -------------------------------------------------------------------------
 
   private async loadInventory(file: string, manifest: SourceFile): Promise<void> {
-    if (!(await this.exists(file))) {
+    if (!(await this.files.exists(file))) {
       this.diagnostics.push(
         manifest.diagnostic(['inventory'], `Inventory file "${file}" not found.`),
       );
       return;
     }
-    const source = await this.readSource(file);
+    const source = await this.files.read(file);
     if (!source) return;
-    const { data, diagnostics } = source.validate(InventoryFile);
-    this.diagnostics.push(...diagnostics);
-    if (!data) return;
+    const entries = this.inventoryEntries(source);
+    const key: EntryKey = this.legacy ? 'type' : 'component';
     const usedIds = new Set<string>();
-    for (const [e, entry] of data.components.entries()) {
-      await this.loadEntry(entry, source, ['components', e], usedIds);
+    for (const [e, entry] of entries.entries()) {
+      await this.loadEntry(entry, source, ['components', e, key], usedIds);
     }
   }
 
+  private inventoryEntries(source: SourceFile): InventoryEntry[] {
+    if (this.legacy) {
+      const { data, diagnostics } = source.validate(LegacyInventoryFile);
+      this.diagnostics.push(...diagnostics);
+      return data?.components.map(upgradeEntry) ?? [];
+    }
+    const { data, diagnostics } = source.validate(InventoryFile);
+    this.diagnostics.push(...diagnostics);
+    return data?.components ?? [];
+  }
+
+  /** Loads one entry; `keyPath` is where the entry names its component. */
   private async loadEntry(
     entry: InventoryEntry,
     source: SourceFile,
-    entryPath: (string | number)[],
+    keyPath: (string | number)[],
     usedIds: Set<string>,
   ): Promise<void> {
-    const type = this.checkEntry(entry, source, entryPath);
+    const entryPath = keyPath.slice(0, -1);
+    const type = this.checkEntry(entry, source, keyPath);
     if (!type) return;
     const rows = await this.entryRows(entry, source, entryPath);
+    const tiles = tileChoices(type, this.library.assets);
     for (const [r, row] of rows.entries()) {
       const resolved = resolveRow(type, entry, row, r);
-      if (!resolved) {
+      const tile = Number(resolved?.data.tile);
+      const badTile = !!resolved && tiles !== undefined && (tile < 0 || tile >= tiles);
+      if (badTile) row.report('tile', `"tile" must be from 0 to ${tiles - 1}.`);
+      if (!resolved || badTile) {
         if (entry.deck) this.brokenDecks.add(entry.deck);
         continue;
       }
@@ -305,36 +202,45 @@ class ProjectLoader {
   }
 
   /**
-   * Reports problems with an entry's type and keys, and marks the deck of an entry with an
-   * unknown type as broken. Returns the type, unless it is unknown or the entry mixes
-   * `items`, `from` and `each`, so there are no rows to load.
+   * Reports problems with an entry's component and keys, and marks the deck of an entry
+   * with an unknown component as broken. Returns the component, unless it is unknown or
+   * the entry mixes `items`, `from` and `each`, so there are no rows to load.
    */
   private checkEntry(
     entry: InventoryEntry,
     source: SourceFile,
-    entryPath: (string | number)[],
+    keyPath: (string | number)[],
   ): ResolvedType | undefined {
-    const report = (key: string, message: string) =>
-      this.diagnostics.push(source.diagnostic([...entryPath, key], message));
-    const type = this.types[entry.type];
+    const entryPath = keyPath.slice(0, -1);
+    const report = (at: (string | number)[], message: string) =>
+      this.diagnostics.push(source.diagnostic(at, message));
+    const type = this.types[entry.component];
     if (!type) {
-      // Its deck is incomplete, so setups that use it are not reported again.
       if (entry.deck) this.brokenDecks.add(entry.deck);
-      if (!this.brokenTypes.has(entry.type))
-        report('type', `Unknown type "${entry.type}". Define it in a library first.`);
+      if (!this.library.brokenTypes.has(entry.component))
+        report(keyPath, `Unknown component "${entry.component}". Define it in a library first.`);
       return undefined;
     }
     const modes = (['items', 'from', 'each'] as const).filter((k) => entry[k] !== undefined);
     if (modes.length > 1) {
-      report(modes[1]!, `Use only one of "items", "from" or "each" in an entry.`);
+      report([...entryPath, modes[1]!], `Use only one of "items", "from" or "each" in an entry.`);
       return undefined;
     }
     // A deck that cannot stack is reported, but the rows are still checked, so their
     // problems show up in the same run.
-    if (entry.deck && !PRIMITIVE_INFO[type.base].stackable) {
-      report('deck', `A ${type.base} cannot be stacked into a deck.`);
-    }
+    const problem = entry.deck ? this.deckProblem(entry.deck, type) : undefined;
+    if (problem) report([...entryPath, 'deck'], problem);
     return type;
+  }
+
+  /** Why a component cannot join a deck: it does not stack, or not with what the deck holds. */
+  private deckProblem(deck: string, type: ResolvedType): string | undefined {
+    if (!isStackable(type)) return `"${type.id}" is not stackable, so it cannot be in a deck.`;
+    const kinds = (this.deckKinds[deck] ??= []);
+    const other = kinds.find((k) => !stacksWith(type, k));
+    if (!kinds.includes(type)) kinds.push(type);
+    if (!other) return undefined;
+    return `"${type.id}" and "${other.id}" cannot share a stack, so they cannot be in one deck. List one in the other's "stackable.with".`;
   }
 
   /** The entry's designs, each with a way to report problems against where it came from. */
@@ -363,7 +269,7 @@ class ProjectLoader {
         fromText: true,
         key: undefined,
         report: (field, message) =>
-          this.error(file, field ? `${message} (column "${field}")` : message, { line }),
+          this.files.error(file, field ? `${message} (column "${field}")` : message, { line }),
       }));
     }
     if (entry.each) {
@@ -413,7 +319,7 @@ class ProjectLoader {
       return records.map((r) => ({ values: r.record, line: r.info.lines }));
     } catch (err) {
       const e = err as Error & { lines?: number };
-      this.error(file, `Could not parse CSV: ${e.message}`, { line: e.lines });
+      this.files.error(file, `Could not parse CSV: ${e.message}`, { line: e.lines });
       return [];
     }
   }
@@ -422,19 +328,37 @@ class ProjectLoader {
   // Setups
   // -------------------------------------------------------------------------
 
+  private async loadSetups(manifest: ManifestFile, manifestSource: SourceFile): Promise<void> {
+    const setupFiles = manifest.setups
+      ? await this.files.expandGlobs(manifest.setups, manifestSource, ['setups'])
+      : await fg('setups/*.yaml', { cwd: this.dir });
+    const known = this.known();
+    for (const file of setupFiles.toSorted(byCodeUnit)) await this.loadSetup(file, known);
+    if (manifest.setup === undefined) return;
+    const names = setupFiles.map((f) => path.basename(f).replace(/\.ya?ml$/, ''));
+    if (!names.includes(manifest.setup)) {
+      const list = names.length
+        ? `Known setups: ${names.join(', ')}.`
+        : 'There are no setup files.';
+      this.diagnostics.push(
+        manifestSource.diagnostic(['setup'], `Unknown setup "${manifest.setup}". ${list}`),
+      );
+    }
+  }
+
   /** What setups may refer to. It shares the loader's collections, so it stays current. */
   private known(): Known {
     return {
       types: this.types,
       components: this.components,
       decks: this.decks,
-      brokenTypes: this.brokenTypes,
+      brokenTypes: this.library.brokenTypes,
       brokenDecks: this.brokenDecks,
     };
   }
 
   private async loadSetup(file: string, known: Known): Promise<void> {
-    const source = await this.readSource(file);
+    const source = await this.files.read(file);
     if (!source) return;
     const { data, diagnostics } = source.validate(SetupFile);
     this.diagnostics.push(...diagnostics);
@@ -445,6 +369,7 @@ class ProjectLoader {
         this.diagnostics.push(source.diagnostic(['steps', i, ...problem.path], problem.message));
       }
     }
-    this.setups[name] = { ...data, file };
+    const setup = this.legacy ? upgradeSetup(data, this.library.boards) : data;
+    this.setups[name] = { ...setup, file };
   }
 }

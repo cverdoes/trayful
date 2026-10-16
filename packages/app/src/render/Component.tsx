@@ -1,29 +1,21 @@
 import type { Piece } from '@trayful/core';
 import {
-  PRIMITIVE_INFO,
-  renderTemplate,
+  drawingOf,
+  type Assets,
   type ComponentType,
-  type Face,
-  type Layer,
+  type DrawImage,
+  type DrawLayer,
+  type DrawShape,
+  type DrawText,
 } from '@trayful/formats/browser';
 import type Konva from 'konva';
 import { Circle, Ellipse, Group, Image, Path, Rect, RegularPolygon, Text } from 'react-konva';
-import { isShown, resolveColor, type Data } from './color';
-import {
-  fillOf,
-  fontStyle,
-  imageBox,
-  layerSize,
-  textBox,
-  type ImageLayer,
-  type TextLayer,
-} from './face';
+import { fontStyle, imageBox, layerSize, textBox, tileRect } from './face';
 import { sizeOf } from './geometry';
 import { useProjectImage } from './images';
 
 /** 1 typographic point in millimetres. */
 const PT = 0.3528;
-const OUTLINE = '#5c5346';
 
 /** A standing figure in a 1×1 box; `meeplePath` scales it to a piece. */
 const MEEPLE_PATH =
@@ -38,34 +30,31 @@ function meeplePath(w: number, h: number): string {
 interface Props {
   piece: Piece;
   type: ComponentType;
-  palette: Record<string, string>;
+  assets: Assets;
   selected?: boolean;
 }
 
 /**
  * Draws one component centred on (0, 0), in millimetres. The caller positions
- * and rotates it.
+ * and rotates it. How it looks is worked out by `drawingOf`; this only paints it.
  */
-export function Component({ piece, type, palette, selected }: Readonly<Props>) {
+export function Component({ piece, type, assets, selected }: Readonly<Props>) {
   const [w, h] = sizeOf(type);
-  const data: Data = piece.data ?? {};
-  const twoSided = PRIMITIVE_INFO[type.base].sides === 2;
-  const showBack = twoSided && piece.face === 'down';
-  const face: Face | undefined = showBack ? type.back : type.front;
-  const outline = type.shape ?? (type.base === 'meeple' ? 'meeple' : 'rect');
-  const corner = type.corner ?? (type.base === 'die' ? 2 : 0);
-
-  const fill = fillOf(type, showBack, (color) => resolveColor(color, data, palette));
-  const stroke = selected ? '#2f81f7' : (resolveColor(face?.stroke, data, palette) ?? OUTLINE);
-  const strokeWidth = selected ? 1.2 : 0.3;
-
+  const drawing = drawingOf(
+    type,
+    { face: piece.face, data: piece.data, value: piece.value },
+    assets,
+  );
+  const { outline, corner } = drawing;
+  // Zones and locked pieces lie flat on the table, so they cast no shadow.
+  const flat = drawing.dashed || piece.locked === true;
   const outlineProps = {
-    fill,
-    stroke,
-    strokeWidth,
-    dash: type.base === 'zone' ? [3, 2] : undefined,
+    fill: drawing.fill,
+    stroke: selected ? '#2f81f7' : drawing.stroke,
+    strokeWidth: selected ? 1.2 : 0.3,
+    dash: drawing.dashed ? [3, 2] : undefined,
     shadowColor: 'black',
-    shadowOpacity: type.base === 'board' || type.base === 'zone' ? 0 : 0.25,
+    shadowOpacity: flat ? 0 : 0.25,
     shadowBlur: 2,
     shadowOffset: { x: 0.4, y: 0.6 },
   };
@@ -78,12 +67,12 @@ export function Component({ piece, type, palette, selected }: Readonly<Props>) {
         y={-h / 2}
         clipFunc={outline === 'rect' ? (ctx) => roundRect(ctx, w, h, corner) : undefined}
       >
-        {face?.layers?.map((layer, i) => (
-          <LayerView key={i} layer={layer} data={data} palette={palette} faceSize={[w, h]} />
+        {drawing.layers.map((layer, i) => (
+          <LayerView key={i} layer={layer} faceSize={[w, h]} />
         ))}
-        {!face?.layers && showBack && !type.back && <BackPattern w={w} h={h} />}
-        {(type.base === 'die' || type.base === 'counter') && piece.value !== undefined && (
-          <CenteredText text={String(piece.value)} w={w} h={h} size={Math.min(w, h) * 0.55} />
+        {drawing.plainBack && <BackPattern w={w} h={h} />}
+        {drawing.valueText !== undefined && (
+          <CenteredText text={drawing.valueText} w={w} h={h} size={Math.min(w, h) * 0.55} />
         )}
       </Group>
     </Group>
@@ -172,62 +161,39 @@ interface Common {
 
 function LayerView({
   layer,
-  data,
-  palette,
   faceSize,
-}: Readonly<{
-  layer: Layer;
-  data: Data;
-  palette: Record<string, string>;
-  faceSize: [number, number];
-}>) {
-  if (!isShown(layer.when, data)) return null;
-  const common = { rotation: layer.rotate ?? 0, opacity: layer.opacity ?? 1, listening: false };
-  if ('text' in layer)
-    return <TextLayerView layer={layer} data={data} palette={palette} common={common} />;
-  if ('image' in layer)
-    return <ImageLayerView layer={layer} data={data} faceSize={faceSize} common={common} />;
-  return <ShapeLayerView layer={layer} data={data} palette={palette} common={common} />;
+}: Readonly<{ layer: DrawLayer; faceSize: [number, number] }>) {
+  const common = { rotation: layer.rotate, opacity: layer.opacity, listening: false };
+  if (layer.kind === 'text') return <TextLayerView layer={layer} common={common} />;
+  if (layer.kind === 'image')
+    return <ImageLayerView layer={layer} faceSize={faceSize} common={common} />;
+  return <ShapeLayerView layer={layer} common={common} />;
 }
 
-function TextLayerView({
-  layer,
-  data,
-  palette,
-  common,
-}: Readonly<{ layer: TextLayer; data: Data; palette: Record<string, string>; common: Common }>) {
-  const text = renderTemplate(layer.text, data);
-  if (!text) return null;
+function TextLayerView({ layer, common }: Readonly<{ layer: DrawText; common: Common }>) {
   const { valign, ...box } = textBox(layer);
   return (
     <Text
       {...common}
       {...box}
-      text={text}
+      text={layer.text}
       verticalAlign={valign}
       fontSize={(layer.font?.size ?? 10) * PT}
       fontFamily={layer.font?.family ?? 'system-ui, sans-serif'}
       fontStyle={fontStyle(layer.font)}
-      fill={resolveColor(layer.color, data, palette) ?? '#111'}
+      fill={layer.color}
     />
   );
 }
 
-function ShapeLayerView({
-  layer,
-  data,
-  palette,
-  common,
-}: Readonly<{
-  layer: Exclude<Layer, TextLayer | ImageLayer>;
-  data: Data;
-  palette: Record<string, string>;
-  common: Common;
-}>) {
-  const [ax, ay] = layer.at ?? [0, 0];
-  const fill = resolveColor(layer.fill, data, palette);
-  const stroke = resolveColor(layer.stroke, data, palette);
-  const style = { ...common, fill, stroke, strokeWidth: layer.strokeWidth ?? (stroke ? 0.3 : 0) };
+function ShapeLayerView({ layer, common }: Readonly<{ layer: DrawShape; common: Common }>) {
+  const [ax, ay] = layer.at;
+  const style = {
+    ...common,
+    fill: layer.fill,
+    stroke: layer.stroke,
+    strokeWidth: layer.strokeWidth,
+  };
   const [sw, sh] = layerSize(layer.size, [0, 0]);
   const ellipse = (
     <Ellipse x={ax + sw / 2} y={ay + sh / 2} radiusX={sw / 2} radiusY={sh / 2} {...style} />
@@ -270,15 +236,14 @@ function ShapeLayerView({
 
 function ImageLayerView({
   layer,
-  data,
   faceSize,
   common,
-}: Readonly<{ layer: ImageLayer; data: Data; faceSize: [number, number]; common: Common }>) {
-  const path = renderTemplate(layer.image, data).trim();
-  const image = useProjectImage(path || undefined);
+}: Readonly<{ layer: DrawImage; faceSize: [number, number]; common: Common }>) {
+  const image = useProjectImage(layer.file);
   if (!image) return null;
-  const [x, y] = layer.at ?? [0, 0];
+  const [x, y] = layer.at;
   const [w, h] = layerSize(layer.size, faceSize);
   const natural: [number, number] = [image.naturalWidth || w, image.naturalHeight || h];
-  return <Image {...common} image={image} {...imageBox(layer.fit, [x, y, w, h], natural)} />;
+  const box = imageBox(layer.fit, [x, y, w, h], tileRect(natural, layer.tile));
+  return <Image {...common} image={image} {...box} />;
 }

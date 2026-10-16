@@ -1,11 +1,15 @@
 # yaml-language-server: $schema=../../../packages/formats/schema/library.schema.json
 kind: library
-types:
+components:
   - id: token
-    base: token
     name: Token
-    shape: disc
     size: 20
+    is: piece
+    flippable: true
+    rotates: true
+    stackable: true
     fields:
       color: { enum: [blue, orange] }
-    fill: '{{color}}'
+    face:
+      shape: disc
+      fill: '{{color}}'

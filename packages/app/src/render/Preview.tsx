@@ -1,5 +1,5 @@
 import type { Piece } from '@trayful/core';
-import { PRIMITIVE_INFO, type ComponentType } from '@trayful/formats/browser';
+import { sidesOf, startValue, type ComponentType } from '@trayful/formats/browser';
 import type Konva from 'konva';
 import { useEffect, useRef } from 'react';
 import { Group, Layer, Rect, Stage } from 'react-konva';
@@ -26,15 +26,15 @@ export function previewPiece(
     z: 0,
   };
   if (data && Object.keys(data).length) piece.data = data;
-  if (type.base === 'counter') piece.value = type.range?.[0] ?? 0;
-  if (type.base === 'die') piece.value = type.faces?.[0] ?? 1;
+  const value = startValue(type);
+  if (value !== undefined) piece.value = value;
   return piece;
 }
 
 /** Which sides of a type to show: both for two-sided types unless one is asked for. */
 function sides(type: ComponentType, face: 'up' | 'down' | 'both' = 'both'): ('up' | 'down')[] {
   if (face !== 'both') return [face];
-  return PRIMITIVE_INFO[type.base].sides === 2 ? ['up', 'down'] : ['up'];
+  return sidesOf(type) === 2 ? ['up', 'down'] : ['up'];
 }
 
 const PAD = 6;
@@ -91,7 +91,7 @@ export function RenderJob() {
               <Component
                 piece={previewPiece(type, job.component.data, face)}
                 type={type}
-                palette={view.palette}
+                assets={view.assets}
               />
             </Group>
           ))}

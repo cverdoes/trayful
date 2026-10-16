@@ -107,6 +107,9 @@ describe('MCP play tools', () => {
     );
     expect(piece('farmer.red.1').type).toBe('farmer');
     const taken = await call('rename_type', { type: 'farmer', to: 'd6' });
-    expect(taken).toMatchObject({ isError: true, text: expect.stringMatching(/already a type/) });
+    expect(taken).toMatchObject({
+      isError: true,
+      text: expect.stringMatching(/already a component "d6"/),
+    });
   });
 });

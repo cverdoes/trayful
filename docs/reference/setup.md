@@ -2,7 +2,7 @@
 
 # Setup
 
-Setups are scripted starting layouts in `setups/*.yaml`. A new table runs the setup named by the manifest's `setup` key; steps run in order, and anything they do not place is laid out in rows. See [Write a setup](../howto/write-a-setup.md) for a walkthrough and [Snapping](snapping.md) for how targets fill.
+Setups are scripted starting layouts in `setups/*.yaml`. A new table runs the setup named by the manifest's `setup` key; steps run in order, and anything they do not place is laid out in rows. See [Write a setup](../howto/write-a-setup.md) for a walkthrough and [Snapping](snapping.md) for how drop areas fill.
 
 ## Top-level keys
 
@@ -25,15 +25,16 @@ Put components or a deck somewhere on the table.
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
-| `place` | text or object | yes | A component type id (places every component of that type), a component id, or `{ deck: <name> }`. |
-| `at` | [Target](#target) | yes | Where something goes: an `[x, y]` table position, or a snap target as `type/target` or `type/target/index` (e.g. `main-board/market/2`). |
+| `place` | text or object | yes | A component id from a library (places every one of them in the inventory), the id of one of them, or `{ deck: <name> }`. |
+| `at` | [Target](#target) | yes | Where something goes: an `[x, y]` table position, or a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`). |
 | `face` | `"up"`, `"down"` |  | Turn face up or down. |
 | `rot` | number |  | Rotation in degrees. |
 | `shuffle` | true or false |  | Shuffle a deck after placing it. |
+| `lock` | true or false |  | Lock it in place, as a board usually is once it is where it belongs. |
 
 ## Target
 
-Where something goes: an `[x, y]` table position, or a snap target as `type/target` or `type/target/index` (e.g. `main-board/market/2`).
+Where something goes: an `[x, y]` table position, or a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`).
 
 Type: [Vec2](#vec2) or text
 
@@ -81,6 +82,7 @@ description: The board in the middle, five market cards face up and every worker
 steps:
   - place: main-board
     at: [0, 0]
+    lock: true
   - place: { deck: actions }
     at: [350, -130]
     shuffle: true

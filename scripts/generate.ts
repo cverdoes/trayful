@@ -10,7 +10,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createTable, toTableFile } from '@trayful/core';
-import { loadProject, PRIMITIVE_INFO, toJsonSchemas, type FileKind } from '@trayful/formats';
+import { loadProject, REPRESENTATION_INFO, toJsonSchemas, type FileKind } from '@trayful/formats';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const example = 'examples/harvest-moon';
@@ -49,22 +49,29 @@ const KINDS: { kind: FileKind; file: string; example?: string; intro: string }[]
     file: 'library.md',
     example: 'library/cards.yaml',
     intro:
-      'Library files define component types. A type picks a built-in primitive for its behaviour, gives a physical size in millimetres, declares data fields, and describes how each side looks as layers of shapes, text and images.',
+      'Library files define components. A component has a name and a size in millimetres, says what it `is` (a piece, a zone, a die or a counter), describes its `face`, and switches on the behaviours it needs: `flippable`, `rotates`, `stackable`, `container`, or `values` for dice and counters. Each behaviour is off unless written, and `true` turns one on with its defaults.',
+  },
+  {
+    kind: 'assets',
+    file: 'assets.md',
+    example: 'assets.yaml',
+    intro:
+      'The assets file (`assets.yaml` unless the manifest says otherwise) names the images and colours faces use. An image can be a sheet of equal tiles, given by `rows` and `cols`; a face then shows one tile, picked by number, by row and column, per component, or by the value of a die.',
   },
   {
     kind: 'inventory',
     file: 'inventory.md',
     example: 'inventory.yaml',
     intro:
-      'The inventory lists what is in the box. Each entry names a type and how many components to make, with field values given inline, from a CSV file, or as combinations.\n\n' +
-      'Each component gets a stable id built from its type, its row and its copy number, such as `action-card.harvest.2` (third segment only when `count` is above 1). The row part is the slugged `id` column when given, else the `name` field, else the first text field, else the row number. Saved tables refer to these ids, so renaming a card changes its id; add an `id` to the row to keep it.',
+      'The inventory lists what is in the box. Each entry names a component from the library and how many copies to make, with field values given inline, from a CSV file, or as combinations.\n\n' +
+      'Each component gets a stable id built from its library component, its row and its copy number, such as `action-card.harvest.2` (third segment only when `count` is above 1). The row part is the slugged `id` column when given, else the `name` field, else the first text field, else the row number. Saved tables refer to these ids, so renaming a card changes its id; add an `id` to the row to keep it.',
   },
   {
     kind: 'setup',
     file: 'setup.md',
     example: 'setups/2-player.yaml',
     intro:
-      "Setups are scripted starting layouts in `setups/*.yaml`. A new table runs the setup named by the manifest's `setup` key; steps run in order, and anything they do not place is laid out in rows. See [Write a setup](../howto/write-a-setup.md) for a walkthrough and [Snapping](snapping.md) for how targets fill.",
+      "Setups are scripted starting layouts in `setups/*.yaml`. A new table runs the setup named by the manifest's `setup` key; steps run in order, and anything they do not place is laid out in rows. See [Write a setup](../howto/write-a-setup.md) for a walkthrough and [Snapping](snapping.md) for how drop areas fill.",
   },
   {
     kind: 'table',
@@ -84,12 +91,12 @@ const TOPICS = [
   {
     title: 'Faces and templates',
     file: 'faces-and-templates.md',
-    about: 'Layers, `{{field}}` placeholders, `when`, colours and palettes.',
+    about: 'Faces, labels, tiles, layers, `{{field}}` placeholders, `when` and colours.',
   },
   {
     title: 'Snapping',
     file: 'snapping.md',
-    about: 'Snap targets, spot names, `accepts`, and what happens on drop.',
+    about: 'Containers and their drop areas, spot names, `accepts`, and what happens on drop.',
   },
   {
     title: 'Players and hands',
@@ -104,7 +111,7 @@ const TOPICS = [
   {
     title: 'Versioning',
     file: 'versioning.md',
-    about: 'The format version, stable component ids, and saved tables.',
+    about: 'The format version, `trayful migrate`, stable component ids, and saved tables.',
   },
 ];
 
@@ -171,6 +178,7 @@ function titleOf(kind: FileKind): string {
   return {
     manifest: 'Manifest',
     library: 'Library',
+    assets: 'Assets',
     inventory: 'Inventory',
     setup: 'Setup',
     table: 'Table state',
@@ -190,7 +198,7 @@ async function renderKind(entry: (typeof KINDS)[number], schema: Schema): Promis
   parts.push(`## Top-level keys\n`);
   parts.push(propertyTable(rootSchema, defs, 'top'));
 
-  if (entry.kind === 'library') parts.push(primitivesSection());
+  if (entry.kind === 'library') parts.push(representationsSection());
 
   for (const [name, def] of Object.entries(defs)) {
     if (name !== rootName) parts.push(...definitionSection(name, def, defs));
@@ -222,15 +230,14 @@ async function exampleSection(entry: (typeof KINDS)[number]): Promise<string> {
   return `From \`${example}/${entry.example}\`:\n\n\`\`\`yaml\n${body.trimEnd()}\n\`\`\`\n`;
 }
 
-function primitivesSection(): string {
-  const rows = Object.entries(PRIMITIVE_INFO).map(
-    ([name, info]) =>
-      `| \`${name}\` | ${info.sides} | ${info.stackable ? 'yes' : ''} | ${info.snapTargets ? 'yes' : ''} | ${info.summary} |`,
+function representationsSection(): string {
+  const rows = Object.entries(REPRESENTATION_INFO).map(
+    ([name, info]) => `| \`${name}\` | ${info.valued ? 'yes' : ''} | ${info.summary} |`,
   );
   return (
-    '## Primitives\n\n' +
-    "A type's `base` decides how it behaves on the table.\n\n" +
-    '| Base | Sides | Stacks | Snap targets | Notes |\n| --- | --- | --- | --- | --- |\n' +
+    '## Representations\n\n' +
+    "A component's `is` says what kind of thing it is on the table.\n\n" +
+    '| is | Has a value | Notes |\n| --- | --- | --- |\n' +
     rows.join('\n') +
     '\n'
   );
