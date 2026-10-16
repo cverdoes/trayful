@@ -33,6 +33,8 @@ Every change is written to your project files, so you can read, edit or commit i
 - "Make the cost circle bigger and move it to the bottom right."
 - "Load the cards from `data/events.csv` instead and add a column for the season."
 - "Call the workers farmers." (`rename_type` changes the id in the library, the inventory and the setups at once.)
+- "Call the colour field `suit`." (`rename_field` changes the field, its labels and placeholders, and its values in the inventory and CSV headers.)
+- "Rename the dice image to die-faces, and add a sea blue colour." (`rename_image` changes every face that shows the image; `set_color` names a colour.)
 - "Remove the old trade cards." (The agent uses `set_inventory` with an empty list, then `remove_type`.)
 - "Make a new table called `playtest-2` with the default setup and deal everyone three cards." (`open_table`, then the play tools.)
 - "Start a new project called Moon Market." (`create_project`, when Trayful was started on a folder of projects.)
@@ -40,14 +42,14 @@ Every change is written to your project files, so you can read, edit or commit i
 
 ## Tools for projects and tables
 
-| Tool                                                                      | What it does                                                    |
-| ------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| `list_projects`                                                           | Every project with its tables and any problems in its files     |
-| `open_table`, `duplicate_table`, `delete_table`                           | Switch to, copy or delete a table; a new table name creates one |
-| `create_project`                                                          | A new project from the starter template                         |
-| `validate_project`                                                        | Reload the files and report problems, after editing by hand     |
-| `upsert_type`, `rename_type`, `remove_type`, `set_inventory`, `add_asset` | Change the components                                           |
-| `migrate_project`                                                         | Rewrite a `trayful/1` project in the current file format        |
-| `render_component`                                                        | A picture of one component                                      |
+| Tool                                                                                                                   | What it does                                                    |
+| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `list_projects`                                                                                                        | Every project with its tables and any problems in its files     |
+| `open_table`, `duplicate_table`, `delete_table`                                                                        | Switch to, copy or delete a table; a new table name creates one |
+| `create_project`                                                                                                       | A new project from the starter template                         |
+| `validate_project`                                                                                                     | Reload the files and report problems, after editing by hand     |
+| `upsert_type`, `rename_type`, `rename_field`, `remove_type`, `set_inventory`, `add_asset`, `rename_image`, `set_color` | Change the components                                           |
+| `migrate_project`                                                                                                      | Rewrite a `trayful/1` project in the current file format        |
+| `render_component`                                                                                                     | A picture of one component                                      |
 
 `render_component` and `snapshot` need the table open in a browser, since the browser draws the pictures.

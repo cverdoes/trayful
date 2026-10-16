@@ -1,6 +1,7 @@
 // Designer changes that reach beyond the type being edited: renames, which the
 // server makes in every file that uses the name, and images saved into the assets.
-import { addImageAsset, renameField, renameType } from './api';
+import { backOf, imageRefs, type ComponentType } from '@trayful/formats/browser';
+import { addImageAsset, renameField, renameImageAsset, renameType } from './api';
 import { assetPath, editType, sidePath, type Side } from './edit';
 import { editDraft, expectType, projectId, settle, useDesign } from './store';
 
@@ -36,6 +37,32 @@ export async function renameDraftField(
     useDesign.setState({ library: await renameField(projectId(), draft.id, from, to) });
     expectType({ id: draft.id, ready: (t) => Boolean(t.fields?.[to]), keepSelection: true });
   });
+}
+
+/**
+ * Gives an image a new name on every component that shows it. The type being
+ * edited is saved first, and opened again with the new name once it is loaded.
+ */
+export async function renameImage(from: string, to: string): Promise<void> {
+  const { draft } = useDesign.getState();
+  if (draft && !(await settle())) {
+    throw new Error(`Fix the problems with "${draft.id}" first: a rename needs it saved.`);
+  }
+  useDesign.setState({ library: await renameImageAsset(projectId(), from, to) });
+  if (draft) {
+    expectType({ id: draft.id, ready: (t) => !showsImage(t, from), keepSelection: true });
+  }
+}
+
+/** Whether a type shows an image of this name, on a face or back, or in a layer. */
+function showsImage(type: ComponentType, name: string): boolean {
+  const onSide = imageRefs(type).some(
+    ({ ref }) => (typeof ref === 'string' ? ref : ref.asset) === name,
+  );
+  const inLayer = [type.face, backOf(type)].some((side) =>
+    side?.layers?.some((layer) => 'image' in layer && layer.image === name),
+  );
+  return onSide || inLayer;
 }
 
 async function whenSaved(change: () => Promise<void>): Promise<void> {

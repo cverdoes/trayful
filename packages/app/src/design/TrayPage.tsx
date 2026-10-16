@@ -13,6 +13,7 @@ import {
   type TrayEntry,
 } from './tray';
 import { TrayEntryCard, type EntryContext } from './TrayEntry';
+import { HistoryButtons } from './UndoButtons';
 import { useTray, type TrayStatus } from './useTray';
 
 export function TrayPage() {
@@ -34,7 +35,7 @@ const STATUS_TEXT: Record<TrayStatus, string> = {
 };
 
 function TrayEditor({ type }: Readonly<{ type: ComponentType }>) {
-  const { tray, status, message, edit, addCsv } = useTray(type.id);
+  const { tray, status, message, edit, addCsv, steps, undo, redo } = useTray(type.id);
   const images = useStore((s) => s.view?.assets.images ?? {});
   const inBox = useDesign((s) => s.components.filter((c) => c.type === type.id).length);
   const image = tiledImage(type, images);
@@ -53,6 +54,12 @@ function TrayEditor({ type }: Readonly<{ type: ComponentType }>) {
       <header className="tray-header">
         <h2>{type.name ?? type.id} in the box</h2>
         <span className="muted">{inBox} in the box now</span>
+        <HistoryButtons
+          canUndo={steps.past.length > 0}
+          canRedo={steps.future.length > 0}
+          onUndo={undo}
+          onRedo={redo}
+        />
         <div className="design-status" role="status">
           <span className={`save-${status}`}>{STATUS_TEXT[status]}</span>
           {message && <span className="error"> {message}</span>}

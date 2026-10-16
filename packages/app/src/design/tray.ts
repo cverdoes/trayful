@@ -34,6 +34,13 @@ export interface TrayData {
   tables: Record<string, CsvTable>;
 }
 
+/** The tray with only the CSV files its entries read, as saving it sends them. */
+export function withUsedTables(tray: TrayData): TrayData {
+  const used = new Set(tray.entries.flatMap((e) => (e.from === undefined ? [] : [e.from])));
+  const tables = Object.entries(tray.tables).filter(([file]) => used.has(file));
+  return { ...tray, tables: Object.fromEntries(tables) };
+}
+
 /** How an entry makes its designs: one, a row each, every combination, or a row of a CSV file each. */
 export type EntryShape = 'one' | 'rows' | 'each' | 'csv';
 
@@ -120,6 +127,24 @@ export function replaced<T>(list: readonly T[], index: number, value: T | undefi
   return value === undefined
     ? list.filter((_, i) => i !== index)
     : list.map((item, i) => (i === index ? value : item));
+}
+
+/** A CSV table with a column added at the end, empty in every row. */
+export function withColumn(table: CsvTable, name: string): CsvTable {
+  return { header: [...table.header, name], rows: table.rows.map((row) => [...row, '']) };
+}
+
+/** A CSV table without one of its columns. */
+export function withoutColumn(table: CsvTable, index: number): CsvTable {
+  return {
+    header: replaced(table.header, index, undefined),
+    rows: table.rows.map((row) => replaced(row, index, undefined)),
+  };
+}
+
+/** The first field a CSV table has no column for yet, to name a new column after. */
+export function nextColumn(table: CsvTable, columns: Column[]): string {
+  return columns.find(({ name }) => !table.header.includes(name))?.name ?? '';
 }
 
 /** How many designs an entry makes, before each is copied `count` times. */

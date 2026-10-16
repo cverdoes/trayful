@@ -1,10 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { checkImageName, setImage } from '../assets.js';
+import { checkImageName, setColor, setImage } from '../assets.js';
 import { addAsset, removeType, setInventory, upsertType } from '../authoring.js';
 import { migrateFolder } from '../migrate.js';
-import { renameType } from '../renaming.js';
+import { renameField, renameImage, renameType } from '../renaming.js';
 import { count, failure, projectParam, text, type ToolContext } from './context.js';
 
 const authored = (summary: string): CallToolResult =>
@@ -16,6 +16,8 @@ const authored = (summary: string): CallToolResult =>
 export function registerAuthoringTools(server: McpServer, ctx: ToolContext): void {
   registerTypeTools(server, ctx);
   registerRenameTool(server, ctx);
+  registerRenameFieldTool(server, ctx);
+  registerAssetNameTools(server, ctx);
   registerBoxTools(server, ctx);
   registerRender(server, ctx);
   registerMigrate(server, ctx);
@@ -97,6 +99,94 @@ function registerRenameTool(server: McpServer, ctx: ToolContext): void {
       try {
         const result = await renameType(workspace, project ?? session().projectId, type, to);
         return authored(`Renamed type "${type}" to "${result.id}" in ${result.files.join(', ')}.`);
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+}
+
+/** Giving a field a new name everywhere it is used. */
+function registerRenameFieldTool(server: McpServer, ctx: ToolContext): void {
+  const { workspace, session } = ctx;
+  server.registerTool(
+    'rename_field',
+    {
+      title: 'Rename a field of a component type',
+      description:
+        'Give a field of a component type a new name, and change every use of it in one go: its key in `fields`, the labels and `{{placeholders}}` on its faces, and its values in the inventory (`data`, `items` rows, `each`, and the header of a `from` CSV file).',
+      inputSchema: {
+        project: projectParam,
+        type: z.string().describe('Component type id.'),
+        field: z.string().describe('Current field name.'),
+        to: z.string().describe('New field name.'),
+      },
+    },
+    async ({ project, type, field, to }) => {
+      try {
+        const projectId = project ?? session().projectId;
+        const result = await renameField(workspace, projectId, type, { from: field, to });
+        return authored(
+          `Renamed field "${field}" of "${type}" to "${result.field}" in ${result.files.join(', ')}.`,
+        );
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+}
+
+/** Renaming images, and naming colours, in the assets file. */
+function registerAssetNameTools(server: McpServer, ctx: ToolContext): void {
+  const { workspace, session } = ctx;
+  server.registerTool(
+    'rename_image',
+    {
+      title: 'Rename an image',
+      description:
+        'Give a named image a new name in the assets file, and change every component face, back and advanced layer that shows it by name. The file itself stays where it is.',
+      inputSchema: {
+        project: projectParam,
+        image: z.string().describe('Current image name.'),
+        to: z.string().describe('New name: lowercase letters, digits and dashes.'),
+      },
+    },
+    async ({ project, image, to }) => {
+      try {
+        const result = await renameImage(workspace, project ?? session().projectId, image, to);
+        return authored(
+          `Renamed image "${image}" to "${result.name}" in ${result.files.join(', ')}.`,
+        );
+      } catch (err) {
+        return failure(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'set_color',
+    {
+      title: 'Name a colour',
+      description:
+        'Name a colour in the assets file, or change the colour of that name, so faces and fields can use the name (`fill: sea`). Leave out `color` to remove the name.',
+      inputSchema: {
+        project: projectParam,
+        name: z
+          .string()
+          .describe('Colour name: lowercase letters, digits and dashes, such as `sea`.'),
+        color: z
+          .string()
+          .min(1)
+          .optional()
+          .describe('A CSS colour, such as `#2266aa`. Leave out to remove the name.'),
+      },
+    },
+    async ({ project, name, color }) => {
+      try {
+        await setColor(workspace, project ?? session().projectId, name, color);
+        return authored(
+          color === undefined ? `Removed colour "${name}".` : `Colour "${name}" is now ${color}.`,
+        );
       } catch (err) {
         return failure(err);
       }

@@ -1,9 +1,10 @@
 // Loading and saving one component's Tray: edits show at once and are saved a
 // moment after the last one, the way the designer saves a component.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchTray, importCsv, saveTray } from './api';
-import { projectId } from './store';
-import type { TrayData } from './tray';
+import { noSteps, redone, stepped, undone, type Steps } from './steps';
+import { projectId, UNDO_MERGE } from './store';
+import { withUsedTables, type TrayData } from './tray';
 
 /** How long after the last edit the Tray is saved, in milliseconds. */
 const SAVE_DELAY = 400;
@@ -67,6 +68,9 @@ export interface TrayState {
   edit: (tray: TrayData) => void;
   /** Adds a CSV file, as a new entry reading it. */
   addCsv: (csv: { name: string; text: string }) => void;
+  steps: Steps<TrayData>;
+  undo: () => void;
+  redo: () => void;
 }
 
 export function useTray(type: string): TrayState {
@@ -78,9 +82,12 @@ export function useTray(type: string): TrayState {
     setMessage(text);
   };
   const saver = useMemo(
-    () => new TraySaver((next) => saveTray(projectId(), type, next), report),
+    () => new TraySaver((next) => saveTray(projectId(), type, withUsedTables(next)), report),
     [type],
   );
+  const [steps, setSteps] = useState(noSteps<TrayData>);
+  // Edits closer together than UNDO_MERGE are one step, so typing a word is one step.
+  const lastEdit = useRef(0);
 
   useEffect(() => {
     let current = true;
@@ -99,16 +106,35 @@ export function useTray(type: string): TrayState {
     };
   }, [type, saver]);
 
-  const edit = (next: TrayData) => {
+  const show = (next: TrayData) => {
     setTray(next);
     saver.edit(next);
   };
 
+  const edit = (next: TrayData) => {
+    if (!tray) return;
+    const now = Date.now();
+    setSteps(stepped(steps, tray, now - lastEdit.current < UNDO_MERGE));
+    lastEdit.current = now;
+    show(next);
+  };
+
+  const move = (to: typeof undone<TrayData>) => () => {
+    const moved = tray && to(steps, tray);
+    if (!moved) return;
+    setSteps(moved.steps);
+    lastEdit.current = 0;
+    show(moved.value);
+  };
+
   const addCsv = (csv: { name: string; text: string }) => {
+    const before = tray;
     saver
       .then(() => importCsv(projectId(), type, csv))
       .then(
         (saved) => {
+          if (before) setSteps((s) => stepped(s, before, false));
+          lastEdit.current = 0;
           setTray(saved);
           report('saved');
         },
@@ -116,7 +142,7 @@ export function useTray(type: string): TrayState {
       );
   };
 
-  return { tray, status, message, edit, addCsv };
+  return { tray, status, message, edit, addCsv, steps, undo: move(undone), redo: move(redone) };
 }
 
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));

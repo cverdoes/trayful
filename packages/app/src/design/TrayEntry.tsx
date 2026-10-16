@@ -1,6 +1,7 @@
 // One inventory entry in the Tray: its deck and copies, and the designs it makes.
 import type { Asset, Scalar } from '@trayful/formats/browser';
 import { NumberInput, TextInput } from './controls';
+import { CsvGrid } from './CsvGrid';
 import { FieldInput, ListInput } from './TrayCells';
 import {
   designCount,
@@ -106,7 +107,13 @@ function EntryBody({
     case 'each':
       return <Combinations entry={entry} context={context} onChange={onChange} />;
     case 'csv':
-      return <CsvGrid file={entry.from!} context={context} />;
+      return (
+        <CsvGrid
+          table={context.tables[entry.from!] ?? { header: [], rows: [] }}
+          columns={context.columns}
+          onChange={(table) => context.onTable(entry.from!, table)}
+        />
+      );
     default:
       return (
         <DesignTable
@@ -232,61 +239,5 @@ function Combinations({
         </label>
       ))}
     </div>
-  );
-}
-
-/** A CSV file's rows, a cell each, with the header as it is. */
-function CsvGrid({ file, context }: Readonly<{ file: string; context: EntryContext }>) {
-  const table = context.tables[file] ?? { header: [], rows: [] };
-  const setRows = (rows: string[][]) => context.onTable(file, { ...table, rows });
-  return (
-    <table className="tray-table">
-      <thead>
-        <tr>
-          {table.header.map((h) => (
-            <th key={h}>{h}</th>
-          ))}
-          <th />
-        </tr>
-      </thead>
-      <tbody>
-        {table.rows.map((row, i) => (
-          <tr key={i}>
-            {table.header.map((h, j) => (
-              <td key={h}>
-                <TextInput
-                  label={`${h}, row ${i + 1}`}
-                  value={row[j]}
-                  onChange={(cell) =>
-                    setRows(replaced(table.rows, i, replaced(row, j, cell ?? '')))
-                  }
-                />
-              </td>
-            ))}
-            <td>
-              <button
-                type="button"
-                aria-label={`Remove row ${i + 1}`}
-                onClick={() => setRows(replaced(table.rows, i, undefined))}
-              >
-                ×
-              </button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colSpan={table.header.length + 1}>
-            <button
-              type="button"
-              onClick={() => setRows([...table.rows, table.header.map(() => '')])}
-            >
-              + Row
-            </button>
-          </td>
-        </tr>
-      </tfoot>
-    </table>
   );
 }

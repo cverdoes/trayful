@@ -129,4 +129,20 @@ describe('MCP play tools', () => {
       text: expect.stringMatching(/already a component "d6"/),
     });
   });
+
+  it('renames fields and images, and names colours', async () => {
+    const field = await call('rename_field', { type: 'worker', field: 'color', to: 'colour' });
+    expect(field.text).toMatch(/^Renamed field "color" of "worker" to "colour" in /);
+    expect(piece('worker.red.1').data).toEqual({ colour: 'red' });
+
+    const image = await call('rename_image', { image: 'dice', to: 'die-faces' });
+    expect(image.text).toMatch(/^Renamed image "dice" to "die-faces" in assets\.yaml, /);
+    const unknown = await call('rename_image', { image: 'meeple', to: 'pawn' });
+    expect(unknown).toMatchObject({ isError: true, text: 'No image is called "meeple".' });
+
+    expect((await call('set_color', { name: 'sea', color: '#2266aa' })).text).toMatch(
+      /^Colour "sea" is now #2266aa\./,
+    );
+    expect((await call('set_color', { name: 'sea' })).text).toMatch(/^Removed colour "sea"\./);
+  });
 });

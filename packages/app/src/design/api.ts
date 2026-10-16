@@ -92,6 +92,12 @@ export async function addImageAsset(project: string, file: string, base64: strin
   });
 }
 
+/** Gives an image a new name on every component that shows it; answers the library as it is now. */
+export async function renameImageAsset(project: string, name: string, to: string) {
+  const path = `/api/assets/images/${encodeURIComponent(name)}/rename`;
+  return post<Library & { name: string }>(`${path}${query(project)}`, { to });
+}
+
 /** Names an image in the project, or changes how it is cut into tiles. */
 export async function setImageAsset(project: string, name: string, image: ImageSettings) {
   return post<{ name: string }>(assetUrl(project, 'images', name), image, 'PUT');

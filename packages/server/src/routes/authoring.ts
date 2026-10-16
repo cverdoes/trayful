@@ -9,7 +9,7 @@ export interface ProjectQuery {
 }
 
 /** The body of a rename: the new id or name. */
-interface RenameBody {
+export interface RenameBody {
   to?: unknown;
 }
 
@@ -61,7 +61,7 @@ function registerTypeRoutes(ctx: RouteContext): void {
 }
 
 /** The new name a rename asks for, or a 400 reply when it gives none. */
-function newName(body: RenameBody | undefined, reply: FastifyReply): string | undefined {
+export function newName(body: RenameBody | undefined, reply: FastifyReply): string | undefined {
   if (typeof body?.to === 'string') return body.to;
   void reply.code(400).send({ error: 'Send the new name as "to".' });
   return undefined;
