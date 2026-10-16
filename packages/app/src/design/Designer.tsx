@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { go, route, showDesignPage, showTypeInAddress } from '../route';
+import { go, route, showDesignPage, showTypeInAddress, type DesignPage } from '../route';
 import { useStore } from '../store';
 import { migrateProject } from './api';
 import { AssetsPage } from './AssetsPage';
@@ -16,6 +16,7 @@ import {
   useDesign,
   type SaveStatus,
 } from './store';
+import { TrayPage } from './TrayPage';
 import { TypeList } from './TypeList';
 import { UndoButtons } from './UndoButtons';
 import { YamlPane } from './YamlPane';
@@ -28,7 +29,7 @@ export function Designer() {
   const view = useStore((s) => s.view);
   const host = useStore((s) => s.me?.host);
   const newTypeOpen = useDesign((s) => s.newTypeOpen);
-  const [assets, setAssets] = useState(() => route().assets);
+  const [page, setPage] = useState(() => route().page);
   useFollowProject();
   const shown = useDesign((s) => s.draft?.id);
   useEffect(() => {
@@ -38,9 +39,9 @@ export function Designer() {
   if (!view) return <div className="loading">Loading…</div>;
   if (!host) return <div className="loading">Only the host can design components.</div>;
   if (view.legacy) return <MigrateNotice project={view.project} />;
-  const page = (toAssets: boolean) => {
-    showDesignPage(toAssets);
-    setAssets(toAssets);
+  const show = (to: DesignPage) => {
+    showDesignPage(to);
+    setPage(to);
   };
   const tab = (label: string, chosen: boolean, onClick: () => void) => (
     <button
@@ -53,22 +54,28 @@ export function Designer() {
     </button>
   );
   return (
-    <div className={assets ? 'designer assets' : 'designer'}>
+    <div className={`designer ${page}`}>
       <header className="toolbar">
         <div className="title">
           <strong>{view.name}</strong>
         </div>
         <nav className="design-tabs" aria-label="Modes">
           {tab('Table', false, () => go({ project: view.project, table: view.table }))}
-          {tab('Components', !assets, () => page(false))}
-          {tab('Assets', assets, () => page(true))}
+          {tab('Components', page === 'components', () => show('components'))}
+          {tab('Tray', page === 'tray', () => show('tray'))}
+          {tab('Assets', page === 'assets', () => show('assets'))}
         </nav>
-        {!assets && <UndoButtons />}
-        {!assets && <SaveState />}
+        {page === 'components' && <UndoButtons />}
+        {page === 'components' && <SaveState />}
       </header>
-      {assets ? (
-        <AssetsPage />
-      ) : (
+      {page === 'assets' && <AssetsPage />}
+      {page === 'tray' && (
+        <>
+          <TypeList />
+          <TrayPage />
+        </>
+      )}
+      {page === 'components' && (
         <>
           <TypeList />
           <main className="design-main">

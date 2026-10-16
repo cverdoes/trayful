@@ -135,6 +135,28 @@ export async function clickOnFront(page: Page, at: Point) {
   await page.mouse.click(p.x, p.y);
 }
 
+// A one-pixel PNG: the tiles an image is cut into are only rows and columns.
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+/** Adds an image on the Assets page and cuts it into `rows` by `cols` tiles. */
+export async function addImage(page: Page, file: string, [rows, cols]: [number, number]) {
+  const name = file
+    .toLowerCase()
+    .replace(/\.png$/, '')
+    .replace(/ /g, '-');
+  await page
+    .getByLabel('Add images')
+    .setInputFiles({ name: file, mimeType: 'image/png', buffer: PNG });
+  const card = page.getByRole('listitem', { name });
+  await card.getByLabel('Rows').fill(String(rows));
+  await expect(card.locator('.tile')).toHaveCount(rows);
+  await card.getByLabel('Columns').fill(String(cols));
+  await expect(card.locator('.tile')).toHaveCount(rows * cols);
+}
+
 /** A file of a project, as the server has written it. */
 export async function libraryFile(page: Page, project: string, file: string): Promise<string> {
   const health = (await (await page.request.get('/api/health')).json()) as { root: string };

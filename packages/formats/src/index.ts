@@ -8,4 +8,5 @@ export * from './presets.js';
 export * from './load.js';
 export * from './upgrade.js';
 export { SourceFile } from './source.js';
+export { csvTable, csvText, type CsvTable } from './csv.js';
 export { toJsonSchemas } from './json-schema.js';

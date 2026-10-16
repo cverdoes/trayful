@@ -1,11 +1,14 @@
+/** The designer's pages: how components look, how many are in the box, and the images they use. */
+export type DesignPage = 'components' | 'tray' | 'assets';
+
 /** Which project and table this page shows, from `?project=…&table=…` in its address. */
 export function route(): {
   project?: string;
   table?: string;
   print: boolean;
-  /** Design mode, showing the type named by `type` if any, or the assets page. */
+  /** Design mode, showing the type named by `type` if any, on one of its pages. */
   design: boolean;
-  assets: boolean;
+  page: DesignPage;
   type?: string;
   join: boolean;
 } {
@@ -15,7 +18,7 @@ export function route(): {
     table: params.get('table') ?? undefined,
     print: params.has('print'),
     design: params.has('design'),
-    assets: params.has('assets'),
+    page: (['assets', 'tray'] as const).find((page) => params.has(page)) ?? 'components',
     type: params.get('type') ?? undefined,
     // Set by an invite link: ask for a name even on the host's computer.
     join: params.has('join'),
@@ -46,11 +49,12 @@ export function go(to: {
   location.search = params.toString();
 }
 
-/** Puts the design page shown (components or assets) in the address, without reloading. */
-export function showDesignPage(assets: boolean): void {
+/** Puts the design page shown in the address, without reloading. */
+export function showDesignPage(page: DesignPage): void {
   const params = new URLSearchParams(location.search);
-  if (assets) params.set('assets', '');
-  else params.delete('assets');
+  params.delete('assets');
+  params.delete('tray');
+  if (page !== 'components') params.set(page, '');
   history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
 }
 
