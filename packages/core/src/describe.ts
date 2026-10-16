@@ -1,5 +1,6 @@
 import type { Vec2 } from '@trayful/formats/browser';
 import { objectSize } from './layout.js';
+import { backData } from './privacy.js';
 import { allSpots, occupants } from './snap.js';
 import {
   handCounts,
@@ -71,13 +72,13 @@ export interface ObjectQuery {
 
 export function summarizePiece(piece: Piece, catalog: Catalog, reveal = false): PieceSummary {
   const type = catalog[piece.type];
-  const hidden = piece.face === 'down' && !reveal;
+  const data = piece.face === 'down' && !reveal ? backData(piece, catalog) : piece.data;
   return {
     id: piece.id,
     type: piece.type,
     is: type?.is ?? 'unknown',
     face: piece.face,
-    ...(piece.data && !hidden ? { data: piece.data } : {}),
+    ...(data ? { data } : {}),
     ...(piece.value !== undefined ? { value: piece.value } : {}),
   };
 }
@@ -212,7 +213,10 @@ function stackLines(stacks: ObjectSummary[], catalog: Catalog): string[] {
   if (stacks.length === 0) return [];
   const lines = ['Piles (stacks):'];
   for (const s of stacks) {
-    const top = s.top.face === 'down' ? 'top face down' : `top: ${pieceText(s.top, catalog)}`;
+    const top =
+      s.top.face === 'down'
+        ? `top face down${dataText(s.top.data)}`
+        : `top: ${pieceText(s.top, catalog)}`;
     lines.push(`- ${s.id}: ${s.count} × ${typeName(s.top, catalog)}, ${top}${where(s)}`);
     if (s.items) {
       lines.push(

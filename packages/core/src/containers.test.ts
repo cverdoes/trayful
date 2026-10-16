@@ -159,7 +159,7 @@ describe('bags', () => {
     expect(checkIntegrity(state)).toEqual([]);
     expect(bagCounts(state)).toEqual({ 'board/bag': 4 });
     for (const viewer of ['alice', 'bob', undefined]) {
-      const view = viewFor(state, viewer, book());
+      const view = viewFor(state, viewer, book(), catalog);
       expect(Object.keys(view.objects).filter((id) => id.startsWith('cube'))).toEqual([]);
       expect(view.bags).toEqual({ 'board/bag': 4 });
     }
@@ -187,8 +187,8 @@ describe('bags', () => {
     const drawn = handOf(state, 'alice').map((p) => p.id);
     expect(drawn).toHaveLength(2);
     expect(bagCounts(state)).toEqual({ 'board/bag': 2 });
-    const alice = viewFor(state, 'alice', book());
-    const bob = viewFor(state, 'bob', book());
+    const alice = viewFor(state, 'alice', book(), catalog);
+    const bob = viewFor(state, 'bob', book(), catalog);
     expect(Object.keys(alice.objects)).toEqual(expect.arrayContaining(drawn));
     expect(Object.keys(bob.objects).some((id) => id.startsWith('cube'))).toBe(false);
     expect(bob.hands).toEqual({ alice: 2 });

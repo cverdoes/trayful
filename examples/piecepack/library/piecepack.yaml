@@ -1,0 +1,144 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/library.schema.json
+# The piecepack: 24 tiles, 24 coins, 4 dice and 4 pawns, one of each suit and rank.
+kind: library
+components:
+  - id: tile
+    name: Tile
+    description: A two-inch square. The face shows its rank and suit; the back is a 2 x 2 grid, so tiles laid face down make a board.
+    size: 50
+    is: piece
+    fields:
+      suit: { enum: [suns, moons, crowns, arms] }
+      rank: { enum: ['null', ace, '2', '3', '4', '5'] }
+      mark:
+        {
+          type: string,
+          optional: true,
+          description: What the face shows for the rank; null shows nothing.,
+        }
+      symbol: image
+    face:
+      corner: 2
+      fill: paper
+      stroke: '#8a8070'
+      layers:
+        - { image: '{{symbol}}', at: [3, 3], size: 11 }
+      labels:
+        - {
+            field: mark,
+            at: [25, 26],
+            align: center,
+            valign: middle,
+            font: { size: 60, weight: bold },
+            color: '{{suit}}',
+          }
+    flippable:
+      back:
+        fill: paper
+        stroke: '#8a8070'
+        layers:
+          - {
+              shape: rect,
+              at: [0, 0],
+              size: 25,
+              fill: transparent,
+              stroke: '#3b3430',
+              strokeWidth: 0.6,
+            }
+          - {
+              shape: rect,
+              at: [25, 0],
+              size: 25,
+              fill: transparent,
+              stroke: '#3b3430',
+              strokeWidth: 0.6,
+            }
+          - {
+              shape: rect,
+              at: [0, 25],
+              size: 25,
+              fill: transparent,
+              stroke: '#3b3430',
+              strokeWidth: 0.6,
+            }
+          - {
+              shape: rect,
+              at: [25, 25],
+              size: 25,
+              fill: transparent,
+              stroke: '#3b3430',
+              strokeWidth: 0.6,
+            }
+    rotates: true
+    stackable: true
+    container:
+      # Coins and pawns pile up in the middle of a tile, as checkers do on a backgammon point.
+      - { id: middle, points: [[25, 25]], mode: pile, accepts: [coin, pawn] }
+
+  - id: coin
+    name: Coin
+    description: Its value on one side, its suit on the other.
+    size: 19
+    is: piece
+    fields:
+      suit: { enum: [suns, moons, crowns, arms] }
+      rank: { enum: ['null', ace, '2', '3', '4', '5'] }
+      mark: { type: string, optional: true }
+      symbol: image
+    face:
+      shape: circle
+      fill: paper
+      stroke: '#8a8070'
+      labels:
+        - {
+            field: mark,
+            at: [9.5, 10],
+            align: center,
+            valign: middle,
+            font: { size: 26, weight: bold },
+            color: '#222',
+          }
+    flippable:
+      # The back shows the suit, so everyone sees it while the coin lies suit side up.
+      back:
+        fill: paper
+        stroke: '{{suit}}'
+        layers:
+          - { image: '{{symbol}}', at: [3, 3], size: 13 }
+    rotates: true
+    stackable: true
+
+  - id: pawn
+    name: Pawn
+    size: [16, 22]
+    is: piece
+    fields:
+      suit: { enum: [suns, moons, crowns, arms] }
+    face:
+      shape: meeple
+      fill: '{{suit}}'
+
+  - id: die-suns
+    name: Suns die
+    size: 13
+    is: die
+    values: { list: ['null', ace, 2, 3, 4, 5] }
+    face: { corner: 2, stroke: suns, image: { asset: die-suns, tile: value } }
+  - id: die-moons
+    name: Moons die
+    size: 13
+    is: die
+    values: { list: ['null', ace, 2, 3, 4, 5] }
+    face: { corner: 2, stroke: moons, image: { asset: die-moons, tile: value } }
+  - id: die-crowns
+    name: Crowns die
+    size: 13
+    is: die
+    values: { list: ['null', ace, 2, 3, 4, 5] }
+    face: { corner: 2, stroke: crowns, image: { asset: die-crowns, tile: value } }
+  - id: die-arms
+    name: Arms die
+    size: 13
+    is: die
+    values: { list: ['null', ace, 2, 3, 4, 5] }
+    face: { corner: 2, stroke: arms, image: { asset: die-arms, tile: value } }

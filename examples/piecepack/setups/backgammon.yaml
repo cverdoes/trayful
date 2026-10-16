@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/setup.schema.json
+kind: setup
+name: Backgammon
+description: 'Two players with twelve checkers each. The 24 tiles, face down, are the points; Light plays suns and crowns, Dark moons and arms, all suit side up. Rules: the piecepack Backgammon ruleset by Trevor L Davis (CC BY-SA 4.0), with 12 checkers a side.'
+steps:
+  - { place: tile.suns-null, at: [295, 65], face: down, lock: true } # point 1
+  - { place: tile.suns-ace, at: [245, 65], face: down, lock: true } # point 2
+  - { place: tile.suns-2, at: [195, 65], face: down, lock: true } # point 3
+  - { place: tile.suns-3, at: [145, 65], face: down, lock: true } # point 4
+  - { place: tile.suns-4, at: [95, 65], face: down, lock: true } # point 5
+  - { place: tile.suns-5, at: [45, 65], face: down, lock: true } # point 6
+  - { place: tile.moons-null, at: [-45, 65], face: down, lock: true } # point 7
+  - { place: tile.moons-ace, at: [-95, 65], face: down, lock: true } # point 8
+  - { place: tile.moons-2, at: [-145, 65], face: down, lock: true } # point 9
+  - { place: tile.moons-3, at: [-195, 65], face: down, lock: true } # point 10
+  - { place: tile.moons-4, at: [-245, 65], face: down, lock: true } # point 11
+  - { place: tile.moons-5, at: [-295, 65], face: down, lock: true } # point 12
+  - { place: tile.crowns-null, at: [-295, -65], face: down, lock: true } # point 13
+  - { place: tile.crowns-ace, at: [-245, -65], face: down, lock: true } # point 14
+  - { place: tile.crowns-2, at: [-195, -65], face: down, lock: true } # point 15
+  - { place: tile.crowns-3, at: [-145, -65], face: down, lock: true } # point 16
+  - { place: tile.crowns-4, at: [-95, -65], face: down, lock: true } # point 17
+  - { place: tile.crowns-5, at: [-45, -65], face: down, lock: true } # point 18
+  - { place: tile.arms-null, at: [45, -65], face: down, lock: true } # point 19
+  - { place: tile.arms-ace, at: [95, -65], face: down, lock: true } # point 20
+  - { place: tile.arms-2, at: [145, -65], face: down, lock: true } # point 21
+  - { place: tile.arms-3, at: [195, -65], face: down, lock: true } # point 22
+  - { place: tile.arms-4, at: [245, -65], face: down, lock: true } # point 23
+  - { place: tile.arms-5, at: [295, -65], face: down, lock: true } # point 24
+  # Light's checkers
+  - { place: coin.suns-null, at: tile.arms-5/middle, face: down }
+  - { place: coin.suns-ace, at: tile.arms-5/middle, face: down }
+  - { place: coin.suns-2, at: tile.crowns-null/middle, face: down }
+  - { place: coin.suns-3, at: tile.crowns-null/middle, face: down }
+  - { place: coin.suns-4, at: tile.crowns-null/middle, face: down }
+  - { place: coin.suns-5, at: tile.crowns-null/middle, face: down }
+  - { place: coin.crowns-null, at: tile.moons-ace/middle, face: down }
+  - { place: coin.crowns-ace, at: tile.moons-ace/middle, face: down }
+  - { place: coin.crowns-2, at: tile.moons-ace/middle, face: down }
+  - { place: coin.crowns-3, at: tile.suns-5/middle, face: down }
+  - { place: coin.crowns-4, at: tile.suns-5/middle, face: down }
+  - { place: coin.crowns-5, at: tile.suns-5/middle, face: down }
+  # Dark's checkers
+  - { place: coin.moons-null, at: tile.suns-null/middle, face: down }
+  - { place: coin.moons-ace, at: tile.suns-null/middle, face: down }
+  - { place: coin.moons-2, at: tile.moons-5/middle, face: down }
+  - { place: coin.moons-3, at: tile.moons-5/middle, face: down }
+  - { place: coin.moons-4, at: tile.moons-5/middle, face: down }
+  - { place: coin.moons-5, at: tile.moons-5/middle, face: down }
+  - { place: coin.arms-null, at: tile.crowns-4/middle, face: down }
+  - { place: coin.arms-ace, at: tile.crowns-4/middle, face: down }
+  - { place: coin.arms-2, at: tile.crowns-4/middle, face: down }
+  - { place: coin.arms-3, at: tile.arms-null/middle, face: down }
+  - { place: coin.arms-4, at: tile.arms-null/middle, face: down }
+  - { place: coin.arms-5, at: tile.arms-null/middle, face: down }
+  - { place: die-suns, at: [370, -20] }
+  - { place: die-moons, at: [370, 20] }

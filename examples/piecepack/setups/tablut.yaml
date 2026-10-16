@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/setup.schema.json
+kind: setup
+name: Tablut
+description: 'The king (the suns pawn) and eight defenders (coins suit side up) against sixteen attackers (coins value side up), on the points where the lines of 4 x 4 face-down tiles cross. Rules: the piecepack Tablut ruleset by Trevor L Davis (CC BY-SA 4.0).'
+steps:
+  - { place: tile.suns-null, at: [-75, -75], face: down, lock: true }
+  - { place: tile.suns-ace, at: [-25, -75], face: down, lock: true }
+  - { place: tile.suns-2, at: [25, -75], face: down, lock: true }
+  - { place: tile.suns-3, at: [75, -75], face: down, lock: true }
+  - { place: tile.suns-4, at: [-75, -25], face: down, lock: true }
+  - { place: tile.suns-5, at: [-25, -25], face: down, lock: true }
+  - { place: tile.moons-null, at: [25, -25], face: down, lock: true }
+  - { place: tile.moons-ace, at: [75, -25], face: down, lock: true }
+  - { place: tile.moons-2, at: [-75, 25], face: down, lock: true }
+  - { place: tile.moons-3, at: [-25, 25], face: down, lock: true }
+  - { place: tile.moons-4, at: [25, 25], face: down, lock: true }
+  - { place: tile.moons-5, at: [75, 25], face: down, lock: true }
+  - { place: tile.crowns-null, at: [-75, 75], face: down, lock: true }
+  - { place: tile.crowns-ace, at: [-25, 75], face: down, lock: true }
+  - { place: tile.crowns-2, at: [25, 75], face: down, lock: true }
+  - { place: tile.crowns-3, at: [75, 75], face: down, lock: true }
+  - { place: tablut-points, at: [0, 0], lock: true }
+  # Attackers, value side up
+  - { place: coin.suns-null, at: tablut-points/point/3 }
+  - { place: coin.suns-ace, at: tablut-points/point/4 }
+  - { place: coin.suns-2, at: tablut-points/point/5 }
+  - { place: coin.suns-3, at: tablut-points/point/13 }
+  - { place: coin.suns-4, at: tablut-points/point/75 }
+  - { place: coin.suns-5, at: tablut-points/point/76 }
+  - { place: coin.moons-null, at: tablut-points/point/77 }
+  - { place: coin.moons-ace, at: tablut-points/point/67 }
+  - { place: coin.moons-2, at: tablut-points/point/27 }
+  - { place: coin.moons-3, at: tablut-points/point/36 }
+  - { place: coin.moons-4, at: tablut-points/point/45 }
+  - { place: coin.moons-5, at: tablut-points/point/37 }
+  - { place: coin.crowns-null, at: tablut-points/point/35 }
+  - { place: coin.crowns-ace, at: tablut-points/point/44 }
+  - { place: coin.crowns-2, at: tablut-points/point/53 }
+  - { place: coin.crowns-3, at: tablut-points/point/43 }
+  # Defenders, suit side up
+  - { place: coin.crowns-4, at: tablut-points/point/38, face: down }
+  - { place: coin.crowns-5, at: tablut-points/point/39, face: down }
+  - { place: coin.arms-null, at: tablut-points/point/41, face: down }
+  - { place: coin.arms-ace, at: tablut-points/point/42, face: down }
+  - { place: coin.arms-2, at: tablut-points/point/22, face: down }
+  - { place: coin.arms-3, at: tablut-points/point/31, face: down }
+  - { place: coin.arms-4, at: tablut-points/point/49, face: down }
+  - { place: coin.arms-5, at: tablut-points/point/58, face: down }
+  - { place: pawn.suns, at: tablut-points/point/40 }

@@ -221,7 +221,7 @@ Type: `true` or object
 
 ## Back
 
-The back of a flippable component. It has the front's outline.
+The back of a flippable component. It has the front's outline. Fields it uses are shown to everyone while the component lies face down.
 
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |

@@ -179,19 +179,20 @@ From the repo root, run them as `pnpm trayful …`. See the [CLI README](package
 
 ## Repository layout
 
-| Path                                                       | What it is                                                                               |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [`packages/formats`](packages/formats)                     | File format schemas (Zod), YAML loader and validator, generated JSON Schemas             |
-| [`packages/core`](packages/core)                           | Table state, commands, snapping, setups, undo and seeded randomness                      |
-| [`packages/server`](packages/server)                       | Local server: projects and tables, players and invites, live reload, WebSocket sync, MCP |
-| [`packages/app`](packages/app)                             | Browser table (React and Konva)                                                          |
-| [`packages/cli`](packages/cli)                             | The `trayful` command line                                                               |
-| [`examples/harvest-moon`](examples/harvest-moon)           | Sample prototype that uses every file kind; validated in CI                              |
-| [`examples/starter`](examples/starter)                     | The template `trayful new` copies; validated in CI                                       |
-| [`docs`](docs)                                             | HOWTO guides and the format reference (partly generated)                                 |
-| [`e2e`](e2e)                                               | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players  |
-| [`scripts`](scripts)                                       | Code generation, example validation and the dev server                                   |
-| [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml) | Running the server in a container; `scripts/docker.sh` starts it                         |
+| Path                                                       | What it is                                                                                                        |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| [`packages/formats`](packages/formats)                     | File format schemas (Zod), YAML loader and validator, generated JSON Schemas                                      |
+| [`packages/core`](packages/core)                           | Table state, commands, snapping, setups, undo and seeded randomness                                               |
+| [`packages/server`](packages/server)                       | Local server: projects and tables, players and invites, live reload, WebSocket sync, MCP                          |
+| [`packages/app`](packages/app)                             | Browser table (React and Konva)                                                                                   |
+| [`packages/cli`](packages/cli)                             | The `trayful` command line                                                                                        |
+| [`examples/harvest-moon`](examples/harvest-moon)           | Sample prototype that uses every file kind; validated in CI                                                       |
+| [`examples/starter`](examples/starter)                     | The template `trayful new` copies; validated in CI                                                                |
+| [`examples/piecepack`](examples/piecepack)                 | The public-domain piecepack with Backgammon and Tablut, built to find what Trayful cannot do yet; validated in CI |
+| [`docs`](docs)                                             | HOWTO guides and the format reference (partly generated)                                                          |
+| [`e2e`](e2e)                                               | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players                           |
+| [`scripts`](scripts)                                       | Code generation, example validation and the dev server                                                            |
+| [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml) | Running the server in a container; `scripts/docker.sh` starts it                                                  |
 
 ## Development
 

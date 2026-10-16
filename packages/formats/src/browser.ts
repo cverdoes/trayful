@@ -4,6 +4,7 @@ export * from './schemas.js';
 export * from './diagnostics.js';
 export * from './fields.js';
 export * from './component.js';
+export { backFields } from './templates.js';
 export * from './drawing.js';
 export * from './order.js';
 export * from './presets.js';

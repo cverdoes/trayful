@@ -53,7 +53,7 @@ Under **Face**, set the outline (**Shape**, and **Corner** for a rectangle), the
 - **Each component picks its tile**, given by each entry of the inventory, as on a sheet of different hex tiles.
 - **The tile of its value**, on a die or counter: a strip of six die faces shows the face it rolled.
 
-**Fit** says how an image that is not the face's shape fills it: cropped (**cover**, the default), whole (**contain**) or stretched. The **Back** section has the same settings for the back.
+**Fit** says how an image that is not the face's shape fills it: cropped (**cover**, the default), whole (**contain**) or stretched. The **Back** section has the same settings for the back. A field the back uses (in a label, a colour or an image) is printed on the back, so every player sees it while the component lies face down; the back's fields stay hidden otherwise.
 
 Under **Labels**, **Label** adds text: pick a **Field** to show each card's own value, such as its title, or leave the field empty and type fixed **Text**. Anything else, such as a coloured band, a circle behind the cost or a small picture, goes under **Advanced drawing**, where **Text**, **Shape** and **Picture** add layers.
 

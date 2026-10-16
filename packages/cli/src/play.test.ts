@@ -50,7 +50,7 @@ describe('trayful play', () => {
 
   it('says how to switch projects in a folder of projects', async () => {
     const out = await playUntilStopped([await scratchExamples(), '--project', 'harvest-moon']);
-    expect(out).toContain('2 projects in this folder; switch between them in the browser.');
+    expect(out).toContain('3 projects in this folder; switch between them in the browser.');
   });
 
   it('prints invite links when sharing on the network', async () => {

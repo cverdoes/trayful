@@ -215,7 +215,7 @@ export class TableSession {
 
   /** The table as one player may see it: other hands and face-down faces hidden. */
   viewFor(viewer: string | undefined) {
-    return viewFor(this.engine.state, viewer, this.aliases);
+    return viewFor(this.engine.state, viewer, this.aliases, this.project.types);
   }
 
   /** Makes a change on behalf of an agent, labelled so people watching see what it did. */

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="100" viewBox="0 0 600 100">
+  <!-- The arms die: null (blank), ace (the suit), 2, 3, 4 and 5, one tile per value. -->
+  <g transform="translate(0 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    
+  </g>
+  <g transform="translate(100 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <g transform="translate(20 20) scale(0.6)"><path d="M50 6 C34 24 36 44 50 58 C64 44 66 24 50 6 Z M46 58 C30 62 14 52 14 38 C24 38 36 44 46 56 Z M54 58 C70 62 86 52 86 38 C76 38 64 44 54 56 Z" fill="#2a5db0"/><rect x="26" y="60" width="48" height="8" rx="3" fill="#2a5db0"/><path d="M44 68 L56 68 L54 94 L46 94 Z" fill="#2a5db0"/></g>
+  </g>
+  <g transform="translate(200 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <text x="50" y="52" font-family="sans-serif" font-size="64" font-weight="bold" fill="#2a5db0" text-anchor="middle" dominant-baseline="central">2</text>
+  </g>
+  <g transform="translate(300 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <text x="50" y="52" font-family="sans-serif" font-size="64" font-weight="bold" fill="#2a5db0" text-anchor="middle" dominant-baseline="central">3</text>
+  </g>
+  <g transform="translate(400 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <text x="50" y="52" font-family="sans-serif" font-size="64" font-weight="bold" fill="#2a5db0" text-anchor="middle" dominant-baseline="central">4</text>
+  </g>
+  <g transform="translate(500 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <text x="50" y="52" font-family="sans-serif" font-size="64" font-weight="bold" fill="#2a5db0" text-anchor="middle" dominant-baseline="central">5</text>
+  </g>
+</svg>

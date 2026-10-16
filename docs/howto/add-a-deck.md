@@ -41,7 +41,7 @@ Add the component to a file in `library/`. This is the Harvest Moon action card:
 - `size` is in millimetres. 63 × 88 is a standard poker card.
 - `fields` are the things that differ from card to card. `string?` means the field may be left out; `default` fills it in when a card leaves it out; `enum` limits it to a few values.
 - `face` is the front: its `corner` radius, a `fill` colour, and `labels`, each showing a field's value at a position in millimetres from the card's top-left corner. `layers` draw anything else, here the card's picture and the circle behind the cost. `'{{suit}}'` is replaced by each card's suit, and `ink`, `gold`, `red` and `green` are colours named in the project's [`assets.yaml`](../../examples/harvest-moon/assets.yaml), as is the `card-back` image.
-- `back` under `flippable` is how the face-down side looks. Leave it out (`flippable: true`) for a plain back.
+- `back` under `flippable` is how the face-down side looks. Leave it out (`flippable: true`) for a plain back. A back may use the card's fields, such as `fill: '{{deck}}'`; those fields are then shown to everyone while the card lies face down, and the others stay hidden.
 
 The [library reference](../reference/library.md) lists every key, and [Faces and templates](../reference/faces-and-templates.md) explains how drawing works.
 

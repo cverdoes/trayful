@@ -1,5 +1,7 @@
+import { backFields } from '@trayful/formats/browser';
 import {
   bagCounts,
+  type Catalog,
   handCounts,
   type Piece,
   type Stack,
@@ -9,9 +11,10 @@ import {
 
 /**
  * What one player may know about a table. Pieces in other players' hands and in
- * bags are left out (only how many each holds is shown), and face-down pieces lose
- * their data and get a stand-in id, so neither their text nor their id gives them
- * away. The random generator's state is left out too, since it predicts shuffles.
+ * bags are left out (only how many each holds is shown), and face-down pieces keep
+ * only the data their back shows and get a stand-in id, so neither their text nor
+ * their id gives them away. The random generator's state is left out too, since it
+ * predicts shuffles.
  */
 export interface TableView extends TableState {
   /** How many pieces each player holds, by player id. */
@@ -36,21 +39,56 @@ export function isHidden(piece: Piece, viewer: string | undefined): boolean {
   return piece.face === 'down';
 }
 
+/**
+ * The data a face-down piece shows: only the fields its back is drawn with, which
+ * everyone may see. Undefined when the back shows none.
+ */
+export function backData(piece: Piece, catalog: Catalog): Piece['data'] {
+  const type = catalog[piece.type];
+  const data = piece.data;
+  if (!data || !type) return undefined;
+  const shown = backFields(type).flatMap((field) =>
+    data[field] === undefined ? [] : [[field, data[field]] as const],
+  );
+  return shown.length === 0 ? undefined : Object.fromEntries(shown);
+}
+
 export function viewFor(
   state: TableState,
   viewer: string | undefined,
   aliases: Aliases,
+  catalog: Catalog,
 ): TableView {
   const name = (id: string): string => {
     const object = state.objects[id];
     return object?.kind === 'piece' && isHidden(object, viewer) ? aliases.alias(id) : id;
   };
+  const buried = buriedPieces(state);
   const objects: Record<string, TableObject> = {};
   for (const object of Object.values(state.objects)) {
-    const seen = viewObject(object, viewer, name);
+    const seen = viewObject(object, { viewer, name, catalog, buried });
     if (seen) objects[seen.id] = seen;
   }
   return { ...state, seed: 0, rng: 0, objects, ...counts(state, name) };
+}
+
+/** Who is looking, the names they know objects by, and what each component is. */
+interface Viewing {
+  viewer: string | undefined;
+  name: (id: string) => string;
+  catalog: Catalog;
+  /** Pieces under the top of a closed pile, whose backs no one can see. */
+  buried: ReadonlySet<string>;
+}
+
+/** Pieces under the top of a pile that is not fanned or spread out. */
+function buriedPieces(state: TableState): Set<string> {
+  const buried = new Set<string>();
+  for (const object of Object.values(state.objects)) {
+    if (object.kind !== 'stack' || (object.layout ?? 'pile') !== 'pile') continue;
+    for (const id of object.items.slice(0, -1)) buried.add(id);
+  }
+  return buried;
 }
 
 /**
@@ -59,8 +97,7 @@ export function viewFor(
  */
 function viewObject(
   object: TableObject,
-  viewer: string | undefined,
-  name: (id: string) => string,
+  { viewer, name, catalog, buried }: Viewing,
 ): TableObject | undefined {
   // Each branch names the object before its snap, so stand-in ids are handed out in a stable order.
   if (object.kind === 'stack') {
@@ -71,7 +108,9 @@ function viewObject(
   if (object.bag || (object.hand && object.hand !== viewer)) return undefined;
   if (isHidden(object, viewer)) {
     const hidden: Piece = { ...object, id: name(object.id) };
-    delete hidden.data;
+    const data = buried.has(object.id) ? undefined : backData(object, catalog);
+    if (data) hidden.data = data;
+    else delete hidden.data;
     if (object.snap) hidden.snap = renameSnap(object.snap, name);
     return hidden;
   }

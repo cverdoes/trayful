@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="100" viewBox="0 0 600 100">
+  <!-- The moons die: null (blank), ace (the suit), 2, 3, 4 and 5, one tile per value. -->
+  <g transform="translate(0 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    
+  </g>
+  <g transform="translate(100 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <g transform="translate(20 20) scale(0.6)"><path d="M62 10 A40 40 0 1 0 62 90 A50 50 0 0 1 62 10 Z" fill="#222233"/></g>
+  </g>
+  <g transform="translate(200 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <text x="50" y="52" font-family="sans-serif" font-size="64" font-weight="bold" fill="#222233" text-anchor="middle" dominant-baseline="central">2</text>
+  </g>
+  <g transform="translate(300 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <text x="50" y="52" font-family="sans-serif" font-size="64" font-weight="bold" fill="#222233" text-anchor="middle" dominant-baseline="central">3</text>
+  </g>
+  <g transform="translate(400 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <text x="50" y="52" font-family="sans-serif" font-size="64" font-weight="bold" fill="#222233" text-anchor="middle" dominant-baseline="central">4</text>
+  </g>
+  <g transform="translate(500 0)">
+    <rect width="100" height="100" fill="#fbf7ee"/>
+    <text x="50" y="52" font-family="sans-serif" font-size="64" font-weight="bold" fill="#222233" text-anchor="middle" dominant-baseline="central">5</text>
+  </g>
+</svg>
