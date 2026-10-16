@@ -15,7 +15,7 @@ images:
   dice: { file: assets/dice.svg, rows: 2, cols: 3 }
 ```
 
-Faces refer to images by these names, so you can move or replace a file and change only this line. The same file holds the project's named colours under `colors:`. The [assets reference](../reference/assets.md) lists every key.
+Faces refer to images by these names, so you can move or replace a file and change only this line. The designer's **Assets** page does the same by clicking: drop images on it and set their rows and columns (see [Design components in the browser](design-components.md#images-and-colours)). The same file holds the project's named colours under `colors:`. The [assets reference](../reference/assets.md) lists every key.
 
 ## The same image on every card
 
@@ -135,4 +135,4 @@ A face's image fills the face. An image layer's `at` is its top-left corner and 
 - Paths are relative to the project folder and use `/`, even on Windows.
 - Trayful checks that every image in the assets file exists, and that faces name images the assets file has. A misspelt path in a card's data shows as an empty box on the table.
 - Edited images show up on the table when you save them, like any other file.
-- An agent can add artwork for you with the `add_asset` tool, which takes SVG text or a base64 PNG.
+- An agent can add artwork for you with the `add_asset` tool, which takes SVG text or a base64 PNG, and names it in the assets file when given a `name`.

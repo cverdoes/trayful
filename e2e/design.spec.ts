@@ -1,20 +1,9 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { agent } from './helpers.js';
+import { agent, libraryFile, newComponent, savedType, waitSaved } from './helpers.js';
 
 type Point = [number, number];
 
 const PROJECT = 'workshop';
-
-async function libraryFile(page: Page, file: string): Promise<string> {
-  const health = (await (await page.request.get('/api/health')).json()) as { root: string };
-  return readFile(path.join(health.root, PROJECT, file), 'utf8');
-}
-
-async function waitSaved(page: Page) {
-  await expect(page.getByRole('status')).toContainText('Saved to');
-}
 
 test('a person builds a card type in the designer and deals it onto the table', async ({
   page,
@@ -22,28 +11,24 @@ test('a person builds a card type in the designer and deals it onto the table', 
 }) => {
   await page.goto(`/?project=${PROJECT}`);
   await page.getByRole('button', { name: 'Design' }).click();
-  await expect(page.getByRole('navigation', { name: 'Types' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Component list' })).toBeVisible();
 
-  await page.getByRole('button', { name: '+ New type' }).click();
-  const dialog = page.getByRole('dialog', { name: 'New type' });
-  await dialog.getByRole('textbox').fill('Season card');
-  await dialog.getByLabel('Poker card').check();
-  await dialog.getByRole('button', { name: 'Create' }).click();
-  await waitSaved(page);
-
+  await newComponent(page, 'Season card', 'Poker card');
   const inspector = page.getByRole('complementary', { name: 'Inspector' });
+  await inspector.getByText('Data fields').click();
   await inspector.getByRole('button', { name: '+ Add field' }).click();
   const fieldName = inspector.locator('.design-field').getByLabel('Name');
   await fieldName.fill('title');
   await fieldName.press('Enter');
 
+  await inspector.getByRole('region', { name: 'Face' }).getByText('Advanced drawing').click();
   await inspector.getByRole('button', { name: 'Text', exact: true }).click();
   await inspector.getByLabel('Text', { exact: true }).fill('{{title}}');
   await waitSaved(page);
 
   const file = 'library/cards.yaml';
-  await expect.poll(() => libraryFile(page, file)).toContain("text: '{{title}}'");
-  const written = await libraryFile(page, file);
+  await expect.poll(() => libraryFile(page, PROJECT, file)).toContain("text: '{{title}}'");
+  const written = await libraryFile(page, PROJECT, file);
   // Written the way a person would: fields before the faces, short lists inline.
   expect(written).toContain('  - id: season-card\n    name: Season card\n');
   expect(written).toContain('size: [63, 88]');
@@ -99,32 +84,15 @@ async function clickOnFront(page: Page, at: Point) {
   await page.mouse.click(p.x, p.y);
 }
 
-/** The type as the table has it, once a save has reached it. */
-function savedType(page: Page, id: string) {
-  return page.evaluate(
-    (id) =>
-      (
-        window.__trayful!.store.getState() as unknown as {
-          view?: { types: Record<string, { container?: unknown; face?: { layers?: unknown[] } }> };
-        }
-      ).view?.types[id],
-    id,
-  );
-}
-
 test('a person lays out a board by dragging: a layer, a grid of drop spots and a track', async ({
   page,
 }) => {
   await page.goto(`/?project=${PROJECT}&design`);
-  await page.getByRole('button', { name: '+ New type' }).click();
-  const dialog = page.getByRole('dialog', { name: 'New type' });
-  await dialog.getByRole('textbox').fill('Farm board');
-  await dialog.getByLabel('Board').check();
-  await dialog.getByRole('button', { name: 'Create' }).click();
-  await waitSaved(page);
+  await newComponent(page, 'Farm board', 'Board');
   const inspector = page.getByRole('complementary', { name: 'Inspector' });
 
   // A text layer, dragged from where it starts (5, 5) and snapped to the grid.
+  await inspector.getByRole('region', { name: 'Face' }).getByText('Advanced drawing').click();
   await inspector.getByRole('button', { name: 'Text', exact: true }).click();
   await dragOnFront(page, [8, 8], [101, 52]);
   await expect
@@ -180,15 +148,16 @@ test('renaming a type or a field changes every file that uses it', async ({ page
   page.once('dialog', (dialog) => void dialog.accept('coin'));
   await inspector.getByRole('button', { name: 'Rename…' }).click();
   await expect(inspector.getByLabel('Id')).toHaveValue('coin');
-  expect(await libraryFile(page, 'library/pieces.yaml')).toContain('- id: coin');
-  expect(await libraryFile(page, 'inventory.yaml')).toContain('- component: coin');
-  expect(await libraryFile(page, 'setups/start.yaml')).toContain('- place: coin');
+  expect(await libraryFile(page, PROJECT, 'library/pieces.yaml')).toContain('- id: coin');
+  expect(await libraryFile(page, PROJECT, 'inventory.yaml')).toContain('- component: coin');
+  expect(await libraryFile(page, PROJECT, 'setups/start.yaml')).toContain('- place: coin');
 
   // A field the cards' spreadsheet fills: its column is renamed too.
   await page
-    .getByRole('navigation', { name: 'Types' })
+    .getByRole('navigation', { name: 'Component list' })
     .getByRole('button', { name: /^Card/ })
     .click();
+  await inspector.getByText('Data fields').click();
   const title = inspector.locator('.design-field').first().getByLabel('Name');
   await expect(title).toHaveValue('title');
   await title.fill('heading');
@@ -197,11 +166,13 @@ test('renaming a type or a field changes every file that uses it', async ({ page
     'heading',
   );
   // The name box shows what was typed straight away; the files change once the server is done.
-  await expect.poll(() => libraryFile(page, 'data/cards.csv')).toMatch(/^heading,text,value,count/);
-  expect(await libraryFile(page, 'library/cards.yaml')).toContain('field: heading');
+  await expect
+    .poll(() => libraryFile(page, PROJECT, 'data/cards.csv'))
+    .toMatch(/^heading,text,value,count/);
+  expect(await libraryFile(page, PROJECT, 'library/cards.yaml')).toContain('field: heading');
 });
 
-test('an image dropped on a face is saved with the project and drawn there', async ({ page }) => {
+test('an image dropped on a face is saved with the project and covers it', async ({ page }) => {
   await page.goto(`/?project=${PROJECT}&design&type=card`);
   await expect(page.getByRole('complementary', { name: 'Inspector' }).getByLabel('Id')).toHaveValue(
     'card',
@@ -220,8 +191,9 @@ test('an image dropped on a face is saved with the project and drawn there', asy
     .getByTestId('design-canvas')
     .dispatchEvent('drop', { dataTransfer: drop, clientX: at.x, clientY: at.y });
   await waitSaved(page);
-  await expect
-    .poll(async () => (await savedType(page, 'card'))?.face?.layers?.at(-1))
-    .toMatchObject({ image: 'assets/moon-art.png', size: [31.5, 31.5] });
-  expect(await libraryFile(page, 'assets/moon-art.png')).toBeTruthy();
+  await expect.poll(async () => (await savedType(page, 'card'))?.face?.image).toBe('moon-art');
+  expect(await libraryFile(page, PROJECT, 'assets/moon-art.png')).toBeTruthy();
+  expect(await libraryFile(page, PROJECT, 'assets.yaml')).toContain(
+    'moon-art: assets/moon-art.png',
+  );
 });

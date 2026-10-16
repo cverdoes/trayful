@@ -1,20 +1,20 @@
 # Design components in the browser
 
-The designer lets you build components by clicking instead of writing YAML: pick a size, switch on what the component can do, add fields, and lay out each face while a preview redraws as you go. Every change is saved to your library files, so they stay the files you would have written by hand.
+The designer lets you build components by clicking instead of writing YAML: name it, say what it is, give its face a colour, an image and labels, and switch on what it can do, while a preview redraws as you go. Every change is saved to your library files, so they stay the files you would have written by hand.
 
 ## Open the designer
 
-Open your project on a table and click **Design** in the toolbar. Only the host (the person who ran `trayful play`) can design; players who joined by invite link see the table only. **Table** at the top goes back to playing.
+Open your project on a table and click **Design** in the toolbar. Only the host (the person who ran `trayful play`) can design; players who joined by invite link see the table only. At the top, **Components** and **Assets** switch between the components and the project's images and colours, and **Table** goes back to playing.
 
-The designer has three parts:
+The components page has three parts:
 
-- **Types** on the left lists every component in the project, grouped by what it is (pieces, zones, dice and counters), with how many of each are in the box.
+- **Components** on the left lists every component in the project, grouped by what it is (pieces, zones, dice and counters), with how many of each are in the box.
 - The **preview** in the middle draws the component at its real proportions, front and back, on a 5 mm grid.
-- The **inspector** on the right holds everything about the component, from its name and behaviours to each label and layer on its faces.
+- The **panel** on the right builds the component up step by step, top to bottom: **Basics**, **What it is**, its **Face**, what it does, its **Back** once it has one, and its drop areas.
 
 ## Make a new component
 
-Click **+ New type**, give it a name and pick what to start from: a poker or mini card, a square or hex tile, a round token, a meeple, a six-sided die, a counter or a board, each at a common size. The component is written to the library file that already holds components that are the same kind of thing (pieces go next to your other pieces), with an id made from its name, such as `event-card`.
+Click **+ New component**, give it a name and pick what to start like: a poker or mini card, a square or hex tile, a round token, a meeple, a six-sided die, a counter, a board or a zone, each at a common size you can change. **Next** asks what it is (a piece, a zone, a die or a counter), and **Create** makes it. The component is written to the library file that already holds components that are the same kind of thing (pieces go next to your other pieces), with an id made from its name, such as `event-card`.
 
 **Duplicate** copies the selected component into the same file, which is the quickest way to make a variant. **Delete** removes it, but only once nothing in the inventory uses it; take its entries out of `inventory.yaml` first.
 
@@ -22,11 +22,11 @@ Click **+ New type**, give it a name and pick what to start from: a poker or min
 
 ## What it is and what it does
 
-At the top of the inspector, **Is a** says what the component is: a `piece` (cards, tiles, tokens, meeples, boards), a `zone` (a dashed area of the table), a `die` or a `counter`. **Size**, **Outline** (the shape, such as `hex` or `meeple`) and **Corner** set its outline.
+**Basics** holds the component's name, id, **Size** in millimetres and description. **What it is** says what the component is: a **Piece** (cards, tiles, tokens, meeples, boards), a **Zone** (an area of the table that holds what is put on it), a **Die** or a **Counter**. Changing it drops the settings that no longer apply, such as a die's values on a piece.
 
 Under **Behaviour**, pieces and zones switch on what they can do, each off until ticked:
 
-- **Flippable (has a back)** gives it a back side, which the **Back** tab below designs.
+- **Flippable (has a back)** gives it a back side, which a **Back** section further down designs.
 - **Rotates** lets it turn on the table, by **Rotate step** degrees at a time (90 unless set).
 - **Stackable** lets it pile up into stacks and decks. **Stacks with** lists other components that may share its piles, such as coins of another value.
 
@@ -34,7 +34,7 @@ Dice and counters have **Values** instead: a **Range** of whole numbers or a lis
 
 ## Fields: what changes from card to card
 
-A field is a value each card (or other copy of the component) has its own of, such as a title or a cost. Under **Fields**, **+ Add field** adds one; give it a name, then pick its kind:
+A field is a value each card (or other copy of the component) has its own of, such as a title or a cost. Open **Data fields** at the bottom of the panel; **+ Add field** adds one; give it a name, then pick its kind:
 
 - `string`, `int`, `number` or `bool` for text, whole numbers, numbers and yes/no.
 - `color` or `image` for a colour or a picture per card.
@@ -44,20 +44,32 @@ Tick **Optional** when some cards leave it out, and set a **Default** for the va
 
 To rename a field, type its new name and press Enter. Every `{{title}}` and label on the faces follows, and so do the component's inventory rows and the header of any spreadsheet they are loaded from.
 
-## Faces, labels and layers
+## Faces, images, labels and layers
 
-Under **Face** (or the **Front** and **Back** tabs, for a flippable component), set the side's fill and outline, then add what is drawn on it:
+Under **Face**, set the outline (**Shape**, and **Corner** for a rectangle), the **Fill** and **Outline colour**. **Image** covers the face with one of the project's images (see [Images and colours](#images-and-colours) below). For an image cut into tiles, **Shows** says which part of it:
 
-- **Label** adds text: pick a **Field** to show each card's own value, such as its title, or leave the field empty and type fixed **Text**.
-- **Text**, **Shape** and **Image** add layers, for anything else: a coloured band, a circle behind the cost, a picture.
+- **The whole image**.
+- **One tile**: click the tile in the grid under it.
+- **Each component picks its tile**, given by each entry of the inventory, as on a sheet of different hex tiles.
+- **The tile of its value**, on a die or counter: a strip of six die faces shows the face it rolled.
+
+**Fit** says how an image that is not the face's shape fills it: cropped (**cover**, the default), whole (**contain**) or stretched. The **Back** section has the same settings for the back.
+
+Under **Labels**, **Label** adds text: pick a **Field** to show each card's own value, such as its title, or leave the field empty and type fixed **Text**. Anything else, such as a coloured band, a circle behind the cost or a small picture, goes under **Advanced drawing**, where **Text**, **Shape** and **Picture** add layers.
 
 Layers are drawn first, then labels on top of them; within each, later ones in the list sit on top. The arrows move an item up or down and × removes it. Click an item in the list or on the preview to select it and edit it under **Selected label** or **Selected layer**: its text, font and alignment, its shape and colours, or its image file and fit, plus where it sits in millimetres, its rotation and opacity. **Show when** draws it only for cards where a template such as `{{rare}}` has a value, so one component can cover cards with and without it.
 
 You can also work on the preview directly. Drag a label or layer to move it, drag a corner of the selected one to resize it (a text's side handle sets how wide it wraps), and drag the round handle above it to turn it. While you drag, the layer snaps to the 5 mm grid, the face's edges and centre, and the edges and centres of the other layers; an orange line shows what it lined up with. Turning snaps to steps of 15°.
 
-Drop a picture file from your computer onto a face to add it: it is saved into the project's `assets/` folder (next to any file of the same name, never over it) and placed where you dropped it, as large as fits in half the face.
+Drop a picture file from your computer onto a face to make it that side's image: it is saved into the project's `assets/` folder (next to any file of the same name, never over it) and named in `assets.yaml` after its file.
 
 Colour boxes take any CSS colour, a `{{field}}`, or a colour named in the project's `assets.yaml`; those colours appear as swatches next to the box, and the square opens a colour picker.
+
+## Images and colours
+
+The **Assets** page lists the project's images and named colours, as `assets.yaml` holds them. Drop picture files on it, or click **Add images**, to save them into `assets/` and name them after their file (`Die faces.png` becomes `die-faces`). For a sheet of cards or tiles, or a strip of die faces, set **Rows** and **Columns**: the grid drawn over the image shows the tiles it is cut into, numbered left to right, then top to bottom, from 0. **Remove** takes the name off an image; the file stays, and an image a component still uses cannot be removed.
+
+Under **Colours**, give a colour a name with **Add colour**, change one with its picker, or remove it. Named colours appear as swatches next to every colour box.
 
 ## Drop areas for boards
 

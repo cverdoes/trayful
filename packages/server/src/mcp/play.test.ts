@@ -90,9 +90,26 @@ describe('MCP play tools', () => {
     });
   });
 
-  it('writes assets, removes types and explains a missing render', async () => {
+  it('writes and names assets, removes types and explains a missing render', async () => {
     const asset = await call('add_asset', { path: 'assets/dot.svg', text: '<svg/>' });
     expect(asset.text).toMatch(/Wrote assets\/dot\.svg/);
+    const named = await call('add_asset', {
+      path: 'assets/dots.svg',
+      text: '<svg/>',
+      name: 'dots',
+      cols: 6,
+    });
+    expect(named.text).toMatch(/Faces use it as "dots"\./);
+    expect(workspace.project(session.projectId).assets.images.dots).toEqual({
+      file: 'assets/dots.svg',
+      rows: 1,
+      cols: 6,
+    });
+    const badName = await call('add_asset', { path: 'assets/x.svg', text: '<svg/>', name: 'X Y' });
+    expect(badName).toMatchObject({
+      isError: true,
+      text: expect.stringMatching(/not a usable name/),
+    });
     const used = await call('remove_type', { type: 'coins' });
     expect(used.isError).toBe(true);
     const render = await call('render_component', { type: 'lantern' });

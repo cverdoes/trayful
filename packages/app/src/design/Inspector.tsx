@@ -1,6 +1,5 @@
 import {
   REPRESENTATIONS,
-  SHAPES,
   formatPath,
   isValued,
   valuesOf,
@@ -8,26 +7,36 @@ import {
   type Control,
 } from '@trayful/formats/browser';
 import { parseValues, setIn, withRepresentation, type Path } from './edit';
-import { Checkbox, NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
-import { FaceSection } from './FaceSection';
+import { Checkbox, NumberInput, PairInput, Row, SizeInput, TextInput } from './controls';
 import { FieldsSection } from './FieldsSection';
+import { KIND_TEXT } from './kinds';
 import { renameDraftType } from './projectEdits';
+import { SideSection } from './SideSection';
 import { SnapSection } from './SnapSection';
 import { editDraft, setValue, useDesign } from './store';
 
-/** The panel on the right: everything about the type being edited, top to bottom. */
+/**
+ * The panel on the right: the component built up step by step, top to bottom.
+ * What it is decides what follows, and each behaviour adds its own settings
+ * only once it is switched on.
+ */
 export function Inspector() {
   const draft = useDesign((s) => s.draft);
   if (!draft)
-    return <aside className="design-inspector muted">Pick a type, or make a new one.</aside>;
+    return <aside className="design-inspector muted">Pick a component, or make a new one.</aside>;
   return (
     <aside className="design-inspector" aria-label="Inspector">
       <Problems />
-      <TypeSection type={draft} />
-      <BehaviourSection type={draft} />
-      <FieldsSection type={draft} />
-      <FaceSection type={draft} />
+      <BasicsSection type={draft} />
+      <KindSection type={draft} />
+      <SideSection type={draft} side="front" />
+      {isValued(draft) ? <ValueSection type={draft} /> : <BehaviourSection type={draft} />}
+      {draft.flippable !== undefined && <SideSection type={draft} side="back" />}
       <SnapSection type={draft} />
+      <details className="design-advanced">
+        <summary>Data fields</summary>
+        <FieldsSection type={draft} />
+      </details>
       <datalist id="design-fields">
         {Object.keys(draft.fields ?? {}).map((name) => (
           <option key={name} value={`{{${name}}}`} />
@@ -64,20 +73,11 @@ function askRename(id: string) {
   if (to) void renameDraftType(to.trim());
 }
 
-function TypeSection({ type }: Readonly<{ type: ComponentType }>) {
+/** Its name and size. */
+function BasicsSection({ type }: Readonly<{ type: ComponentType }>) {
   return (
-    <section>
-      <h3>Type</h3>
-      <Row label="Id" path={['id']}>
-        {(id) => (
-          <div className="design-pair">
-            <TextInput id={id} value={type.id} onChange={() => undefined} readOnly />
-            <button type="button" onClick={() => askRename(type.id)}>
-              Rename…
-            </button>
-          </div>
-        )}
-      </Row>
+    <section aria-label="Basics">
+      <h3>Basics</h3>
       <Row label="Name" path={['name']}>
         {(id) => (
           <TextInput
@@ -88,45 +88,49 @@ function TypeSection({ type }: Readonly<{ type: ComponentType }>) {
           />
         )}
       </Row>
-      <Row label="Description" path={['description']}>
+      <Row label="Id" path={['id']}>
         {(id) => (
-          <TextInput id={id} value={type.description} onChange={setValue(['description'])} />
-        )}
-      </Row>
-      <Row label="Is a" path={['is']}>
-        {(id) => (
-          <Select
-            id={id}
-            value={type.is}
-            options={REPRESENTATIONS}
-            onChange={(is) => is && editDraft((t) => withRepresentation(t, is))}
-          />
+          <div className="design-pair">
+            <TextInput id={id} value={type.id} onChange={() => undefined} readOnly />
+            <button type="button" onClick={() => askRename(type.id)}>
+              Rename…
+            </button>
+          </div>
         )}
       </Row>
       <Row label="Size (mm)" path={['size']}>
         {(id) => <SizeInput id={id} value={type.size} onChange={setValue(['size'])} />}
       </Row>
-      <Row label="Outline" path={['face', 'shape']}>
+      <Row label="Description" path={['description']}>
         {(id) => (
-          <Select
-            id={id}
-            value={type.face?.shape}
-            options={SHAPES}
-            onChange={setValue(['face', 'shape'])}
-            empty="rect"
-          />
+          <TextInput id={id} value={type.description} onChange={setValue(['description'])} />
         )}
       </Row>
-      <Row label="Corner (mm)" path={['face', 'corner']}>
-        {(id) => (
-          <NumberInput
-            id={id}
-            value={type.face?.corner}
-            onChange={setValue(['face', 'corner'])}
-            placeholder="0"
-          />
-        )}
-      </Row>
+    </section>
+  );
+}
+
+/** What it is: a piece, a zone, a die or a counter. Changing it drops what no longer applies. */
+function KindSection({ type }: Readonly<{ type: ComponentType }>) {
+  return (
+    <section aria-label="What it is">
+      <h3>What it is</h3>
+      <div className="design-kinds" role="radiogroup" aria-label="What it is">
+        {REPRESENTATIONS.map((is) => (
+          <button
+            key={is}
+            type="button"
+            role="radio"
+            aria-checked={type.is === is}
+            className={type.is === is ? 'kind chosen' : 'kind'}
+            title={KIND_TEXT[is].about}
+            onClick={() => type.is !== is && editDraft((t) => withRepresentation(t, is))}
+          >
+            {KIND_TEXT[is].name}
+          </button>
+        ))}
+      </div>
+      <p className="muted">{KIND_TEXT[type.is].about}</p>
     </section>
   );
 }
@@ -140,7 +144,6 @@ const toggle = (key: Path[number]) => (on: boolean) => {
 
 /** What the component does on the table: each behaviour is off until switched on. */
 function BehaviourSection({ type }: Readonly<{ type: ComponentType }>) {
-  if (isValued(type)) return <ValueSection type={type} />;
   const step = typeof type.rotates === 'object' ? type.rotates.step : undefined;
   const partners = typeof type.stackable === 'object' ? type.stackable.with : undefined;
   return (

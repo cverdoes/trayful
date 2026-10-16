@@ -24,7 +24,7 @@ The agent reads the docs and the format reference (the `trayful://docs` resource
 1. **`upsert_type`** writes the new component into a library file, keeping your comments and formatting: its size, what it `is`, its `face` and the behaviours it needs (`flippable`, `rotates`, `stackable`, `container`, `values`). Calling it again with the same id changes the component.
 2. **`set_inventory`** sets which cards of that component are in the box, as an inventory entry with `items`, `from` (a CSV file) or `each`.
 3. **`render_component`** returns a picture of the component, front and back, drawn by your browser exactly as on the table, so the agent can check its own work and adjust.
-4. **`add_asset`** saves artwork (an SVG it writes, or a PNG) into `assets/`, to name in `assets.yaml`.
+4. **`add_asset`** saves artwork (an SVG it writes, or a PNG) into `assets/`; given a `name`, and `rows` and `cols` for a sheet of tiles, it also names it in `assets.yaml`.
 
 Every change is written to your project files, so you can read, edit or commit it like anything you wrote yourself. If a change would break the project, for example a component that drops a field the inventory still uses, nothing is written and the agent gets the error with file, line and column.
 

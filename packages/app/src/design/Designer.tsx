@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { go, route, showTypeInAddress } from '../route';
+import { go, route, showDesignPage, showTypeInAddress } from '../route';
 import { useStore } from '../store';
 import { migrateProject } from './api';
+import { AssetsPage } from './AssetsPage';
 import { DesignCanvas } from './DesignCanvas';
 import { Inspector } from './Inspector';
 import { NewTypeDialog } from './NewTypeDialog';
@@ -19,11 +20,15 @@ import { TypeList } from './TypeList';
 import { UndoButtons } from './UndoButtons';
 import { YamlPane } from './YamlPane';
 
-/** Design mode: build the project's component types, saved to its library files as you go. */
+/**
+ * Design mode: the project's components, saved to its library files as you go,
+ * and the images and colours they use.
+ */
 export function Designer() {
   const view = useStore((s) => s.view);
   const host = useStore((s) => s.me?.host);
   const newTypeOpen = useDesign((s) => s.newTypeOpen);
+  const [assets, setAssets] = useState(() => route().assets);
   useFollowProject();
   const shown = useDesign((s) => s.draft?.id);
   useEffect(() => {
@@ -33,34 +38,47 @@ export function Designer() {
   if (!view) return <div className="loading">Loading…</div>;
   if (!host) return <div className="loading">Only the host can design components.</div>;
   if (view.legacy) return <MigrateNotice project={view.project} />;
+  const page = (toAssets: boolean) => {
+    showDesignPage(toAssets);
+    setAssets(toAssets);
+  };
+  const tab = (label: string, chosen: boolean, onClick: () => void) => (
+    <button
+      type="button"
+      className={chosen ? 'tab chosen' : 'tab'}
+      aria-pressed={chosen}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
   return (
-    <div className="designer">
+    <div className={assets ? 'designer assets' : 'designer'}>
       <header className="toolbar">
         <div className="title">
           <strong>{view.name}</strong>
         </div>
         <nav className="design-tabs" aria-label="Modes">
-          <button
-            type="button"
-            className="tab"
-            onClick={() => go({ project: view.project, table: view.table })}
-          >
-            Table
-          </button>
-          <button type="button" className="tab chosen" aria-pressed>
-            Components
-          </button>
+          {tab('Table', false, () => go({ project: view.project, table: view.table }))}
+          {tab('Components', !assets, () => page(false))}
+          {tab('Assets', assets, () => page(true))}
         </nav>
-        <UndoButtons />
-        <SaveState />
+        {!assets && <UndoButtons />}
+        {!assets && <SaveState />}
       </header>
-      <TypeList />
-      <main className="design-main">
-        <SamplePicker />
-        <DesignCanvas />
-        <YamlPane />
-      </main>
-      <Inspector />
+      {assets ? (
+        <AssetsPage />
+      ) : (
+        <>
+          <TypeList />
+          <main className="design-main">
+            <SamplePicker />
+            <DesignCanvas />
+            <YamlPane />
+          </main>
+          <Inspector />
+        </>
+      )}
       {newTypeOpen && <NewTypeDialog />}
     </div>
   );

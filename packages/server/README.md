@@ -43,28 +43,30 @@ await server.close(); // saves every open table first
 
 ## Routes
 
-| Route                                           | What it serves                                                                                                                             |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/`                                             | The built browser app from `packages/app/dist` (503 with a hint until built)                                                               |
-| `/ws?project=&table=`                           | WebSocket: send `ClientMessage`s (commands, undo, redo, reset), get table states as this player sees them, and who is playing              |
-| `/api/project?project=&table=`                  | Project name, assets (images and colours), components, setups, and whether it is in `trayful/1` (`legacy`), for one table                  |
-| `/api/table?project=&table=`                    | A table's state, as the asking player sees it                                                                                              |
-| `/api/projects`                                 | Every project with its tables and any problems                                                                                             |
-| `/api/components?project=`                      | Every component in the box, for print-and-play (host only)                                                                                 |
-| `POST /api/tables`, `DELETE /api/tables`        | Create, duplicate (`from`) or delete a table (host only)                                                                                   |
-| `/api/me`, `POST /api/me`                       | Who this browser plays as, and whether it is the host; rename                                                                              |
-| `POST /api/join`                                | Join under a name, with an invite; sets the player cookie                                                                                  |
-| `/join/<invite>`                                | An invite link: adds the invite to the invite cookie and opens its table                                                                   |
-| `POST /api/invites`                             | Invite links to one table (`project`, `table`), or new ones with `renew` (host only)                                                       |
-| `/api/library?project=`                         | Each library file with its content hash, and the file of each type, for saving without conflicts (host only)                               |
-| `PUT /api/types/<id>`, `DELETE /api/types/<id>` | Save a type from the designer (`definition`, `file`, `baseHash`; 409 when the file changed) or remove it (host only)                       |
-| `POST /api/types/<id>/rename`                   | Give a type a new id (`to`) in the library, inventory and setups; answers the new `id` and the library, as `/api/library` does (host only) |
-| `POST /api/types/<id>/fields/<field>/rename`    | Rename a field (`to`) in the type, its faces, its inventory rows and CSV headers; answers the new `field` and the library (host only)      |
-| `POST /api/migrate?project=`                    | Rewrite a `trayful/1` project in the current format; answers the `files` written (host only)                                               |
-| `PUT /api/assets`                               | Save an image dropped onto the designer (`file`, `base64`, up to 20 MB) under an unused name; answers `{ file }` (host only)               |
-| `/mcp`                                          | MCP over Streamable HTTP (POST), for agents on this computer only                                                                          |
-| `/api/health`                                   | `{ ok, project, table }` for the active table, plus `projectDir` and `root` for the host                                                   |
-| `/project-files/<project>/<path>`               | Images from a project folder (other file types are refused)                                                                                |
+| Route                                           | What it serves                                                                                                                                      |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                             | The built browser app from `packages/app/dist` (503 with a hint until built)                                                                        |
+| `/ws?project=&table=`                           | WebSocket: send `ClientMessage`s (commands, undo, redo, reset), get table states as this player sees them, and who is playing                       |
+| `/api/project?project=&table=`                  | Project name, assets (images and colours), components, setups, and whether it is in `trayful/1` (`legacy`), for one table                           |
+| `/api/table?project=&table=`                    | A table's state, as the asking player sees it                                                                                                       |
+| `/api/projects`                                 | Every project with its tables and any problems                                                                                                      |
+| `/api/components?project=`                      | Every component in the box, for print-and-play (host only)                                                                                          |
+| `POST /api/tables`, `DELETE /api/tables`        | Create, duplicate (`from`) or delete a table (host only)                                                                                            |
+| `/api/me`, `POST /api/me`                       | Who this browser plays as, and whether it is the host; rename                                                                                       |
+| `POST /api/join`                                | Join under a name, with an invite; sets the player cookie                                                                                           |
+| `/join/<invite>`                                | An invite link: adds the invite to the invite cookie and opens its table                                                                            |
+| `POST /api/invites`                             | Invite links to one table (`project`, `table`), or new ones with `renew` (host only)                                                                |
+| `/api/library?project=`                         | Each library file with its content hash, and the file of each type, for saving without conflicts (host only)                                        |
+| `PUT /api/types/<id>`, `DELETE /api/types/<id>` | Save a type from the designer (`definition`, `file`, `baseHash`; 409 when the file changed) or remove it (host only)                                |
+| `POST /api/types/<id>/rename`                   | Give a type a new id (`to`) in the library, inventory and setups; answers the new `id` and the library, as `/api/library` does (host only)          |
+| `POST /api/types/<id>/fields/<field>/rename`    | Rename a field (`to`) in the type, its faces, its inventory rows and CSV headers; answers the new `field` and the library (host only)               |
+| `POST /api/migrate?project=`                    | Rewrite a `trayful/1` project in the current format; answers the `files` written (host only)                                                        |
+| `POST /api/assets/images?project=`              | Save an image (`file`, `base64`, up to 20 MB; `rows`, `cols`) under an unused path and name it after its file; answers `{ name, file }` (host only) |
+| `PUT`, `DELETE /api/assets/images/<name>`       | Name an image, or change its file and tiles (`file`, `rows`, `cols`); or take the name off (host only)                                              |
+| `PUT`, `DELETE /api/assets/colors/<name>`       | Name a colour (`color`) or remove it (host only)                                                                                                    |
+| `/mcp`                                          | MCP over Streamable HTTP (POST), for agents on this computer only                                                                                   |
+| `/api/health`                                   | `{ ok, project, table }` for the active table, plus `projectDir` and `root` for the host                                                            |
+| `/project-files/<project>/<path>`               | Images from a project folder (other file types are refused)                                                                                         |
 
 The routes live in `src/routes/`, one module per group, sharing a `RouteContext`; `guards.ts` checks origins and invites before any route runs. Without `project` and `table`, routes use the active table. Tables are saved to `tables/<name>.json` shortly after every change, through a temporary file, so a crash never leaves half a file.
 

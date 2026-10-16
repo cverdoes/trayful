@@ -302,9 +302,7 @@ export async function addAsset(
   file: string,
   content: { text?: string; base64?: string },
 ): Promise<{ file: string; bytes: number }> {
-  if (!ASSET_FILE.test(file)) {
-    throw new AuthoringError('Assets must be .svg, .png, .jpg, .gif, .webp or .csv files.');
-  }
+  checkAssetFile(file);
   if ((content.text === undefined) === (content.base64 === undefined)) {
     throw new AuthoringError('Give exactly one of "text" or "base64".');
   }
@@ -316,11 +314,18 @@ export async function addAsset(
   return { file, bytes: data.length };
 }
 
+/** Refuses a file of a kind the project cannot use. */
+export function checkAssetFile(file: string): void {
+  if (!ASSET_FILE.test(file)) {
+    throw new AuthoringError('Assets must be .svg, .png, .jpg, .gif, .webp or .csv files.');
+  }
+}
+
 /**
  * `file`, or `name-2.png`, `name-3.png`… when that file is already in the project:
  * a picture dropped in the designer never replaces artwork already in use.
  */
-function unusedPath(dir: string, file: string): string {
+export function unusedPath(dir: string, file: string): string {
   const ext = path.extname(file);
   const stem = file.slice(0, file.length - ext.length);
   const numbered = (n: number) => (n === 1 ? file : `${stem}-${n}${ext}`);
@@ -328,12 +333,3 @@ function unusedPath(dir: string, file: string): string {
   while (existsSync(inside(dir, numbered(n)))) n++;
   return numbered(n);
 }
-
-/**
- * Saves a new asset under `file`, or the first unused `name-2.png`… One at a time
- * with other changes, so two pictures of the same name both find a free one.
- */
-export const addNewAsset = oneAtATime(
-  async (workspace: Workspace, projectId: string, file: string, base64: string) =>
-    addAsset(workspace, projectId, unusedPath(workspace.project(projectId).dir, file), { base64 }),
-);

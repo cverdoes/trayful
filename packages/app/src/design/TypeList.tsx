@@ -9,7 +9,7 @@ const GROUP_NAMES: Record<(typeof REPRESENTATIONS)[number], string> = {
   counter: 'Counters',
 };
 
-/** The project's types grouped by what they are, with how many of each are in the box. */
+/** The project's components grouped by what they are, with how many of each are in the box. */
 export function TypeList() {
   const types = useStore((s) => s.view?.types ?? {});
   const draft = useDesign((s) => s.draft);
@@ -20,8 +20,8 @@ export function TypeList() {
     types: Object.values(types).filter((t) => t.is === is),
   })).filter((g) => g.types.length);
   return (
-    <nav className="design-types" aria-label="Types">
-      <h3>Types</h3>
+    <nav className="design-types" aria-label="Component list">
+      <h3>Components</h3>
       {groups.map((group) => (
         <div key={group.is}>
           <h4>{GROUP_NAMES[group.is]}</h4>
@@ -43,7 +43,7 @@ export function TypeList() {
       ))}
       <div className="design-type-actions">
         <button type="button" onClick={() => useDesign.setState({ newTypeOpen: true })}>
-          + New type
+          + New component
         </button>
         <button type="button" disabled={!draft} onClick={() => void duplicateType()}>
           Duplicate
@@ -69,7 +69,7 @@ async function switchTo(type: ComponentType): Promise<void> {
 
 function confirmRemove() {
   const { draft } = useDesign.getState();
-  if (draft && window.confirm(`Delete the type "${draft.id}" from the library?`)) {
+  if (draft && window.confirm(`Delete "${draft.id}" from the library?`)) {
     void removeDraftType();
   }
 }

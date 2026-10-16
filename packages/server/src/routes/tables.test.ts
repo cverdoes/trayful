@@ -144,20 +144,31 @@ describe('renaming and uploading in the designer', () => {
     expect(field).toEqual({ status: 400, reply: { error: '"worker" has no field "size".' } });
   });
 
-  it('saves a dropped image into the project', async () => {
+  it('saves and names images, cuts them into tiles, and keeps colours', async () => {
     const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>').toString('base64');
-    const saved = await send('PUT', '/api/assets', { file: 'assets/dropped.svg', base64: svg });
-    expect(saved).toEqual({ status: 200, reply: { file: 'assets/dropped.svg' } });
+    const images = '/api/assets/images';
+    const saved = await send('POST', images, { file: 'assets/dropped.svg', base64: svg });
+    expect(saved).toEqual({ status: 200, reply: { name: 'dropped', file: 'assets/dropped.svg' } });
     // The same name again is saved next to it, so artwork in use is never replaced.
-    const again = await send('PUT', '/api/assets', { file: 'assets/dropped.svg', base64: svg });
-    expect(again).toEqual({ status: 200, reply: { file: 'assets/dropped-2.svg' } });
+    const again = await send('POST', images, { file: 'assets/dropped.svg', base64: svg });
+    expect(again.reply).toEqual({ name: 'dropped-2', file: 'assets/dropped-2.svg' });
     // Larger than the 1 MB other requests are limited to.
     const photo = Buffer.alloc(2 * 1024 * 1024).toString('base64');
-    const large = await send('PUT', '/api/assets', { file: 'assets/photo.png', base64: photo });
-    expect(large.status).toBe(200);
-    const wrongKind = await send('PUT', '/api/assets', { file: 'notes.txt', base64: svg });
-    expect(wrongKind.status).toBe(400);
-    expect((await send('PUT', '/api/assets', { file: 'a.png' })).status).toBe(400);
+    expect((await send('POST', images, { file: 'photo.png', base64: photo })).status).toBe(200);
+    expect((await send('POST', images, { file: 'notes.txt', base64: svg })).status).toBe(400);
+    expect((await send('POST', images, { file: 'a.png' })).status).toBe(400);
+
+    const sheet = { file: 'assets/dropped.svg', rows: 2, cols: 3 };
+    expect((await send('PUT', `${images}/dropped`, sheet)).status).toBe(200);
+    expect(server.workspace.project().assets.images.dropped).toEqual(sheet);
+    expect((await send('PUT', `${images}/dropped`, { ...sheet, rows: 0 })).status).toBe(400);
+    expect((await send('DELETE', `${images}/dropped-2`, {})).status).toBe(200);
+    expect(server.workspace.project().assets.images['dropped-2']).toBeUndefined();
+
+    expect((await send('PUT', '/api/assets/colors/sea', { color: '#2266aa' })).status).toBe(200);
+    expect(server.workspace.project().assets.colors.sea).toBe('#2266aa');
+    expect((await send('DELETE', '/api/assets/colors/sea', {})).status).toBe(200);
+    expect((await send('PUT', '/api/assets/colors/sea', {})).status).toBe(400);
   });
 
   it('lets only the host rename and upload', async () => {
@@ -166,8 +177,10 @@ describe('renaming and uploading in the designer', () => {
     expect(rename.status).toBe(403);
     const field = await send('POST', '/api/types/worker/fields/color/rename', { to: 'c' }, remote);
     expect(field.status).toBe(403);
-    const upload = await send('PUT', '/api/assets', { file: 'a.svg', base64: '' }, remote);
+    const upload = await send('POST', '/api/assets/images', { file: 'a.svg', base64: '' }, remote);
     expect(upload.status).toBe(403);
+    const color = await send('PUT', '/api/assets/colors/sea', { color: '#fff' }, remote);
+    expect(color.status).toBe(403);
     expect(server.workspace.project().types.worker).toBeDefined();
   });
 });
