@@ -17,6 +17,7 @@ import {
   type Library,
 } from './api';
 import { editType, type Path, type Side } from './edit';
+import { redone, stepped, undone, type Steps } from './steps';
 
 /**
  * Where the type being edited stands: saved to its file, waiting to be saved,
@@ -115,7 +116,7 @@ export function openType(type: ComponentType | undefined): void {
 }
 
 /** Typed edits closer together than this are one step to undo, so typing a word is one step. */
-const UNDO_MERGE = 800;
+export const UNDO_MERGE = 800;
 let lastEdit = 0;
 
 /**
@@ -128,31 +129,35 @@ export function editDraft(change: (type: ComponentType) => ComponentType, typing
   const next = change(draft);
   if (next !== draft) {
     const now = Date.now();
-    const merge = typing && now - lastEdit < UNDO_MERGE && past.length > 0;
+    const merge = typing && now - lastEdit < UNDO_MERGE;
     lastEdit = typing ? now : 0;
-    useDesign.setState({ past: merge ? past : [...past, draft], future: [] });
+    useDesign.setState(stepped({ past, future: [] }, draft, merge));
   }
   showDraft(next);
 }
 
 /** Steps back to the type as it was before the last change. */
 export function undo(): void {
-  const { draft, past, future } = useDesign.getState();
-  const previous = past.at(-1);
-  if (!draft || !previous) return;
-  lastEdit = 0;
-  useDesign.setState({ past: past.slice(0, -1), future: [...future, draft] });
-  showDraft(previous);
+  step(undone);
 }
 
 /** Puts back the last change undone. */
 export function redo(): void {
+  step(redone);
+}
+
+function step(
+  move: (
+    steps: Steps<ComponentType>,
+    current: ComponentType,
+  ) => { value: ComponentType; steps: Steps<ComponentType> } | undefined,
+): void {
   const { draft, past, future } = useDesign.getState();
-  const next = future.at(-1);
-  if (!draft || !next) return;
+  const moved = draft && move({ past, future }, draft);
+  if (!moved) return;
   lastEdit = 0;
-  useDesign.setState({ past: [...past, draft], future: future.slice(0, -1) });
-  showDraft(next);
+  useDesign.setState(moved.steps);
+  showDraft(moved.value);
 }
 
 /** Shows a new version of the draft with its problems, and saves it soon if it has none. */

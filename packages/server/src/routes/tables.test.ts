@@ -165,6 +165,13 @@ describe('renaming and uploading in the designer', () => {
     expect((await send('PUT', `${images}/dropped`, { ...sheet, rows: 0 })).status).toBe(400);
     expect((await send('DELETE', `${images}/dropped-2`, {})).status).toBe(200);
     expect(server.workspace.project().assets.images['dropped-2']).toBeUndefined();
+    const renamed = await send('POST', `${images}/dropped/rename`, { to: 'sheet' });
+    expect(renamed.status).toBe(200);
+    expect(renamed.reply).toMatchObject({
+      name: 'sheet',
+      types: { worker: 'library/pieces.yaml' },
+    });
+    expect((await send('POST', `${images}/sheet/rename`, {})).status).toBe(400);
 
     expect((await send('PUT', '/api/assets/colors/sea', { color: '#2266aa' })).status).toBe(200);
     expect(server.workspace.project().assets.colors.sea).toBe('#2266aa');
@@ -180,6 +187,8 @@ describe('renaming and uploading in the designer', () => {
     expect(field.status).toBe(403);
     const upload = await send('POST', '/api/assets/images', { file: 'a.svg', base64: '' }, remote);
     expect(upload.status).toBe(403);
+    const image = await send('POST', '/api/assets/images/dice/rename', { to: 'd' }, remote);
+    expect(image.status).toBe(403);
     const color = await send('PUT', '/api/assets/colors/sea', { color: '#fff' }, remote);
     expect(color.status).toBe(403);
     expect(server.workspace.project().types.worker).toBeDefined();

@@ -67,7 +67,7 @@ Colour boxes take any CSS colour, a `{{field}}`, or a colour named in the projec
 
 ## Images and colours
 
-The **Assets** page lists the project's images and named colours, as `assets.yaml` holds them. Drop picture files on it, or click **Add images**, to save them into `assets/` and name them after their file (`Die faces.png` becomes `die-faces`). For a sheet of cards or tiles, or a strip of die faces, set **Rows** and **Columns**: the grid drawn over the image shows the tiles it is cut into, numbered left to right, then top to bottom, from 0. **Remove** takes the name off an image; the file stays, and an image a component still uses cannot be removed.
+The **Assets** page lists the project's images and named colours, as `assets.yaml` holds them. Drop picture files on it, or click **Add images**, to save them into `assets/` and name them after their file (`Die faces.png` becomes `die-faces`). For a sheet of cards or tiles, or a strip of die faces, set **Rows** and **Columns**: the grid drawn over the image shows the tiles it is cut into, numbered left to right, then top to bottom, from 0. **Rename** gives an image a new name and changes every component that shows it. **Remove** takes the name off an image; the file stays, and an image a component still uses cannot be removed.
 
 Under **Colours**, give a colour a name with **Add colour**, change one with its picker, or remove it. Named colours appear as swatches next to every colour box.
 
@@ -113,8 +113,8 @@ The designer makes the component; the **Tray** says how many of it are in the bo
 - **One design**, with its field values.
 - **Designs in rows**: a table with a column per field and a row per design, each with its own number of copies. Click a `tile` cell to pick the tile from the sheet.
 - **Every combination**: values for each field, with commas between them, such as `red, green`; every combination is a design.
-- **From a CSV file…**: copies a spreadsheet into the project's `data` folder; its rows show as a table you can edit cell by cell.
+- **From a CSV file…**: copies a spreadsheet into the project's `data` folder; its rows show as a table you can edit cell by cell. The header row names the field each column fills in; **+ Column** adds one named after the next field without a column, and **×** takes a column or row out.
 
-Each entry has a **Deck**, which makes its designs start as one pile, and **Copies of each**. Every change is saved to `inventory.yaml` (and the CSV file) as you go, and the components appear on the table at once. A change that would break the project is not saved, and the Tray says why.
+Each entry has a **Deck**, which makes its designs start as one pile, and **Copies of each**. Every change is saved to `inventory.yaml` (and the CSV file) as you go, and the components appear on the table at once. A change that would break the project is not saved, and the Tray says why. **Undo** and **Redo** step through the Tray's changes, a CSV import included, the same way as in the designer.
 
 You can also edit `inventory.yaml` by hand as in [Add a deck of cards](add-a-deck.md), load cards from a spreadsheet as in [Load cards from a spreadsheet](cards-from-a-spreadsheet.md), or ask an agent as in [Let an agent build components](agent-builds-components.md).

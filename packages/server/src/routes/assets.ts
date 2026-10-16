@@ -1,7 +1,9 @@
 import type { FastifyReply } from 'fastify';
 import { addImage, removeImage, setColor, setImage } from '../assets.js';
+import { libraryFiles } from '../authoring.js';
+import { renameImage } from '../renaming.js';
 import type { RouteContext } from './context.js';
-import { projectOf, type ProjectQuery } from './authoring.js';
+import { newName, projectOf, type ProjectQuery, type RenameBody } from './authoring.js';
 
 /** Images arrive as base64, a third larger than the file. */
 const IMAGE_BODY_LIMIT = 20 * 1024 * 1024;
@@ -58,6 +60,19 @@ export function registerAssetRoutes(ctx: RouteContext): void {
     await removeImage(workspace, projectOf(ctx, request.query), request.params.name);
     return { name: request.params.name };
   });
+
+  // A new name for an image, changed on every component that shows it; answers the new library.
+  app.post<NameParams & { Body: RenameBody | undefined }>(
+    '/api/assets/images/:name/rename',
+    async (request, reply) => {
+      if (hostOnly(request, reply)) return;
+      const to = newName(request.body, reply);
+      if (to === undefined) return;
+      const projectId = projectOf(ctx, request.query);
+      const { name } = await renameImage(workspace, projectId, request.params.name, to);
+      return { name, ...(await libraryFiles(workspace, projectId)) };
+    },
+  );
 
   app.put<NameParams & { Body: { color?: unknown } | undefined }>(
     '/api/assets/colors/:name',

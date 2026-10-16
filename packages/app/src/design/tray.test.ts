@@ -8,7 +8,11 @@ import {
   replaced,
   shapeOf,
   tiledImage,
+  nextColumn,
+  withColumn,
   withKey,
+  withoutColumn,
+  withUsedTables,
   withValue,
 } from './tray';
 
@@ -51,5 +55,38 @@ describe('the Tray', () => {
     expect(withKey({ deck: 'terrain', count: 2 }, 'deck', undefined)).toEqual({ count: 2 });
     expect(replaced(['a', 'b', 'c'], 1, undefined)).toEqual(['a', 'c']);
     expect(replaced(['a', 'b'], 0, 'z')).toEqual(['z', 'b']);
+  });
+});
+
+describe('CSV tables', () => {
+  const table = {
+    header: ['title', 'cost'],
+    rows: [
+      ['Storm', '2'],
+      ['Feast', '1'],
+    ],
+  };
+
+  it('adds and takes out columns in every row', () => {
+    expect(withColumn(table, 'suit')).toEqual({
+      header: ['title', 'cost', 'suit'],
+      rows: [
+        ['Storm', '2', ''],
+        ['Feast', '1', ''],
+      ],
+    });
+    expect(withoutColumn(table, 0)).toEqual({ header: ['cost'], rows: [['2'], ['1']] });
+  });
+
+  it('names a new column after the first field without one', () => {
+    const field = { type: 'string', optional: true } as const;
+    const columns = ['title', 'suit'].map((name) => ({ name, field }));
+    expect(nextColumn(table, columns)).toBe('suit');
+    expect(nextColumn(withColumn(table, 'suit'), columns)).toBe('');
+  });
+
+  it('sends only the CSV files the entries still read', () => {
+    const tray = { entries: [{ from: 'a.csv' }], tables: { 'a.csv': table, 'b.csv': table } };
+    expect(Object.keys(withUsedTables(tray).tables)).toEqual(['a.csv']);
   });
 });

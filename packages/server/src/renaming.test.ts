@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AuthoringError } from './authoring.js';
-import { renameField, renameType } from './renaming.js';
+import { renameField, renameImage, renameType } from './renaming.js';
 import { Workspace } from './workspace.js';
 
 const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
@@ -179,5 +179,43 @@ describe('renaming a field', () => {
       '"action-card" has no field "weight".',
     );
     await expect(rename('lantern', 'a', 'b')).rejects.toThrow('There is no component "lantern".');
+  });
+});
+
+describe('renaming an image', () => {
+  it('renames it in the assets file and on every face that shows it', async () => {
+    const pieces = await read('library/pieces.yaml');
+    const result = await renameImage(workspace, projectId(), 'dice', 'die-faces');
+
+    expect(result).toEqual({ name: 'die-faces', files: ['assets.yaml', 'library/pieces.yaml'] });
+    expect(await read('assets.yaml')).toContain(
+      'die-faces: { file: assets/dice.svg, rows: 2, cols: 3 }',
+    );
+    expect(await read('library/pieces.yaml')).toBe(
+      pieces.replace('image: dice', 'image: die-faces'),
+    );
+    expect(workspace.project().assets.images['die-faces']?.rows).toBe(2);
+  });
+
+  it('renames a sheet named as `asset`, and an advanced layer naming it', async () => {
+    const cards = (await read('library/cards.yaml'))
+      .replace('image: card-back', 'image: { asset: card-back, tile: 0 }')
+      .replace("{ image: '{{art}}'", '{ image: card-back');
+    await writeFile(path.join(dir, 'library/cards.yaml'), cards);
+    await workspace.reload(projectId());
+
+    await renameImage(workspace, projectId(), 'card-back', 'back');
+    expect(await read('library/cards.yaml')).toBe(
+      cards
+        .replace('image: { asset: card-back, tile: 0 }', 'image: { asset: back, tile: 0 }')
+        .replace('{ image: card-back', '{ image: back'),
+    );
+  });
+
+  it('refuses names that are taken, invalid or unknown', async () => {
+    const rename = (from: string, to: string) => renameImage(workspace, projectId(), from, to);
+    await expect(rename('dice', 'board')).rejects.toThrow('An image is already called "board"');
+    await expect(rename('dice', 'Dice!')).rejects.toThrow(/is not a usable name/);
+    await expect(rename('meeple', 'pawn')).rejects.toThrow('No image is called "meeple".');
   });
 });

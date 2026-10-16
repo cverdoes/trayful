@@ -1,6 +1,13 @@
 import { readFile } from 'node:fs/promises';
-import { FieldName, Slug, type ResolvedProject, type ResolvedType } from '@trayful/formats';
+import {
+  ASSETS_FILE,
+  FieldName,
+  Slug,
+  type ResolvedProject,
+  type ResolvedType,
+} from '@trayful/formats';
 import { isMap, isScalar, isSeq, visit, type Document, type Scalar } from 'yaml';
+import { checkImageName } from './assets.js';
 import {
   AuthoringError,
   commit,
@@ -202,6 +209,53 @@ function renameInType(type: unknown, from: string, to: string): boolean {
  * entries (`data`, each `items` row, `each`, and the header of a `from` CSV file).
  */
 export const renameField = oneAtATime(changeFieldName);
+
+async function changeImageName(
+  workspace: Workspace,
+  projectId: string,
+  from: string,
+  to: string,
+): Promise<{ name: string; files: string[] }> {
+  const project = workspace.project(projectId);
+  requireCurrentFormat(project);
+  if (!project.assets.images[from]) throw new AuthoringError(`No image is called "${from}".`);
+  if (project.assets.images[to]) {
+    throw new AuthoringError(`An image is already called "${to}"; pick another name.`);
+  }
+  checkImageName(to);
+  const sameImage = (name: string) => (name === from ? to : name);
+
+  const edits = new FileEdits(project.dir);
+  await edits.yaml(project.manifest.assets ?? ASSETS_FILE, (doc) =>
+    renameKey(doc.get('images', true), from, to),
+  );
+  for (const file of new Set(Object.values(project.types).map((t) => t.source.file))) {
+    await edits.yaml(file, (doc) =>
+      anyChanged(items(doc.get('components', true)), (type) => renameImageIn(type, sameImage)),
+    );
+  }
+  await commit(workspace, projectId, edits.changes);
+  return { name: to, files: edits.files };
+}
+
+/** Renames the image a component's faces show, written as a name or as `asset`, and in its layers. */
+function renameImageIn(type: unknown, rename: (name: string) => string): boolean {
+  const sides = [child(type, 'face'), child(child(type, 'flippable'), 'back')];
+  return anyChanged(sides, (side) =>
+    [
+      rewrite(child(side, 'image'), rename),
+      rewrite(child(child(side, 'image'), 'asset'), rename),
+      anyChanged(items(child(side, 'layers')), (layer) => rewrite(child(layer, 'image'), rename)),
+    ].includes(true),
+  );
+}
+
+/**
+ * Gives an image a new name, and changes every component that shows it: on a face
+ * or back, by name or as a sheet's `asset`, and in an advanced layer that names it.
+ * A layer that makes the name from a `{{field}}` is left as it is.
+ */
+export const renameImage = oneAtATime(changeImageName);
 
 /**
  * Renames one column in the header row of a CSV file. Everything else, including the

@@ -10,6 +10,7 @@ import {
 } from './api';
 import { assetPath } from './edit';
 import { readImage } from './files';
+import { renameImage } from './projectEdits';
 import { projectId } from './store';
 import { TilePicker } from './TilePicker';
 
@@ -91,6 +92,12 @@ function AddImage({ run }: Readonly<{ run: Run }>) {
 function ImageCard({ name, image, run }: Readonly<{ name: string; image: Asset; run: Run }>) {
   const setTiles = (rows: number, cols: number) =>
     run(() => setImageAsset(projectId(), name, { file: image.file, rows, cols }));
+  const rename = () => {
+    const to = window
+      .prompt(`New name for "${name}". Components that show it are changed too.`, name)
+      ?.trim();
+    if (to && to !== name) run(() => renameImage(name, to));
+  };
   const remove = () => {
     if (window.confirm(`Take the name "${name}" off ${image.file}? The file stays.`)) {
       run(() => removeImageAsset(projectId(), name));
@@ -113,6 +120,9 @@ function ImageCard({ name, image, run }: Readonly<{ name: string; image: Asset; 
           value={image.cols}
           onChange={(cols) => setTiles(image.rows, cols)}
         />
+        <button type="button" onClick={rename}>
+          Rename
+        </button>
         <button type="button" onClick={remove}>
           Remove
         </button>

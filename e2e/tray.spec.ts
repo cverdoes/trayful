@@ -42,6 +42,19 @@ test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page
   expect(deck.items).toHaveLength(24);
   await claude.call('open_table', { project: 'harvest-moon', table: 'table-1' });
   await claude.client.close();
+
+  // Renaming the sheet changes the component that shows it.
+  await page.getByRole('button', { name: 'Assets' }).click();
+  page.once('dialog', (dialog) => void dialog.accept('landscape'));
+  await page
+    .getByRole('listitem', { name: 'terrain' })
+    .getByRole('button', { name: 'Rename' })
+    .click();
+  await expect(page.getByRole('listitem', { name: 'landscape' })).toBeVisible();
+  await page.getByRole('button', { name: 'Components' }).click();
+  await expect(face.getByLabel('Image')).toHaveValue('landscape');
+  await page.getByRole('button', { name: 'Tray' }).click();
+  await expect(tray).toContainText('26 in the box now');
 });
 
 test("a CSV file's rows are edited in the Tray", async ({ page }) => {
@@ -54,6 +67,20 @@ test("a CSV file's rows are edited in the Tray", async ({ page }) => {
   await expect
     .poll(() => libraryFile(page, PROJECT, 'data/cards.csv'))
     .toMatch(/^\w+,text,value,count\n\w+,Wander off\.,/);
+
+  // A column named after no field is refused, and undone.
+  await tray.getByLabel('Name of column 3', { exact: true }).fill('worth');
+  await expect(page.getByRole('status')).toContainText('"worth" is not a field of "card"');
+  await tray.getByRole('button', { name: 'Undo' }).click();
+  await waitSaved(page);
+  await expect(tray.getByLabel('Name of column 3', { exact: true })).toHaveValue('value');
+  await tray.getByRole('button', { name: 'Undo' }).click();
+  await waitSaved(page);
+  await expect
+    .poll(() => libraryFile(page, PROJECT, 'data/cards.csv'))
+    .not.toContain('Wander off.');
+  await tray.getByRole('button', { name: 'Redo' }).click();
+  await expect(tray.getByLabel('text, row 1', { exact: true })).toHaveValue('Wander off.');
 
   // Another file of cards, added from the computer, with the same first column.
   const [name] = (await libraryFile(page, PROJECT, 'data/cards.csv')).split(',');
