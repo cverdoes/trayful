@@ -26,6 +26,8 @@ Commands:
                                            invite links printed at start
                            --tunnel        let others anywhere join, through a Cloudflare
                                            quick tunnel (needs cloudflared; no account)
+                           --container     run inside a container (see the Docker section
+                                           of the README); implies --no-open
   mcp [project-dir]        Let an AI agent play the table over MCP (stdio). Shares the table
                            with \`trayful play\` if it is running; same options as play.
                            Agents can also connect over HTTP at http://127.0.0.1:${DEFAULT_PORT}/mcp.
@@ -40,7 +42,7 @@ const USAGE: Record<string, string> = {
   new: 'trayful new <folder> [--name <name>]',
   validate: 'trayful validate <project-dir> [--json]',
   migrate: 'trayful migrate <project-dir>',
-  play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel]',
+  play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel] [--container]',
   mcp: 'trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>]',
 };
 

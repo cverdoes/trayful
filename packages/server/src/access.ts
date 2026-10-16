@@ -7,6 +7,13 @@ export const PLAYER_COOKIE = 'trayful_player';
 export const INVITE_COOKIE = 'trayful_invite';
 const TOKEN_SEPARATOR = '.';
 
+declare module 'fastify' {
+  interface FastifyInstance {
+    /** Other addresses whose requests come from this computer, such as a container's gateway. */
+    hostAddresses: ReadonlySet<string>;
+  }
+}
+
 const YEAR = 365 * 24 * 60 * 60;
 
 /** Headers a proxy or tunnel adds; a request carrying one came from elsewhere. */
@@ -64,15 +71,17 @@ export function addToken(tokens: string[], token: string): string {
 }
 
 /**
- * A request straight from this computer: a loopback address, no proxy headers, and
- * addressed to a loopback name. The last check stops a website that points its own
- * domain at 127.0.0.1 (DNS rebinding) from passing as the host.
+ * A request straight from this computer: a loopback address (or, in a container, the
+ * address the computer reaches it from), no proxy headers, and addressed to a loopback
+ * name. The last check stops a website that points its own domain at 127.0.0.1 (DNS
+ * rebinding) from passing as the host.
  */
 export function isLocalRequest(request: FastifyRequest): boolean {
-  const address = request.socket.remoteAddress ?? '';
-  const loopback = address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
+  const address = (request.socket.remoteAddress ?? '').replace(/^::ffff:/, '');
+  const fromHere =
+    address === '127.0.0.1' || address === '::1' || request.server.hostAddresses.has(address);
   return (
-    loopback &&
+    fromHere &&
     isLocalOrigin(`http://${request.headers.host ?? 'localhost'}`) &&
     !FORWARDED.some((header) => request.headers[header] !== undefined)
   );

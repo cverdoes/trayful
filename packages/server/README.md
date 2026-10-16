@@ -31,11 +31,11 @@ await server.close(); // saves every open table first
 
 ## Players and access
 
-`players.ts` keeps the players of a workspace (`Players`): the host, guests and the agent player `claude`. They are stored through a `PlayerStore`; `FilePlayerStore` writes `.trayful/players.json` in the served folder, and a hosted service could keep them elsewhere behind the same interface. Each guest proves who they are with a secret in an HttpOnly cookie; only its SHA-256 fingerprint is stored. The same file keeps one invite per table (`invite(project, table)`, made on first use; `renew` replaces its token), and the tables each guest was invited to (`grant`), so a guest keeps their tables when an invite is renewed.
+`players.ts` keeps the players of a workspace (`Players`): the host, guests and the agent player `claude`. The host is named after the account running the server, or `TRAYFUL_HOST_NAME` when set (as `compose.yaml` does, since a container's account is not yours). They are stored through a `PlayerStore`; `FilePlayerStore` writes `.trayful/players.json` in the served folder, and a hosted service could keep them elsewhere behind the same interface. Each guest proves who they are with a secret in an HttpOnly cookie; only its SHA-256 fingerprint is stored. The same file keeps one invite per table (`invite(project, table)`, made on first use; `renew` replaces its token), and the tables each guest was invited to (`grant`), so a guest keeps their tables when an invite is renewed.
 
 `access.ts` decides who a request is from:
 
-- A request from this computer (a loopback address, a loopback `Host`, and no proxy headers such as `x-forwarded-for`) is the host, even without a cookie. Tunnels add proxy headers, so requests through them never count as local, and the `Host` check stops DNS rebinding.
+- A request from this computer (a loopback address, a loopback `Host`, and no proxy headers such as `x-forwarded-for`) is the host, even without a cookie. Tunnels add proxy headers, so requests through them never count as local, and the `Host` check stops DNS rebinding. In a container (`container` in the options) the computer running it reaches the server from the container's gateway (`containerGateway` reads it from `/proc/net/route`), so that address counts as this computer too; the port must then be published on the computer's loopback only.
 - Anyone else may reach only the tables they were invited to: by an invite in their invite cookie (set by `/join/<invite>`), or granted to their player when they joined. Other tables, their routes and their socket answer 403, and `/api/projects` lists only their tables (`allowed` and `allowedProject`).
 - Requests that change something must come from a Trayful page: a local origin, or for guests the address they reached the server at.
 
@@ -68,7 +68,7 @@ await server.close(); // saves every open table first
 
 The routes live in `src/routes/`, one module per group, sharing a `RouteContext`; `guards.ts` checks origins and invites before any route runs. Without `project` and `table`, routes use the active table. Tables are saved to `tables/<name>.json` shortly after every change, through a temporary file, so a crash never leaves half a file.
 
-The server binds to `127.0.0.1` unless told otherwise (`trayful play --share` binds `0.0.0.0`; `--tunnel` keeps `127.0.0.1` and lets `cloudflared` connect locally). `addShareBase(url)` adds an address, such as a tunnel's, to the invite links.
+The server binds to `127.0.0.1` unless told otherwise (`trayful play --share` binds `0.0.0.0`; `--tunnel` keeps `127.0.0.1` and lets `cloudflared` connect locally; `--container` binds `0.0.0.0` inside the container, without network invite links). `addShareBase(url)` adds an address, such as a tunnel's, to the invite links.
 
 ## MCP
 

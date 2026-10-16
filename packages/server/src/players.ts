@@ -225,14 +225,27 @@ export class Players {
   }
 }
 
-/** A name for the person running the server, from their account on this computer. */
+/**
+ * A name for the person running the server: `TRAYFUL_HOST_NAME` if set and not empty
+ * (in a container the account is not theirs), else their account on this computer.
+ */
 function hostName(): string {
+  const name = process.env.TRAYFUL_HOST_NAME?.trim();
+  return asHostName(name?.length ? name : accountName());
+}
+
+function accountName(): string {
   try {
-    const name = os.userInfo().username;
-    return name ? name[0]!.toUpperCase() + name.slice(1) : 'Host';
+    return os.userInfo().username;
   } catch {
-    return 'Host';
+    // A container may run as a user with no account at all.
+    return '';
   }
+}
+
+/** Capitalised, or "Host" when there is no name to go by. */
+function asHostName(name: string): string {
+  return name ? name[0]!.toUpperCase() + name.slice(1) : 'Host';
 }
 
 function cleanName(name: unknown): string {

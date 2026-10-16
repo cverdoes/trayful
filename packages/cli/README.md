@@ -27,10 +27,11 @@ pnpm trayful migrate ../old-game                     # rewrite a trayful/1 proje
 | `--no-open`      | Do not open a browser window                                                                                       |
 | `--share`        | Listen on every network interface and print invite links to the opened table for others on your network            |
 | `--tunnel`       | Open a Cloudflare quick tunnel with `cloudflared` and print an invite link to the opened table that works anywhere |
+| `--container`    | Run inside a container: listen on every interface, count the computer running it as the host, and open no browser  |
 
 `--tunnel` runs `cloudflared tunnel --url http://127.0.0.1:<port>` (from `tunnel.ts`) and reads the `https://….trycloudflare.com` address from its output; set `TRAYFUL_CLOUDFLARED` to run another program instead, as the tests do. Without `cloudflared` installed it says where to get it.
 
-`mcp [project-dir]` takes the same options, apart from `--share` and `--tunnel`. It speaks MCP on stdin and stdout. If `trayful play` already serves the project (or the folder of projects) on that port, it relays to that server; otherwise it opens the table itself, so people can watch at the printed address. Messages for people go to stderr.
+`mcp [project-dir]` takes the same options, apart from `--share`, `--tunnel` and `--container`. It speaks MCP on stdin and stdout. If `trayful play` already serves the project (or the folder of projects) on that port, it relays to that server; otherwise it opens the table itself, so people can watch at the printed address. Messages for people go to stderr.
 
 `migrate <project-dir>` rewrites a project in the first file format, `trayful/1`, in the current one, `trayful/2`, and lists the files it wrote (`migrateFolder` in the server package). Libraries are written afresh, keeping the comment lines at their top; images and palette colours move to a new `assets.yaml`; inventory entries name their `component` instead of their `type`; and setup steps that place a board get `lock: true`. The manifest, inventory and setups are edited in place, so their comments stay. It exits with `1` for a project that is already current or has errors, and changes nothing then. See [Versioning](../../docs/reference/versioning.md#moving-a-project-to-trayful2).
 

@@ -32,16 +32,17 @@ Drag a piece to move it. While you drag, the board spots it may go to light up, 
 
 A new table starts from the setup named in `trayful.yaml` (Harvest Moon's puts the board in the middle, deals the market and lines up the workers). The table is saved to `tables/table-1.json` inside the project folder as you play, and reopens where you left off. **Start over** in the toolbar sets the table up again from the project files (you can undo it). The menu next to the game's name switches tables: make a **new table** for another playtest, **duplicate** one to try two moves from the same position, or delete one. **Print** opens [print-and-play](docs/howto/print-and-play.md) sheets with every component at real size.
 
-| `trayful play` option | What it does                                          |
-| --------------------- | ----------------------------------------------------- |
-| `--project <id>`      | In a folder of projects, the one to open first        |
-| `--table <name>`      | Open or create another saved table, e.g. `--table b`  |
-| `--seed <n>`          | Shuffle seed for a new table, for repeatable games    |
-| `--setup <name>`      | Setup for a new table; `none` lays everything out     |
-| `--port <n>`          | Use another port than 4317                            |
-| `--no-open`           | Do not open a browser window                          |
-| `--share`             | Let others on your network join, by invite link       |
-| `--tunnel`            | Let others anywhere join, through a Cloudflare tunnel |
+| `trayful play` option | What it does                                                      |
+| --------------------- | ----------------------------------------------------------------- |
+| `--project <id>`      | In a folder of projects, the one to open first                    |
+| `--table <name>`      | Open or create another saved table, e.g. `--table b`              |
+| `--seed <n>`          | Shuffle seed for a new table, for repeatable games                |
+| `--setup <name>`      | Setup for a new table; `none` lays everything out                 |
+| `--port <n>`          | Use another port than 4317                                        |
+| `--no-open`           | Do not open a browser window                                      |
+| `--share`             | Let others on your network join, by invite link                   |
+| `--tunnel`            | Let others anywhere join, through a Cloudflare tunnel             |
+| `--container`         | Run inside a container; see [Run it in Docker](#run-it-in-docker) |
 
 ## Play with others
 
@@ -103,6 +104,25 @@ Agents can also build your prototype with you: ask Claude for "an event card wit
 | `upsert_type`, `rename_type`, `remove_type`, `set_inventory`, `add_asset` | Change components, what is in the box, and artwork                |
 | `render_component`                                                        | A picture of one component, as people will see it                 |
 
+## Run it in Docker
+
+To keep the server apart from the rest of your computer, run it in a container. It then sees only the folder you give it, runs as an ordinary user on a read-only system, and can be reached only from your own computer. You need [Docker](https://docs.docker.com/get-docker/); Node and pnpm are not needed.
+
+```sh
+scripts/docker.sh            # serves examples/
+scripts/docker.sh ~/games    # serves your own project, or folder of projects
+```
+
+Then open http://localhost:4317. The script builds the image, starts the container, and saves tables as you, so the files stay yours. It runs `docker compose up --build` with the settings below, which you can also set yourself:
+
+| Setting            | What it does                                                        |
+| ------------------ | ------------------------------------------------------------------- |
+| `TRAYFUL_PROJECTS` | The folder to serve (default `./examples`); the only one it can see |
+| `TRAYFUL_USER`     | The `uid:gid` to save files as (default `1000:1000`)                |
+| `TRAYFUL_PORT`     | The port on your computer (default 4317); open the table there      |
+
+You are the host, as with `trayful play`: inside a container the server counts requests through the published port as yours, so [`compose.yaml`](compose.yaml) publishes it on `127.0.0.1` only. Do not publish it on your network. `--share` does not work in a container. Agents connect over HTTP at `http://127.0.0.1:4317/mcp` as described above; `trayful mcp` on your computer cannot reach the container's table. Edits to the project files reload as usual. Stop it with Ctrl+C, or `docker compose down`.
+
 ## Make your own prototype
 
 A prototype is a folder:
@@ -159,18 +179,19 @@ From the repo root, run them as `pnpm trayful …`. See the [CLI README](package
 
 ## Repository layout
 
-| Path                                             | What it is                                                                               |
-| ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| [`packages/formats`](packages/formats)           | File format schemas (Zod), YAML loader and validator, generated JSON Schemas             |
-| [`packages/core`](packages/core)                 | Table state, commands, snapping, setups, undo and seeded randomness                      |
-| [`packages/server`](packages/server)             | Local server: projects and tables, players and invites, live reload, WebSocket sync, MCP |
-| [`packages/app`](packages/app)                   | Browser table (React and Konva)                                                          |
-| [`packages/cli`](packages/cli)                   | The `trayful` command line                                                               |
-| [`examples/harvest-moon`](examples/harvest-moon) | Sample prototype that uses every file kind; validated in CI                              |
-| [`examples/starter`](examples/starter)           | The template `trayful new` copies; validated in CI                                       |
-| [`docs`](docs)                                   | HOWTO guides and the format reference (partly generated)                                 |
-| [`e2e`](e2e)                                     | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players  |
-| [`scripts`](scripts)                             | Code generation, example validation and the dev server                                   |
+| Path                                                       | What it is                                                                               |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [`packages/formats`](packages/formats)                     | File format schemas (Zod), YAML loader and validator, generated JSON Schemas             |
+| [`packages/core`](packages/core)                           | Table state, commands, snapping, setups, undo and seeded randomness                      |
+| [`packages/server`](packages/server)                       | Local server: projects and tables, players and invites, live reload, WebSocket sync, MCP |
+| [`packages/app`](packages/app)                             | Browser table (React and Konva)                                                          |
+| [`packages/cli`](packages/cli)                             | The `trayful` command line                                                               |
+| [`examples/harvest-moon`](examples/harvest-moon)           | Sample prototype that uses every file kind; validated in CI                              |
+| [`examples/starter`](examples/starter)                     | The template `trayful new` copies; validated in CI                                       |
+| [`docs`](docs)                                             | HOWTO guides and the format reference (partly generated)                                 |
+| [`e2e`](e2e)                                               | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players  |
+| [`scripts`](scripts)                                       | Code generation, example validation and the dev server                                   |
+| [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml) | Running the server in a container; `scripts/docker.sh` starts it                         |
 
 ## Development
 

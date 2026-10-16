@@ -1,0 +1,26 @@
+# Runs the Trayful server in a container: `scripts/docker.sh`, then open
+# http://localhost:4317. See "Run it in Docker" in the README.
+services:
+  trayful:
+    build: .
+    image: trayful
+    ports:
+      # Only this computer may reach the table. The container counts requests through
+      # this port as the host's, so never publish it on the network.
+      - 127.0.0.1:${TRAYFUL_PORT:-4317}:4317
+    volumes:
+      # The project, or folder of projects, to play. The only folder the server can see.
+      - ${TRAYFUL_PROJECTS:-./examples}:/projects
+    # Save tables as you, so the files stay yours (`id -u` and `id -g`).
+    user: ${TRAYFUL_USER:-1000:1000}
+    environment:
+      # Your name at the table; the container's own account is called "node".
+      TRAYFUL_HOST_NAME: ${USER:-}
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
