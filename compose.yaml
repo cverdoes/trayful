@@ -1,5 +1,5 @@
-# Runs the Trayful server in a container: `docker compose up`, then open
-# http://localhost:4317. See "Running in Docker" in the README.
+# Runs the Trayful server in a container: `scripts/docker.sh`, then open
+# http://localhost:4317. See "Run it in Docker" in the README.
 services:
   trayful:
     build: .

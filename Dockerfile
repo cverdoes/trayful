@@ -1,5 +1,5 @@
 # Runs the Trayful server in a container, apart from the rest of your computer.
-# See "Running in Docker" in the README; compose.yaml has the settings to run it with.
+# See "Run it in Docker" in the README; compose.yaml has the settings to run it with.
 
 FROM node:22-slim AS build
 WORKDIR /trayful

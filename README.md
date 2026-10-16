@@ -109,14 +109,11 @@ Agents can also build your prototype with you: ask Claude for "an event card wit
 To keep the server apart from the rest of your computer, run it in a container. It then sees only the folder you give it, runs as an ordinary user on a read-only system, and can be reached only from your own computer. You need [Docker](https://docs.docker.com/get-docker/); Node and pnpm are not needed.
 
 ```sh
-docker compose up --build
+scripts/docker.sh            # serves examples/
+scripts/docker.sh ~/games    # serves your own project, or folder of projects
 ```
 
-Then open http://localhost:4317. This serves `examples/`. To serve your own project, or a folder of projects, name it, and save tables as yourself so the files stay yours:
-
-```sh
-TRAYFUL_PROJECTS=~/games TRAYFUL_USER="$(id -u):$(id -g)" docker compose up --build
-```
+Then open http://localhost:4317. The script builds the image, starts the container, and saves tables as you, so the files stay yours. It runs `docker compose up --build` with the settings below, which you can also set yourself:
 
 | Setting            | What it does                                                        |
 | ------------------ | ------------------------------------------------------------------- |
@@ -194,7 +191,7 @@ From the repo root, run them as `pnpm trayful …`. See the [CLI README](package
 | [`docs`](docs)                                             | HOWTO guides and the format reference (partly generated)                                 |
 | [`e2e`](e2e)                                               | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players  |
 | [`scripts`](scripts)                                       | Code generation, example validation and the dev server                                   |
-| [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml) | Running the server in a container                                                        |
+| [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml) | Running the server in a container; `scripts/docker.sh` starts it                         |
 
 ## Development
 
