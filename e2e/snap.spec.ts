@@ -33,7 +33,20 @@ test('a worker snaps onto a field and rides along when the board moves', async (
   )!;
   await drag(page, [0, 100], [0, 100]);
   await page.keyboard.press('l');
-  await expect.poll(async () => (await piece(page, 'main-board')).locked).toBeUndefined();
+  // Wait for the page itself to know, not just the server: a drag on a board the page
+  // still thinks is locked does nothing.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (
+            window.__trayful!.store.getState() as unknown as {
+              table: { objects: Record<string, { locked?: boolean }> };
+            }
+          ).table.objects['main-board']?.locked,
+      ),
+    )
+    .toBeUndefined();
   await drag(page, [0, 100], [60, 100]);
   await expect.poll(async () => (await piece(page, 'main-board')).pos[0]).toBeGreaterThan(55);
   // Screen pixels round the drag a little, so compare with how far the board really moved.

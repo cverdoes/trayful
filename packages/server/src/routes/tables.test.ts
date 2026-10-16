@@ -58,7 +58,8 @@ describe('invite links', () => {
     expect(await server.inviteLinks()).toEqual([]);
     server.addShareBase('https://tunnel.example//');
     const [link] = await server.inviteLinks({ table: 'table-1' });
-    expect(link).toMatch(/^https:\/\/tunnel\.example\/join\/\w+/);
+    // Tokens are base64url, so they can hold - and _.
+    expect(link).toMatch(/^https:\/\/tunnel\.example\/join\/[\w-]+$/);
   });
 });
 

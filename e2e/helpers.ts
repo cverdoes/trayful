@@ -159,6 +159,7 @@ export async function newComponent(page: Page, name: string, startLike: string) 
 interface SavedType {
   is?: string;
   container?: unknown;
+  stackable?: unknown;
   values?: unknown;
   face?: { image?: unknown; layers?: unknown[] };
 }
