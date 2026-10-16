@@ -1,5 +1,6 @@
 import { backOf, componentFields, isValued } from './component.js';
 import { coerceValue, templateRefs, type NormalizedField } from './fields.js';
+import { faceTemplates } from './templates.js';
 import type { Problem } from './diagnostics.js';
 import {
   AREA_MODES,
@@ -8,8 +9,6 @@ import {
   type ComponentType,
   type Face,
   type ImageRef,
-  type Label,
-  type Layer,
   type SnapTarget,
 } from './schemas.js';
 
@@ -147,12 +146,6 @@ function imageProblems(type: ComponentType, ref: ImageRef, path: (string | numbe
   return problems;
 }
 
-/** A text that may hold `{{field}}` placeholders, and where it is in the component. */
-interface TemplateAt {
-  text: string;
-  path: (string | number)[];
-}
-
 /** Every `{{field}}` used in a face must be a field of the component. */
 function templateProblems(type: ComponentType, fields: Record<string, NormalizedField>): Problem[] {
   const templates = sides(type).flatMap(({ side, path }) => faceTemplates(side, path));
@@ -161,50 +154,4 @@ function templateProblems(type: ComponentType, fields: Record<string, Normalized
       .filter((ref) => !fields[ref])
       .map((ref) => ({ path, message: `"{{${ref}}}" is not a field of "${type.id}".` })),
   );
-}
-
-/** The texts in a face that may hold `{{field}}` placeholders, with their paths. */
-function faceTemplates(face: Face | Back, path: (string | number)[]): TemplateAt[] {
-  const templates = present([
-    { text: face.fill, path: [...path, 'fill'] },
-    { text: face.stroke, path: [...path, 'stroke'] },
-  ]);
-  for (const [i, layer] of (face.layers ?? []).entries()) {
-    for (const t of layerTemplates(layer)) {
-      templates.push({ text: t.text, path: [...path, 'layers', i, ...t.path] });
-    }
-  }
-  for (const [i, label] of (face.labels ?? []).entries()) {
-    for (const t of labelTemplates(label)) {
-      templates.push({ text: t.text, path: [...path, 'labels', i, ...t.path] });
-    }
-  }
-  return templates;
-}
-
-/** The layer's texts; each kind of layer has only some of these keys. */
-function layerTemplates(layer: Layer): TemplateAt[] {
-  return present([
-    { text: 'text' in layer ? layer.text : undefined, path: ['text'] },
-    { text: 'image' in layer ? layer.image : undefined, path: ['image'] },
-    { text: 'color' in layer ? layer.color : undefined, path: ['color'] },
-    { text: 'fill' in layer ? layer.fill : undefined, path: ['fill'] },
-    { text: 'stroke' in layer ? layer.stroke : undefined, path: ['stroke'] },
-    { text: layer.when, path: ['when'] },
-  ]);
-}
-
-function labelTemplates(label: Label): TemplateAt[] {
-  return present([
-    { text: label.text, path: ['text'] },
-    { text: label.color, path: ['color'] },
-    { text: label.when, path: ['when'] },
-  ]);
-}
-
-/** Leaves out the texts a component or layer does not set. */
-function present(
-  templates: { text: string | undefined; path: (string | number)[] }[],
-): TemplateAt[] {
-  return templates.filter((t): t is TemplateAt => t.text !== undefined);
 }

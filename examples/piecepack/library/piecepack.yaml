@@ -99,9 +99,10 @@ components:
             color: '#222',
           }
     flippable:
+      # The back shows the suit, so everyone sees it while the coin lies suit side up.
       back:
         fill: paper
-        stroke: '#8a8070'
+        stroke: '{{suit}}'
         layers:
           - { image: '{{symbol}}', at: [3, 3], size: 13 }
     rotates: true

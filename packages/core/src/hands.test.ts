@@ -91,7 +91,7 @@ describe('viewFor', () => {
       count: 2,
     });
     const aliases = book();
-    const alice = viewFor(state, 'alice', aliases);
+    const alice = viewFor(state, 'alice', aliases, project.types);
     const own = handOf(state, 'alice');
     const bobs = handOf(state, 'bob');
     expect(alice.objects[own[0]!.id]).toMatchObject({ hand: 'alice', data: own[0]!.data });
@@ -113,7 +113,7 @@ describe('viewFor', () => {
   it('turns stand-in ids in commands back into real ones', () => {
     const state = fresh();
     const aliases = book();
-    const view = viewFor(state, 'alice', aliases);
+    const view = viewFor(state, 'alice', aliases, project.types);
     const top = (view.objects[DECK] as Stack).items.at(-1)!;
     const command = resolveAliases({ type: 'take', id: top, to: [0, 0] }, aliases);
     expect(command.id).toBe((state.objects[DECK] as Stack).items.at(-1));
@@ -122,7 +122,7 @@ describe('viewFor', () => {
   it('forgets stand-ins of cards that came into view or went into a hand', () => {
     const state = fresh();
     const aliases = book();
-    const seen = (viewFor(state, 'alice', aliases).objects[DECK] as Stack).items;
+    const seen = (viewFor(state, 'alice', aliases, project.types).objects[DECK] as Stack).items;
     const [bottom, top, middle] = [seen[0], seen.at(-1), seen[1]];
     const real = (state.objects[DECK] as Stack).items;
     const [first, second] = [real[0], real[1]];
@@ -150,9 +150,9 @@ describe('viewFor', () => {
   it('gives shuffled cards new stand-ins', () => {
     const state = fresh();
     const aliases = book();
-    const before = (viewFor(state, 'alice', aliases).objects[DECK] as Stack).items;
+    const before = (viewFor(state, 'alice', aliases, project.types).objects[DECK] as Stack).items;
     aliases.forget((state.objects[DECK] as Stack).items);
-    const after = (viewFor(state, 'alice', aliases).objects[DECK] as Stack).items;
+    const after = (viewFor(state, 'alice', aliases, project.types).objects[DECK] as Stack).items;
     expect(after.some((id) => before.includes(id))).toBe(false);
   });
 });

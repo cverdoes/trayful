@@ -6,7 +6,7 @@
   </g>
   <g transform="translate(100 0)">
     <rect width="100" height="100" fill="#fbf7ee"/>
-    <g transform="translate(20 20) scale(0.6)"><path d="M62 8 A42 42 0 1 0 62 92 A34 34 0 1 1 62 8 Z" fill="#222233"/></g>
+    <g transform="translate(20 20) scale(0.6)"><path d="M62 10 A40 40 0 1 0 62 90 A50 50 0 0 1 62 10 Z" fill="#222233"/></g>
   </g>
   <g transform="translate(200 0)">
     <rect width="100" height="100" fill="#fbf7ee"/>

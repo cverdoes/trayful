@@ -208,7 +208,8 @@ export const Face = z
 
 export const Back = z.strictObject(SideCommon).meta({
   id: 'Back',
-  description: "The back of a flippable component. It has the front's outline.",
+  description:
+    "The back of a flippable component. It has the front's outline. Fields it uses are shown to everyone while the component lies face down.",
 });
 
 // ---------------------------------------------------------------------------
