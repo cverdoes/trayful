@@ -1,6 +1,13 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { DEFAULT_PORT, defaultAppDir, startServer, type RunningServer } from '@trayful/server';
+import {
+  DEFAULT_PORT,
+  containerGateway,
+  defaultAppDir,
+  startServer,
+  type ContainerOptions,
+  type RunningServer,
+} from '@trayful/server';
 import openBrowser from 'open';
 import { CliError } from './errors.js';
 import type { PlayOptions } from './options.js';
@@ -50,6 +57,7 @@ async function startTable(options: PlayOptions, appDir: string): Promise<Running
       appDir,
       // Sharing on the network listens on every interface; a tunnel reaches us locally.
       host: options.share ? '0.0.0.0' : undefined,
+      container: options.container ? inContainer() : undefined,
     });
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== 'EADDRINUSE') throw e;
@@ -57,6 +65,16 @@ async function startTable(options: PlayOptions, appDir: string): Promise<Running
       `Port ${options.port ?? DEFAULT_PORT} is in use. Is Trayful already running? Try --port <n>.`,
     );
   }
+}
+
+function inContainer(): ContainerOptions {
+  const gateway = containerGateway();
+  if (!gateway) {
+    throw new CliError(
+      '--container found no network gateway. Is this running in a Linux container?',
+    );
+  }
+  return { hostAddresses: [gateway] };
 }
 
 /** Opens a tunnel to the server and adds its address to the invite links. */

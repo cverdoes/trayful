@@ -21,7 +21,7 @@ export interface Stdio {
  * stdout carries the protocol, so every message for people goes to `err`.
  */
 export async function mcp(
-  options: Omit<PlayOptions, 'open' | 'share' | 'tunnel'>,
+  options: Omit<PlayOptions, 'open' | 'share' | 'tunnel' | 'container'>,
   err: (s: string) => void,
   io: Stdio = { stdin: process.stdin, stdout: process.stdout },
 ): Promise<number> {

@@ -75,3 +75,14 @@ jobs:
           echo "Running:"; cat quickstart.sh
           test -s quickstart.sh
           bash -euxo pipefail quickstart.sh
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -t trayful .
+      - name: Check that the table starts in a container and serves the app
+        run: |
+          docker run --rm -e TRAYFUL_SMOKE_TEST=1 --user "$(id -u):$(id -g)" \
+            -v "$PWD/examples:/projects" trayful

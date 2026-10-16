@@ -3,7 +3,13 @@ import { parsePlayArgs } from './options.js';
 
 describe('parsePlayArgs', () => {
   it('plays the current folder in a browser by default', () => {
-    expect(parsePlayArgs([])).toEqual({ dir: '.', open: true, share: false, tunnel: false });
+    expect(parsePlayArgs([])).toEqual({
+      dir: '.',
+      open: true,
+      share: false,
+      tunnel: false,
+      container: false,
+    });
   });
 
   it('reads every option', () => {
@@ -34,7 +40,15 @@ describe('parsePlayArgs', () => {
       open: false,
       share: true,
       tunnel: true,
+      container: false,
     });
+  });
+
+  it('runs in a container without opening a browser or sharing on the network', () => {
+    expect(parsePlayArgs(['--container'])).toMatchObject({ container: true, open: false });
+    expect(() => parsePlayArgs(['--container', '--share'])).toThrow(
+      '--share does not work in a container',
+    );
   });
 
   it('turns --setup none into no setup', () => {

@@ -30,6 +30,8 @@ export interface ServerOptions {
    * computer (and through a tunnel). `0.0.0.0` lets others on the network join.
    */
   host?: string;
+  /** Running inside a container, such as with the repository's Docker setup. */
+  container?: ContainerOptions;
   /** Folder with the built browser app. Default: `packages/app/dist` in this repository. */
   appDir?: string;
   /** Seed for a newly created table. */
@@ -39,6 +41,20 @@ export interface ServerOptions {
   /** Reload projects when their files change. Default true. */
   watch?: boolean;
   logger?: boolean;
+}
+
+/**
+ * Inside a container the server listens on every interface, so a published port
+ * reaches it, and makes no network invite links: the container's addresses are no use
+ * to anyone. Publish the port on the computer's loopback only (`127.0.0.1:4317:4317`).
+ */
+export interface ContainerOptions {
+  /**
+   * Addresses the computer running the container reaches the server from, through
+   * the published port; requests from them count as the host. Usually the
+   * container's gateway (see `containerGateway`).
+   */
+  hostAddresses: string[];
 }
 
 export interface RunningServer {
@@ -57,6 +73,7 @@ export interface RunningServer {
 }
 
 export { isLocalOrigin };
+export { containerGateway } from './container.js';
 
 export function defaultAppDir(): string {
   return fileURLToPath(new URL('../../app/dist', import.meta.url));
@@ -72,6 +89,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     watch: options.watch,
   });
   const app = Fastify({ logger: options.logger ?? false });
+  app.decorate('hostAddresses', new Set(options.container?.hostAddresses));
   await app.register(fastifyWebsocket);
 
   const ctx = routeContext(app, workspace);
@@ -85,7 +103,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
 
   const address = await app.listen({
     port: options.port ?? DEFAULT_PORT,
-    host: options.host ?? '127.0.0.1',
+    host: options.container ? '0.0.0.0' : (options.host ?? '127.0.0.1'),
   });
   // Listening on every interface, the table is still at localhost for the host.
   ctx.url = address.replace(/\/\/(0\.0\.0\.0|\[::\])(?=:)/, '//localhost');
