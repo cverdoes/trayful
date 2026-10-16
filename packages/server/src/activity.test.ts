@@ -10,6 +10,7 @@ describe('activityText', () => {
       [{ type: 'rotate', ids: ['a'], steps: 1 }, 'turned 1 piece'],
       [{ type: 'stack', ids: ['a', 'b'], onto: 'c' }, 'stacked 2 pieces'],
       [{ type: 'draw', from: 'deck', to: [0, 0] }, 'drew 1 piece'],
+      [{ type: 'draw', from: 'sack/bag', to: 'hand:bo' }, 'drew 1 piece from a bag into a hand'],
       [{ type: 'deal', from: 'deck', to: [[0, 0]], count: 3 }, 'dealt 3 pieces each'],
       [{ type: 'take', id: 'a', to: [0, 0] }, 'took a piece from a pile'],
       [{ type: 'layout', id: 'deck', layout: 'fan' }, 'spread out a pile'],

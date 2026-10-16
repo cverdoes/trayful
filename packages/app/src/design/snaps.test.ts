@@ -28,6 +28,17 @@ it('starts new targets near the middle under ids not taken', () => {
     id: 'area-1',
     area: { at: [130, 80], size: 40 },
   });
+  expect(newTarget('pile', board, [300, 200])).toEqual({
+    id: 'pile-1',
+    points: [[150, 100]],
+    mode: 'pile',
+  });
+  expect(newTarget('row', board, [300, 200])).toMatchObject({ id: 'row-1', mode: 'row' });
+  expect(newTarget('bag', board, [300, 200])).toEqual({
+    id: 'bag-1',
+    area: { at: [135, 85], size: 30 },
+    mode: 'bag',
+  });
 });
 
 describe('dragging a grid', () => {

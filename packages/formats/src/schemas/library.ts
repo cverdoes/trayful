@@ -215,6 +215,11 @@ export const Back = z.strictObject(SideCommon).meta({
 // Snap targets
 // ---------------------------------------------------------------------------
 
+/** What a drop area does with what lands in it: modes for spots, then modes for areas. */
+export const SPOT_MODES = ['single', 'pile'] as const;
+export const AREA_MODES = ['free', 'row', 'bag'] as const;
+const DROP_MODES = [...SPOT_MODES, ...AREA_MODES] as const;
+
 export const SnapTarget = z
   .strictObject({
     id: Slug.describe(
@@ -243,7 +248,13 @@ export const SnapTarget = z
     area: z
       .strictObject({ at: Vec2.describe('Top-left corner.'), size: Size })
       .optional()
-      .describe('A free area: components dropped inside it keep their own position.'),
+      .describe('An area: components dropped inside it stay in it, as its `mode` says.'),
+    mode: z
+      .enum(DROP_MODES)
+      .optional()
+      .describe(
+        'What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random.',
+      ),
   })
   .meta({
     id: 'SnapTarget',
@@ -363,6 +374,7 @@ export type Label = z.infer<typeof Label>;
 export type Face = z.infer<typeof Face>;
 export type Back = z.infer<typeof Back>;
 export type SnapTarget = z.infer<typeof SnapTarget>;
+export type DropMode = (typeof DROP_MODES)[number];
 export type Values = z.infer<typeof Values>;
 export type Control = (typeof CONTROLS)[number];
 export type ComponentType = z.infer<typeof ComponentType>;

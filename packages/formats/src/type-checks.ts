@@ -1,7 +1,17 @@
 import { backOf, componentFields, isValued } from './component.js';
 import { coerceValue, templateRefs, type NormalizedField } from './fields.js';
 import type { Problem } from './diagnostics.js';
-import type { Back, ComponentType, Face, ImageRef, Label, Layer } from './schemas.js';
+import {
+  AREA_MODES,
+  SPOT_MODES,
+  type Back,
+  type ComponentType,
+  type Face,
+  type ImageRef,
+  type Label,
+  type Layer,
+  type SnapTarget,
+} from './schemas.js';
 
 /**
  * Checks a component for problems its schema cannot see on its own. Problems that
@@ -74,6 +84,8 @@ function snapProblems(type: ComponentType): Problem[] {
         message: 'Give exactly one of "grid", "points" or "area".',
       });
     }
+    const mode = modeProblem(target);
+    if (mode) problems.push({ path: ['container', i, 'mode'], message: mode });
     if (ids.has(target.id)) {
       problems.push({
         path: ['container', i, 'id'],
@@ -83,6 +95,19 @@ function snapProblems(type: ComponentType): Problem[] {
     ids.add(target.id);
   }
   return problems;
+}
+
+/** A mode that does not suit the kind of drop area it is on. */
+function modeProblem(target: SnapTarget): string | undefined {
+  if (!target.mode) return undefined;
+  if (target.area) {
+    return (AREA_MODES as readonly string[]).includes(target.mode)
+      ? undefined
+      : `An area's mode is one of ${AREA_MODES.join(', ')}.`;
+  }
+  return (SPOT_MODES as readonly string[]).includes(target.mode)
+    ? undefined
+    : `Spots' mode is one of ${SPOT_MODES.join(', ')}.`;
 }
 
 /** The faces a component has, each with its path inside the component. */

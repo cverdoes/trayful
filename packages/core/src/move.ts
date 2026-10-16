@@ -1,6 +1,6 @@
 import { sidesOf, type Vec2 } from '@trayful/formats/browser';
 import { boundsOf } from './layout.js';
-import { occupants, snapOwner, type SnapSpot } from './snap.js';
+import { occupants, rowEnd, snapOwner, type SnapSpot } from './snap.js';
 import { handTarget, sizeOf, type Piece, type TableObject } from './state.js';
 import { CommandError, unique, type Target, type Transaction } from './transaction.js';
 
@@ -80,19 +80,32 @@ function groupOf(tx: Transaction, given: TableObject[]): Group {
   };
 }
 
-/** Moves a group into a snap target: one object per free spot, or all together into a free area. */
+/**
+ * Moves a group into a snap target: one object per free spot (or pile), all
+ * together into a free area or a bag, or one after another onto the end of a row.
+ */
 function moveToTarget(tx: Transaction, group: Group, to: string): void {
   const spots = tx.spots(to, group.objects, group.moving);
   const first = spots[0]!;
+  if (first.mode === 'row') {
+    group.objects.forEach((object, i) =>
+      tx.relocate(object, rowEnd(first, i), first.rot, first.ref),
+    );
+    return;
+  }
   if (first.area) {
-    const offset = areaOffset(tx, first, group);
+    // A bag takes things in where they are.
+    const offset: Vec2 = first.mode === 'bag' ? [0, 0] : areaOffset(tx, first, group);
     for (const object of group.byZ)
       tx.relocate(object, add(object.pos, offset), object.rot, first.ref);
     return;
   }
-  const places = spots.length > 1 ? spots.filter((s) => tx.isFree(s.ref, group.moving)) : spots;
+  const places =
+    spots.length > 1 && first.mode !== 'pile'
+      ? spots.filter((s) => tx.isFree(s.ref, group.moving))
+      : spots;
   const count = group.objects.length;
-  if (spots.length > 1 && places.length < count) {
+  if (spots.length > 1 && first.mode !== 'pile' && places.length < count) {
     throw new CommandError(
       `"${to}" has ${places.length} free ${places.length === 1 ? 'spot' : 'spots'}; ` +
         `${count} ${count === 1 ? 'object needs' : 'objects need'} one each.`,

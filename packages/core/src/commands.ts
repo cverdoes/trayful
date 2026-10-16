@@ -3,6 +3,7 @@ import type { StackLayout } from './layout.js';
 import { move } from './move.js';
 import { flip, roll, rotate, setValue } from './piece-commands.js';
 import { deal, draw, layout, shuffle, stack, take } from './pile-commands.js';
+import { settle } from './settle.js';
 import type { Catalog, TableState } from './state.js';
 import { CommandError, Transaction, unique, type Target } from './transaction.js';
 
@@ -35,7 +36,10 @@ export type Command =
   | { type: 'rotate'; ids: string[]; steps?: number; degrees?: number }
   /** Put objects on top of a piece or stack, in the order given (last ends on top). */
   | { type: 'stack'; ids: string[]; onto: string }
-  /** Take cards off the top of a stack to a target. Several cards land as a new stack. */
+  /**
+   * Take cards off the top of a stack to a target, or pieces at random out of a
+   * bag, named `owner/target`. Several land as a new stack.
+   */
   | { type: 'draw'; from: string; count?: number; to: Target; face?: 'up' | 'down' }
   /**
    * Deal cards from the top of a stack, one at a time to each target in turn, for
@@ -99,5 +103,6 @@ export function applyCommand(state: TableState, command: Command, catalog: Catal
     default:
       throw new CommandError(`Unknown command "${(command as { type: string }).type}".`);
   }
+  settle(tx);
   return tx.commit();
 }

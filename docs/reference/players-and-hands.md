@@ -36,6 +36,7 @@ To play pieces from a hand, `move` them `to` a position or a spot of a drop area
 Every player gets their own view of the table from the server:
 
 - Their own hand in full. Of other hands, only how many pieces each holds.
+- Of [bags](snapping.md#bags), only how many pieces each holds. Nobody sees inside a bag, the host and agents included.
 - Face-down pieces without their fields, and under a stand-in id such as `hidden-3f9a1c02e4` instead of their real id, since ids such as `action-card.harvest.2` would give the card away. A piece keeps its stand-in while it stays face down, just as you can follow a face-down card with your eyes; shuffling a pile, undo and starting over give every hidden piece a new one.
 - No random state or seed, since those predict shuffles.
 

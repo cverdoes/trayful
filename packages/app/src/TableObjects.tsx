@@ -2,6 +2,7 @@ import { stackOffsets, type Piece, type Stack, type TableState } from '@trayful/
 import type { Assets } from '@trayful/formats/browser';
 import type Konva from 'konva';
 import { Circle, Group, Rect, Text } from 'react-konva';
+import { bagsOn, drawFromBag } from './bags';
 import type { Vec } from './drops';
 import { Component } from './render/Component';
 import { facePiece, sizeOf, type Types } from './render/geometry';
@@ -223,10 +224,14 @@ function StackCard({
   );
 }
 
-/** How many cards a stack holds, in its top-right corner. */
-function CountBadge({ count, at }: Readonly<{ count: number; at: Vec }>) {
+/** How many cards a stack or bag holds, drawn at a corner. */
+function CountBadge({
+  count,
+  at,
+  listening = false,
+}: Readonly<{ count: number; at: Vec; listening?: boolean }>) {
   return (
-    <Group x={at[0]} y={at[1]} listening={false}>
+    <Group x={at[0]} y={at[1]} listening={listening}>
       <Circle radius={5.5} fill="#2e3440" stroke="white" strokeWidth={0.4} />
       <Text
         text={String(count)}
@@ -241,6 +246,42 @@ function CountBadge({ count, at }: Readonly<{ count: number; at: Vec }>) {
         fill="white"
       />
     </Group>
+  );
+}
+
+/**
+ * How many pieces each bag holds, in its top-right corner. Clicking the count
+ * draws one at random into your hand.
+ */
+export function BagBadges({ types }: Readonly<{ types: Types }>) {
+  const table = useStore((s) => s.table);
+  const player = useStore((s) => s.me?.player?.id);
+  const command = useStore((s) => s.command);
+  if (!table) return null;
+  return (
+    <>
+      {bagsOn(table, types).map((bag) => {
+        const [w, h] = bag.spot.area!;
+        const draw = drawFromBag(bag, player);
+        return (
+          <Group
+            key={bag.spot.ref}
+            x={bag.spot.pos[0]}
+            y={bag.spot.pos[1]}
+            rotation={bag.spot.rot}
+            name="bag-count"
+            onClick={(e) => {
+              e.cancelBubble = true;
+              if (draw) command(draw);
+            }}
+            onMouseEnter={(e) => draw && setCursor(e, 'pointer')}
+            onMouseLeave={(e) => setCursor(e, '')}
+          >
+            <CountBadge count={bag.count} at={[w / 2, -h / 2]} listening />
+          </Group>
+        );
+      })}
+    </>
   );
 }
 

@@ -8,9 +8,23 @@ Every drop area has an `id` and exactly one of:
 | -------- | --------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `grid`   | `origin` (centre of the first spot), `cols`, `rows`, `cell` (spacing) | Numbered from 0, left to right, then top to bottom          |
 | `points` | A list of spot centres                                                | Numbered from 0 in list order                               |
-| `area`   | `at` (top-left corner) and `size`                                     | One free area; pieces keep the position they are dropped at |
+| `area`   | `at` (top-left corner) and `size`                                     | One area; what happens inside it is its `mode`, below       |
 
 All positions are in the container's own coordinates: millimetres from its top-left corner.
+
+## Modes
+
+`mode` says what a drop area does with what lands in it. Spots (`grid` and `points`) and areas have their own modes; the first of each is the default.
+
+| Mode     | For   | What it holds                                                                                                                                  |
+| -------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `single` | spots | One thing per spot. Dropping on a taken spot puts the piece there anyway, on top.                                                              |
+| `pile`   | spots | A pile on each spot: whatever lands there is stacked onto what is already there, so only stackable components that may share a stack can go.  |
+| `free`   | areas | Things stay where they are dropped.                                                                                                            |
+| `row`    | areas | A row from the left end, 2 mm apart, each turned like the area. Dropping between two things puts it there; the rest close up when one leaves. Things overlap evenly when the row is full. |
+| `bag`    | areas | A bag. What goes in is out of sight for everyone, agents too, and stacks come apart. Only the number of pieces inside is shown. Draw takes pieces out at random. |
+
+A pile's stack follows the [stacking rules](library.md#componenttype): a piece that is not `stackable`, or not listed in `stackable.with` when it differs from what is already there, is refused.
 
 <!-- example: examples/harvest-moon/library/pieces.yaml -->
 
@@ -38,11 +52,11 @@ A spot is named `owner/area/index` and a whole drop area `owner/area`. `owner` i
 
 While a piece is dragged, the spots that accept it light up. On drop:
 
-1. If the drop point is inside an accepting free area, the piece snaps to that area and stays where it was dropped.
-2. Otherwise it snaps to the nearest accepting spot within reach: half the piece's smaller side, and at least 8 mm. Free spots win over taken ones within reach.
+1. If the drop point is inside an accepting area, the piece goes into that area: it stays where it was dropped, takes its place in a row, or goes into a bag.
+2. Otherwise it snaps to the nearest accepting spot within reach: half the piece's smaller side, and at least 8 mm. Free spots win over taken ones within reach, and a pile is never taken.
 3. Otherwise it stays on the table where it was dropped.
 
-A snapped piece takes the spot's centre and the container's rotation. Several selected pieces dragged together only snap into free areas.
+A snapped piece takes the spot's centre and the container's rotation. Several selected pieces dragged together only snap into areas.
 
 ## Riding along
 
@@ -57,5 +71,11 @@ A container that should stay put, such as a board, is best locked with `lock: tr
 - A **spot** (`main-board/fields/3`) puts the piece there, even if the spot is taken.
 - A **drop area** (`main-board/market`) as a deal target fills its spots in order, one card each; a setup deal fails if there are fewer spots than cards. Moving one piece to a drop area picks its first free spot.
 - A **free area** (`main-board/supply`) places the pieces inside it, side by side, below whatever is already there.
+- A **row** takes the pieces at its right end, and a **bag** takes them out of sight.
+- A **pile** spot takes every piece, so a deal to a drop area of piles never runs out of spots.
+
+## Bags
+
+A bag's pieces are in no one's view; `describe_table` and every player see only how many there are. `draw` with `from` set to the bag's name (`sack/bag`) takes pieces out at random, using the table's seed, so a replay draws the same ones. On the table, clicking the count on a bag, or selecting the bag and pressing **D**, draws one into your hand.
 
 `describe_table` lists every drop area with its free and taken spots, so an agent knows where things can go.

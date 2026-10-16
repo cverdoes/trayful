@@ -8,7 +8,7 @@ import { HAND_DRAG, overHandTray } from './hand';
 import { topLevel } from './render/geometry';
 import { setSnapshotStage } from './snapshot';
 import { useStore } from './store';
-import { PieceView, SnapHints, StackView } from './TableObjects';
+import { BagBadges, PieceView, SnapHints, StackView } from './TableObjects';
 import { fitToTable, toWorld, zoomAt } from './viewport';
 
 /** The table: every object on it, which can be dragged, clicked and selected. */
@@ -55,6 +55,7 @@ export function Table() {
       >
         <Layer key={redrawKey}>
           <Objects drag={drag} />
+          <BagBadges types={view.types} />
           <SnapHints />
           {marquee.box && (
             <Rect

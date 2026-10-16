@@ -6,6 +6,9 @@ import { round, type Point } from './manipulate';
 
 export type TargetKind = 'grid' | 'points' | 'area';
 
+/** The drop areas the designer adds: each shape, and the shapes with a mode set. */
+export type NewTargetKind = TargetKind | 'pile' | 'row' | 'bag';
+
 export function targetKind(target: SnapTarget): TargetKind {
   if (target.grid) return 'grid';
   return target.points ? 'points' : 'area';
@@ -35,7 +38,7 @@ export function areaBox(target: SnapTarget): [number, number, number, number] | 
 }
 
 /** A new target of a kind near the middle of the face, under an id no other target has. */
-export function newTarget(kind: TargetKind, type: ComponentType, face: Point): SnapTarget {
+export function newTarget(kind: NewTargetKind, type: ComponentType, face: Point): SnapTarget {
   const taken = new Set((type.container ?? []).map((t) => t.id));
   let n = 1;
   while (taken.has(`${kind}-${n}`)) n++;
@@ -44,6 +47,9 @@ export function newTarget(kind: TargetKind, type: ComponentType, face: Point): S
   if (kind === 'grid')
     return { id, grid: { origin: [cx - 10, cy - 10], cols: 2, rows: 2, cell: 20 } };
   if (kind === 'points') return { id, points: [[cx, cy]] };
+  if (kind === 'pile') return { id, points: [[cx, cy]], mode: 'pile' };
+  if (kind === 'row') return { id, area: { at: [cx - 40, cy - 15], size: [80, 30] }, mode: 'row' };
+  if (kind === 'bag') return { id, area: { at: [cx - 15, cy - 15], size: 30 }, mode: 'bag' };
   return { id, area: { at: [cx - 20, cy - 20], size: 40 } };
 }
 

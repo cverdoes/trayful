@@ -1,14 +1,23 @@
-import { handCounts, type Piece, type Stack, type TableObject, type TableState } from './state.js';
+import {
+  bagCounts,
+  handCounts,
+  type Piece,
+  type Stack,
+  type TableObject,
+  type TableState,
+} from './state.js';
 
 /**
- * What one player may know about a table. Pieces in other players' hands are left
- * out (only how many each holds is shown), and face-down pieces lose their data
- * and get a stand-in id, so neither their text nor their id gives them away.
- * The random generator's state is left out too, since it predicts shuffles.
+ * What one player may know about a table. Pieces in other players' hands and in
+ * bags are left out (only how many each holds is shown), and face-down pieces lose
+ * their data and get a stand-in id, so neither their text nor their id gives them
+ * away. The random generator's state is left out too, since it predicts shuffles.
  */
 export interface TableView extends TableState {
   /** How many pieces each player holds, by player id. */
   hands: Record<string, number>;
+  /** How many pieces each bag holds, by `owner/target`. */
+  bags: Record<string, number>;
 }
 
 /** Hands out stand-in ids for hidden pieces, and finds the real piece behind one. */
@@ -22,6 +31,7 @@ export const HIDDEN_PREFIX = 'hidden-';
 
 /** Whether a piece's identity is hidden from `viewer`. */
 export function isHidden(piece: Piece, viewer: string | undefined): boolean {
+  if (piece.bag) return true;
   if (piece.hand) return piece.hand !== viewer;
   return piece.face === 'down';
 }
@@ -40,7 +50,7 @@ export function viewFor(
     const seen = viewObject(object, viewer, name);
     if (seen) objects[seen.id] = seen;
   }
-  return { ...state, seed: 0, rng: 0, objects, hands: handCounts(state) };
+  return { ...state, seed: 0, rng: 0, objects, ...counts(state, name) };
 }
 
 /**
@@ -58,7 +68,7 @@ function viewObject(
     if (object.snap) stack.snap = renameSnap(object.snap, name);
     return stack;
   }
-  if (object.hand && object.hand !== viewer) return undefined;
+  if (object.bag || (object.hand && object.hand !== viewer)) return undefined;
   if (isHidden(object, viewer)) {
     const hidden: Piece = { ...object, id: name(object.id) };
     delete hidden.data;
@@ -66,6 +76,12 @@ function viewObject(
     return hidden;
   }
   return object.snap ? { ...object, snap: renameSnap(object.snap, name) } : object;
+}
+
+/** How many pieces each hand and bag holds, bags under the names the viewer knows their owners by. */
+function counts(state: TableState, name: (id: string) => string) {
+  const bags = Object.entries(bagCounts(state)).map(([bag, n]) => [renameSnap(bag, name), n]);
+  return { hands: handCounts(state), bags: Object.fromEntries(bags) as Record<string, number> };
 }
 
 /** A snap reference with its owner under the name the viewer knows it by. */
@@ -143,21 +159,22 @@ export class AliasBook implements Aliases {
     const stale: string[] = [];
     for (const id of this.byId.keys()) {
       const piece = state.objects[id];
-      if (piece?.kind !== 'piece' || piece.hand || piece.face === 'up') stale.push(id);
+      if (piece?.kind !== 'piece' || piece.hand || piece.bag || piece.face === 'up') stale.push(id);
     }
     this.forget(stale);
   }
 }
 
 /**
- * The whole table with other players' hands taken out (only their counts kept), for
- * a viewer allowed to peek at face-down cards, such as an agent asked to reveal.
+ * The whole table with other players' hands and the bags' contents taken out (only
+ * their counts kept), for a viewer allowed to peek at face-down cards, such as an
+ * agent asked to reveal.
  */
 export function withoutOtherHands(state: TableState, viewer: string | undefined): TableView {
   const objects = Object.fromEntries(
     Object.entries(state.objects).filter(
-      ([, o]) => !(o.kind === 'piece' && o.hand && o.hand !== viewer),
+      ([, o]) => !(o.kind === 'piece' && (o.bag !== undefined || (o.hand && o.hand !== viewer))),
     ),
   );
-  return { ...state, objects, hands: handCounts(state) };
+  return { ...state, objects, ...counts(state, (id) => id) };
 }
