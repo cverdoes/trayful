@@ -6,6 +6,7 @@ import {
   handOf,
   handTarget,
   onTable,
+  bagCounts,
   type Catalog,
   type Piece,
   type TableObject,
@@ -262,10 +263,15 @@ function snapTargets(state: TableState, catalog: Catalog): string[] {
   return [...groups].map(([key, spots]) => {
     const first = spots[0]!;
     const accepts = first.accepts ? ` (accepts ${first.accepts.join(', ')})` : '';
+    if (first.mode === 'bag') {
+      const count = bagCounts(state)[first.ref] ?? 0;
+      return `- ${key}${accepts}: a bag holding ${count} hidden pieces; "draw" with "from": "${key}" takes them out at random`;
+    }
     if (first.area) {
       const held = occupants(state, first.ref).map((o) => o.id);
+      const kind = first.mode === 'row' ? 'row, lined up left to right,' : 'free area';
       return (
-        `- ${key}${accepts}: free area of ${num(first.area[0])} × ${num(first.area[1])} mm ` +
+        `- ${key}${accepts}: ${kind} of ${num(first.area[0])} × ${num(first.area[1])} mm ` +
         `centred at [${num(first.pos[0])}, ${num(first.pos[1])}]` +
         (held.length ? `, holding ${held.join(', ')}` : ', empty')
       );
@@ -277,7 +283,7 @@ function snapTargets(state: TableState, catalog: Catalog): string[] {
       if (held.length) taken.push(`${spot.index}: ${held.join(', ')}`);
       else free.push(spot.index!);
     }
-    const parts = [`${spots.length} spots`];
+    const parts = [`${spots.length} ${first.mode === 'pile' ? 'piles' : 'spots'}`];
     if (taken.length) parts.push(`taken ${taken.join('; ')}`);
     parts.push(free.length ? `free ${ranges(free)}` : 'none free');
     return `- ${key}${accepts}: ${parts.join(', ')}`;

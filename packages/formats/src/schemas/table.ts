@@ -32,6 +32,12 @@ export const PieceObject = z
       .describe(
         'Id of the player whose private hand holds this piece. Only that player sees it; its `pos` is then unused.',
       ),
+    bag: z
+      .string()
+      .optional()
+      .describe(
+        'The bag holding this piece, as `pieceId/target`. Nobody sees it until it is drawn; its `pos` is then unused.',
+      ),
   })
   .meta({ id: 'PieceObject', description: 'One component on the table.' });
 

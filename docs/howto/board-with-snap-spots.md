@@ -35,6 +35,8 @@ A board is a plain `piece` with a large `size`. It does not switch on `flippable
 - **`points`**: a list of spot centres in order, for tracks that bend. Harvest Moon's `score-track` is one, with eleven points along the bottom edge.
 - **`area`**: a free rectangle, given by its top-left corner and size. Pieces dropped inside stay where they are dropped, like a supply or a discard area.
 
+`mode` changes what a drop area does with what lands in it: `pile` stacks everything on a spot into one pile, `row` lines things up in an area, and `bag` hides them until someone draws one at random. See [modes](../reference/snapping.md#modes).
+
 `accepts` limits a drop area to some components (`action-card`) or to what they are (`piece`, `die`, `counter`, `zone`). Leave it out to accept anything.
 
 Draw the slots into the board's artwork so people can see them; Trayful highlights the spots while you drag, but does not draw them on the board. Board images are easiest as SVG with a `viewBox` in millimetres, such as `viewBox="0 0 600 400"`, so their coordinates match the drop areas.

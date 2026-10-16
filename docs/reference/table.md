@@ -33,6 +33,7 @@ One component on the table.
 | `parent` | text |  | Id of the stack holding this piece. Its `pos` is then unused. |
 | `snap` | text |  | Snap spot the piece sits in, as `pieceId/target/index`. |
 | `hand` | text |  | Id of the player whose private hand holds this piece. Only that player sees it; its `pos` is then unused. |
+| `bag` | text |  | The bag holding this piece, as `pieceId/target`. Nobody sees it until it is drawn; its `pos` is then unused. |
 
 ## Vec2
 

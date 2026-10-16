@@ -771,7 +771,7 @@
           }
         },
         "area": {
-          "description": "A free area: components dropped inside it keep their own position.",
+          "description": "An area: components dropped inside it stay in it, as its `mode` says.",
           "type": "object",
           "properties": {
             "at": {
@@ -787,6 +787,17 @@
             "size"
           ],
           "additionalProperties": false
+        },
+        "mode": {
+          "description": "What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random.",
+          "type": "string",
+          "enum": [
+            "single",
+            "pile",
+            "free",
+            "row",
+            "bag"
+          ]
         }
       },
       "required": [

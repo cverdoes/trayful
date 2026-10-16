@@ -58,6 +58,23 @@ describe('typeProblems', () => {
     ]);
   });
 
+  it('wants a mode that suits spots or an area', () => {
+    const area = { at: [0, 0] as [number, number], size: 10 };
+    expect(
+      problems({
+        container: [
+          { id: 'a', points: [[0, 0]], mode: 'bag' },
+          { id: 'b', area, mode: 'pile' },
+          { id: 'c', points: [[0, 0]], mode: 'pile' },
+          { id: 'd', area, mode: 'row' },
+        ],
+      }),
+    ).toEqual([
+      { path: ['container', 0, 'mode'], message: "Spots' mode is one of single, pile." },
+      { path: ['container', 1, 'mode'], message: "An area's mode is one of free, row, bag." },
+    ]);
+  });
+
   it('wants a label to give one of text and field', () => {
     expect(
       problems({

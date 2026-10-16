@@ -67,12 +67,25 @@ function asStack(tx: Transaction, object: TableObject): Stack {
   return stack;
 }
 
-/** Takes cards off the top of a stack to a target. Several cards land as a new stack. */
-export function draw(
-  tx: Transaction,
-  { from, count = 1, to, face }: { from: string; count?: number; to: Target; face?: Face },
-): void {
+/** What to draw, how many, and where they go. */
+interface DrawOptions {
+  from: string;
+  count?: number;
+  to: Target;
+  face?: Face;
+}
+
+/**
+ * Takes cards off the top of a stack to a target, or pieces at random out of a bag
+ * (`owner/target`). Several land as a new stack.
+ */
+export function draw(tx: Transaction, options: DrawOptions): void {
+  const { from, count = 1, to, face } = options;
   requireCount(count);
+  if (from.includes('/')) {
+    drawFromBag(tx, { ...options, count });
+    return;
+  }
   const source = tx.stackObject(from);
   if (count > source.items.length) {
     throw new CommandError(`"${from}" holds ${source.items.length} pieces; cannot draw ${count}.`);
@@ -85,6 +98,24 @@ export function draw(
     drawn.map((id) => tx.stackItem(id)),
   );
   takeOff(tx, source, [{ ids: drawn, place }], face);
+}
+
+/** Draws pieces at random out of a bag. */
+function drawFromBag(
+  tx: Transaction,
+  { from, count, to, face }: Required<Omit<DrawOptions, 'face'>> & { face?: Face },
+): void {
+  const [bag] = tx.spots(from, [], new Set());
+  if (bag?.mode !== 'bag') throw new CommandError(`"${from}" is not a bag.`);
+  const inside = tx.bagged(bag.ref);
+  if (count > inside.length) {
+    throw new CommandError(`"${bag.ref}" holds ${inside.length} pieces; cannot draw ${count}.`);
+  }
+  const drawn = tx
+    .random((rng) => shuffled(inside, rng))
+    .slice(0, count)
+    .map((piece) => tx.update(piece, { bag: undefined }));
+  land(tx, 0, [{ ids: drawn.map((p) => p.id), place: tx.place(to, drawn) }], face);
 }
 
 /**
@@ -161,7 +192,7 @@ interface Pile {
 
 /** Takes piles of pieces off a stack and puts them at their places. */
 function takeOff(tx: Transaction, source: Stack, piles: Pile[], face?: Face): void {
-  land(tx, source, piles, face);
+  land(tx, source.rot, piles, face);
   const gone = new Set(piles.flatMap((p) => p.ids));
   setStackItems(
     tx,
@@ -170,11 +201,11 @@ function takeOff(tx: Transaction, source: Stack, piles: Pile[], face?: Face): vo
   );
 }
 
-/** Puts piles at their places, turned the way the stack lies unless the place says otherwise. */
-function land(tx: Transaction, source: Stack, piles: Pile[], face?: Face): void {
+/** Puts piles at their places, turned to `rot` unless the place says otherwise. */
+function land(tx: Transaction, rot: number, piles: Pile[], face?: Face): void {
   for (const { ids, place } of piles) {
     if (place.hand === undefined) {
-      layDown(tx, ids, { ...place, rot: place.rot ?? source.rot }, face);
+      layDown(tx, ids, { ...place, rot: place.rot ?? rot }, face);
     } else {
       const pieces = ids.map((id) => tx.update(tx.stackItem(id), { parent: undefined }));
       tx.toHand(pieces, place.hand);

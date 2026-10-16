@@ -7,6 +7,7 @@ import {
   type Back,
   type ComponentType,
   type Control,
+  type DropMode,
   type ImageRef,
   type SnapTarget,
 } from './schemas.js';
@@ -75,6 +76,11 @@ export function rotationStep(type: ComponentType): number | undefined {
 /** Where other components snap onto this one; empty when it is not a container. */
 export function dropAreas(type: ComponentType): readonly SnapTarget[] {
   return type.container ?? [];
+}
+
+/** What a drop area does with what lands in it, its default filled in. */
+export function dropMode(target: Pick<SnapTarget, 'area' | 'mode'>): DropMode {
+  return target.mode ?? (target.area ? 'free' : 'single');
 }
 
 /** Whether a drop area takes a component, by its id or its representation. */

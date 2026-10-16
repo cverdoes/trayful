@@ -104,7 +104,7 @@ function TargetView({
         </Group>
       ))}
       <Text
-        text={target.id}
+        text={target.mode ? `${target.id} (${target.mode})` : target.id}
         x={(spotsOf(target)[0] ?? area ?? [0, 0])[0]}
         y={(spotsOf(target)[0] ?? area ?? [0, 0])[1] + 8 / scale}
         fontSize={11 / scale}

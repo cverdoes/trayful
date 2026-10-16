@@ -4,6 +4,7 @@ import {
   occupants,
   resolveSpots,
   ridersOf,
+  rowEnd,
   snapOwner,
   SnapError,
   toLocal,
@@ -37,6 +38,8 @@ export interface Place {
   rot?: number;
   snap?: string;
   hand?: string;
+  /** A pile spot, which takes more pieces when something already lies there. */
+  pile?: boolean;
 }
 
 /**
@@ -67,6 +70,14 @@ export class Transaction {
     return { ...this.state, rng: this.rng, objects: this.objects };
   }
 
+  /** Every object the command added, removed or changed so far, as it was and as it is. */
+  changes(): { before?: TableObject; after?: TableObject }[] {
+    const ids = new Set([...Object.keys(this.objects), ...Object.keys(this.state.objects)]);
+    return [...ids]
+      .filter((id) => this.objects[id] !== this.state.objects[id])
+      .map((id) => ({ before: this.state.objects[id], after: this.objects[id] }));
+  }
+
   /** The table as it stands in this transaction. */
   current(): TableState {
     return { ...this.state, objects: this.objects };
@@ -87,11 +98,14 @@ export class Transaction {
     return object;
   }
 
-  /** An object that sits directly on the table (not inside a stack). */
+  /** An object that sits directly on the table (not inside a stack or a bag). */
   topLevel(id: string): TableObject {
     const object = this.get(id);
     if (object.kind === 'piece' && object.parent) {
       throw new CommandError(`"${id}" is inside stack "${object.parent}"; draw it first.`);
+    }
+    if (object.kind === 'piece' && object.bag) {
+      throw new CommandError(`"${id}" is in bag "${object.bag}"; draw from the bag instead.`);
     }
     return object;
   }
@@ -120,6 +134,13 @@ export class Transaction {
     const object = this.get(id);
     if (object.kind !== 'stack') throw new CommandError(`"${id}" is not a stack.`);
     return object;
+  }
+
+  /** The pieces in a bag, by id, so a random draw does not depend on the order they went in. */
+  bagged(ref: string): Piece[] {
+    return Object.values(this.objects)
+      .filter((o): o is Piece => o.kind === 'piece' && o.bag === ref)
+      .sort((a, b) => (a.id < b.id ? -1 : 1));
   }
 
   /** The pieces an object is made of: itself, or a stack's items from the bottom up. */
@@ -173,18 +194,28 @@ export class Transaction {
    * the pieces that ride on it so they keep their place relative to it.
    */
   relocate(object: TableObject, pos: Vec2, rot: number, snap: string | undefined): void {
+    this.carry(object, { pos, rot, snap, z: this.topZ() });
+  }
+
+  /**
+   * Moves an object within its spot without bringing it to the top, as a row does
+   * when it closes up, carrying its riders.
+   */
+  shift(object: TableObject, pos: Vec2, rot: number): void {
+    this.carry(object, { pos, rot, snap: object.snap, z: object.z });
+  }
+
+  private carry(
+    object: TableObject,
+    to: { pos: Vec2; rot: number; snap: string | undefined; z: number },
+  ): void {
     const riders = this.riders([object.id])
       .map((id) => this.get(id))
       .sort((a, b) => a.z - b.z);
+    const { pos, rot } = to;
     const delta = rot - object.rot;
-    let z = this.topZ();
-    this.update(object, {
-      pos,
-      rot: normalize(rot),
-      z: z++,
-      snap,
-      hand: undefined,
-    });
+    let z = to.z;
+    this.update(object, { pos, rot: normalize(rot), z: z++, snap: to.snap, hand: undefined });
     for (const rider of riders) {
       const local = toLocal(object, [0, 0], rider.pos);
       this.update(rider, {
@@ -259,17 +290,21 @@ export class Transaction {
     const player = handTarget(target);
     if (player !== undefined) return [{ pos: [0, 0], hand: checkPlayer(player) }];
     return this.spots(target, pieces, new Set()).map((s) => ({
-      pos: s.pos,
+      pos: s.mode === 'row' ? rowEnd(s) : s.pos,
       rot: s.area ? undefined : s.rot,
       snap: s.ref,
+      pile: s.mode === 'pile',
     }));
   }
 
-  /** One place for pieces that land together: a position, a spot, or a snap target's first free spot. */
+  /**
+   * One place for pieces that land together: a position, a spot, or a snap
+   * target's first free spot (or its first pile, when every spot is taken).
+   */
   place(target: Target, pieces: Piece[]): Place {
     const places = this.places(target, pieces);
     if (places.length === 1) return places[0]!;
-    const free = places.find((p) => p.snap && this.isFree(p.snap));
+    const free = places.find((p) => p.snap && (this.isFree(p.snap) || p.pile));
     if (!free) throw new CommandError(`Every spot of "${target as string}" is taken.`);
     return free;
   }

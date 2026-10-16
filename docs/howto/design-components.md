@@ -73,7 +73,7 @@ Under **Colours**, give a colour a name with **Add colour**, change one with its
 
 ## Drop areas for boards
 
-Pieces and zones have a **Drop areas** section: where other pieces land when they are dropped on it. **Add** a grid (a field of action spaces, a row of card slots), points (a score track) or an area (a supply). A component with drop areas is a container, so what lies in them moves with it. Spots are drawn on the face with their numbers, the way setups and agents name them, such as `main-board/fields/3`.
+Pieces and zones have a **Drop areas** section: where other pieces land when they are dropped on it. **Add** a grid (a field of action spaces, a row of card slots), points (a score track), an area (a supply), a pile (a discard pile), a row (a tableau that lines cards up) or a bag (pieces drawn blind). A component with drop areas is a container, so what lies in them moves with it. Spots are drawn on the face with their numbers, the way setups and agents name them, such as `main-board/fields/3`.
 
 Select a drop area in the list or by clicking one of its spots, then drag on the board:
 
@@ -82,6 +82,8 @@ Select a drop area in the list or by clicking one of its spots, then drag on the
 - An area moves by its top-left corner and changes size by the opposite one.
 
 **Accepts** limits a drop area to some components, such as `worker`, so other pieces pass over it.
+
+**Holds** says what the drop area does with what lands in it. Spots hold one thing each, or a pile each. An area keeps things where they are dropped, lines them up in a row, or is a bag that hides them until someone draws one at random. See [modes](../reference/snapping.md#modes).
 
 ## Undo
 

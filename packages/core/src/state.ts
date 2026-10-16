@@ -23,9 +23,21 @@ export interface TableState {
   objects: Readonly<Record<string, TableObject>>;
 }
 
-/** Whether an object lies directly on the table: not inside a stack, and not in a player's hand. */
+/** Whether an object lies directly on the table: not inside a stack, a player's hand or a bag. */
 export function onTable(object: TableObject): boolean {
-  return !(object.kind === 'piece' && (object.parent !== undefined || object.hand !== undefined));
+  return !(
+    object.kind === 'piece' &&
+    (object.parent !== undefined || object.hand !== undefined || object.bag !== undefined)
+  );
+}
+
+/** How many pieces each bag holds, by the bag's `owner/target`. */
+export function bagCounts(state: TableState): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const object of Object.values(state.objects)) {
+    if (object.kind === 'piece' && object.bag) counts[object.bag] = (counts[object.bag] ?? 0) + 1;
+  }
+  return counts;
 }
 
 /** The pieces in a player's hand, in the order they were picked up. */
@@ -133,8 +145,10 @@ function stackProblems(state: TableState, stack: Stack, seen: Map<string, string
   return problems;
 }
 
-/** A piece's stack must list it, and a piece cannot be in a stack and a hand at once. */
+/** A piece's stack must list it, and a piece is in at most one of a stack, a hand and a bag. */
 function pieceProblem(state: TableState, piece: Piece): string | undefined {
+  if (piece.bag && (piece.parent || piece.hand))
+    return `Piece "${piece.id}" cannot be in a bag and in a stack or hand at once.`;
   if (!piece.parent) return undefined;
   if (piece.hand) return `Piece "${piece.id}" cannot be both in a stack and in a hand.`;
   const parent = state.objects[piece.parent];

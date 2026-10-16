@@ -1,11 +1,34 @@
-import { isValued, type ComponentType, type SnapTarget } from '@trayful/formats/browser';
+import {
+  AREA_MODES,
+  dropMode,
+  isValued,
+  SPOT_MODES,
+  type ComponentType,
+  type DropMode,
+  type SnapTarget,
+} from '@trayful/formats/browser';
 import { sizeOf } from '../render/geometry';
 import { parseValues, setIn } from './edit';
-import { NumberInput, PairInput, Row, SizeInput, TextInput } from './controls';
-import { newTarget, spotsOf, targetKind, type TargetKind } from './snaps';
+import { NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
+import { newTarget, spotsOf, targetKind, type NewTargetKind } from './snaps';
 import { editDraft, setValue, useDesign } from './store';
 
-const KIND_LABEL: Record<TargetKind, string> = { grid: 'Grid', points: 'Points', area: 'Area' };
+const KIND_LABEL: Record<NewTargetKind, string> = {
+  grid: 'Grid',
+  points: 'Points',
+  area: 'Area',
+  pile: 'Pile',
+  row: 'Row',
+  bag: 'Bag',
+};
+
+const MODE_LABEL: Record<DropMode, string> = {
+  single: 'One thing per spot',
+  pile: 'A pile on each spot',
+  free: 'Things where they are dropped',
+  row: 'A row, left to right',
+  bag: 'A bag: hidden, drawn at random',
+};
 
 /**
  * A container's drop areas: where other pieces land when dropped on it. Areas are
@@ -15,7 +38,7 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
   const selected = useDesign((s) => s.target);
   if (isValued(type)) return null;
   const targets = type.container ?? [];
-  const add = (kind: TargetKind) => {
+  const add = (kind: NewTargetKind) => {
     editDraft((t) => setIn(t, ['container', targets.length], newTarget(kind, t, sizeOf(t))));
     useDesign.setState({ side: 'front', layer: undefined, target: targets.length });
   };
@@ -41,7 +64,7 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
       </ul>
       <div className="design-add">
         Add:{' '}
-        {(['grid', 'points', 'area'] as const).map((kind) => (
+        {(['grid', 'points', 'area', 'pile', 'row', 'bag'] as const).map((kind) => (
           <button key={kind} type="button" onClick={() => add(kind)}>
             {KIND_LABEL[kind]}
           </button>
@@ -56,9 +79,11 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
 
 function describe(target: SnapTarget): string {
   const kind = targetKind(target);
-  if (kind === 'area') return 'area';
+  const mode = dropMode(target);
+  if (kind === 'area') return mode === 'free' ? 'area' : mode;
   const spots = spotsOf(target).length;
-  return `${kind}, ${spots} spot${spots === 1 ? '' : 's'}`;
+  const what = mode === 'pile' ? 'pile' : 'spot';
+  return `${kind}, ${spots} ${what}${spots === 1 ? '' : 's'}`;
 }
 
 function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: number }>) {
@@ -72,7 +97,7 @@ function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: n
   };
   return (
     <div className="design-layer" aria-label="Selected drop area">
-      <h4>{KIND_LABEL[targetKind(target)]} spots</h4>
+      <h4>{KIND_LABEL[targetKind(target)]}</h4>
       <Row label="Id" path={at('id')}>
         {(id) => (
           <TextInput id={id} value={target.id} onChange={(v) => setValue(at('id'))(v ?? '')} />
@@ -88,6 +113,19 @@ function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: n
               const ids = parseValues(text ?? '').map(String);
               setValue(at('accepts'))(ids.length ? ids : undefined);
             }}
+          />
+        )}
+      </Row>
+      <Row label="Holds" path={at('mode')}>
+        {(id) => (
+          <Select
+            id={id}
+            value={target.mode}
+            // The first mode is the default, offered as leaving the mode out.
+            options={(target.area ? AREA_MODES : SPOT_MODES).slice(1)}
+            labels={MODE_LABEL}
+            empty={MODE_LABEL[target.area ? 'free' : 'single']}
+            onChange={setValue(at('mode'))}
           />
         )}
       </Row>

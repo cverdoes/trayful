@@ -126,6 +126,10 @@
         "hand": {
           "description": "Id of the player whose private hand holds this piece. Only that player sees it; its `pos` is then unused.",
           "type": "string"
+        },
+        "bag": {
+          "description": "The bag holding this piece, as `pieceId/target`. Nobody sees it until it is drawn; its `pos` is then unused.",
+          "type": "string"
         }
       },
       "required": [

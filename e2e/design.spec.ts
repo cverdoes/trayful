@@ -1,7 +1,14 @@
-import { expect, test, type Page } from '@playwright/test';
-import { agent, libraryFile, newComponent, savedType, waitSaved } from './helpers.js';
-
-type Point = [number, number];
+import { expect, test } from '@playwright/test';
+import {
+  agent,
+  clickOnFront,
+  dragOnFront,
+  libraryFile,
+  newComponent,
+  onFront,
+  savedType,
+  waitSaved,
+} from './helpers.js';
 
 const PROJECT = 'workshop';
 
@@ -63,26 +70,6 @@ test('a person builds a card type in the designer and deals it onto the table', 
     )
     .toContain('deck:seasons');
 });
-
-/** Where a point on the front face, in millimetres, is on the page. */
-function onFront(page: Page, [x, y]: Point) {
-  return page.evaluate(([x, y]) => window.__trayful!.faceToScreen!('front', x!, y!), [x, y]);
-}
-
-async function dragOnFront(page: Page, from: Point, to: Point) {
-  const a = await onFront(page, from);
-  const b = await onFront(page, to);
-  await page.mouse.move(a.x, a.y);
-  await page.mouse.down();
-  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 4 });
-  await page.mouse.move(b.x, b.y, { steps: 4 });
-  await page.mouse.up();
-}
-
-async function clickOnFront(page: Page, at: Point) {
-  const p = await onFront(page, at);
-  await page.mouse.click(p.x, p.y);
-}
 
 test('a person lays out a board by dragging: a layer, a grid of drop spots and a track', async ({
   page,

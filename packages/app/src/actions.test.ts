@@ -1,8 +1,9 @@
-import type { Command, TableState } from '@trayful/core';
+import type { Command, Piece, TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
 import type { ComponentType } from '@trayful/formats/browser';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { actionsFor } from './actions';
+import { selectedBagDraw } from './bags';
 import type { Types } from './render/geometry';
 import { after, exampleTable } from './testing';
 
@@ -138,3 +139,40 @@ function withValue(id: string, value: string): TableState {
   const piece = table.objects[id]!;
   return { ...table, objects: { ...table.objects, [id]: { ...piece, value } as typeof piece } };
 }
+
+describe('bags', () => {
+  const bag: ComponentType = {
+    id: 'sack',
+    size: 40,
+    is: 'piece',
+    container: [{ id: 'bag', area: { at: [0, 0], size: 40 }, mode: 'bag' }],
+  };
+  const sack: Piece = {
+    kind: 'piece',
+    id: 'sack',
+    type: 'sack',
+    pos: [0, 0],
+    rot: 0,
+    face: 'up',
+    z: 99,
+  };
+  const withBag = (bags: Record<string, number>) => ({
+    ...table,
+    objects: { ...table.objects, sack },
+    bags,
+  });
+
+  it('draws out of a bag on the selected piece into your hand', () => {
+    const types = { ...project.types, sack: bag };
+    expect(selectedBagDraw(withBag({ 'sack/bag': 2 }), types, ['sack'], 'alice')).toEqual({
+      type: 'draw',
+      from: 'sack/bag',
+      to: 'hand:alice',
+    });
+    // Someone who has not joined draws onto the table beside the bag.
+    expect(selectedBagDraw(withBag({ 'sack/bag': 2 }), types, ['sack'], undefined)).toMatchObject({
+      to: [35, 0],
+    });
+    expect(selectedBagDraw(withBag({}), types, ['sack'], 'alice')).toBeUndefined();
+  });
+});

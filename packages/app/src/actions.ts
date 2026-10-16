@@ -7,6 +7,7 @@ import {
   type ComponentType,
   type Control,
 } from '@trayful/formats/browser';
+import { selectedBagDraw } from './bags';
 import { objectSize, typeOf, type Types } from './render/geometry';
 import { useStore } from './store';
 
@@ -33,9 +34,14 @@ const LAYOUT_LABEL = { pile: 'Pile', fan: 'Fan', spread: 'Spread' } as const;
 
 /** Works out which actions apply to the selected objects. */
 export function selectionActions(): Actions {
-  const { table, view, selection, command } = useStore.getState();
+  const { table, view, selection, command, me } = useStore.getState();
   if (!table || !view) return NO_ACTIONS;
-  return actionsFor(table, view.types, selection, command);
+  const actions = actionsFor(table, view.types, selection, command);
+  // A bag on the selected piece draws when nothing else would.
+  const bag = actions.draw
+    ? undefined
+    : selectedBagDraw(table, view.types, selection, me?.player?.id);
+  return bag ? { ...actions, draw: () => command(bag) } : actions;
 }
 
 /** The actions for some objects on a table. Each action sends one command per kind of object. */

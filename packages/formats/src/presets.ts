@@ -77,6 +77,15 @@ export const TYPE_PRESETS: readonly TypePreset[] = [
     type: { size: [300, 300], is: 'piece', face: { fill: '#e8dcc0' }, rotates: true },
   },
   {
+    name: 'Bag',
+    type: {
+      size: 40,
+      is: 'piece',
+      face: { shape: 'circle', fill: '#9a7b4f' },
+      container: [{ id: 'bag', area: { at: [0, 0], size: 40 }, mode: 'bag' }],
+    },
+  },
+  {
     name: 'Zone',
     type: {
       size: [100, 70],

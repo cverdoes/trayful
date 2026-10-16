@@ -21,7 +21,7 @@ export function activityText(
     case 'stack':
       return `stacked ${n(command.ids.length, 'piece')}`;
     case 'draw':
-      return `drew ${n(command.count ?? 1, 'piece')}${into(command.to)}`;
+      return `drew ${n(command.count ?? 1, 'piece')}${command.from.includes('/') ? ' from a bag' : ''}${into(command.to)}`;
     case 'deal':
       return `dealt ${n(command.count ?? 1, 'piece')} each`;
     case 'take':

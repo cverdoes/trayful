@@ -1,8 +1,6 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import type { Stack } from '@trayful/core';
-import { DECK, freshTable, screen, table } from './helpers.js';
+import { DECK, freshTable, inviteGuest, screen, table } from './helpers.js';
 
 test.beforeEach(async ({ baseURL }) => freshTable(baseURL!));
 
@@ -38,26 +36,7 @@ test('two players keep their hands hidden from each other', async ({ page, brows
   // The host plays in one browser; a guest joins through the invite link in another.
   await page.goto('/');
   await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
-  // The host opens Invite, which makes the link to this table.
-  await page.getByRole('button', { name: 'Invite players to this table' }).click();
-  await expect(page.getByRole('dialog', { name: 'Invite players' })).toContainText(
-    'only reachable',
-  );
-  await page.getByRole('button', { name: 'Close' }).click();
-  const { root } = (await (await page.request.get('/api/health')).json()) as { root: string };
-  const { invites } = JSON.parse(
-    await readFile(path.join(root, '.trayful', 'players.json'), 'utf8'),
-  ) as { invites: { token: string; table: string }[] };
-  const invite = invites.find((i) => i.table === 'table-1')!.token;
-
-  const guest = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-  const bob = await guest.newPage();
-  await bob.goto(`/join/${invite}`);
-  await bob.getByLabel('Your name').fill('Bob');
-  await bob.getByRole('button', { name: 'Join' }).click();
-  await bob.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
-  await expect(bob).not.toHaveURL(/join/);
-  await expect(page.getByRole('list', { name: 'Players' })).toContainText('Bob');
+  const { context: guest, guest: bob } = await inviteGuest(page, browser, 'Bob');
 
   // Each takes the top card of the deck into their hand.
   const deck = (await table(page)).objects[DECK] as Stack;

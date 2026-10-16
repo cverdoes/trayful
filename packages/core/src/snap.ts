@@ -1,4 +1,11 @@
-import { areaAccepts, dropAreas, type ComponentType, type Vec2 } from '@trayful/formats/browser';
+import {
+  areaAccepts,
+  dropAreas,
+  dropMode,
+  type ComponentType,
+  type DropMode,
+  type Vec2,
+} from '@trayful/formats/browser';
 import {
   onTable,
   sizeOf,
@@ -9,9 +16,9 @@ import {
 } from './state.js';
 
 /**
- * Containers declare drop areas, made of numbered spots or a free area. A spot
- * is written `owner/target/index` and a free area `owner/target`, where owner is
- * the id of the piece that declares them.
+ * Containers declare drop areas, made of numbered spots or an area. A spot is
+ * written `owner/target/index` and an area `owner/target`, where owner is the id
+ * of the piece that declares them.
  */
 export interface SnapSpot {
   ref: string;
@@ -25,8 +32,18 @@ export interface SnapSpot {
   rot: number;
   /** Component ids or representations allowed here; undefined allows anything. */
   accepts?: string[];
-  /** Free areas only: width and height before rotation. */
+  /** What the spot or area does with what lands in it. */
+  mode: DropMode;
+  /** Areas only: width and height before rotation. */
   area?: Vec2;
+}
+
+/**
+ * Just past the right end of a row, `after` places further: what lands there
+ * lines up after everything already in the row once it settles.
+ */
+export function rowEnd(row: SnapSpot, after = 0): Vec2 {
+  return toTable(row, [0, 0], [row.area![0] / 2 + 1 + after, 0]);
 }
 
 export class SnapError extends Error {}
@@ -56,7 +73,13 @@ export function spotsOf(piece: Piece, type: ComponentType): SnapSpot[] {
   const size = sizeOf(type);
   const spots: SnapSpot[] = [];
   for (const target of dropAreas(type)) {
-    const common = { owner: piece.id, target: target.id, rot: piece.rot, accepts: target.accepts };
+    const common = {
+      owner: piece.id,
+      target: target.id,
+      rot: piece.rot,
+      accepts: target.accepts,
+      mode: dropMode(target),
+    };
     let locals: Vec2[] = [];
     if (target.grid) {
       const { origin, cols, rows, cell } = target.grid;
@@ -122,7 +145,7 @@ export function resolveSpots(state: TableState, catalog: Catalog, ref: string): 
   if (!spot) {
     throw new SnapError(
       spots[0]!.area
-        ? `"${targetId}" is a free area and has no numbered spots.`
+        ? `"${targetId}" is an area and has no numbered spots.`
         : `Spot ${index} is out of range; "${targetId}" has spots 0 to ${spots.length - 1}.`,
     );
   }
@@ -158,7 +181,7 @@ export function occupants(state: TableState, ref: string): TableObject[] {
   return Object.values(state.objects).filter((o) => o.snap === ref && onTable(o));
 }
 
-/** Whether a table point lies inside a free area. */
+/** Whether a table point lies inside an area. */
 export function insideArea(spot: SnapSpot, point: Vec2): boolean {
   if (!spot.area) return false;
   const local = toLocal(spot, spot.area, point);
@@ -196,8 +219,8 @@ export function snapFor(
     }
     const d = Math.hypot(spot.pos[0] - point[0], spot.pos[1] - point[1]);
     if (d > radius) continue;
-    const taken = occupants(state, spot.ref).some((o) => !ignore.has(o.id));
-    // An occupied spot only wins if no free one is in reach.
+    // An occupied spot only wins if no free one is in reach; a pile always has room.
+    const taken = spot.mode !== 'pile' && occupants(state, spot.ref).some((o) => !ignore.has(o.id));
     const score = d + (taken ? radius * 2 : 0);
     if (!best || score < best.score) best = { spot, score };
   }

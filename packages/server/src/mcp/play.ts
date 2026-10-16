@@ -75,16 +75,22 @@ function registerDrawAndDeal(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Draw',
       description:
-        'Take cards off the top of a stack to a position or drop spot. Several cards land there as a new pile.',
+        'Take cards off the top of a stack, or pieces at random out of a bag, to a position, drop spot or hand. Several land there as a new pile. Nobody sees what is in a bag until it is drawn.',
       inputSchema: {
-        from: z.string().describe('Stack id, such as `deck:actions`.'),
+        from: z
+          .string()
+          .describe(
+            'Stack id, such as `deck:actions`, or a bag as `owner/area`, such as `sack/bag`.',
+          ),
         count: z.int().positive().optional().describe('Default 1.'),
         to: Target,
         face: Face.optional().describe('Turn the drawn cards up or down. Default: as they were.'),
       },
     },
     ({ from, count: n, to, face }) =>
-      play(`drew ${count(n ?? 1, 'card')}`, [{ type: 'draw', from, count: n, to, face }]),
+      play(`drew ${count(n ?? 1, from.includes('/') ? 'piece' : 'card')}`, [
+        { type: 'draw', from, count: n, to, face },
+      ]),
   );
 
   server.registerTool(
