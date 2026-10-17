@@ -4,9 +4,20 @@ Trayful is a boardgame prototyping table. You describe your components (cards, b
 
 > **Status: Milestones 1 to 9.** You can start a prototype from a template, play it on a table in your browser with pieces that snap onto boards and a setup that lays out the game, and see every file you save show up on the table at once. Playtesters can join a table from their own computers through an invite link to that table, each with a private hand and their own undo. An AI agent such as Claude can play on the same table over MCP, and design components with you. You can design components in the browser, describing each one by what it is and what it can do, with artwork from tiled image sheets. You can print everything at real size to play on paper. See the [roadmap](#roadmap).
 
+## Install
+
+With [Node.js](https://nodejs.org/) 22.12 or newer, you need nothing else:
+
+```sh
+npx trayful new my-game      # a new prototype from the starter template
+npx trayful play my-game     # open it on a table in your browser
+```
+
+Or install it once with `npm install -g trayful` and leave out the `npx`. To let an agent such as Claude Desktop or Claude Code join, add an MCP server with the command `npx` and the arguments `-y trayful mcp /path/to/my-game`. The rest of this README runs Trayful from a clone of this repository, as `pnpm trayful`; with the npm package, type `trayful` (or `npx trayful`) instead.
+
 ## Quick start
 
-You need [Node.js](https://nodejs.org/) 22.12 or newer and [pnpm](https://pnpm.io/) 10. If you have Node but not pnpm, run `corepack enable` once.
+To work on Trayful itself, you need [Node.js](https://nodejs.org/) 22.12 or newer and [pnpm](https://pnpm.io/) 10. If you have Node but not pnpm, run `corepack enable` once.
 
 ```sh
 git clone https://github.com/cverdoes/trayful.git
@@ -227,6 +238,16 @@ Every file meets these limits, so a violation fails the build; fix the code rath
 Each CI run's summary page shows coverage per package, the most complex functions and duplication, and the HTML coverage report is attached to the run as `coverage-report`.
 
 Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for readability, naming and design, locally, before opening a pull request. There is no review on the pull request itself.
+
+### Releasing
+
+A version is published to npm by pushing a tag. Set the new version in `packages/cli/package.json`, merge that to `main`, then tag the merge commit:
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+The Release workflow (`.github/workflows/release.yml`) builds the package, checks that the tag matches the version, runs `scripts/test-package.sh` on it, publishes it to npm and makes a GitHub release with the tarball. A version with a suffix, such as `0.2.0-rc.1`, goes to the `next` tag, so `npx trayful` keeps the last full release and `npx trayful@next` tries the new one. npm accepts the upload through [trusted publishing](https://docs.npmjs.com/trusted-publishers): the package's settings on npmjs.com name this repository, `release.yml` and the GitHub environment `npm`, so no npm token is stored anywhere.
 
 ### Dependencies
 
