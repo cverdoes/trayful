@@ -245,3 +245,9 @@ Dependabot opens weekly pull requests for npm packages, GitHub Actions and the D
 | 7. Component designer                | Design mode: types, fields and faces in the browser with a live preview, saved with comments kept                     |
 | 8. Hands on the canvas               | Drag, resize and rotate layers with snapping; board snap spot editor; image drop; renames everywhere; undo            |
 | **9. Components by property** (this) | File format `trayful/2`: `is` plus behaviours, faces with labels, an assets file with tiled images, `trayful migrate` |
+
+## Licence
+
+Trayful is source-available under the [Functional Source License 1.1, MIT Future License](LICENSE.md) (FSL-1.1-MIT). You may use, copy, change and share it for any purpose, including designing games you sell, except offering it to others as a commercial product or service that competes with Trayful, such as a paid hosted version. Each release becomes MIT-licensed two years after it is published.
+
+The games in `examples/` are covered by the same licence unless their own README says otherwise.

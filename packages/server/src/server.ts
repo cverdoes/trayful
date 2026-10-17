@@ -1,8 +1,8 @@
 import os from 'node:os';
-import { fileURLToPath } from 'node:url';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { isLocalOrigin } from './access.js';
+import { resourceDir } from './resources.js';
 import { routeContext, type TableQuery } from './routes/context.js';
 import { registerAssetRoutes } from './routes/assets.js';
 import { registerAuthoringRoutes } from './routes/authoring.js';
@@ -78,7 +78,7 @@ export { isLocalOrigin };
 export { containerGateway } from './container.js';
 
 export function defaultAppDir(): string {
-  return fileURLToPath(new URL('../../app/dist', import.meta.url));
+  return resourceDir('app');
 }
 
 /** Starts the local Trayful server for a project, or a folder of projects. */
