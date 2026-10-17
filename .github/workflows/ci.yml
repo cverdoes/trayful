@@ -86,3 +86,50 @@ jobs:
         run: |
           docker run --rm -e TRAYFUL_SMOKE_TEST=1 --user "$(id -u):$(id -g)" \
             -v "$PWD/examples:/projects" trayful
+
+  # Builds the npm package and packs it the way `npm publish` would.
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm package
+      - name: Pack the package
+        working-directory: packages/cli/dist
+        run: |
+          npm pack
+          size=$(wc -c < trayful-*.tgz)
+          echo "Package size: $((size / 1024)) KB"
+          test "$size" -lt 10000000
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: packages/cli/dist/trayful-*.tgz
+
+  # Installs the packed package in an empty folder on each OS and runs it like a user.
+  package-test:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: package
+      - run: scripts/test-package.sh package/trayful-*.tgz
