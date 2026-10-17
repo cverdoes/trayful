@@ -1,0 +1,23 @@
+# Opens pull requests for dependency updates. Minor and patch updates come grouped,
+# one pull request per ecosystem each week; security fixes arrive as soon as they exist.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    # The image's Node major version follows .nvmrc, so it changes by hand with it.
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]

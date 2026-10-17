@@ -1,7 +1,7 @@
 // Reading a project's files while loading it, and collecting what is wrong with them.
 import { access } from 'node:fs/promises';
 import path from 'node:path';
-import fg from 'fast-glob';
+import { glob, isDynamicPattern } from 'tinyglobby';
 import type { Diagnostic } from './diagnostics.js';
 import { byCodeUnit } from './order.js';
 import { SourceFile } from './source.js';
@@ -61,7 +61,8 @@ export class ProjectFiles {
   }
 
   private async match(pattern: string): Promise<string[]> {
-    if (fg.isDynamicPattern(pattern)) return fg(pattern, { cwd: this.dir });
+    if (isDynamicPattern(pattern))
+      return glob(pattern, { cwd: this.dir, expandDirectories: false });
     return (await this.exists(pattern)) ? [pattern] : [];
   }
 

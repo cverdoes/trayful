@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "csv-parse": "^7.0.3",
-    "fast-glob": "^3.3.3",
+    "tinyglobby": "^0.2.17",
     "yaml": "^2.9.1",
     "zod": "^4.6.6"
   }

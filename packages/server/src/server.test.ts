@@ -95,7 +95,11 @@ describe('server', () => {
 
   it('serves project images but nothing else from the project folder', async () => {
     const files = `${server.url}/project-files/${path.basename(dir)}`;
-    expect((await fetch(`${files}/assets/card-back.svg`)).status).toBe(200);
+    const image = await fetch(`${files}/assets/card-back.svg`);
+    expect(image.status).toBe(200);
+    // An SVG from someone else's kit must not run scripts when opened on its own.
+    expect(image.headers.get('content-security-policy')).toMatch(/default-src 'none'.*sandbox/);
+    expect(image.headers.get('x-content-type-options')).toBe('nosniff');
     expect((await fetch(`${files}/inventory.yaml`)).status).toBe(404);
     expect((await fetch(`${files}/%2e%2e/package.json`)).status).toBe(404);
     expect((await fetch(`${server.url}/project-files/nope/assets/card-back.svg`)).status).toBe(400);

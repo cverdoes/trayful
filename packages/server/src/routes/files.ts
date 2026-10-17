@@ -13,6 +13,13 @@ const IMAGE_TYPES: Record<string, string> = {
   '.svg': 'image/svg+xml',
 };
 
+/**
+ * Project images can come from someone else's game kit. An SVG opened on its own runs
+ * its scripts with this server's rights, so the browser is told to run none of them.
+ */
+const IMAGE_POLICY =
+  "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; sandbox";
+
 /** Images from project folders, and the browser app itself. */
 export async function registerFileRoutes(
   { app, workspace }: RouteContext,
@@ -36,6 +43,8 @@ export async function registerFileRoutes(
         return await reply
           .type(type)
           .header('cache-control', 'no-cache')
+          .header('content-security-policy', IMAGE_POLICY)
+          .header('x-content-type-options', 'nosniff')
           .send(await readFile(file));
       } catch {
         return reply.code(404).send({ error: 'Not found' });

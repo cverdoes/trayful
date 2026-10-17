@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseCsv } from 'csv-parse/sync';
-import fg from 'fast-glob';
+import { glob } from 'tinyglobby';
 import { isStackable, stacksWith } from './component.js';
 import { cartesian, componentIds, resolveRow, type Row } from './inventory.js';
 import { LibraryLoader, tileChoices } from './library-loader.js';
@@ -331,7 +331,7 @@ class ProjectLoader {
   private async loadSetups(manifest: ManifestFile, manifestSource: SourceFile): Promise<void> {
     const setupFiles = manifest.setups
       ? await this.files.expandGlobs(manifest.setups, manifestSource, ['setups'])
-      : await fg('setups/*.yaml', { cwd: this.dir });
+      : await glob('setups/*.yaml', { cwd: this.dir, expandDirectories: false });
     const known = this.known();
     for (const file of setupFiles.toSorted(byCodeUnit)) await this.loadSetup(file, known);
     if (manifest.setup === undefined) return;
