@@ -48,7 +48,7 @@ pnpm trayful migrate ../old-game                     # rewrite a trayful/1 proje
 - `resources/`: the built browser app, the starter project, the JSON Schemas and the docs, where the server's `resourceDir` looks for them.
 - `package.json` (generated, with this package's version), `README.md` (from [`npm/README.md`](npm/README.md), the npm page), `LICENSE.md` and `THIRD_PARTY_LICENSES.md` (the licence of every package bundled into the CLI or the browser app).
 
-Try it the way a user would: `cd packages/cli/dist && npm pack`, then `npm install` the tarball in an empty folder and run `npx trayful play`.
+Try it the way a user would: `cd packages/cli/dist && npm pack`, then `scripts/test-package.sh packages/cli/dist/trayful-<version>.tgz` from the repo root. It installs the tarball in an empty folder and runs `npx trayful --version`, `new`, `play` and an MCP handshake there. CI packs the package once and runs this script on Linux, macOS and Windows with Node 22 and 24; the packed tarball is attached to each run as `npm-package`.
 
 With `TRAYFUL_SMOKE_TEST=1` set, `play` starts, checks that the app is served, and exits; CI uses this.
 
