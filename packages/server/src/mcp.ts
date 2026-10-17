@@ -6,6 +6,7 @@ import { registerReadingTools } from './mcp/reading.js';
 import { registerResources } from './mcp/resources.js';
 import { registerTableTools } from './mcp/tables.js';
 import { AGENT_PLAYER } from './players.js';
+import { packagedVersion } from './resources.js';
 import type { Workspace } from './workspace.js';
 
 export interface McpOptions {
@@ -23,7 +24,8 @@ export interface McpOptions {
 export function createMcpServer(workspace: Workspace, options: McpOptions = {}): McpServer {
   const active = workspace.active;
   const server = new McpServer(
-    { name: 'trayful', version: '0.0.0' },
+    // In this repository there is no release yet to name.
+    { name: 'trayful', version: packagedVersion() ?? '0.0.0-dev' },
     {
       instructions: [
         `Trayful is a tabletop for boardgame prototypes. The active table is "${active.tableName}" of the project "${active.project.manifest.name}" (${active.projectId})${options.url ? `; people can watch at ${options.url}` : ''}. list_projects shows every project and table; open_table switches.`,

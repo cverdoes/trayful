@@ -10,7 +10,7 @@ import {
   type Diagnostic,
   type ResolvedProject,
 } from '@trayful/formats';
-import { resourceDir } from './resources.js';
+import { packagedVersion, resourceDir } from './resources.js';
 import { FilePlayerStore, Players, type Player, type PlayerStore } from './players.js';
 import { checkTableName, ProjectLoadError, TableSession, tableFile } from './session.js';
 
@@ -328,6 +328,19 @@ async function projectDirs(root: string): Promise<string[]> {
     .filter((dir) => existsSync(path.join(dir, MANIFEST_FILE)));
 }
 
+/** Where packaged Trayful releases are served from, file by file, for editor schema hints. */
+const RELEASE_FILES = 'https://cdn.jsdelivr.net/npm/trayful';
+
+/**
+ * Where a YAML file in `dir` finds the JSON Schemas for editor hints: the published
+ * release this copy of Trayful came from, or this repository's schemas.
+ */
+function schemaFolder(dir: string): string {
+  const version = packagedVersion();
+  if (version) return `${RELEASE_FILES}@${version}/resources/schemas`;
+  return path.relative(dir, resourceDir('schemas')).split(path.sep).join('/');
+}
+
 /** Copies the starter project into `dir` and gives it a name. */
 export async function createProjectFolder(dir: string, name: string): Promise<void> {
   if (existsSync(path.join(dir, MANIFEST_FILE))) {
@@ -339,14 +352,11 @@ export async function createProjectFolder(dir: string, name: string): Promise<vo
     // The starter's README describes the template, not the new game.
     filter: (src) => !['tables', 'README.md'].includes(path.basename(src)) || src === starter,
   });
-  // Point the editor hints at the JSON Schemas this copy of Trayful ships with.
-  const schemas = resourceDir('schemas');
   const files = (await readdir(dir, { recursive: true })).filter((f) => /\.ya?ml$/.test(f));
   for (const file of files) {
     const full = path.join(dir, file);
-    const relative = path.relative(path.dirname(full), schemas).split(path.sep).join('/');
     let text = await readFile(full, 'utf8');
-    text = text.replace(/\$schema=\S*\/schema\//, `$schema=${relative}/`);
+    text = text.replace(/\$schema=\S*\/schema\//, `$schema=${schemaFolder(path.dirname(full))}/`);
     if (file === MANIFEST_FILE) text = text.replace(/^name: .*$/m, `name: ${JSON.stringify(name)}`);
     await writeFile(full, text);
   }

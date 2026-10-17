@@ -200,6 +200,7 @@ From the repo root, run them as `pnpm trayful …`. See the [CLI README](package
 | ------------------------ | ------------------------------------------------------------------------ |
 | `pnpm dev`               | Table server plus the app with hot reload at http://localhost:5173       |
 | `pnpm build`             | Build the browser app (needed before `trayful play`)                     |
+| `pnpm package`           | Build the `trayful` npm package in `packages/cli/dist`                   |
 | `pnpm test`              | Run all unit tests (Vitest)                                              |
 | `pnpm test:e2e`          | Play in a real browser, by hand and as an agent; run `pnpm build` first  |
 | `pnpm test:watch`        | Re-run tests on change                                                   |
