@@ -227,6 +227,10 @@ Each CI run's summary page shows coverage per package, the most complex function
 
 Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for readability, naming and design, locally, before opening a pull request. There is no review on the pull request itself.
 
+### Dependencies
+
+Dependabot opens weekly pull requests for npm packages, GitHub Actions and the Docker base image (`.github/dependabot.yml`). The Audit workflow runs `pnpm audit` on every push and pull request and each Monday, and fails on any high or critical advisory; fix it by updating or replacing the package, not by ignoring the advisory.
+
 ## Roadmap
 
 | Milestone                            | Scope                                                                                                                 |
