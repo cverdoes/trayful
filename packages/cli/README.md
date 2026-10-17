@@ -13,7 +13,7 @@ pnpm trayful validate examples/harvest-moon --json   # for tools and agents
 pnpm trayful migrate ../old-game                     # rewrite a trayful/1 project in trayful/2
 ```
 
-`new <folder> [--name <name>]` copies [`examples/starter`](../../examples/starter) into a new folder, names the game and points the editor schema hints at this checkout.
+`new <folder> [--name <name>]` copies [`examples/starter`](../../examples/starter) into a new folder, names the game and points the editor schema hints at this checkout (or, from the npm package, at that release's schemas on jsDelivr).
 
 `play [project-dir]` loads the project (default: the current folder), or every project in a folder of projects, starts the local server at http://127.0.0.1:4317 and opens your browser. Project files are watched, so saved changes show up on the table at once. It needs the browser app built once with `pnpm build`. Options:
 
@@ -36,6 +36,19 @@ pnpm trayful migrate ../old-game                     # rewrite a trayful/1 proje
 `migrate <project-dir>` rewrites a project in the first file format, `trayful/1`, in the current one, `trayful/2`, and lists the files it wrote (`migrateFolder` in the server package). Libraries are written afresh, keeping the comment lines at their top; images and palette colours move to a new `assets.yaml`; inventory entries name their `component` instead of their `type`; and setup steps that place a board get `lock: true`. The manifest, inventory and setups are edited in place, so their comments stay. It exits with `1` for a project that is already current or has errors, and changes nothing then. See [Versioning](../../docs/reference/versioning.md#moving-a-project-to-trayful2).
 
 `bin/trayful.js` runs the CLI from source without `pnpm`, for MCP client configs: `node /path/to/trayful/packages/cli/bin/trayful.js mcp /path/to/project`.
+
+`--version` prints the version from this package's `package.json`.
+
+## The npm package
+
+`pnpm package` (from the repo root) builds the published `trayful` package in `dist/`, with `scripts/package.ts`:
+
+- `trayful.mjs`: the CLI, server, core and formats bundled into one file with esbuild, so the package has no dependencies to install.
+- `trayful.js`: the `trayful` command. It checks for Node.js 22.12 or newer, then loads the bundle.
+- `resources/`: the built browser app, the starter project, the JSON Schemas and the docs, where the server's `resourceDir` looks for them.
+- `package.json` (generated, with this package's version), `README.md` (from [`npm/README.md`](npm/README.md), the npm page), `LICENSE.md` and `THIRD_PARTY_LICENSES.md` (the licence of every package bundled into the CLI or the browser app).
+
+Try it the way a user would: `cd packages/cli/dist && npm pack`, then `npm install` the tarball in an empty folder and run `npx trayful play`.
 
 With `TRAYFUL_SMOKE_TEST=1` set, `play` starts, checks that the app is served, and exits; CI uses this.
 

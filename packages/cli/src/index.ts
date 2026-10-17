@@ -7,6 +7,7 @@ import { parsePlayArgs } from './options.js';
 import { play } from './play.js';
 import { TunnelError } from './tunnel.js';
 import { validate } from './validate.js';
+import { version } from './version.js';
 
 const HELP = `Usage: trayful <command> [options]
 
@@ -36,6 +37,7 @@ Commands:
   migrate <project-dir>    Rewrite a project made for an earlier Trayful in the current
                            file format.
   help                     Show this message.
+  --version                Show which version of Trayful this is.
 `;
 
 const USAGE: Record<string, string> = {
@@ -61,6 +63,10 @@ export async function run(args: string[], out = console.log, err = console.error
         return await play(parsePlayArgs(rest), out);
       case 'mcp':
         return await mcp(parsePlayArgs(rest), err);
+      case '--version':
+      case '-v':
+        out(version());
+        return 0;
       case undefined:
       case 'help':
       case '--help':

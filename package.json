@@ -26,6 +26,7 @@
     "validate:examples": "tsx scripts/validate-examples.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm check:generated && pnpm validate:examples && pnpm quality",
     "build": "pnpm --filter @trayful/app build",
+    "package": "pnpm build && tsx scripts/package.ts",
     "dev": "tsx scripts/dev.ts",
     "test:e2e": "playwright test"
   },
@@ -39,6 +40,7 @@
     "@types/node": "^22.19.0",
     "@vitest/coverage-v8": "^5.0.3",
     "dependency-cruiser": "^18.6.0",
+    "esbuild": "0.28.2",
     "eslint": "^10.12.0",
     "eslint-plugin-sonarjs": "4.2.2",
     "jscpd": "^5.4.1",
