@@ -266,7 +266,7 @@ A drop area of a container: where other components snap when dropped on it. Give
 | `grid` | object, see [`grid`](#snaptarget-grid) |  | A regular grid of spots, numbered left to right, then top to bottom, from 0. |
 | `points` | list of [Vec2](#vec2) |  | An ordered list of spots, such as a score track. |
 | `area` | object, see [`area`](#snaptarget-area) |  | An area: components dropped inside it stay in it, as its `mode` says. |
-| `mode` | `"single"`, `"pile"`, `"free"`, `"row"`, `"bag"` |  | What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random. |
+| `mode` | `"single"`, `"pile"`, `"group"`, `"free"`, `"row"`, `"bag"` |  | What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile; `group` keeps everything dropped on a spot as separate pieces side by side, like score markers sharing a space, so any one can be picked up. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random. |
 
 ### SnapTarget grid
 

@@ -70,7 +70,7 @@ describe('typeProblems', () => {
         ],
       }),
     ).toEqual([
-      { path: ['container', 0, 'mode'], message: "Spots' mode is one of single, pile." },
+      { path: ['container', 0, 'mode'], message: "Spots' mode is one of single, pile, group." },
       { path: ['container', 1, 'mode'], message: "An area's mode is one of free, row, bag." },
     ]);
   });

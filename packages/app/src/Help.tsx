@@ -7,6 +7,7 @@ const SHORTCUTS: [string, string][] = [
   ['Drag a card in a fan or spread', 'Take that card out of the pile'],
   ['Shift + drag a pile', 'Move the whole pile'],
   ['Click / Shift + click', 'Select / add to the selection'],
+  ['Click a piece in a group', 'Pick which of the pieces sharing that spot to take'],
   ['Shift + drag on the table', 'Select everything in a box'],
   ['Drag on the table', 'Pan'],
   ['Wheel', 'Zoom (over a counter: change its number)'],
@@ -24,7 +25,7 @@ const SHORTCUTS: [string, string][] = [
   ['L', 'Lock or unlock'],
   ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo your own last move'],
   ['0', 'Fit the table to the window'],
-  ['Esc', 'Clear the selection'],
+  ['Esc', 'Close the group list, or clear the selection'],
 ];
 
 /** The mouse and keyboard controls of the table. */

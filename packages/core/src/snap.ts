@@ -2,6 +2,7 @@ import {
   areaAccepts,
   dropAreas,
   dropMode,
+  holdsMany,
   type ComponentType,
   type DropMode,
   type Vec2,
@@ -219,8 +220,9 @@ export function snapFor(
     }
     const d = Math.hypot(spot.pos[0] - point[0], spot.pos[1] - point[1]);
     if (d > radius) continue;
-    // An occupied spot only wins if no free one is in reach; a pile always has room.
-    const taken = spot.mode !== 'pile' && occupants(state, spot.ref).some((o) => !ignore.has(o.id));
+    // An occupied spot only wins if no free one is in reach; a pile or group always has room.
+    const taken =
+      !holdsMany(spot.mode) && occupants(state, spot.ref).some((o) => !ignore.has(o.id));
     const score = d + (taken ? radius * 2 : 0);
     if (!best || score < best.score) best = { spot, score };
   }

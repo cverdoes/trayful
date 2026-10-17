@@ -10,6 +10,7 @@ import {
   type TableView,
 } from '@trayful/core';
 import { create } from 'zustand';
+import type { GroupPick } from './groups';
 
 /** Screen position of the table origin and pixels per millimetre. */
 export interface Viewport {
@@ -63,6 +64,8 @@ interface TrayfulStore {
   helpOpen: boolean;
   /** While dragging: the snap spots the dragged piece could go to, and the one it would snap to. */
   snapHint?: { spots: SnapSpot[]; size: [number, number]; active?: string };
+  /** The pieces of a crowded group spot someone clicked, to pick one from. */
+  groupPick?: GroupPick;
   viewport: Viewport;
 
   /** Sends a message to the server; set by the connection. */

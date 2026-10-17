@@ -1,9 +1,7 @@
 import { handOf, type Piece } from '@trayful/core';
 import { useState, type SubmitEvent } from 'react';
-import { Group, Layer, Stage } from 'react-konva';
 import { connect, join } from './connection';
-import { Component } from './render/Component';
-import { sizeOf } from './render/geometry';
+import { Thumbnail } from './render/Thumbnail';
 import { HAND_DRAG } from './hand';
 import { useStore } from './store';
 import { windowCentre } from './viewport';
@@ -131,12 +129,6 @@ export function HandTray() {
 }
 
 function HandCard({ piece }: Readonly<{ piece: Piece }>) {
-  const view = useStore((s) => s.view)!;
-  const type = view.types[piece.type];
-  if (!type) return null;
-  const [w, h] = sizeOf(type);
-  const scale = CARD_HEIGHT / Math.max(h, w);
-  const shown: Piece = { ...piece, pos: [0, 0], rot: 0, face: 'up' };
   const play = () => {
     // Double-click plays the card into the middle of the view.
     const [x, y] = windowCentre();
@@ -156,13 +148,7 @@ function HandCard({ piece }: Readonly<{ piece: Piece }>) {
       }}
       onDoubleClick={play}
     >
-      <Stage width={w * scale + 4} height={h * scale + 4} listening={false}>
-        <Layer>
-          <Group x={2 + (w * scale) / 2} y={2 + (h * scale) / 2} scaleX={scale} scaleY={scale}>
-            <Component piece={shown} type={type} assets={view.assets} />
-          </Group>
-        </Layer>
-      </Stage>
+      <Thumbnail piece={piece} length={CARD_HEIGHT} face="up" />
     </div>
   );
 }

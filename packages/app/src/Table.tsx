@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Layer, Rect, Stage } from 'react-konva';
 import { TableDrag } from './drag';
 import { doubleClickCommand, handDropCommands, inBox, type Vec } from './drops';
+import { pickFor } from './groups';
 import { HAND_DRAG, overHandTray } from './hand';
 import { topLevel } from './render/geometry';
 import { setSnapshotStage } from './snapshot';
@@ -92,10 +93,7 @@ function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
         if (node) drag.nodes.set(object.id, node);
         else drag.nodes.delete(object.id);
       },
-      onClick: (evt: MouseEvent) =>
-        useStore
-          .getState()
-          .select([object.id], evt.shiftKey || evt.metaKey || evt.ctrlKey ? 'toggle' : 'replace'),
+      onClick: (evt: MouseEvent) => click(object, evt),
       onDoubleClick: () => doubleClick(object),
       onDragStart: () => drag.start(object.id),
       onDragMove: (node: Konva.Group) => drag.move(object.id, node),
@@ -116,6 +114,16 @@ function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
       <PieceView key={object.id} piece={object} {...common} />
     );
   });
+}
+
+/** Selects what was clicked; a plain click on a piece in a crowded group also lists the group. */
+function click(object: TableObject, evt: MouseEvent) {
+  const { table, view, select } = useStore.getState();
+  const adding = evt.shiftKey || evt.metaKey || evt.ctrlKey;
+  select([object.id], adding ? 'toggle' : 'replace');
+  if (adding || !table || !view) return;
+  const at = { x: evt.clientX, y: evt.clientY };
+  useStore.setState({ groupPick: pickFor(table, view.types, object.id, at) });
 }
 
 function doubleClick(object: TableObject) {

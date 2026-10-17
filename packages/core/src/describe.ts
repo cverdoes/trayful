@@ -1,4 +1,4 @@
-import type { Vec2 } from '@trayful/formats/browser';
+import type { DropMode, Vec2 } from '@trayful/formats/browser';
 import { objectSize } from './layout.js';
 import { backData } from './privacy.js';
 import { allSpots, occupants } from './snap.js';
@@ -69,6 +69,12 @@ export interface ObjectQuery {
   /** The player asking; `inside: "hand:<viewer>"` lists their own hand. */
   viewer?: string;
 }
+
+/** How the spots of each drop mode are named to agents. */
+const SPOT_WORDS: Partial<Record<DropMode, string>> = {
+  pile: 'piles',
+  group: 'group spots (each holds any number of separate pieces)',
+};
 
 export function summarizePiece(piece: Piece, catalog: Catalog, reveal = false): PieceSummary {
   const type = catalog[piece.type];
@@ -287,7 +293,7 @@ function snapTargets(state: TableState, catalog: Catalog): string[] {
       if (held.length) taken.push(`${spot.index}: ${held.join(', ')}`);
       else free.push(spot.index!);
     }
-    const parts = [`${spots.length} ${first.mode === 'pile' ? 'piles' : 'spots'}`];
+    const parts = [`${spots.length} ${SPOT_WORDS[first.mode] ?? 'spots'}`];
     if (taken.length) parts.push(`taken ${taken.join('; ')}`);
     parts.push(free.length ? `free ${ranges(free)}` : 'none free');
     return `- ${key}${accepts}: ${parts.join(', ')}`;
