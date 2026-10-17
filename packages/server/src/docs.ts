@@ -1,13 +1,13 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { resourceDir } from './resources.js';
 
 /**
- * The repository's `docs/` folder, served to agents as `trayful://docs`: HOWTO
- * guides for designers and the generated format reference.
+ * The `docs/` folder, served to agents as `trayful://docs`: HOWTO guides for
+ * designers and the generated format reference.
  */
 function docsDir(): string {
-  return fileURLToPath(new URL('../../../docs', import.meta.url));
+  return resourceDir('docs');
 }
 
 /** Markdown files under `docs/`, as paths relative to it, guides first. */

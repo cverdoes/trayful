@@ -27,6 +27,8 @@ await server.close(); // saves every open table first
 
 `authoring.ts` changes project files for agents: `upsertType`, `removeType`, `setInventory` and `addAsset`. Edits go through the YAML document API, so comments and formatting elsewhere stay. After each edit the project is reloaded; if it no longer loads, the files are put back and an `AuthoringError` lists the problems. A project still in `trayful/1` is refused (`requireCurrentFormat`) until it is migrated.
 
+`resources.ts` finds the files Trayful ships with besides its code: the built browser app, the starter project, the JSON Schemas and the docs. A packaged Trayful keeps them in a `resources/` folder beside its bundled file; in this repository `resourceDir` falls back to where each lives in its package.
+
 `migrate.ts` rewrites a `trayful/1` project in the current format (`migrateFolder`), for `trayful migrate`, the `migrate_project` tool and `POST /api/migrate`. Libraries are written afresh, keeping their header comments; images and palette colours go to a new assets file; the manifest, inventory and setups are patched in place, keeping their comments. A project that is already current or does not load raises a `MigrateError`.
 
 ## Players and access

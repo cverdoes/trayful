@@ -1,7 +1,6 @@
 import { existsSync, watch, type FSWatcher } from 'node:fs';
 import { cp, readdir, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { fromTableFile, toTableFile } from '@trayful/core';
 import {
   formatDiagnostic,
@@ -11,6 +10,7 @@ import {
   type Diagnostic,
   type ResolvedProject,
 } from '@trayful/formats';
+import { resourceDir } from './resources.js';
 import { FilePlayerStore, Players, type Player, type PlayerStore } from './players.js';
 import { checkTableName, ProjectLoadError, TableSession, tableFile } from './session.js';
 
@@ -37,7 +37,7 @@ export interface WorkspaceOptions {
 
 /** Where `trayful new` and `create_project` copy a fresh project from. */
 export function starterDir(): string {
-  return fileURLToPath(new URL('../../../examples/starter', import.meta.url));
+  return resourceDir('starter');
 }
 
 const DEFAULT_TABLE = 'table-1';
@@ -339,8 +339,8 @@ export async function createProjectFolder(dir: string, name: string): Promise<vo
     // The starter's README describes the template, not the new game.
     filter: (src) => !['tables', 'README.md'].includes(path.basename(src)) || src === starter,
   });
-  // Point the editor hints at the JSON Schemas in this Trayful checkout.
-  const schemas = fileURLToPath(new URL('../../formats/schema', import.meta.url));
+  // Point the editor hints at the JSON Schemas this copy of Trayful ships with.
+  const schemas = resourceDir('schemas');
   const files = (await readdir(dir, { recursive: true })).filter((f) => /\.ya?ml$/.test(f));
   for (const file of files) {
     const full = path.join(dir, file);
