@@ -33,6 +33,11 @@ it('starts new targets near the middle under ids not taken', () => {
     points: [[150, 100]],
     mode: 'pile',
   });
+  expect(newTarget('group', board, [300, 200])).toEqual({
+    id: 'group-1',
+    points: [[150, 100]],
+    mode: 'group',
+  });
   expect(newTarget('row', board, [300, 200])).toMatchObject({ id: 'row-1', mode: 'row' });
   expect(newTarget('bag', board, [300, 200])).toEqual({
     id: 'bag-1',

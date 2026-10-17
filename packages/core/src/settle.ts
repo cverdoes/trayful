@@ -1,9 +1,10 @@
 // What drop areas do with what landed in them, once a command has put things
-// down: piles gather into one stack, rows close up left to right, and bags take
-// their contents out of sight.
+// down: piles gather into one stack, groups spread out around their spot, rows
+// close up left to right, and bags take their contents out of sight.
 import type { Vec2 } from '@trayful/formats/browser';
 import { objectSize } from './layout.js';
 import { stack } from './pile-commands.js';
+import { roundPos } from './room.js';
 import { allSpots, occupants, toLocal, toTable, type SnapSpot } from './snap.js';
 import type { Transaction } from './transaction.js';
 
@@ -19,6 +20,7 @@ export function settle(tx: Transaction): void {
   for (const spot of allSpots(tx.current(), tx.catalog)) {
     if (!touched.has(spot.ref)) continue;
     if (spot.mode === 'pile') gather(tx, spot);
+    else if (spot.mode === 'group') spread(tx, spot);
     else if (spot.mode === 'row') lineUp(tx, spot);
     else if (spot.mode === 'bag') bagUp(tx, spot);
   }
@@ -43,6 +45,32 @@ function gather(tx: Transaction, spot: SnapSpot): void {
     rest.map((o) => o.id),
     bottom.id,
   );
+}
+
+/** How far apart the things in a group lie, as a share of the largest one's size. */
+const GROUP_SPACING = 0.55;
+
+/**
+ * Spreads what lies on a group spot around it, in rows of a small square grid
+ * centred on the spot, close enough to overlap a little so the group stays near
+ * its spot. Things keep their places in the order of their ids, so the group
+ * does not reshuffle when one of them is brought to the top.
+ */
+function spread(tx: Transaction, spot: SnapSpot): void {
+  const state = tx.current();
+  const items = occupants(state, spot.ref).sort((a, b) => (a.id < b.id ? -1 : 1));
+  if (items.length === 0) return;
+  const step =
+    GROUP_SPACING * Math.max(...items.map((o) => Math.max(...objectSize(state, tx.catalog, o))));
+  const cols = Math.ceil(Math.sqrt(items.length));
+  const rows = Math.ceil(items.length / cols);
+  items.forEach((object, i) => {
+    const [col, row] = [i % cols, Math.floor(i / cols)];
+    const offset: Vec2 = [(col - (cols - 1) / 2) * step, (row - (rows - 1) / 2) * step];
+    const pos = roundPos(toTable(spot, [0, 0], offset));
+    if (pos[0] !== object.pos[0] || pos[1] !== object.pos[1] || object.rot !== spot.rot)
+      tx.shift(object, pos, spot.rot);
+  });
 }
 
 /**
@@ -92,9 +120,4 @@ function bagUp(tx: Transaction, bag: SnapSpot): void {
       });
     }
   }
-}
-
-/** A position to a tenth of a millimetre, so a row that has settled stays put. */
-function roundPos([x, y]: Vec2): Vec2 {
-  return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
 }

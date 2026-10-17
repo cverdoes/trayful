@@ -19,6 +19,8 @@ components:
         area: { at: [440, 180], size: 140 }
       - id: score-track
         accepts: [score-marker]
+        # Both markers can share a space and either can be picked up.
+        mode: group
         points:
           - [30, 370]
           - [80, 370]

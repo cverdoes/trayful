@@ -19,14 +19,16 @@ const KIND_LABEL: Record<NewTargetKind, string> = {
   grid: 'Grid',
   points: 'Points',
   area: 'Area',
-  pile: 'Pile',
+  pile: 'Stack',
+  group: 'Group',
   row: 'Row',
   bag: 'Bag',
 };
 
 const MODE_LABEL: Record<DropMode, string> = {
   single: 'One thing per spot',
-  pile: 'A pile on each spot',
+  pile: 'A stack on each spot',
+  group: 'A group on each spot (pick any)',
   free: 'Things where they are dropped',
   row: 'A row, left to right',
   bag: 'A bag: hidden, drawn at random',
@@ -66,7 +68,7 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
       </ul>
       <div className="design-add">
         Add:{' '}
-        {(['grid', 'points', 'area', 'pile', 'row', 'bag'] as const).map((kind) => (
+        {(['grid', 'points', 'area', 'pile', 'group', 'row', 'bag'] as const).map((kind) => (
           <button key={kind} type="button" onClick={() => add(kind)}>
             {KIND_LABEL[kind]}
           </button>
@@ -79,12 +81,15 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
   );
 }
 
+/** What one spot of a target in this mode holds, as the list of drop areas names it. */
+const SPOT_NOUN: Partial<Record<DropMode, string>> = { pile: 'stack', group: 'group' };
+
 function describe(target: SnapTarget): string {
   const kind = targetKind(target);
   const mode = dropMode(target);
   if (kind === 'area') return mode === 'free' ? 'area' : mode;
   const spots = spotsOf(target).length;
-  const what = mode === 'pile' ? 'pile' : 'spot';
+  const what = SPOT_NOUN[mode] ?? 'spot';
   return `${kind}, ${spots} ${what}${spots === 1 ? '' : 's'}`;
 }
 

@@ -83,6 +83,11 @@ export function dropMode(target: Pick<SnapTarget, 'area' | 'mode'>): DropMode {
   return target.mode ?? (target.area ? 'free' : 'single');
 }
 
+/** Whether a spot in this mode takes more things when something already lies on it. */
+export function holdsMany(mode: DropMode): boolean {
+  return mode === 'pile' || mode === 'group';
+}
+
 /** Whether a drop area takes a component, by its id or its representation. */
 export function areaAccepts(area: Pick<SnapTarget, 'accepts'>, type: ComponentType): boolean {
   return !area.accepts || area.accepts.includes(type.id) || area.accepts.includes(type.is);

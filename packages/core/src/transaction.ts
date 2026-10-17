@@ -1,4 +1,5 @@
-import type { Vec2 } from '@trayful/formats/browser';
+import { holdsMany, type Vec2 } from '@trayful/formats/browser';
+import { roomIn } from './room.js';
 import {
   accepts,
   occupants,
@@ -15,6 +16,7 @@ import {
   handTarget,
   onTable,
   removeObject,
+  sizeOf,
   type Catalog,
   type Piece,
   type Stack,
@@ -38,8 +40,8 @@ export interface Place {
   rot?: number;
   snap?: string;
   hand?: string;
-  /** A pile spot, which takes more pieces when something already lies there. */
-  pile?: boolean;
+  /** A pile or group spot, which takes more pieces when something already lies there. */
+  shared?: boolean;
 }
 
 /**
@@ -290,21 +292,33 @@ export class Transaction {
     const player = handTarget(target);
     if (player !== undefined) return [{ pos: [0, 0], hand: checkPlayer(player) }];
     return this.spots(target, pieces, new Set()).map((s) => ({
-      pos: s.mode === 'row' ? rowEnd(s) : s.pos,
+      pos: this.landing(s, pieces),
       rot: s.area ? undefined : s.rot,
       snap: s.ref,
-      pile: s.mode === 'pile',
+      shared: holdsMany(s.mode),
     }));
+  }
+
+  /** Where pieces land in a spot: after the end of a row, in free room in an area, or on the spot. */
+  private landing(spot: SnapSpot, pieces: Piece[]): Vec2 {
+    if (spot.mode === 'row') return rowEnd(spot);
+    if (spot.mode !== 'free') return spot.pos;
+    const sizes = pieces.map((p) => sizeOf(this.typeOf(p)));
+    const size: Vec2 = [Math.max(...sizes.map((s) => s[0])), Math.max(...sizes.map((s) => s[1]))];
+    return roomIn(this.current(), this.catalog, spot, {
+      size,
+      ignore: new Set(pieces.map((p) => p.id)),
+    });
   }
 
   /**
    * One place for pieces that land together: a position, a spot, or a snap
-   * target's first free spot (or its first pile, when every spot is taken).
+   * target's first free spot (or its first pile or group, when every spot is taken).
    */
   place(target: Target, pieces: Piece[]): Place {
     const places = this.places(target, pieces);
     if (places.length === 1) return places[0]!;
-    const free = places.find((p) => p.snap && (this.isFree(p.snap) || p.pile));
+    const free = places.find((p) => p.snap && (this.isFree(p.snap) || p.shared));
     if (!free) throw new CommandError(`Every spot of "${target as string}" is taken.`);
     return free;
   }

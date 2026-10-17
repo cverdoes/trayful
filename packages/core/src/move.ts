@@ -1,11 +1,9 @@
-import { sidesOf, type Vec2 } from '@trayful/formats/browser';
+import { holdsMany, sidesOf, type Vec2 } from '@trayful/formats/browser';
 import { boundsOf } from './layout.js';
-import { occupants, rowEnd, snapOwner, type SnapSpot } from './snap.js';
+import { roomIn } from './room.js';
+import { rowEnd, snapOwner, type SnapSpot } from './snap.js';
 import { handTarget, sizeOf, type Piece, type TableObject } from './state.js';
 import { CommandError, unique, type Target, type Transaction } from './transaction.js';
-
-/** Space left between groups of pieces put into the same free area, in millimetres. */
-const AREA_GAP = 4;
 
 /** The fields of a `move` command; see `Command` for what each does. */
 interface MoveOptions {
@@ -100,12 +98,10 @@ function moveToTarget(tx: Transaction, group: Group, to: string): void {
       tx.relocate(object, add(object.pos, offset), object.rot, first.ref);
     return;
   }
-  const places =
-    spots.length > 1 && first.mode !== 'pile'
-      ? spots.filter((s) => tx.isFree(s.ref, group.moving))
-      : spots;
+  const oneEach = spots.length > 1 && !holdsMany(first.mode);
+  const places = oneEach ? spots.filter((s) => tx.isFree(s.ref, group.moving)) : spots;
   const count = group.objects.length;
-  if (spots.length > 1 && first.mode !== 'pile' && places.length < count) {
+  if (oneEach && places.length < count) {
     throw new CommandError(
       `"${to}" has ${places.length} free ${places.length === 1 ? 'spot' : 'spots'}; ` +
         `${count} ${count === 1 ? 'object needs' : 'objects need'} one each.`,
@@ -137,17 +133,13 @@ function intoSpot(tx: Transaction, group: Group, into: string): string {
 
 /**
  * How far to shift a group so it lands in a free area while keeping its shape:
- * centred in the area, or below what already lies there.
+ * in the middle, or in the first room clear of what already lies there.
  */
 function areaOffset(tx: Transaction, area: SnapSpot, group: Group): Vec2 {
   const box = boundsOf(tx.current(), tx.catalog, group.objects);
   const centre: Vec2 = [(box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2];
-  let target = area.pos;
-  const others = occupants(tx.current(), area.ref).filter((o) => !group.moving.has(o.id));
-  if (others.length > 0) {
-    const below = boundsOf(tx.current(), tx.catalog, others).y1 + AREA_GAP + (box.y1 - box.y0) / 2;
-    target = [area.pos[0], below];
-  }
+  const size: Vec2 = [box.x1 - box.x0, box.y1 - box.y0];
+  const target = roomIn(tx.current(), tx.catalog, area, { size, ignore: group.moving });
   return [target[0] - centre[0], target[1] - centre[1]];
 }
 

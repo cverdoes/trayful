@@ -73,7 +73,7 @@ Under **Colours**, give a colour a name with **Add colour**, change one with its
 
 ## Drop areas for boards
 
-Pieces and zones have a **Drop areas** section: where other pieces land when they are dropped on it. **Add** a grid (a field of action spaces, a row of card slots), points (a score track), an area (a supply), a pile (a discard pile), a row (a tableau that lines cards up) or a bag (pieces drawn blind). A component with drop areas is a container, so what lies in them moves with it. Spots are drawn on the face with their numbers, the way setups and agents name them, such as `main-board/fields/3`.
+Pieces and zones have a **Drop areas** section: where other pieces land when they are dropped on it. **Add** a grid (a field of action spaces, a row of card slots), points (a score track), an area (a supply), a stack (a discard pile), a group (a score track space several markers share), a row (a tableau that lines cards up) or a bag (pieces drawn blind). A component with drop areas is a container, so what lies in them moves with it. Spots are drawn on the face with their numbers, the way setups and agents name them, such as `main-board/fields/3`.
 
 Select a drop area in the list or by clicking one of its spots, then drag on the board:
 
@@ -83,7 +83,7 @@ Select a drop area in the list or by clicking one of its spots, then drag on the
 
 **Accepts** limits a drop area to some components, such as a worker, or to any component of a kind, such as any die, so other pieces pass over it. Pick them the same way as for **Stacks with**.
 
-**Holds** says what the drop area does with what lands in it. Spots hold one thing each, or a pile each. An area keeps things where they are dropped, lines them up in a row, or is a bag that hides them until someone draws one at random. See [modes](../reference/snapping.md#modes).
+**Holds** says what the drop area does with what lands in it. Spots hold one thing each, a stack each (only the top is in reach), or a group each: separate pieces spread around the spot, any of which can be picked, like score markers sharing a space. An area keeps things where they are dropped, lines them up in a row, or is a bag that hides them until someone draws one at random. See [modes](../reference/snapping.md#modes).
 
 ## Undo
 

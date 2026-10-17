@@ -89,6 +89,7 @@ function perform(shortcut: Shortcut): boolean {
       return true;
     case 'escape':
       if (state.helpOpen) useStore.setState({ helpOpen: false });
+      else if (state.groupPick) useStore.setState({ groupPick: undefined });
       else state.select([]);
       return true;
     case 'help':

@@ -913,3 +913,52 @@ label.button {
 label.button:hover {
   background: #30363d;
 }
+
+/* The pieces of a crowded group spot, listed where it was clicked. */
+.picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.group-picker {
+  position: fixed;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: min(360px, calc(100vw - 32px));
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  border-radius: 8px;
+  background: var(--bar);
+  border: 1px solid #30363d;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  transform: translate(8px, 8px);
+}
+
+.group-picker button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  height: auto;
+  padding: 4px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.group-picker button:hover:not(:disabled),
+.group-picker button:focus-visible {
+  background: transparent;
+  border-color: var(--accent);
+}
+
+/* The piece picture is drawn on a canvas; let the button itself take the click. */
+.group-picker .konvajs-content {
+  pointer-events: none;
+}

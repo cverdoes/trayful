@@ -81,3 +81,38 @@ test('a pile spreads out and any card can be taken from it', async ({ page }) =>
   expect(taken.pos[0]).toBeCloseTo(450, 0);
   expect(taken.pos[1]).toBeCloseTo(150, 0);
 });
+
+test('a click on the crowded score track lists both markers to pick from', async ({ page }) => {
+  await openTable(page);
+  const red = await piece(page, 'score-marker.red');
+  const green = await piece(page, 'score-marker.green');
+  // The two markers share the first space as a group, side by side.
+  expect(red.snap).toBe('main-board/score-track/0');
+  expect(green.snap).toBe('main-board/score-track/0');
+  expect(red.pos).not.toEqual(green.pos);
+
+  const at = await screen(page, red.pos[0], red.pos[1]);
+  await page.mouse.click(at.x, at.y);
+  const picker = page.getByRole('listbox', { name: 'Pieces on main-board/score-track/0' });
+  await expect(picker.getByRole('option')).toHaveCount(2);
+  await page.screenshot({ path: 'test-results/group-picker.png' });
+
+  // Picking the one underneath selects it and brings it to the top, where it was.
+  const under = red.z < green.z ? red : green;
+  const over = under === red ? green : red;
+  await picker.locator(`[data-id="${under.id}"]`).click();
+  await expect(picker).toHaveCount(0);
+  await expect
+    .poll(async () => (await piece(page, under.id)).z)
+    .toBeGreaterThan((await piece(page, over.id)).z);
+  expect((await piece(page, under.id)).pos).toEqual(under.pos);
+  expect(await page.evaluate(() => window.__trayful!.store.getState().selection)).toEqual([
+    under.id,
+  ]);
+
+  // Escape closes the list without picking.
+  await page.mouse.click(at.x, at.y);
+  await expect(picker).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(picker).toHaveCount(0);
+});

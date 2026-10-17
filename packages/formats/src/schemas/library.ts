@@ -217,7 +217,7 @@ export const Back = z.strictObject(SideCommon).meta({
 // ---------------------------------------------------------------------------
 
 /** What a drop area does with what lands in it: modes for spots, then modes for areas. */
-export const SPOT_MODES = ['single', 'pile'] as const;
+export const SPOT_MODES = ['single', 'pile', 'group'] as const;
 export const AREA_MODES = ['free', 'row', 'bag'] as const;
 const DROP_MODES = [...SPOT_MODES, ...AREA_MODES] as const;
 
@@ -254,7 +254,7 @@ export const SnapTarget = z
       .enum(DROP_MODES)
       .optional()
       .describe(
-        'What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random.',
+        'What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile; `group` keeps everything dropped on a spot as separate pieces side by side, like score markers sharing a space, so any one can be picked up. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random.',
       ),
   })
   .meta({

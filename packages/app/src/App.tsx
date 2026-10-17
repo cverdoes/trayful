@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { GroupPicker } from './GroupPicker';
 import { Help } from './Help';
 import { useKeyboard } from './keyboard';
 import { Activity, ErrorToast, Problems } from './Notices';
@@ -37,6 +38,7 @@ function TableApp() {
   return (
     <>
       <Table />
+      <GroupPicker />
       <Toolbar />
       <HandTray />
       {inviteOpen && <InviteDialog />}
