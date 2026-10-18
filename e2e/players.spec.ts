@@ -80,3 +80,21 @@ test('two players keep their hands hidden from each other', async ({ page, brows
   await expect(bob.locator('.hand-card')).toHaveCount(1);
   await guest.close();
 });
+
+test('the hand tray resizes from its top edge and keeps its height', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
+  const tray = page.locator('.hand-tray');
+  const before = (await tray.boundingBox())!;
+  const edge = (await page.getByRole('separator', { name: 'Resize your hand' }).boundingBox())!;
+  const x = edge.x + edge.width / 2;
+  const y = edge.y + edge.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y - 100, { steps: 5 });
+  await page.mouse.up();
+  await expect.poll(async () => (await tray.boundingBox())!.height).toBe(before.height + 100);
+
+  await page.reload();
+  await expect.poll(async () => (await tray.boundingBox())!.height).toBe(before.height + 100);
+});

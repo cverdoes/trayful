@@ -5,8 +5,6 @@ import { useStore, type Viewport } from './store';
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 12;
 export const TOOLBAR_HEIGHT = 56;
-/** The hand tray along the bottom of the screen. */
-export const HAND_HEIGHT = 120;
 const MARGIN = 32;
 
 type Box = [number, number, number, number];
@@ -32,7 +30,7 @@ export function fitToTable(table: TableState, types: Types, width: number, heigh
   if (!box) return;
   const [x0, y0, x1, y1] = box;
   const availW = width - 2 * MARGIN;
-  const availH = height - TOOLBAR_HEIGHT - HAND_HEIGHT - 2 * MARGIN;
+  const availH = height - TOOLBAR_HEIGHT - useStore.getState().handHeight - 2 * MARGIN;
   const scale = clamp(Math.min(availW / (x1 - x0), availH / (y1 - y0)), MIN_SCALE, MAX_SCALE);
   useStore.setState({
     viewport: {
@@ -67,7 +65,7 @@ export function outOfView(box: Box, viewport: Viewport, width: number, height: n
     x + x0 * scale < 0 ||
     y + y0 * scale < TOOLBAR_HEIGHT ||
     x + x1 * scale > width ||
-    y + y1 * scale > height - HAND_HEIGHT
+    y + y1 * scale > height - useStore.getState().handHeight
   );
 }
 
