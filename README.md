@@ -2,7 +2,7 @@
   <img src=".github/readme/wordmark.svg" alt="Trayful" width="256" height="80">
 </h1>
 
-<p align="center">A boardgame prototyping table for people and AI agents.</p>
+<p align="center"><strong>Where your game comes together.</strong><br>A boardgame prototyping table for people and AI agents.</p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/trayful"><img src="https://img.shields.io/npm/v/trayful" alt="npm version"></a>

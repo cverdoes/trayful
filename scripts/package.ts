@@ -94,7 +94,7 @@ function manifest(version: string): Record<string, unknown> {
     name: 'trayful',
     version,
     description:
-      'A boardgame prototyping table in your browser: describe components in YAML, play with them, let AI agents join over MCP.',
+      'Where your game comes together. A boardgame prototyping table in your browser: describe components in YAML, play with them, let AI agents join over MCP.',
     license: 'FSL-1.1-MIT',
     type: 'module',
     bin: { trayful: 'trayful.js' },

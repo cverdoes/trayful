@@ -1,5 +1,7 @@
 # Trayful
 
+**Where your game comes together.**
+
 A boardgame prototyping table in your browser. Describe your components (cards, boards, meeples, dice, counters) in YAML files, then play with them on a shared table: drag, flip, rotate, stack, shuffle and deal. Invite playtesters over your network or the internet, and let AI agents play or build components over MCP.
 
 Needs [Node.js](https://nodejs.org) 22.12 or newer.

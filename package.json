@@ -2,7 +2,7 @@
   "name": "trayful-monorepo",
   "private": true,
   "license": "FSL-1.1-MIT",
-  "description": "Trayful: a boardgame prototyping table with a declarative component format and MCP support.",
+  "description": "Trayful: where your game comes together. A boardgame prototyping table with a declarative component format and MCP support.",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
