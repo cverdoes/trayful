@@ -1,0 +1,54 @@
+name: Release
+
+# Publishes the `trayful` npm package when a version tag such as v0.2.0 is pushed.
+# npm accepts the upload through trusted publishing: npmjs.com is told to trust this
+# workflow, so no npm token is stored in GitHub. See "Releasing" in the README.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write # to create the GitHub release
+  id-token: write # to prove to npm that this workflow is publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Trusted publishing needs npm 11.5.1 or newer, which Node 24 ships.
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm package
+      - name: Check that the tag matches the package version
+        run: |
+          version=$(node -p 'require("./packages/cli/dist/package.json").version')
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "The tag is $GITHUB_REF_NAME but packages/cli/package.json says $version." >&2
+            exit 1
+          fi
+      - name: Pack the package
+        working-directory: packages/cli/dist
+        run: npm pack
+      - run: scripts/test-package.sh packages/cli/dist/trayful-*.tgz
+      - name: Publish to npm
+        working-directory: packages/cli/dist
+        # Versions like 0.2.0-rc.1 go to the `next` tag, so `npx trayful` keeps the last release.
+        run: |
+          case "$GITHUB_REF_NAME" in
+            *-*) npm publish trayful-*.tgz --access public --tag next ;;
+            *) npm publish trayful-*.tgz --access public ;;
+          esac
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=$([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease || true)
+          gh release create "$GITHUB_REF_NAME" packages/cli/dist/trayful-*.tgz \
+            --title "Trayful ${GITHUB_REF_NAME#v}" --generate-notes $prerelease
