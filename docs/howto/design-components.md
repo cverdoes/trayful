@@ -4,7 +4,7 @@ The designer lets you build components by clicking instead of writing YAML: name
 
 ## Open the designer
 
-Open your project on a table and click **Design** in the toolbar. Only the host (the person who ran `trayful play`) can design; players who joined by invite link see the table only. At the top, **Components**, **Tray** and **Assets** switch between how the components look, how many of each are in the box, and the project's images and colours; **Table** goes back to playing.
+Open your project on a table and pick **Design components** from the **More** menu in the toolbar. Only the host (the person who ran `trayful play`) can design; players who joined by invite link see the table only. At the top, **Components**, **Tray** and **Assets** switch between how the components look, how many of each are in the box, and the project's images and colours; **Table** goes back to playing.
 
 The components page has three parts:
 

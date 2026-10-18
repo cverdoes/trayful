@@ -90,7 +90,8 @@ export async function openTable(page: Page) {
  * through the link in a browser of their own. Close the guest's context when done.
  */
 export async function inviteGuest(host: Page, browser: Browser, name: string) {
-  await host.getByRole('button', { name: 'Invite players to this table' }).click();
+  await host.getByRole('button', { name: 'More' }).click();
+  await host.getByRole('menuitem', { name: 'Invite players…' }).click();
   await expect(host.getByRole('dialog', { name: 'Invite players' })).toContainText(
     'only reachable',
   );

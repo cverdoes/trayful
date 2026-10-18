@@ -53,6 +53,6 @@ Name the setup in `trayful.yaml` to start every new table from it:
 setup: 2-player
 ```
 
-**Start over** in the table's toolbar sets the table up again from the files (you can undo it), and **New table** in the menu starts another table. From the command line, `pnpm trayful play my-game --table test --setup 2-player` starts a new table from a setup, and `--setup none` lays everything out in rows instead.
+**Start over** in the table toolbar's **More** menu sets the table up again from the files (you can undo it), and **New table** in the menu starts another table. From the command line, `pnpm trayful play my-game --table test --setup 2-player` starts a new table from a setup, and `--setup none` lays everything out in rows instead.
 
 Setups shuffle with the table's seed, so `--seed 7` gives the same deal every time.

@@ -1,29 +1,50 @@
 import { selectionActions } from './actions';
 import { PlayerList } from './Players';
-import { go } from './route';
+import { MoreMenu } from './MoreMenu';
 import { useStore } from './store';
 import { TableMenu } from './TableMenu';
+import { moreItems, selectionButtons, type ButtonProps } from './toolbarItems';
 import { fitWindow } from './viewport';
 
 const STATUS_ICON = { online: '●', connecting: '◌', offline: '○' } as const;
 
-/** The bar along the top: the table, the players, and what can be done. */
+/**
+ * The bar along the top. From left to right: the table and who is at it, what
+ * can be done with the selected pieces, then undo, fit, help and a menu for
+ * the less frequent things.
+ */
 export function Toolbar() {
   const name = useStore((s) => s.view?.name);
   const status = useStore((s) => s.status);
   return (
-    <header className="toolbar">
+    <header className="toolbar table-toolbar">
       <div className="title">
         <strong>{name ?? 'Trayful'}</strong>
         <TableMenu />
-        <span className={`status status-${status}`} title={`Connection: ${status}`}>
-          {STATUS_ICON[status]} {status}
+        <span
+          className={`status status-${status}`}
+          title={`Connection: ${status}`}
+          role="img"
+          aria-label={`Connection: ${status}`}
+        >
+          {STATUS_ICON[status]}
+          {/* Online is the normal case; only say so in words when something is wrong. */}
+          {status !== 'online' && ` ${status}`}
         </span>
         <PlayerList />
       </div>
-      <HistoryButtons />
       <SelectionButtons />
-      <TableButtons />
+      <HistoryButtons />
+      <div className="group">
+        <Button label="Fit" title="Fit the table to the window" keys="0" onClick={fitWindow} />
+        <Button
+          label="?"
+          title="Help"
+          keys="?"
+          onClick={() => useStore.setState({ helpOpen: true })}
+        />
+        <MoreActions />
+      </div>
     </header>
   );
 }
@@ -33,14 +54,16 @@ function HistoryButtons() {
   const canRedo = useStore((s) => s.canRedo);
   const send = useStore((s) => s.send);
   return (
-    <div className="group">
+    <div className="group history">
       <Button
-        label="Undo"
+        label="↶"
+        title="Undo"
         keys="Ctrl+Z"
         onClick={canUndo ? () => send({ type: 'undo' }) : undefined}
       />
       <Button
-        label="Redo"
+        label="↷"
+        title="Redo"
         keys="Ctrl+Shift+Z"
         onClick={canRedo ? () => send({ type: 'redo' }) : undefined}
       />
@@ -48,94 +71,34 @@ function HistoryButtons() {
   );
 }
 
-/** What can be done with the selected objects. */
+/**
+ * What can be done with the selected objects. Only the actions that apply are
+ * shown, so the bar stays short; the help lists all of them with their keys.
+ */
 function SelectionButtons() {
   // Re-render when the table or selection changes, since they decide which actions apply.
   useStore((s) => s.table);
   useStore((s) => s.selection);
-  const actions = selectionActions();
+  const buttons = selectionButtons(selectionActions());
   return (
-    <div className="group">
-      <Button label="Flip" keys="F" onClick={actions.flip} />
-      <Button label="⟲" title="Rotate left" keys="Q" onClick={actions.rotateLeft} />
-      <Button label="⟳" title="Rotate right" keys="E" onClick={actions.rotateRight} />
-      <Button label="Draw" keys="D" onClick={actions.draw} />
-      <Button label="Shuffle" keys="S" onClick={actions.shuffle} />
-      <Button
-        label={actions.layoutLabel}
-        title={`${actions.layoutLabel} the pile`}
-        keys="V"
-        onClick={actions.layout}
-      />
-      <Button label="Roll" keys="R" onClick={actions.roll} />
-      <Button label="−" title="Decrease" keys="-" onClick={actions.decrement} />
-      <Button label="+" title="Increase" keys="+" onClick={actions.increment} />
-      <Button label={actions.lockLabel} keys="L" onClick={actions.lock} />
+    <div className="group selection" role="group" aria-label="Selected pieces">
+      {buttons.length ? (
+        buttons.map((button) => <Button key={button.keys} {...button} />)
+      ) : (
+        <span className="muted hint">Select a piece to see what you can do with it</span>
+      )}
     </div>
   );
 }
 
-function TableButtons() {
+/** The things done now and then: design, print, invite and start over. */
+function MoreActions() {
   const view = useStore((s) => s.view);
-  const host = useStore((s) => s.me?.host);
-  return (
-    <div className="group">
-      <Button label="Fit" keys="0" onClick={fitWindow} />
-      <Button label="Start over" title="Start this table over" onClick={startOver} />
-      {host && (
-        <Button
-          label="Print"
-          title="Print and play: every component at real size"
-          onClick={
-            view ? () => go({ project: view.project, table: view.table, print: true }) : undefined
-          }
-        />
-      )}
-      {host && (
-        <Button
-          label="Design"
-          title="Design the components: types, fields and faces"
-          onClick={
-            view ? () => go({ project: view.project, table: view.table, design: true }) : undefined
-          }
-        />
-      )}
-      {host && (
-        <Button
-          label="Invite"
-          title="Invite players to this table"
-          onClick={() => useStore.setState({ inviteOpen: true })}
-        />
-      )}
-      <Button
-        label="?"
-        title="Help"
-        keys="?"
-        onClick={() => useStore.setState({ helpOpen: true })}
-      />
-    </div>
-  );
+  const host = useStore((s) => s.me?.host ?? false);
+  return <MoreMenu items={moreItems(view, host)} />;
 }
 
-function startOver() {
-  const setup = useStore.getState().view?.setup;
-  const from = setup ? ` set up as "${setup}"` : '';
-  if (window.confirm(`Start this table over from the project files${from}? You can undo this.`)) {
-    useStore.getState().send({ type: 'reset' });
-  }
-}
-
-function Button({
-  label,
-  title,
-  keys,
-  onClick,
-}: Readonly<{
-  label: string;
-  title?: string;
-  keys?: string;
-  onClick?: () => void;
-}>) {
+function Button({ label, title, keys, onClick }: Readonly<ButtonProps>) {
   const tip = [title ?? label, keys && `(${keys})`].filter(Boolean).join(' ');
   return (
     <button
