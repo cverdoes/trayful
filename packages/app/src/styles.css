@@ -60,6 +60,115 @@ body,
   gap: 4px;
 }
 
+/*
+ * On the table the title takes what it needs, the selected pieces' actions
+ * take the rest, and the groups on the right never shrink, so the menu stays
+ * in reach. A narrow window scrolls the actions rather than the whole bar.
+ */
+.table-toolbar {
+  gap: 12px;
+  overflow: visible;
+}
+
+.table-toolbar .title {
+  align-items: center;
+  min-width: 0;
+  margin-right: 0;
+}
+
+.table-toolbar .title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table-toolbar .selection {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table-toolbar .group > button {
+  flex-shrink: 0;
+}
+
+.table-toolbar .selection .hint {
+  align-self: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.table-toolbar .group:not(.selection) {
+  flex-shrink: 0;
+  padding-left: 12px;
+  border-left: 1px solid #30363d;
+}
+
+.more {
+  position: relative;
+}
+
+.more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 4px;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  background: var(--bar);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  z-index: 15;
+}
+
+.table-toolbar .history button {
+  font-size: 16px;
+}
+
+.more-menu button {
+  text-align: left;
+  border-color: transparent;
+  background: transparent;
+}
+
+.more-menu button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.more-menu .separated {
+  margin-top: 5px;
+  border-top-color: #30363d;
+  border-radius: 0 0 6px 6px;
+}
+
+/* Narrow windows: players show as coloured dots (their names are in the tooltips). */
+@media (max-width: 900px) {
+  .table-toolbar .players {
+    gap: 4px;
+    font-size: 0;
+  }
+
+  .table-toolbar .players .count {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .table-toolbar .title strong,
+  .table-toolbar .selection .hint {
+    display: none;
+  }
+
+  .table-toolbar .title select {
+    max-width: 120px;
+  }
+}
+
 .muted {
   color: var(--muted);
 }

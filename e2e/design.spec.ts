@@ -17,7 +17,8 @@ test('a person builds a card type in the designer and deals it onto the table', 
   baseURL,
 }) => {
   await page.goto(`/?project=${PROJECT}`);
-  await page.getByRole('button', { name: 'Design' }).click();
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('menuitem', { name: 'Design components' }).click();
   await expect(page.getByRole('navigation', { name: 'Component list' })).toBeVisible();
 
   await newComponent(page, 'Season card', 'Poker card');

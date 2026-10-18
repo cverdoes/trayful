@@ -2,7 +2,7 @@
 
 Trayful can print every component at its real size, to cut out and play at a real table.
 
-1. Open your project on a table and click **Print** in the toolbar. A page opens with your components laid out on A4 sheets.
+1. Open your project on a table and pick **Print and play** from the **More** menu in the toolbar. A page opens with your components laid out on A4 sheets.
 2. Use your browser's print dialog (Ctrl+P or Cmd+P). Choose **Save as PDF** for a file, or a printer, and set the scale to **100%** (sometimes called "actual size"), not "fit to page".
 3. Cut along the edges.
 

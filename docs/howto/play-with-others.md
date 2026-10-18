@@ -34,7 +34,7 @@ Trayful prints an invite link such as `https://some-random-words.trycloudflare.c
 - Drag the **top edge of your hand** to make it taller or shorter; the cards grow with it. This browser remembers the height. Double-click the edge to reset it.
 - Press **H** to shrink your hand to a small bubble in the lower left corner that shows how many cards you hold, and **H** again, or a click on the bubble, to open it. You can still drop cards on the bubble. This browser remembers which you chose.
 - When someone else moves something, a note at the bottom says who did what, without naming hidden cards.
-- **Invite** in the toolbar makes links to any table: pick the table, then copy a link. **New link** replaces that table's link if it got out to the wrong people; guests already at the table stay. Only you, the host, see it, and only you can make, copy or delete tables and print.
+- **Invite players** in the toolbar's **More** menu makes links to any table: pick the table, then copy a link. **New link** replaces that table's link if it got out to the wrong people; guests already at the table stay. Only you, the host, see it, and only you can make, copy or delete tables and print.
 - **Undo** takes back your own last move, not other players' moves.
 
 Face-down cards are hidden from everyone: no one can find out which card it is from the page, not even by looking at what the browser was sent. See [Players and hands](../reference/players-and-hands.md) for exactly what each player sees.
