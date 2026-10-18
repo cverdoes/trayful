@@ -1,4 +1,5 @@
 import type { TableState } from '@trayful/core';
+import { handTrayHeight } from './hand';
 import { bounds, topLevel, type Types } from './render/geometry';
 import { useStore, type Viewport } from './store';
 
@@ -30,7 +31,7 @@ export function fitToTable(table: TableState, types: Types, width: number, heigh
   if (!box) return;
   const [x0, y0, x1, y1] = box;
   const availW = width - 2 * MARGIN;
-  const availH = height - TOOLBAR_HEIGHT - useStore.getState().handHeight - 2 * MARGIN;
+  const availH = height - TOOLBAR_HEIGHT - handTrayHeight() - 2 * MARGIN;
   const scale = clamp(Math.min(availW / (x1 - x0), availH / (y1 - y0)), MIN_SCALE, MAX_SCALE);
   useStore.setState({
     viewport: {
@@ -65,7 +66,7 @@ export function outOfView(box: Box, viewport: Viewport, width: number, height: n
     x + x0 * scale < 0 ||
     y + y0 * scale < TOOLBAR_HEIGHT ||
     x + x1 * scale > width ||
-    y + y1 * scale > height - useStore.getState().handHeight
+    y + y1 * scale > height - handTrayHeight()
   );
 }
 

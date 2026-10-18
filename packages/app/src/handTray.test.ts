@@ -4,8 +4,11 @@ import {
   HAND_HEIGHT,
   handCardHeight,
   loadHandHeight,
+  loadHandMinimized,
   saveHandHeight,
-} from './handHeight';
+} from './handTray';
+import { handTrayHeight, toggleHandTray } from './hand';
+import { useStore } from './store';
 
 function fakeStorage(): Storage {
   const items = new Map<string, string>();
@@ -65,5 +68,23 @@ describe('remembering the height', () => {
     vi.stubGlobal('localStorage', broken);
     expect(() => saveHandHeight(200)).not.toThrow();
     expect(loadHandHeight()).toBe(HAND_HEIGHT);
+  });
+});
+
+describe('shrinking the tray to a bubble', () => {
+  it('toggles, frees the bottom of the screen and is remembered', () => {
+    vi.stubGlobal('localStorage', fakeStorage());
+    useStore.setState({ handMinimized: false, handHeight: 200 });
+    expect(loadHandMinimized()).toBe(false);
+    expect(handTrayHeight()).toBe(200);
+
+    toggleHandTray();
+    expect(useStore.getState().handMinimized).toBe(true);
+    expect(handTrayHeight()).toBe(0);
+    expect(loadHandMinimized()).toBe(true);
+
+    toggleHandTray();
+    expect(handTrayHeight()).toBe(200);
+    expect(loadHandMinimized()).toBe(false);
   });
 });

@@ -308,6 +308,44 @@ body.printing #root {
   outline: none;
 }
 
+/* The hand shrunk to a bubble in the lower left corner. */
+.hand-tray.minimized {
+  inset: auto auto 16px 16px;
+  background: none;
+  border: none;
+}
+
+.hand-bubble {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #000;
+  background: rgba(31, 35, 40, 0.88);
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.hand-bubble .count {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hand-tray.minimized.over {
+  border-radius: 999px;
+  outline-offset: 2px;
+}
+
+.hand-minimize {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 2;
+  padding: 0 8px;
+  line-height: 20px;
+}
+
 .hand-tray.over {
   background: rgba(47, 129, 247, 0.35);
   outline: 2px dashed var(--accent);

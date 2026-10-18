@@ -1,7 +1,7 @@
 import type { TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { HAND_HEIGHT } from './handHeight';
+import { HAND_HEIGHT } from './handTray';
 import { useStore } from './store';
 import { exampleTable } from './testing';
 import { fitToTable, outOfView, tableBounds, toWorld, TOOLBAR_HEIGHT, zoomAt } from './viewport';
