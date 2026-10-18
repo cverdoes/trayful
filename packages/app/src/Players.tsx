@@ -1,13 +1,14 @@
 import { handOf, type Piece } from '@trayful/core';
-import { useState, type SubmitEvent } from 'react';
+import { useState, type KeyboardEvent, type PointerEvent, type SubmitEvent } from 'react';
 import { connect, join } from './connection';
 import { Thumbnail } from './render/Thumbnail';
 import { HAND_DRAG } from './hand';
+import { clampHandHeight, HAND_HEIGHT, handCardHeight, saveHandHeight } from './handHeight';
 import { useStore } from './store';
 import { windowCentre } from './viewport';
 
-/** Height of a card in the hand tray, in pixels. */
-const CARD_HEIGHT = 92;
+/** How far one arrow key press moves the top edge of the hand tray, in pixels. */
+const RESIZE_STEP = 16;
 
 /** Asks for a name before someone with an invite sits down at the table. */
 export function JoinScreen() {
@@ -109,6 +110,7 @@ export function HandTray() {
   const view = useStore((s) => s.view);
   const me = useStore((s) => s.me?.player?.id);
   const over = useStore((s) => s.overHand);
+  const height = useStore((s) => s.handHeight);
   if (!table || !view || !me) return null;
   const hand = handOf(table, me);
   return (
@@ -116,19 +118,69 @@ export function HandTray() {
       className={`hand-tray${over ? ' over' : ''}`}
       aria-label="Your hand"
       data-count={hand.length}
+      style={{ height }}
     >
-      {hand.length === 0 ? (
-        <p className="muted">
-          Your hand: drag cards here to keep them hidden from the other players.
-        </p>
-      ) : (
-        hand.map((piece) => <HandCard key={piece.id} piece={piece} />)
-      )}
+      <ResizeHandle height={height} />
+      <div className="hand-cards">
+        {hand.length === 0 ? (
+          <p className="muted">
+            Your hand: drag cards here to keep them hidden from the other players.
+          </p>
+        ) : (
+          hand.map((piece) => (
+            <HandCard key={piece.id} piece={piece} length={handCardHeight(height)} />
+          ))
+        )}
+      </div>
     </section>
   );
 }
 
-function HandCard({ piece }: Readonly<{ piece: Piece }>) {
+/** Resizes the hand tray to fit this window and remembers the height for next time. */
+function setHandHeight(height: number): void {
+  const handHeight = clampHandHeight(height, window.innerHeight);
+  useStore.setState({ handHeight });
+  saveHandHeight(handHeight);
+}
+
+/** The top edge of the hand tray: drag it, or use the arrow keys, to make the tray taller or shorter. */
+function ResizeHandle({ height }: Readonly<{ height: number }>) {
+  const [start, setStart] = useState<{ y: number; height: number }>();
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setStart({ y: e.clientY, height });
+  };
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (start) setHandHeight(start.height + start.y - e.clientY);
+  };
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const step = { ArrowUp: RESIZE_STEP, ArrowDown: -RESIZE_STEP }[e.key];
+    if (step === undefined) return;
+    // Keep the arrow keys from also reaching the table's shortcuts.
+    e.preventDefault();
+    e.stopPropagation();
+    setHandHeight(height + step);
+  };
+  return (
+    <div
+      className={`hand-resize${start ? ' dragging' : ''}`}
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Resize your hand"
+      aria-valuenow={height}
+      tabIndex={0}
+      title="Drag to resize your hand, double-click to reset"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={() => setStart(undefined)}
+      onPointerCancel={() => setStart(undefined)}
+      onDoubleClick={() => setHandHeight(HAND_HEIGHT)}
+      onKeyDown={onKeyDown}
+    />
+  );
+}
+
+function HandCard({ piece, length }: Readonly<{ piece: Piece; length: number }>) {
   const play = () => {
     // Double-click plays the card into the middle of the view.
     const [x, y] = windowCentre();
@@ -148,7 +200,7 @@ function HandCard({ piece }: Readonly<{ piece: Piece }>) {
       }}
       onDoubleClick={play}
     >
-      <Thumbnail piece={piece} length={CARD_HEIGHT} face="up" />
+      <Thumbnail piece={piece} length={length} face="up" />
     </div>
   );
 }

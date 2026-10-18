@@ -15,6 +15,7 @@ const SHORTCUTS: [string, string][] = [
   ['Drag onto your hand', 'Keep cards hidden from the other players, along the bottom'],
   ['Drag out of your hand', 'Play a card face up; hold Alt to play it face down'],
   ['Double-click in your hand', 'Play that card into the middle of the view'],
+  ['Drag the top edge of your hand', 'Make it taller or shorter; double-click the edge to reset'],
   ['F', 'Flip'],
   ['Q / E', 'Rotate left / right'],
   ['D', 'Draw the top card of the selected pile'],
