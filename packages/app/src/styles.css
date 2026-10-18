@@ -948,6 +948,53 @@ body.printing #root {
   background: #1f3a5f;
 }
 
+.design-section + .design-section {
+  margin-top: 8px;
+  border-top: 1px solid #30363d;
+}
+
+.design-section > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 16px 0 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.design-section > details > summary h3 {
+  margin: 0;
+}
+
+.design-section > details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.design-section > details > summary::before {
+  content: '▸';
+  color: var(--muted);
+  font-size: 12px;
+  transition: transform 0.1s;
+}
+
+.design-section > details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.design-section > details > summary:hover h3 {
+  color: var(--bar-text);
+}
+
+.design-section > details > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.design-section > details:not([open]) > summary {
+  margin-bottom: 12px;
+}
+
 .design-advanced {
   margin-top: 12px;
 }
@@ -1145,4 +1192,17 @@ label.button:hover {
 /* The piece picture is drawn on a canvas; let the button itself take the click. */
 .group-picker .konvajs-content {
   pointer-events: none;
+}
+
+.drop-area-dialog ul {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.drop-area-dialog li button {
+  width: 100%;
+  text-align: left;
 }

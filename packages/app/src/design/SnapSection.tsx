@@ -7,23 +7,19 @@ import {
   type DropMode,
   type SnapTarget,
 } from '@trayful/formats/browser';
+import { useState } from 'react';
 import { sizeOf } from '../render/geometry';
 import { useStore } from '../store';
 import { acceptOptions, ComponentPicker, NO_TYPES } from './ComponentPicker';
+import { DropAreaDialog, DROP_AREA_KINDS } from './DropAreaDialog';
 import { setIn } from './edit';
 import { NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
+import { Section } from './Section';
 import { newTarget, spotsOf, targetKind, type NewTargetKind } from './snaps';
 import { editDraft, setValue, useDesign } from './store';
 
-const KIND_LABEL: Record<NewTargetKind, string> = {
-  grid: 'Grid',
-  points: 'Points',
-  area: 'Area',
-  pile: 'Stack',
-  group: 'Group',
-  row: 'Row',
-  bag: 'Bag',
-};
+/** A drop area kind's name, as the dialog that adds one offers it. */
+const kindName = (kind: NewTargetKind) => DROP_AREA_KINDS.find((k) => k.kind === kind)?.name;
 
 const MODE_LABEL: Record<DropMode, string> = {
   single: 'One thing per spot',
@@ -40,15 +36,16 @@ const MODE_LABEL: Record<DropMode, string> = {
  */
 export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
   const selected = useDesign((s) => s.target);
+  const [adding, setAdding] = useState(false);
   if (isValued(type)) return null;
   const targets = type.container ?? [];
   const add = (kind: NewTargetKind) => {
+    setAdding(false);
     editDraft((t) => setIn(t, ['container', targets.length], newTarget(kind, t, sizeOf(t))));
     useDesign.setState({ side: 'front', layer: undefined, target: targets.length });
   };
   return (
-    <section aria-label="Drop areas">
-      <h3>Drop areas</h3>
+    <Section title="Drop areas">
       <p className="muted">
         Where pieces land when dropped on this {type.is}. With one, it is a container: what lies on
         it moves with it.
@@ -67,17 +64,15 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
         ))}
       </ul>
       <div className="design-add">
-        Add:{' '}
-        {(['grid', 'points', 'area', 'pile', 'group', 'row', 'bag'] as const).map((kind) => (
-          <button key={kind} type="button" onClick={() => add(kind)}>
-            {KIND_LABEL[kind]}
-          </button>
-        ))}
+        <button type="button" onClick={() => setAdding(true)}>
+          + Add drop area
+        </button>
       </div>
+      {adding && <DropAreaDialog onPick={add} onClose={() => setAdding(false)} />}
       {selected !== undefined && targets[selected] && (
         <TargetEditor target={targets[selected]} index={selected} />
       )}
-    </section>
+    </Section>
   );
 }
 
@@ -105,7 +100,7 @@ function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: n
   };
   return (
     <div className="design-layer" aria-label="Selected drop area">
-      <h4>{KIND_LABEL[targetKind(target)]}</h4>
+      <h4>{kindName(targetKind(target))}</h4>
       <Row label="Id" path={at('id')}>
         {(id) => (
           <TextInput id={id} value={target.id} onChange={(v) => setValue(at('id'))(v ?? '')} />
