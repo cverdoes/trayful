@@ -1,8 +1,28 @@
-# Trayful
+<h1 align="center">
+  <img src=".github/readme/wordmark.svg" alt="Trayful" width="256" height="80">
+</h1>
 
-Trayful is a boardgame prototyping table. You describe your components (cards, boards, tokens, meeples, dice, counters) in plain YAML files, and Trayful lays them out on a table where people and AI agents can drag, flip, rotate, stack and shuffle them.
+<p align="center">A boardgame prototyping table for people and AI agents.</p>
 
-> **Status: Milestones 1 to 9.** You can start a prototype from a template, play it on a table in your browser with pieces that snap onto boards and a setup that lays out the game, and see every file you save show up on the table at once. Playtesters can join a table from their own computers through an invite link to that table, each with a private hand and their own undo. An AI agent such as Claude can play on the same table over MCP, and design components with you. You can design components in the browser, describing each one by what it is and what it can do, with artwork from tiled image sheets. You can print everything at real size to play on paper. See the [roadmap](#roadmap).
+<p align="center">
+  <a href="https://www.npmjs.com/package/trayful"><img src="https://img.shields.io/npm/v/trayful" alt="npm version"></a>
+  <a href="https://github.com/cverdoes/trayful/actions/workflows/ci.yml"><img src="https://github.com/cverdoes/trayful/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/licence-FSL--1.1--MIT-blue" alt="Licence: FSL-1.1-MIT"></a>
+  <img src="https://img.shields.io/badge/node-%E2%89%A522.12-informational" alt="Node.js 22.12 or newer">
+</p>
+
+Describe your components (cards, boards, tokens, meeples, dice, counters) in plain YAML files, or design them in the browser, and Trayful lays them out on a table where people and AI agents can drag, flip, rotate, stack and shuffle them.
+
+![A game of Harvest Moon on the Trayful table: a board with a card market, fields with workers, a supply with dice and coins, a score track, a draw deck and a hand of cards](.github/readme/table.png)
+
+## Features
+
+- **A real table in your browser.** Drag, flip, rotate, stack, draw, shuffle, fan out, roll and count, with undo. Pieces snap onto board spots, and a setup file lays out the game.
+- **Components as files.** Libraries, inventory, card data from a spreadsheet and setups are plain YAML and CSV, so they diff and merge like code. Save a file and the table updates at once; mistakes are reported with file, line and column.
+- **A designer.** Build components in the browser with a live preview, from tiled image sheets, without writing YAML. Your comments in the files are kept.
+- **Playtest with others.** Send an invite link over your network or through a tunnel. Every player has a private hand and undoes only their own moves.
+- **AI agents over MCP.** Claude and other MCP clients can read the table, play on it and build components with you, and you see their moves live.
+- **Print and play.** Print every component at real size.
 
 ## Install
 
@@ -255,18 +275,22 @@ Dependabot opens weekly pull requests for npm packages, GitHub Actions and the D
 
 ## Roadmap
 
-| Milestone                            | Scope                                                                                                                 |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| 0. Foundations                       | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference         |
-| 1. First playable table              | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                          |
-| 2. Components and snapping           | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                                      |
-| 3. MCP                               | Agents read and play tables over the Model Context Protocol                                                           |
-| 4. Projects and authoring            | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                          |
-| 5. Multiplayer                       | Players, invite links over the network or a tunnel, private hands, per-player hidden views                            |
-| 6. Invites and undo                  | Invite links to one table, made from the toolbar; each player undoes only their own moves                             |
-| 7. Component designer                | Design mode: types, fields and faces in the browser with a live preview, saved with comments kept                     |
-| 8. Hands on the canvas               | Drag, resize and rotate layers with snapping; board snap spot editor; image drop; renames everywhere; undo            |
-| **9. Components by property** (this) | File format `trayful/2`: `is` plus behaviours, faces with labels, an assets file with tiled images, `trayful migrate` |
+| Milestone                  | Scope                                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 0. Foundations             | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference         |
+| 1. First playable table    | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                          |
+| 2. Components and snapping | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                                      |
+| 3. MCP                     | Agents read and play tables over the Model Context Protocol                                                           |
+| 4. Projects and authoring  | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                          |
+| 5. Multiplayer             | Players, invite links over the network or a tunnel, private hands, per-player hidden views                            |
+| 6. Invites and undo        | Invite links to one table, made from the toolbar; each player undoes only their own moves                             |
+| 7. Component designer      | Design mode: types, fields and faces in the browser with a live preview, saved with comments kept                     |
+| 8. Hands on the canvas     | Drag, resize and rotate layers with snapping; board snap spot editor; image drop; renames everywhere; undo            |
+| 9. Components by property  | File format `trayful/2`: `is` plus behaviours, faces with labels, an assets file with tiled images, `trayful migrate` |
+| 10. Step-by-step designer  | A designer that builds a component one property at a time, and an Assets page for images and colours                  |
+| 11. Containers             | Drop areas that hold a pile, a row or a bag of pieces                                                                 |
+| 12. Tray                   | What is in the box, edited in the browser: inventory entries, decks from every tile of a sheet, CSV card data         |
+| 13. Designer gaps          | Undo in the Tray, CSV columns, image renames, and MCP tools to rename fields and images and set colours               |
 
 ## Licence
 
