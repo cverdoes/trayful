@@ -24,7 +24,11 @@ Describe your components (cards, boards, tokens, meeples, dice, counters) in pla
 - **AI agents over MCP.** Claude and other MCP clients can read the table, play on it and build components with you, and you see their moves live.
 - **Print and play.** Print every component at real size.
 
-## Install
+## Using Trayful
+
+Everything you need to make and play prototypes, with the `trayful` package from npm.
+
+### Install
 
 With [Node.js](https://nodejs.org/) 22.12 or newer, you need nothing else:
 
@@ -33,31 +37,9 @@ npx trayful new my-game      # a new prototype from the starter template
 npx trayful play my-game     # open it on a table in your browser
 ```
 
-Or install it once with `npm install -g trayful` and leave out the `npx`. To let an agent such as Claude Desktop or Claude Code join, add an MCP server with the command `npx` and the arguments `-y trayful mcp /path/to/my-game`. The rest of this README runs Trayful from a clone of this repository, as `pnpm trayful`; with the npm package, type `trayful` (or `npx trayful`) instead.
+Or install it once with `npm install -g trayful` and leave out the `npx`. The examples below use `npx trayful`; with a global install, type `trayful`.
 
-## Quick start
-
-To work on Trayful itself, you need [Node.js](https://nodejs.org/) 22.12 or newer and [pnpm](https://pnpm.io/) 10. If you have Node but not pnpm, run `corepack enable` once.
-
-```sh
-git clone https://github.com/cverdoes/trayful.git
-cd trayful
-```
-
-<!-- quickstart:start -->
-
-```sh
-pnpm install
-pnpm build
-pnpm trayful validate examples/harvest-moon
-pnpm trayful play examples/harvest-moon
-```
-
-<!-- quickstart:end -->
-
-`validate` should end with `✓ Harvest Moon: 6 types, 26 components, 1 deck, 1 setup`. `play` starts a local server at http://127.0.0.1:4317 and opens the table in your browser; press Ctrl+C to stop it. CI runs exactly the commands between the quick-start markers above on a clean checkout, so they stay correct.
-
-## Playing on the table
+### Playing on the table
 
 Drag a piece to move it. While you drag, the board spots it may go to light up, and dropping it near one snaps it in; pieces on a board move along with the board. Drag the top card off a pile to draw it, and drop cards on a pile to stack them; hold Shift to drag a whole pile. Pieces sharing a group spot, like markers on a score track, stay separate: click one to list them all and pick the one you want. Double-click a card to flip it or a die to roll it. Click to select, Shift+click or Shift+drag on empty table to select several, then use the toolbar or the keys: **F** flip, **Q**/**E** rotate, **D** draw, **S** shuffle, **V** fan or spread a pile out (then drag out any card), **R** roll, **+**/**−** counters, **L** lock or unlock (setups can lock a board in place), **Ctrl+Z** undo. Drag empty table to pan, scroll to zoom, **0** to fit, **?** for all shortcuts.
 
@@ -75,33 +57,33 @@ A new table starts from the setup named in `trayful.yaml` (Harvest Moon's puts t
 | `--tunnel`            | Let others anywhere join, through a Cloudflare tunnel             |
 | `--container`         | Run inside a container; see [Run it in Docker](#run-it-in-docker) |
 
-## Play with others
+### Play with others
 
 Start the table with `--share` (same network) or `--tunnel` (anywhere; needs [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/), no account), and Trayful prints an invite link to send your playtesters. They open it, pick a name, and play on that table, and no other; **Invite** in the toolbar makes links to any of your tables. Everyone undoes only their own moves.
 
 ```sh
-pnpm trayful play examples/harvest-moon --share
+npx trayful play my-game --share
 ```
 
 Everyone has a private **hand** along the bottom of the screen: drag cards onto it to keep them hidden, and drag them out to play them (hold Alt for face down). The others see only how many cards you hold, and face-down cards stay hidden from every browser, down to the data it is sent. Only the host can make or delete tables, print, invite and connect agents. See [Play with others](docs/howto/play-with-others.md) and [Players and hands](docs/reference/players-and-hands.md).
 
-## Let an agent play
+### Let an agent play
 
 Trayful is an [MCP](https://modelcontextprotocol.io) server, so agents such as Claude Code or Claude Desktop can read the table and play on it. Their moves show up live in your browser, with a note saying what they did. They undo only their own moves, and you only yours.
 
 The simplest way: start the table, then point the agent at it over HTTP.
 
 ```sh
-pnpm trayful play examples/harvest-moon
+npx trayful play my-game
 claude mcp add --transport http trayful http://127.0.0.1:4317/mcp   # in another terminal, once
 ```
 
-Then ask Claude something like "shuffle the action deck, deal three cards to two players and play a round". It starts with `describe_table`, which lists every pile and piece with its position.
+Then ask Claude something like "shuffle the deck, deal three cards to two players and play a round". It starts with `describe_table`, which lists every pile and piece with its position.
 
 For clients that start MCP servers themselves (stdio), run `trayful mcp`. It joins the table that `trayful play` has open, or opens the table itself so you can watch at http://127.0.0.1:4317:
 
 ```sh
-claude mcp add trayful -- node /path/to/trayful/packages/cli/bin/trayful.js mcp /path/to/trayful/examples/harvest-moon
+claude mcp add trayful -- npx -y trayful mcp /path/to/my-game
 ```
 
 In Claude Desktop the same goes in `claude_desktop_config.json`:
@@ -110,8 +92,8 @@ In Claude Desktop the same goes in `claude_desktop_config.json`:
 {
   "mcpServers": {
     "trayful": {
-      "command": "node",
-      "args": ["/path/to/trayful/packages/cli/bin/trayful.js", "mcp", "/path/to/my-game"]
+      "command": "npx",
+      "args": ["-y", "trayful", "mcp", "/path/to/my-game"]
     }
   }
 }
@@ -135,26 +117,7 @@ Agents can also build your prototype with you: ask Claude for "an event card wit
 | `upsert_type`, `rename_type`, `remove_type`, `set_inventory`, `add_asset` | Change components, what is in the box, and artwork                |
 | `render_component`                                                        | A picture of one component, as people will see it                 |
 
-## Run it in Docker
-
-To keep the server apart from the rest of your computer, run it in a container. It then sees only the folder you give it, runs as an ordinary user on a read-only system, and can be reached only from your own computer. You need [Docker](https://docs.docker.com/get-docker/); Node and pnpm are not needed.
-
-```sh
-scripts/docker.sh            # serves examples/
-scripts/docker.sh ~/games    # serves your own project, or folder of projects
-```
-
-Then open http://localhost:4317. The script builds the image, starts the container, and saves tables as you, so the files stay yours. It runs `docker compose up --build` with the settings below, which you can also set yourself:
-
-| Setting            | What it does                                                        |
-| ------------------ | ------------------------------------------------------------------- |
-| `TRAYFUL_PROJECTS` | The folder to serve (default `./examples`); the only one it can see |
-| `TRAYFUL_USER`     | The `uid:gid` to save files as (default `1000:1000`)                |
-| `TRAYFUL_PORT`     | The port on your computer (default 4317); open the table there      |
-
-You are the host, as with `trayful play`: inside a container the server counts requests through the published port as yours, so [`compose.yaml`](compose.yaml) publishes it on `127.0.0.1` only. Do not publish it on your network. `--share` does not work in a container. Agents connect over HTTP at `http://127.0.0.1:4317/mcp` as described above; `trayful mcp` on your computer cannot reach the container's table. Edits to the project files reload as usual. Stop it with Ctrl+C, or `docker compose down`.
-
-## Make your own prototype
+### Make your own prototype
 
 A prototype is a folder:
 
@@ -172,31 +135,31 @@ my-game/
 Start one from the template, which has a deck of cards loaded from a spreadsheet, some tokens and a setup:
 
 ```sh
-pnpm trayful new ../my-game --name "My Game"
-pnpm trayful play ../my-game
+npx trayful new my-game --name "My Game"
+npx trayful play my-game
 ```
 
 To build components without writing YAML, click **Design** in the toolbar: the [designer](docs/howto/design-components.md) switches behaviours on and off and lays out fields and faces with a live preview, lets you drag labels, layers and board drop areas into place, drop in pictures and rename components everywhere they are used, and saves each change to your library files, keeping your comments.
 
-Keep the table open while you edit: every time you save a file, the table updates (new cards appear, changed text redraws, and the change is one step you can undo). If a file has a mistake, a bar on the table names the file, line and column, and the table keeps the last version that worked. `pnpm trayful validate ../my-game` checks a project from the command line.
+Keep the table open while you edit: every time you save a file, the table updates (new cards appear, changed text redraws, and the change is one step you can undo). If a file has a mistake, a bar on the table names the file, line and column, and the table keeps the last version that worked. `npx trayful validate my-game` checks a project from the command line.
 
-To keep several games together, put their folders in one folder and run `pnpm trayful play` on that folder; the table menu switches between them.
+To keep several games together, put their folders in one folder and run `npx trayful play` on that folder; the table menu switches between them.
 
 The [HOWTO guides](docs/howto/README.md) walk through adding a deck, designing components in the browser, loading cards from a spreadsheet, boards with drop areas, meeples and dice, your own images and tiled sheets, setups, designing with an agent and printing. Every key is documented in the [format reference](docs/reference/README.md).
 
-A component describes what it `is` (a `piece`, `zone`, `die` or `counter`) and switches on what it can do: `flippable`, `rotates`, `stackable`, or `values` for dice and counters. A board is a piece that is a `container`: it declares **drop areas**, a `grid` of spots (card slots, action spaces), a list of `points` (a score track) or a free `area` (a supply), each optionally limited to some components with `accepts`. A **setup** file places components on those drop areas and on the table, locks the board, shuffles and deals; set `setup: <file name>` in `trayful.yaml` to start every new table from it. See [`library/pieces.yaml`](examples/harvest-moon/library/pieces.yaml) and [`setups/2-player.yaml`](examples/harvest-moon/setups/2-player.yaml) in the sample.
+A component describes what it `is` (a `piece`, `zone`, `die` or `counter`) and switches on what it can do: `flippable`, `rotates`, `stackable`, or `values` for dice and counters. A board is a piece that is a `container`: it declares **drop areas**, a `grid` of spots (card slots, action spaces), a list of `points` (a score track) or a free `area` (a supply), each optionally limited to some components with `accepts`. A **setup** file places components on those drop areas and on the table, locks the board, shuffles and deals; set `setup: <file name>` in `trayful.yaml` to start every new table from it. See [`library/pieces.yaml`](examples/harvest-moon/library/pieces.yaml) and [`setups/2-player.yaml`](examples/harvest-moon/setups/2-player.yaml) in the Harvest Moon sample.
 
-### Projects from an earlier Trayful
+#### Projects from an earlier Trayful
 
 Projects made before milestone 9 are in the file format `trayful/1`. They still load and play, with a warning, but the designer and agents can only change their components once they are rewritten in `trayful/2`:
 
 ```sh
-pnpm trayful migrate ../my-game
+npx trayful migrate my-game
 ```
 
 `migrate` rewrites the libraries in the new form, keeping the comment lines at their top; moves images and palette colours to a new `assets.yaml`; renames each inventory entry's `type` to `component`; and adds `lock: true` to the setup steps that place a board, since boards no longer start locked. The manifest, inventory and setups keep their comments. Commit the folder first if you want the old files. See [Versioning](docs/reference/versioning.md#moving-a-project-to-trayful2).
 
-## Command line
+### Command line
 
 | Command                                   | What it does                                                   |
 | ----------------------------------------- | -------------------------------------------------------------- |
@@ -206,9 +169,54 @@ pnpm trayful migrate ../my-game
 | `trayful validate <project-dir> [--json]` | Check a project and report problems with file, line and column |
 | `trayful migrate <project-dir>`           | Rewrite a `trayful/1` project in the current file format       |
 
-From the repo root, run them as `pnpm trayful …`. See the [CLI README](packages/cli/README.md) for every option.
+Run them as `npx trayful …`, or as `pnpm trayful …` from a clone of this repository. See the [CLI README](packages/cli/README.md) for every option.
 
-## Repository layout
+### Run it in Docker
+
+To keep the server apart from the rest of your computer, run it in a container. It then sees only the folder you give it, runs as an ordinary user on a read-only system, and can be reached only from your own computer. You need [Docker](https://docs.docker.com/get-docker/) and a clone of this repository; Node and pnpm are not needed.
+
+```sh
+scripts/docker.sh            # serves examples/
+scripts/docker.sh ~/games    # serves your own project, or folder of projects
+```
+
+Then open http://localhost:4317. The script builds the image, starts the container, and saves tables as you, so the files stay yours. It runs `docker compose up --build` with the settings below, which you can also set yourself:
+
+| Setting            | What it does                                                        |
+| ------------------ | ------------------------------------------------------------------- |
+| `TRAYFUL_PROJECTS` | The folder to serve (default `./examples`); the only one it can see |
+| `TRAYFUL_USER`     | The `uid:gid` to save files as (default `1000:1000`)                |
+| `TRAYFUL_PORT`     | The port on your computer (default 4317); open the table there      |
+
+You are the host, as with `trayful play`: inside a container the server counts requests through the published port as yours, so [`compose.yaml`](compose.yaml) publishes it on `127.0.0.1` only. Do not publish it on your network. `--share` does not work in a container. Agents connect over HTTP at `http://127.0.0.1:4317/mcp` as described above; `trayful mcp` on your computer cannot reach the container's table. Edits to the project files reload as usual. Stop it with Ctrl+C, or `docker compose down`.
+
+## Contributing
+
+Working on Trayful itself: building it from a clone, the repository layout, checks, and releases.
+
+### Run it from a clone
+
+You need [Node.js](https://nodejs.org/) 22.12 or newer and [pnpm](https://pnpm.io/) 10. If you have Node but not pnpm, run `corepack enable` once.
+
+```sh
+git clone https://github.com/cverdoes/trayful.git
+cd trayful
+```
+
+<!-- quickstart:start -->
+
+```sh
+pnpm install
+pnpm build
+pnpm trayful validate examples/harvest-moon
+pnpm trayful play examples/harvest-moon
+```
+
+<!-- quickstart:end -->
+
+`validate` should end with `✓ Harvest Moon: 6 types, 26 components, 1 deck, 1 setup`. `play` starts a local server at http://127.0.0.1:4317 and opens the table in your browser; press Ctrl+C to stop it. CI runs exactly the commands between the quick-start markers above on a clean checkout, so they stay correct.
+
+### Repository layout
 
 | Path                                                       | What it is                                                                                                        |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -225,7 +233,7 @@ From the repo root, run them as `pnpm trayful …`. See the [CLI README](package
 | [`scripts`](scripts)                                       | Code generation, example validation and the dev server                                                            |
 | [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml) | Running the server in a container; `scripts/docker.sh` starts it                                                  |
 
-## Development
+### Development
 
 | Command                  | What it does                                                             |
 | ------------------------ | ------------------------------------------------------------------------ |
@@ -249,7 +257,7 @@ Packages are TypeScript run directly from source (through `tsx` and Vitest). Onl
 
 When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generate` and commit the regenerated files; CI fails when they are stale. When you change setup steps, scripts or commands, update this README in the same change. When you change what a HOWTO guide describes, update the guide; `scripts/docs.test.ts` checks that the files the guides quote still match `examples/`, and that their links work.
 
-### Code quality
+#### Code quality
 
 CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below each package's floor in `vitest.config.ts`; the app's components are covered by the e2e suite instead.
 
@@ -259,7 +267,7 @@ Each CI run's summary page shows coverage per package, the most complex function
 
 Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for readability, naming and design, locally, before opening a pull request. There is no review on the pull request itself.
 
-### Releasing
+#### Releasing
 
 A version is published to npm by pushing a tag. Set the new version in `packages/cli/package.json`, merge that to `main`, then tag the merge commit:
 
@@ -269,7 +277,7 @@ git tag v0.2.0 && git push origin v0.2.0
 
 The Release workflow (`.github/workflows/release.yml`) builds the package, checks that the tag matches the version, runs `scripts/test-package.sh` on it, publishes it to npm and makes a GitHub release with the tarball. A version with a suffix, such as `0.2.0-rc.1`, goes to the `next` tag, so `npx trayful` keeps the last full release and `npx trayful@next` tries the new one. npm accepts the upload through [trusted publishing](https://docs.npmjs.com/trusted-publishers): the package's settings on npmjs.com name this repository, `release.yml` and the GitHub environment `npm`, so no npm token is stored anywhere.
 
-### Dependencies
+#### Dependencies
 
 Dependabot opens weekly pull requests for npm packages, GitHub Actions and the Docker base image (`.github/dependabot.yml`). The Audit workflow runs `pnpm audit` on every push and pull request and each Monday, and fails on any high or critical advisory; fix it by updating or replacing the package, not by ignoring the advisory.
 
