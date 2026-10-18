@@ -169,6 +169,18 @@ export async function waitSaved(page: Page) {
 }
 
 /** Makes a component in the designer: its name, what to start like, and what it is. */
+/** Adds a drop area of a kind (Grid, Points, Bag…) to the component being designed. */
+export async function addDropArea(page: Page, kind: string) {
+  await page
+    .getByRole('region', { name: 'Drop areas' })
+    .getByRole('button', { name: '+ Add drop area' })
+    .click();
+  await page
+    .getByRole('dialog', { name: 'Add a drop area' })
+    .getByRole('button', { name: new RegExp(`^${kind}\\b`) })
+    .click();
+}
+
 export async function newComponent(page: Page, name: string, startLike: string) {
   await page.getByRole('button', { name: '+ New component' }).click();
   const dialog = page.getByRole('dialog', { name: 'New component' });

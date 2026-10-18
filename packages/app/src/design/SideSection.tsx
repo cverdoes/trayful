@@ -17,6 +17,7 @@ import {
 import { ColorInput, NumberInput, Row, Select } from './controls';
 import { ImagePicker } from './ImagePicker';
 import { LayerSection } from './LayerSection';
+import { Section } from './Section';
 import { editDraft, setValue, useDesign } from './store';
 
 /**
@@ -31,8 +32,7 @@ export function SideSection({ type, side }: Readonly<{ type: ComponentType; side
   const at = (key: string) => [...sidePath(side), key];
   const name = side === 'front' ? 'Face' : 'Back';
   return (
-    <section aria-label={name}>
-      <h3>{name}</h3>
+    <Section title={name}>
       {side === 'front' && <OutlineRows type={type} />}
       <Row label="Fill" path={at('fill')}>
         {(id) => (
@@ -58,7 +58,7 @@ export function SideSection({ type, side }: Readonly<{ type: ComponentType; side
         <ItemList type={type} side={side} labels={false} selected={selected} />
         {chosen && !chosen.label && <LayerSection item={chosen} />}
       </details>
-    </section>
+    </Section>
   );
 }
 

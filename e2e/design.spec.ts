@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import {
+  addDropArea,
   agent,
   clickOnFront,
   dragOnFront,
@@ -89,13 +90,12 @@ test('a person lays out a board by dragging: a layer, a grid of drop spots and a
 
   // A grid: spot 0 moves it, the handle halfway to spot 3 sets the spacing, and the one
   // past the last spot the columns and rows.
-  const snaps = inspector.getByRole('region', { name: 'Drop areas' });
-  await snaps.getByRole('button', { name: 'Grid' }).click();
+  await addDropArea(page, 'Grid');
   await dragOnFront(page, [140, 140], [60, 60]);
   await dragOnFront(page, [70, 70], [85, 85]);
   await dragOnFront(page, [147.5, 147.5], [247.5, 147.5]);
   // A track: each click adds the next spot.
-  await snaps.getByRole('button', { name: 'Points' }).click();
+  await addDropArea(page, 'Points');
   await dragOnFront(page, [150, 150], [30, 270]);
   await clickOnFront(page, [60, 270]);
   await clickOnFront(page, [90, 270]);

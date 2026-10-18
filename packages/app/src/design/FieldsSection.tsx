@@ -12,6 +12,7 @@ import {
 } from './edit';
 import { Row, Select, TextInput } from './controls';
 import { renameDraftField } from './projectEdits';
+import { Section } from './Section';
 import { editDraft } from './store';
 
 const KINDS = [...FIELD_TYPES, 'enum'] as const;
@@ -20,8 +21,8 @@ const KINDS = [...FIELD_TYPES, 'enum'] as const;
 export function FieldsSection({ type }: Readonly<{ type: ComponentType }>) {
   const fields = Object.entries(type.fields ?? {});
   return (
-    <section>
-      <h3>Fields</h3>
+    // Most components need no fields, so this starts folded.
+    <Section title="Data fields" folded>
       {fields.length === 0 && <p className="muted">No fields: every component looks the same.</p>}
       {fields.map(([name, field]) => (
         <FieldEditor key={name} name={name} field={field} />
@@ -32,7 +33,7 @@ export function FieldsSection({ type }: Readonly<{ type: ComponentType }>) {
       >
         + Add field
       </button>
-    </section>
+    </Section>
   );
 }
 

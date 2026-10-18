@@ -77,3 +77,21 @@ test('what a component stacks with is picked from the other components', async (
     .poll(async () => (await savedType(page, 'penny'))?.stackable)
     .toEqual({ with: ['card'] });
 });
+
+test('inspector sections fold away and stay folded from one component to the next', async ({
+  page,
+}) => {
+  await page.goto(`/?project=${PROJECT}&design`);
+  await newComponent(page, 'Pebble', 'Round token');
+  const face = page.getByRole('region', { name: 'Face' });
+  await expect(face.getByLabel('Fill')).toBeVisible();
+  // Folded from the keyboard as well as by a click.
+  await face.locator('summary').first().focus();
+  await page.keyboard.press('Enter');
+  await expect(face.getByLabel('Fill')).toBeHidden();
+
+  await newComponent(page, 'Shell', 'Round token');
+  await expect(face.getByLabel('Fill')).toBeHidden();
+  await face.getByText('Face', { exact: true }).click();
+  await expect(face.getByLabel('Fill')).toBeVisible();
+});

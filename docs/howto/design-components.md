@@ -10,7 +10,7 @@ The components page has three parts:
 
 - **Components** on the left lists every component in the project, grouped by what it is (pieces, zones, dice and counters), with how many of each are in the box.
 - The **preview** in the middle draws the component at its real proportions, front and back, on a 5 mm grid.
-- The **panel** on the right builds the component up step by step, top to bottom: **Basics**, **What it is**, its **Face**, what it does, its **Back** once it has one, and its drop areas.
+- The **panel** on the right builds the component up step by step, top to bottom: **Basics**, **What it is**, its **Face**, what it does, its **Back** once it has one, and its drop areas. Click a section's heading to fold it away when you are done with it; it stays folded as you move between components, until you reload the page.
 
 ## Make a new component
 
@@ -73,7 +73,7 @@ Under **Colours**, give a colour a name with **Add colour**, change one with its
 
 ## Drop areas for boards
 
-Pieces and zones have a **Drop areas** section: where other pieces land when they are dropped on it. **Add** a grid (a field of action spaces, a row of card slots), points (a score track), an area (a supply), a stack (a discard pile), a group (a score track space several markers share), a row (a tableau that lines cards up) or a bag (pieces drawn blind). A component with drop areas is a container, so what lies in them moves with it. Spots are drawn on the face with their numbers, the way setups and agents name them, such as `main-board/fields/3`.
+Pieces and zones have a **Drop areas** section: where other pieces land when they are dropped on it. **+ Add drop area** and pick a grid (a field of action spaces, a row of card slots), points (a score track), an area (a supply), a stack (a discard pile), a group (a score track space several markers share), a row (a tableau that lines cards up) or a bag (pieces drawn blind). A component with drop areas is a container, so what lies in them moves with it. Spots are drawn on the face with their numbers, the way setups and agents name them, such as `main-board/fields/3`.
 
 Select a drop area in the list or by clicking one of its spots, then drag on the board:
 

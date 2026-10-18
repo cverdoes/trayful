@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import type { Piece } from '@trayful/core';
 import {
+  addDropArea,
   agent,
   clickOnFront,
   dragOnFront,
@@ -17,10 +18,7 @@ const PROJECT = 'workshop';
 
 /** Adds a drop area and gives it an id and what it accepts. */
 async function addArea(inspector: Locator, kind: string, id: string, accepts?: string) {
-  await inspector
-    .getByRole('region', { name: 'Drop areas' })
-    .getByRole('button', { name: kind, exact: true })
-    .click();
+  await addDropArea(inspector.page(), kind);
   const editor = inspector.getByLabel('Selected drop area');
   await editor.getByLabel('Id', { exact: true }).fill(id);
   if (accepts) {

@@ -5,9 +5,11 @@ import type { Library } from './api';
 import {
   createType,
   duplicateType,
+  isFolded,
   openType,
   projectChanged,
   saveDraft,
+  setFolded,
   setValue,
   settle,
   useDesign,
@@ -193,5 +195,17 @@ describe('new types', () => {
       definition: { id: 'action-copy', name: 'Action copy', size: [63, 88] },
       file: FILE,
     });
+  });
+});
+
+describe('inspector sections', () => {
+  it('start as they are made, and stay as the person last left them', () => {
+    expect(isFolded(useDesign.getState().folded, 'Face', false)).toBe(false);
+    expect(isFolded(useDesign.getState().folded, 'Data fields', true)).toBe(true);
+    setFolded('Face', true);
+    setFolded('Data fields', false);
+    openType(card);
+    expect(isFolded(useDesign.getState().folded, 'Face', false)).toBe(true);
+    expect(isFolded(useDesign.getState().folded, 'Data fields', true)).toBe(false);
   });
 });

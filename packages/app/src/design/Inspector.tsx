@@ -13,6 +13,7 @@ import { Checkbox, NumberInput, PairInput, Row, SizeInput, TextInput } from './c
 import { FieldsSection } from './FieldsSection';
 import { KIND_TEXT } from './kinds';
 import { renameDraftType } from './projectEdits';
+import { Section } from './Section';
 import { SideSection } from './SideSection';
 import { SnapSection } from './SnapSection';
 import { editDraft, setValue, useDesign } from './store';
@@ -35,10 +36,7 @@ export function Inspector() {
       {isValued(draft) ? <ValueSection type={draft} /> : <BehaviourSection type={draft} />}
       {draft.flippable !== undefined && <SideSection type={draft} side="back" />}
       <SnapSection type={draft} />
-      <details className="design-advanced">
-        <summary>Data fields</summary>
-        <FieldsSection type={draft} />
-      </details>
+      <FieldsSection type={draft} />
       <datalist id="design-fields">
         {Object.keys(draft.fields ?? {}).map((name) => (
           <option key={name} value={`{{${name}}}`} />
@@ -78,8 +76,7 @@ function askRename(id: string) {
 /** Its name and size. */
 function BasicsSection({ type }: Readonly<{ type: ComponentType }>) {
   return (
-    <section aria-label="Basics">
-      <h3>Basics</h3>
+    <Section title="Basics">
       <Row label="Name" path={['name']}>
         {(id) => (
           <TextInput
@@ -108,15 +105,14 @@ function BasicsSection({ type }: Readonly<{ type: ComponentType }>) {
           <TextInput id={id} value={type.description} onChange={setValue(['description'])} />
         )}
       </Row>
-    </section>
+    </Section>
   );
 }
 
 /** What it is: a piece, a zone, a die or a counter. Changing it drops what no longer applies. */
 function KindSection({ type }: Readonly<{ type: ComponentType }>) {
   return (
-    <section aria-label="What it is">
-      <h3>What it is</h3>
+    <Section title="What it is">
       <div className="design-kinds" role="radiogroup" aria-label="What it is">
         {REPRESENTATIONS.map((is) => (
           <button
@@ -133,7 +129,7 @@ function KindSection({ type }: Readonly<{ type: ComponentType }>) {
         ))}
       </div>
       <p className="muted">{KIND_TEXT[type.is].about}</p>
-    </section>
+    </Section>
   );
 }
 
@@ -150,8 +146,7 @@ function BehaviourSection({ type }: Readonly<{ type: ComponentType }>) {
   const partners = typeof type.stackable === 'object' ? type.stackable.with : undefined;
   const types = useStore((s) => s.view?.types ?? NO_TYPES);
   return (
-    <section aria-label="Behaviour">
-      <h3>Behaviour</h3>
+    <Section title="Behaviour">
       <Checkbox
         label="Flippable (has a back)"
         checked={type.flippable !== undefined}
@@ -192,7 +187,7 @@ function BehaviourSection({ type }: Readonly<{ type: ComponentType }>) {
           )}
         </Row>
       )}
-    </section>
+    </Section>
   );
 }
 
@@ -221,8 +216,7 @@ function ValueSection({ type }: Readonly<{ type: ComponentType }>) {
     />
   );
   return (
-    <section aria-label="Values">
-      <h3>Values</h3>
+    <Section title="Values">
       <Row label="Range" path={['values', 'range']}>
         {(id) => (
           <PairInput
@@ -248,6 +242,6 @@ function ValueSection({ type }: Readonly<{ type: ComponentType }>) {
       </Row>
       {control('roll', 'Can be rolled')}
       {control('step', 'Steps up and down')}
-    </section>
+    </Section>
   );
 }

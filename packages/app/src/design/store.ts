@@ -54,6 +54,8 @@ interface DesignStore {
   past: ComponentType[];
   /** Versions undone, newest last, for redo. */
   future: ComponentType[];
+  /** Inspector sections folded (true) or unfolded (false) by hand, by title. */
+  folded: Record<string, boolean>;
 }
 
 export const useDesign = create<DesignStore>(() => ({
@@ -64,7 +66,22 @@ export const useDesign = create<DesignStore>(() => ({
   newTypeOpen: false,
   past: [],
   future: [],
+  folded: {},
 }));
+
+/** Whether an inspector section is folded: as the person left it this page session, else as it starts. */
+export function isFolded(
+  folded: DesignStore['folded'],
+  title: string,
+  startsFolded: boolean,
+): boolean {
+  return folded[title] ?? startsFolded;
+}
+
+/** Folds or unfolds an inspector section, for every component, until the page is left. */
+export function setFolded(title: string, folded: boolean): void {
+  useDesign.setState((s) => ({ folded: { ...s.folded, [title]: folded } }));
+}
 
 /** How long after the last change a valid type is saved. */
 const SAVE_DELAY = 600;
