@@ -98,3 +98,23 @@ test('the hand tray resizes from its top edge and keeps its height', async ({ pa
   await page.reload();
   await expect.poll(async () => (await tray.boundingBox())!.height).toBe(before.height + 100);
 });
+
+test('H shrinks the hand to a bubble that still takes cards', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
+  await page.keyboard.press('h');
+  const bubble = page.getByRole('button', { name: /Open your hand/ });
+  await expect(bubble).toContainText('0');
+
+  const deck = (await table(page)).objects[DECK] as Stack;
+  await dragToHand(page, deck.pos);
+  await expect(bubble).toContainText('1');
+  await expect(page.locator('.hand-card')).toHaveCount(0);
+
+  await page.reload();
+  await expect(bubble).toContainText('1');
+  await bubble.click();
+  await expect(page.locator('.hand-card')).toHaveCount(1);
+  await page.keyboard.press('h');
+  await expect(bubble).toBeVisible();
+});

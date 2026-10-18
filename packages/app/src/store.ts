@@ -11,7 +11,7 @@ import {
 } from '@trayful/core';
 import { create } from 'zustand';
 import type { GroupPick } from './groups';
-import { loadHandHeight } from './handHeight';
+import { loadHandHeight, loadHandMinimized } from './handTray';
 
 /** Screen position of the table origin and pixels per millimetre. */
 export interface Viewport {
@@ -44,6 +44,8 @@ interface TrayfulStore {
   overHand: boolean;
   /** Height of the hand tray in pixels; people can drag its top edge. */
   handHeight: number;
+  /** Whether the hand tray is shrunk to a bubble in the corner; H toggles it. */
+  handMinimized: boolean;
   inviteOpen: boolean;
   revision: number;
   canUndo: boolean;
@@ -83,6 +85,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
   players: [],
   overHand: false,
   handHeight: loadHandHeight(),
+  handMinimized: loadHandMinimized(),
   inviteOpen: false,
   canUndo: false,
   canRedo: false,

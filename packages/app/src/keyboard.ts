@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { selectionActions, type Actions } from './actions';
+import { toggleHandTray } from './hand';
 import { useStore } from './store';
 import { fitWindow, zoomWindow } from './viewport';
 
@@ -16,7 +17,7 @@ type ActionName =
   | 'increment'
   | 'decrement';
 
-export type Shortcut = 'undo' | 'redo' | 'escape' | 'help' | 'fit' | ActionName;
+export type Shortcut = 'undo' | 'redo' | 'escape' | 'help' | 'fit' | 'hand' | ActionName;
 
 /** The parts of a key press that decide what it does. */
 type KeyPress = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey'>;
@@ -34,6 +35,7 @@ const KEYS = new Map<string, Shortcut>([
   ['escape', 'escape'],
   ['?', 'help'],
   ['0', 'fit'],
+  ['h', 'hand'],
   ['f', 'flip'],
   ['q', 'rotateLeft'],
   ['e', 'rotateRight'],
@@ -97,6 +99,9 @@ function perform(shortcut: Shortcut): boolean {
       return true;
     case 'fit':
       fitWindow();
+      return true;
+    case 'hand':
+      toggleHandTray();
       return true;
     default: {
       const action = actionFor(selectionActions(), shortcut);

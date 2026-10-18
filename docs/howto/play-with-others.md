@@ -32,6 +32,7 @@ Trayful prints an invite link such as `https://some-random-words.trycloudflare.c
 - **Your hand** is the strip along the bottom of the screen. Drag a card from the table, or straight off a pile, onto it to take it into your hand. Only you see what is there.
 - Drag a card **out of your hand** onto the table to play it face up, or onto a pile to put it on top. Hold **Alt** while you drop it to play it face down. Double-click a card in your hand to play it into the middle of your view.
 - Drag the **top edge of your hand** to make it taller or shorter; the cards grow with it. This browser remembers the height. Double-click the edge to reset it.
+- Press **H** to shrink your hand to a small bubble in the lower left corner that shows how many cards you hold, and **H** again, or a click on the bubble, to open it. You can still drop cards on the bubble. This browser remembers which you chose.
 - When someone else moves something, a note at the bottom says who did what, without naming hidden cards.
 - **Invite** in the toolbar makes links to any table: pick the table, then copy a link. **New link** replaces that table's link if it got out to the wrong people; guests already at the table stay. Only you, the host, see it, and only you can make, copy or delete tables and print.
 - **Undo** takes back your own last move, not other players' moves.

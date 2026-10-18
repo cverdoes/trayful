@@ -2,8 +2,8 @@ import { handOf, type Piece } from '@trayful/core';
 import { useState, type KeyboardEvent, type PointerEvent, type SubmitEvent } from 'react';
 import { connect, join } from './connection';
 import { Thumbnail } from './render/Thumbnail';
-import { HAND_DRAG } from './hand';
-import { clampHandHeight, HAND_HEIGHT, handCardHeight, saveHandHeight } from './handHeight';
+import { HAND_DRAG, toggleHandTray } from './hand';
+import { clampHandHeight, HAND_HEIGHT, handCardHeight, saveHandHeight } from './handTray';
 import { useStore } from './store';
 import { windowCentre } from './viewport';
 
@@ -103,7 +103,8 @@ export function PlayerList() {
 /**
  * The player's private hand along the bottom of the screen. Drag cards from the
  * table onto it to take them; drag them out onto the table to play them (hold Alt
- * to play face down). No one else sees what is here.
+ * to play face down). No one else sees what is here. H shrinks it to a bubble in
+ * the corner, which still takes cards dropped on it.
  */
 export function HandTray() {
   const table = useStore((s) => s.table);
@@ -111,16 +112,34 @@ export function HandTray() {
   const me = useStore((s) => s.me?.player?.id);
   const over = useStore((s) => s.overHand);
   const height = useStore((s) => s.handHeight);
+  const minimized = useStore((s) => s.handMinimized);
   if (!table || !view || !me) return null;
   const hand = handOf(table, me);
+  const className = `hand-tray${minimized ? ' minimized' : ''}${over ? ' over' : ''}`;
+  if (minimized) {
+    return (
+      <section className={className} aria-label="Your hand" data-count={hand.length}>
+        <HandBubble count={hand.length} />
+      </section>
+    );
+  }
   return (
     <section
-      className={`hand-tray${over ? ' over' : ''}`}
+      className={className}
       aria-label="Your hand"
       data-count={hand.length}
       style={{ height }}
     >
       <ResizeHandle height={height} />
+      <button
+        type="button"
+        className="hand-minimize"
+        title="Shrink your hand to a bubble (H)"
+        aria-label="Shrink your hand"
+        onClick={toggleHandTray}
+      >
+        –
+      </button>
       <div className="hand-cards">
         {hand.length === 0 ? (
           <p className="muted">
@@ -133,6 +152,23 @@ export function HandTray() {
         )}
       </div>
     </section>
+  );
+}
+
+/** The hand shrunk to the lower left corner: how many cards it holds. Click it to open the hand. */
+function HandBubble({ count }: Readonly<{ count: number }>) {
+  const cards = count === 1 ? '1 card' : `${count} cards`;
+  return (
+    <button
+      type="button"
+      className="hand-bubble"
+      title={`Your hand: ${cards}. Click or press H to open it, or drop cards here.`}
+      aria-label={`Open your hand, ${cards}`}
+      onClick={toggleHandTray}
+    >
+      <span aria-hidden="true">✋</span>
+      <span className="count">{count}</span>
+    </button>
   );
 }
 

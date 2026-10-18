@@ -38,6 +38,10 @@ describe('shortcutFor', () => {
     expect([press('+'), press('='), press('-')]).toEqual(['increment', 'increment', 'decrement']);
   });
 
+  it('shrinks or opens the hand with H', () => {
+    expect([press('h'), press('H', { shift: true })]).toEqual(['hand', 'hand']);
+  });
+
   it('fits, opens help and clears with Escape', () => {
     expect([press('0'), press('?', { shift: true }), press('Escape')]).toEqual([
       'fit',
