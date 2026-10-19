@@ -1,5 +1,8 @@
 <h1 align="center">
-  <img src=".github/readme/wordmark.svg" alt="Trayful" width="256" height="80">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/readme/logo-dark.svg">
+    <img src=".github/readme/logo.svg" alt="Trayful: where your games come together" width="480" height="125">
+  </picture>
 </h1>
 
 <p align="center">A boardgame prototyping table for people and AI agents.</p>
