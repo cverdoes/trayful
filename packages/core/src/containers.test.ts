@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { applyCommand, CommandError, type Command } from './commands.js';
 import { describeTable } from './describe.js';
 import { AliasBook, viewFor, withoutOtherHands } from './privacy.js';
+import { snapFor } from './snap.js';
 import {
   bagCounts,
   checkIntegrity,
@@ -136,7 +137,7 @@ describe('rows', () => {
     expect([x(gone, 'card.1'), x(gone, 'card.2')]).toEqual([10, 32]);
   });
 
-  it('overlaps things evenly when they do not fit', () => {
+  it('runs on past its right end when things do not fit, each in full view', () => {
     const cubes = ['red', 'blue', 'green', 'white'].map((c) => `cube.${c}`);
     const full = run(
       table(),
@@ -144,9 +145,45 @@ describe('rows', () => {
       { type: 'move', ids: cubes, to: 'board/tableau' },
       { type: 'move', ids: ['meeple'], to: 'board/tableau' },
     );
-    // 3 cards and 5 small pieces are 110 mm wide, more than the row's 100.
+    // 3 cards and 5 small pieces are 114 mm wide with their gaps, more than the row's 100.
     expect(x(full, 'card.1')).toBe(10);
-    expect(x(full, 'meeple')).toBe(95);
+    expect(x(full, 'cube.white')).toBe(107);
+    // The meeple goes after the cubes that already run past the end.
+    expect(x(full, 'meeple')).toBe(119);
+    expect(piece(full, 'meeple').pos[1]).toBe(75);
+  });
+  it('takes drops anywhere along the part that runs past its end', () => {
+    const cubes = ['red', 'blue', 'green', 'white'].map((c) => `cube.${c}`);
+    const full = run(
+      table(),
+      { type: 'move', ids: ['card.1', 'card.2', 'card.3'], to: 'board/tableau' },
+      { type: 'move', ids: cubes, to: 'board/tableau' },
+    );
+    // The cubes end at x = 112, past the row's end at 100.
+    const meeple = catalog.meeple;
+    const dropAt = (x: number) =>
+      snapFor(full, catalog, { type: meeple, point: [x, 75], radius: 8 })?.ref;
+    expect([dropAt(101), dropAt(120), dropAt(130)]).toEqual([
+      'board/tableau',
+      'board/tableau',
+      undefined,
+    ]);
+    // Dropped between the green and white cubes, past the end, it goes there.
+    const between = run(full, {
+      type: 'move',
+      ids: ['meeple'],
+      by: [101 - 300, 75 - 150],
+      into: 'board/tableau',
+    });
+    expect([x(between, 'meeple'), x(between, 'cube.white')]).toEqual([107, 119]);
+    // Dropped after the last cube, it goes last.
+    const last = run(full, {
+      type: 'move',
+      ids: ['meeple'],
+      by: [118 - 300, 75 - 150],
+      into: 'board/tableau',
+    });
+    expect([x(last, 'cube.white'), x(last, 'meeple')]).toEqual([107, 119]);
   });
 });
 

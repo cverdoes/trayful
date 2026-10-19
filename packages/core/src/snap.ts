@@ -7,6 +7,7 @@ import {
   type DropMode,
   type Vec2,
 } from '@trayful/formats/browser';
+import { objectSize } from './layout.js';
 import {
   onTable,
   sizeOf,
@@ -39,12 +40,37 @@ export interface SnapSpot {
   area?: Vec2;
 }
 
+/** Space between things lying in a row, in millimetres. */
+export const ROW_GAP = 2;
+
 /**
  * Just past the right end of a row, `after` places further: what lands there
  * lines up after everything already in the row once it settles.
  */
 export function rowEnd(row: SnapSpot, after = 0): Vec2 {
   return toTable(row, [0, 0], [row.area![0] / 2 + 1 + after, 0]);
+}
+
+/**
+ * A row has no end: once what lies in it runs past the right end of its area,
+ * the area grows to the right to take it all in, with room for one more of the
+ * last thing, so a drop anywhere along the row (or just after it) joins it.
+ */
+function grownRow(state: TableState, catalog: Catalog, row: SnapSpot): SnapSpot {
+  const [width, height] = row.area!;
+  let reach = width / 2;
+  for (const object of occupants(state, row.ref)) {
+    const [w] = objectSize(state, catalog, object);
+    reach = Math.max(reach, toLocal(row, [0, 0], object.pos)[0] + w / 2 + ROW_GAP + w);
+  }
+  const grow = reach - width / 2;
+  if (grow <= 0) return row;
+  return { ...row, pos: toTable(row, [0, 0], [grow / 2, 0]), area: [width + grow, height] };
+}
+
+/** The spots and areas of one piece as they stand on this table, rows grown to fit. */
+function placedSpotsOf(state: TableState, catalog: Catalog, piece: Piece, type: ComponentType) {
+  return spotsOf(piece, type).map((s) => (s.mode === 'row' ? grownRow(state, catalog, s) : s));
 }
 
 export class SnapError extends Error {}
@@ -123,7 +149,7 @@ export function allSpots(state: TableState, catalog: Catalog): SnapSpot[] {
   for (const object of Object.values(state.objects)) {
     if (object.kind !== 'piece' || !onTable(object)) continue;
     const type = catalog[object.type];
-    if (type?.container) spots.push(...spotsOf(object, type));
+    if (type?.container) spots.push(...placedSpotsOf(state, catalog, object, type));
   }
   return spots;
 }
@@ -139,7 +165,9 @@ export function resolveSpots(state: TableState, catalog: Catalog, ref: string): 
   }
   const owner = findOwner(state, ownerRef);
   const type = catalog[owner.type];
-  const spots = type ? spotsOf(owner, type).filter((s) => s.target === targetId) : [];
+  const spots = type
+    ? placedSpotsOf(state, catalog, owner, type).filter((s) => s.target === targetId)
+    : [];
   if (spots.length === 0) throw new SnapError(`"${ownerRef}" has no drop area "${targetId}".`);
   if (index === undefined) return spots;
   const spot = spots.find((s) => s.index === Number(index));
