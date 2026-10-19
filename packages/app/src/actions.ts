@@ -34,13 +34,29 @@ const LAYOUT_LABEL = { pile: 'Pile', fan: 'Fan', spread: 'Spread' } as const;
 
 /** Works out which actions apply to the selected objects. */
 export function selectionActions(): Actions {
-  const { table, view, selection, command, me } = useStore.getState();
+  return actionsOn(useStore.getState().selection);
+}
+
+/**
+ * Works out which actions a key press applies to: the object under the pointer,
+ * or the selection when nothing is hovered or the hovered object is selected.
+ */
+export function keyActions(): Actions {
+  const { selection, hovered } = useStore.getState();
+  return actionsOn(keyTargets(selection, hovered));
+}
+
+/** What a key acts on, so a card can be flipped by pointing at it without selecting it first. */
+export function keyTargets(selection: string[], hovered: string | undefined): string[] {
+  return hovered && !selection.includes(hovered) ? [hovered] : selection;
+}
+
+function actionsOn(ids: string[]): Actions {
+  const { table, view, command, me } = useStore.getState();
   if (!table || !view) return NO_ACTIONS;
-  const actions = actionsFor(table, view.types, selection, command);
-  // A bag on the selected piece draws when nothing else would.
-  const bag = actions.draw
-    ? undefined
-    : selectedBagDraw(table, view.types, selection, me?.player?.id);
+  const actions = actionsFor(table, view.types, ids, command);
+  // A bag on the piece draws when nothing else would.
+  const bag = actions.draw ? undefined : selectedBagDraw(table, view.types, ids, me?.player?.id);
   return bag ? { ...actions, draw: () => command(bag) } : actions;
 }
 

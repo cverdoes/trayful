@@ -4,14 +4,14 @@ import type Konva from 'konva';
 import { Circle, Group, Rect, Text } from 'react-konva';
 import { bagsOn, drawFromBag } from './bags';
 import type { Vec } from './drops';
-import { Component } from './render/Component';
+import { Component, type Highlight } from './render/Component';
 import { facePiece, sizeOf, type Types } from './render/geometry';
 import { useStore } from './store';
 
 interface ObjectViewProps {
   types: Types;
   assets: Assets;
-  selected: boolean;
+  highlight?: Highlight;
   register: (node: Konva.Group | null) => void;
   onClick: (evt: MouseEvent) => void;
   onDoubleClick: () => void;
@@ -24,7 +24,7 @@ export function PieceView({
   piece,
   types,
   assets,
-  selected,
+  highlight,
   register,
   ...events
 }: ObjectViewProps & { piece: Piece }) {
@@ -61,7 +61,7 @@ export function PieceView({
       onMouseEnter={(e) => setCursor(e, piece.locked ? 'default' : 'grab')}
       onMouseLeave={(e) => setCursor(e, 'default')}
     >
-      <Component piece={piece} type={type} assets={assets} selected={selected} />
+      <Component piece={piece} type={type} assets={assets} highlight={highlight} />
     </Group>
   );
 }
@@ -78,7 +78,7 @@ export function StackView({
   table,
   types,
   assets,
-  selected,
+  highlight,
   wholeStack,
   register,
   onDrawStart,
@@ -98,7 +98,7 @@ export function StackView({
   const cards = {
     types,
     assets,
-    selected,
+    highlight,
     drawable: !wholeStack && !stack.locked,
     events: { onDrawStart, onDrawMove, onDrawEnd },
   };
@@ -143,7 +143,7 @@ export function StackView({
 type CardOptions = Readonly<{
   types: Types;
   assets: Assets;
-  selected: boolean;
+  highlight?: Highlight;
   drawable: boolean;
   events: DrawEvents;
 }>;
@@ -194,7 +194,7 @@ function StackCard({
   home,
   types,
   assets,
-  selected,
+  highlight,
   drawable,
   events,
 }: Readonly<{ piece: Piece; home: Vec }> & CardOptions) {
@@ -219,7 +219,7 @@ function StackCard({
         events.onDrawEnd(piece.id, e.currentTarget as Konva.Group, home);
       }}
     >
-      <Component piece={piece} type={type} assets={assets} selected={selected} />
+      <Component piece={piece} type={type} assets={assets} highlight={highlight} />
     </Group>
   );
 }

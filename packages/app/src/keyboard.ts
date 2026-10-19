@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { selectionActions, type Actions } from './actions';
+import { keyActions, type Actions } from './actions';
 import { toggleHandTray } from './hand';
 import { useStore } from './store';
 import { fitWindow, zoomWindow } from './viewport';
@@ -81,7 +81,7 @@ export function useKeyboard(): void {
   }, []);
 }
 
-/** Does what a shortcut says. Returns false when it does not apply to the selection. */
+/** Does what a shortcut says. Returns false when it does not apply to what it would act on. */
 function perform(shortcut: Shortcut): boolean {
   const state = useStore.getState();
   switch (shortcut) {
@@ -104,7 +104,7 @@ function perform(shortcut: Shortcut): boolean {
       toggleHandTray();
       return true;
     default: {
-      const action = actionFor(selectionActions(), shortcut);
+      const action = actionFor(keyActions(), shortcut);
       action?.();
       return action !== undefined;
     }
