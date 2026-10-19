@@ -152,6 +152,18 @@ describe('rows', () => {
     expect(x(full, 'meeple')).toBe(119);
     expect(piece(full, 'meeple').pos[1]).toBe(75);
   });
+  it('takes a piece dropped half over it, as rows are often narrower than what lies in them', () => {
+    // The row runs from y = 60 to 90; a free area takes only what lands inside it.
+    const dropAt = (point: [number, number]) =>
+      snapFor(table(), catalog, { type: catalog.card, point, radius: 10 })?.ref;
+    expect([dropAt([50, 55]), dropAt([50, 98]), dropAt([50, 101])]).toEqual([
+      'board/tableau',
+      'board/tableau',
+      undefined,
+    ]);
+    expect(dropAt([175, 55])).toBeUndefined();
+  });
+
   it('takes drops anywhere along the part that runs past its end', () => {
     const cubes = ['red', 'blue', 'green', 'white'].map((c) => `cube.${c}`);
     const full = run(
@@ -163,7 +175,7 @@ describe('rows', () => {
     const meeple = catalog.meeple;
     const dropAt = (x: number) =>
       snapFor(full, catalog, { type: meeple, point: [x, 75], radius: 8 })?.ref;
-    expect([dropAt(101), dropAt(120), dropAt(130)]).toEqual([
+    expect([dropAt(101), dropAt(120), dropAt(135)]).toEqual([
       'board/tableau',
       'board/tableau',
       undefined,

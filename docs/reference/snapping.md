@@ -53,7 +53,7 @@ A spot is named `owner/area/index` and a whole drop area `owner/area`. `owner` i
 
 While a piece is dragged, the spots that accept it light up. On drop:
 
-1. If the drop point is inside an accepting area, the piece goes into that area: it stays where it was dropped, takes its place in a row, or goes into a bag.
+1. If the drop point is inside an accepting area, the piece goes into that area: it stays where it was dropped, takes its place in a row, or goes into a bag. A row also takes a piece dropped up to half the piece's smaller side (at least 8 mm) outside it, since rows are often narrower than the cards in them.
 2. Otherwise it snaps to the nearest accepting spot within reach: half the piece's smaller side, and at least 8 mm. Free spots win over taken ones within reach, and a pile or group spot is never taken.
 3. Otherwise it stays on the table where it was dropped.
 
