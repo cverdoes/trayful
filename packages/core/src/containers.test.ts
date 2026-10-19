@@ -136,7 +136,7 @@ describe('rows', () => {
     expect([x(gone, 'card.1'), x(gone, 'card.2')]).toEqual([10, 32]);
   });
 
-  it('overlaps things evenly when they do not fit', () => {
+  it('runs on past its right end when things do not fit, each in full view', () => {
     const cubes = ['red', 'blue', 'green', 'white'].map((c) => `cube.${c}`);
     const full = run(
       table(),
@@ -144,9 +144,12 @@ describe('rows', () => {
       { type: 'move', ids: cubes, to: 'board/tableau' },
       { type: 'move', ids: ['meeple'], to: 'board/tableau' },
     );
-    // 3 cards and 5 small pieces are 110 mm wide, more than the row's 100.
+    // 3 cards and 5 small pieces are 114 mm wide with their gaps, more than the row's 100.
     expect(x(full, 'card.1')).toBe(10);
-    expect(x(full, 'meeple')).toBe(95);
+    expect(x(full, 'cube.white')).toBe(107);
+    // The meeple goes after the cubes that already run past the end.
+    expect(x(full, 'meeple')).toBe(119);
+    expect(piece(full, 'meeple').pos[1]).toBe(75);
   });
 });
 

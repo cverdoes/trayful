@@ -75,8 +75,9 @@ function spread(tx: Transaction, spot: SnapSpot): void {
 
 /**
  * Lines up what lies in a row from its left end, in the order it lies from left
- * to right, each turned like the row. When it all does not fit, the things
- * overlap evenly so the last still ends at the right end.
+ * to right, each turned like the row and centred across it, a small gap apart.
+ * A row has no end: when it all does not fit, it runs on past the right end, so
+ * everything in it stays in full view.
  */
 function lineUp(tx: Transaction, row: SnapSpot): void {
   const state = tx.current();
@@ -85,19 +86,12 @@ function lineUp(tx: Transaction, row: SnapSpot): void {
     .sort((a, b) => local(a.pos) - local(b.pos) || a.z - b.z)
     .map((object) => ({ object, width: objectSize(state, tx.catalog, object)[0] }));
   if (items.length === 0) return;
-  const [rowWidth] = row.area!;
-  const total = items.reduce((sum, i) => sum + i.width, 0) + ROW_GAP * (items.length - 1);
-  // The space between neighbours; negative when they have to overlap.
-  const squeeze =
-    total > rowWidth && items.length > 1
-      ? (rowWidth - total) / (items.length - 1) + ROW_GAP
-      : ROW_GAP;
-  let left = -rowWidth / 2;
+  let left = -row.area![0] / 2;
   for (const { object, width } of items) {
     const pos = roundPos(toTable(row, [0, 0], [left + width / 2, 0]));
     if (pos[0] !== object.pos[0] || pos[1] !== object.pos[1] || object.rot !== row.rot)
       tx.shift(object, pos, row.rot);
-    left += width + squeeze;
+    left += width + ROW_GAP;
   }
 }
 

@@ -301,7 +301,7 @@ export class Transaction {
 
   /** Where pieces land in a spot: after the end of a row, in free room in an area, or on the spot. */
   private landing(spot: SnapSpot, pieces: Piece[]): Vec2 {
-    if (spot.mode === 'row') return rowEnd(spot);
+    if (spot.mode === 'row') return rowEnd(this.current(), spot);
     if (spot.mode !== 'free') return spot.pos;
     const sizes = pieces.map((p) => sizeOf(this.typeOf(p)));
     const size: Vec2 = [Math.max(...sizes.map((s) => s[0])), Math.max(...sizes.map((s) => s[1]))];

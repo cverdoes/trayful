@@ -22,7 +22,7 @@ All positions are in the container's own coordinates: millimetres from its top-l
 | `pile`   | spots | A stack on each spot: whatever lands there is stacked onto what is already there, so only stackable components that may share a stack can go. Only the top is in reach. |
 | `group`  | spots | A group on each spot: everything stays a separate piece, spread a little around the spot, like score markers sharing a space. Any one can be picked up. |
 | `free`   | areas | Things stay where they are dropped.                                                                                                            |
-| `row`    | areas | A row from the left end, 2 mm apart, each turned like the area. Dropping between two things puts it there; the rest close up when one leaves. Things overlap evenly when the row is full. |
+| `row`    | areas | A row from the left end, 2 mm apart, centred across the area and each turned like it. Dropping between two things puts it there; the rest close up when one leaves. A row has no end: when it is full, things carry on past its right end, so each stays in full view. |
 | `bag`    | areas | A bag. What goes in is out of sight for everyone, agents too, and stacks come apart. Only the number of pieces inside is shown. Draw takes pieces out at random. |
 
 A pile spot's stack follows the [stacking rules](library.md#componenttype): a piece that is not `stackable`, or not listed in `stackable.with` when it differs from what is already there, is refused.

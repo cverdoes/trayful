@@ -40,11 +40,14 @@ export interface SnapSpot {
 }
 
 /**
- * Just past the right end of a row, `after` places further: what lands there
- * lines up after everything already in the row once it settles.
+ * Just past the right end of a row, or past the last thing in it when the row
+ * runs on beyond its end, `after` places further: what lands there lines up
+ * after everything already in the row once it settles.
  */
-export function rowEnd(row: SnapSpot, after = 0): Vec2 {
-  return toTable(row, [0, 0], [row.area![0] / 2 + 1 + after, 0]);
+export function rowEnd(state: TableState, row: SnapSpot, after = 0): Vec2 {
+  const ends = occupants(state, row.ref).map((o) => toLocal(row, [0, 0], o.pos)[0]);
+  const end = Math.max(row.area![0] / 2, ...ends);
+  return toTable(row, [0, 0], [end + 1 + after, 0]);
 }
 
 export class SnapError extends Error {}
