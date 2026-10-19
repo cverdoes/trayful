@@ -115,7 +115,10 @@ export function drawCommands(
   if (target) return { commands: [take(point), { type: 'stack', ids: [piece], onto: target.id }] };
   const ignore = new Set([stack.id]);
   const spot = snapAt(table, types, { object: stack, point, ignore, group: false });
-  return { commands: [take(spot && !spot.area ? spot.ref : point)], select: piece };
+  return {
+    commands: [take(spot && !spot.area ? spot.ref : point), ...intoArea(piece, spot)],
+    select: piece,
+  };
 }
 
 /**
@@ -135,7 +138,18 @@ export function handDropCommands(
   const spot = snapAt(table, types, { object: piece, point, ignore: new Set([id]), group: false });
   const to = spot && !spot.area ? spot.ref : ([round(point[0]), round(point[1])] as Vec);
   const play: Command = { type: 'move', ids: [id], to, ...(faceDown ? { face: 'down' } : {}) };
-  return target ? [play, { type: 'stack', ids: [id], onto: target.id }] : [play];
+  return target
+    ? [play, { type: 'stack', ids: [id], onto: target.id }]
+    : [play, ...intoArea(id, spot)];
+}
+
+/**
+ * A piece put down at a point inside an area (drawn from a stack or played from
+ * a hand) is then recorded in it where it lies, so a row lines it up and a bag
+ * takes it in straight away.
+ */
+function intoArea(id: string, spot: SnapSpot | undefined): Command[] {
+  return spot?.area ? [{ type: 'move', ids: [id], by: [0, 0], into: spot.ref }] : [];
 }
 
 /** Double-click rolls a die that can be rolled, and flips anything flippable. */

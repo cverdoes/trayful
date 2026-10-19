@@ -94,6 +94,14 @@ describe('drawCommands', () => {
     ]);
   });
 
+  it('records the area a drawn card lands in, so the area settles it straight away', () => {
+    // The supply area is centred on [210, 50].
+    expect(draw(top(), [-140, 180]).commands).toEqual([
+      { type: 'draw', from: 'deck:actions', to: [210, 50] },
+      { type: 'move', ids: [top()], by: [0, 0], into: 'main-board/supply' },
+    ]);
+  });
+
   it('takes any card out of a fanned pile', () => {
     const fanned = after(project, table, { type: 'layout', id: 'deck:actions', layout: 'fan' });
     const first = deck().items[0]!;
@@ -121,6 +129,13 @@ describe('handDropCommands', () => {
     ]);
     expect(play([10, 300], true)).toEqual([
       { type: 'move', ids: ['action-card.raid.1'], to: [10, 300], face: 'down' },
+    ]);
+  });
+
+  it('records the area a card is played into', () => {
+    expect(play([210, 50])).toEqual([
+      { type: 'move', ids: ['action-card.raid.1'], to: [210, 50] },
+      { type: 'move', ids: ['action-card.raid.1'], by: [0, 0], into: 'main-board/supply' },
     ]);
   });
 

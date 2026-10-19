@@ -1,4 +1,5 @@
 import {
+  allSpots,
   objectSize as coreObjectSize,
   onTable,
   type Piece,
@@ -68,9 +69,16 @@ export function dropTarget(
   const first = table.objects[dragged[0]!];
   const type = first && typeOf(table, types, first);
   if (!type || !isStackable(type)) return undefined;
+  // Things in a row lie side by side: a drop on one takes its place in the row instead.
+  const rows = new Set(
+    allSpots(table, types)
+      .filter((s) => s.mode === 'row')
+      .map((s) => s.ref),
+  );
   const candidates = topLevel(table).filter((o) => {
     const other = typeOf(table, types, o);
-    return !dragged.includes(o.id) && !o.locked && other !== undefined && stacksWith(type, other);
+    if (dragged.includes(o.id) || o.locked || (o.snap && rows.has(o.snap))) return false;
+    return other !== undefined && stacksWith(type, other);
   });
   for (const o of candidates.toReversed()) {
     const b = bounds(table, types, o);
