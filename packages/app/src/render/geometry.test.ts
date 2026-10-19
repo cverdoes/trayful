@@ -1,4 +1,4 @@
-import type { TableState } from '@trayful/core';
+import { applyCommand, type TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
 import type { ComponentType } from '@trayful/formats/browser';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -51,6 +51,26 @@ describe('dropTarget', () => {
     expect(target('score-marker.red', DECK, marker)).toBe('deck:actions');
     const card = changed('action-card', { stackable: { with: ['score-marker'] } });
     expect(target('action-card.raid.1', MARKERS, card)).toMatch(/^score-marker\./);
+  });
+
+  it('does not stack onto a card lying in a row, which takes the drop in its place instead', () => {
+    const container = project.types['main-board']!.container!.map((area) =>
+      area.id === 'supply' ? { ...area, mode: 'row' as const } : area,
+    );
+    const rowed = changed('main-board', { container });
+    // The raid card lies at [-215, -130]; the supply area is centred on [210, 50].
+    const inSupply = (types: Types) =>
+      applyCommand(
+        table,
+        { type: 'move', ids: ['action-card.raid.1'], by: [425, 180], into: 'main-board/supply' },
+        types,
+      );
+    const free = inSupply(project.types);
+    const raid = free.objects['action-card.raid.1']!.pos;
+    expect(target('action-card.harvest.1', raid, project.types, free)).toBe('action-card.raid.1');
+    const row = inSupply(rowed);
+    const lined = row.objects['action-card.raid.1']!.pos;
+    expect(target('action-card.harvest.1', lined, rowed, row)).toBeUndefined();
   });
 
   it('needs both components stackable, even when one names the other', () => {
