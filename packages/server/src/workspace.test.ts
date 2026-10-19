@@ -127,6 +127,19 @@ describe('Workspace', () => {
     expect((session.engine.state.objects['deck:cards'] as Stack).items).toHaveLength(before);
   });
 
+  it('brings a saved table in line with files changed while it was closed', async () => {
+    const ws = await open({ project: 'starter-game' });
+    const before = (ws.active.engine.state.objects['deck:cards'] as Stack).items.length;
+    const root = path.dirname(ws.entry().dir);
+    await ws.close();
+    const csv = path.join(root, 'starter-game', 'data', 'cards.csv');
+    await writeFile(csv, (await readFile(csv, 'utf8')) + 'Extra,One more card,4,1\n');
+
+    workspace = await Workspace.open(root, { project: 'starter-game', watch: false });
+    const deck = workspace.active.engine.state.objects['deck:cards'] as Stack;
+    expect(deck.items).toHaveLength(before + 1);
+  });
+
   it('keeps the last good project when files break, and reports the problems', async () => {
     const ws = await open({ project: 'starter-game' });
     const messages: ServerMessage[] = [];

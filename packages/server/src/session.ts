@@ -117,7 +117,7 @@ export class TableSession {
     return TableSession.create(project, tableName, options);
   }
 
-  /** Opens (or creates) a table of a loaded project. */
+  /** Opens (or creates) a table of a loaded project, brought in line with its files. */
   static async create(
     project: ResolvedProject,
     tableName = 'table-1',
@@ -127,7 +127,8 @@ export class TableSession {
     const file = tableFile(project, tableName);
     let state: TableState;
     try {
-      state = fromTableFile(JSON.parse(await readFile(file, 'utf8')));
+      // The project files may have changed while the table was closed.
+      state = syncTable(fromTableFile(JSON.parse(await readFile(file, 'utf8'))), project);
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
         throw new ProjectLoadError(
