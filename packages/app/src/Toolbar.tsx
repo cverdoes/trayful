@@ -1,4 +1,5 @@
 import { selectionActions } from './actions';
+import { Mark } from './Mark';
 import { PlayerList } from './Players';
 import { MoreMenu } from './MoreMenu';
 import { useStore } from './store';
@@ -19,6 +20,7 @@ export function Toolbar() {
   return (
     <header className="toolbar table-toolbar">
       <div className="title">
+        <Mark size={30} />
         <strong>{name ?? 'Trayful'}</strong>
         <TableMenu />
         <span

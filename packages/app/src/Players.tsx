@@ -1,6 +1,7 @@
 import { handOf, type Piece } from '@trayful/core';
 import { useState, type KeyboardEvent, type PointerEvent, type SubmitEvent } from 'react';
 import { connect, join } from './connection';
+import { Mark } from './Mark';
 import { Thumbnail } from './render/Thumbnail';
 import { HAND_DRAG, toggleHandTray } from './hand';
 import { clampHandHeight, HAND_HEIGHT, handCardHeight, saveHandHeight } from './handTray';
@@ -29,6 +30,7 @@ export function JoinScreen() {
   return (
     <div className="overlay">
       <form className="help join" onSubmit={(e) => void submit(e)}>
+        <Mark size={96} />
         <h2>Join the table</h2>
         <p>Pick a name the other players will see. Cards in your hand stay hidden from them.</p>
         <input
@@ -66,6 +68,7 @@ export function ClosedScreen() {
   return (
     <div className="loading">
       <div className="help">
+        <Mark size={96} />
         <h2>This table is private</h2>
         <p>Ask the host for an invite link, and open it in this browser to join.</p>
       </div>

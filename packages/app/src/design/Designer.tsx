@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { go, route, showDesignPage, showTypeInAddress, type DesignPage } from '../route';
 import { useStore } from '../store';
 import { migrateProject } from './api';
+import { Mark } from '../Mark';
 import { AssetsPage } from './AssetsPage';
 import { DesignCanvas } from './DesignCanvas';
 import { Inspector } from './Inspector';
@@ -57,6 +58,7 @@ export function Designer() {
     <div className={`designer ${page}`}>
       <header className="toolbar">
         <div className="title">
+          <Mark size={30} />
           <strong>{view.name}</strong>
         </div>
         <nav className="design-tabs" aria-label="Modes">

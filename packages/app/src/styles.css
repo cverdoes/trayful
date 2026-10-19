@@ -55,6 +55,16 @@ body,
   white-space: nowrap;
 }
 
+.toolbar .title .mark {
+  flex: none;
+  align-self: center;
+}
+
+.help .mark {
+  display: block;
+  margin-bottom: 8px;
+}
+
 .toolbar .group {
   display: flex;
   gap: 4px;
