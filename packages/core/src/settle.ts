@@ -5,11 +5,8 @@ import type { Vec2 } from '@trayful/formats/browser';
 import { objectSize } from './layout.js';
 import { stack } from './pile-commands.js';
 import { roundPos } from './room.js';
-import { allSpots, occupants, toLocal, toTable, type SnapSpot } from './snap.js';
+import { allSpots, occupants, ROW_GAP, toLocal, toTable, type SnapSpot } from './snap.js';
 import type { Transaction } from './transaction.js';
-
-/** Space between things lying in a row, in millimetres. */
-const ROW_GAP = 2;
 
 /**
  * Settles the piles, rows and bags a command put things into or took things out
@@ -76,8 +73,8 @@ function spread(tx: Transaction, spot: SnapSpot): void {
 /**
  * Lines up what lies in a row from its left end, in the order it lies from left
  * to right, each turned like the row and centred across it, a small gap apart.
- * A row has no end: when it all does not fit, it runs on past the right end, so
- * everything in it stays in full view.
+ * A row has no end: when it all does not fit, it runs on past the right end of
+ * its area (which grows to match), so everything in it stays in full view.
  */
 function lineUp(tx: Transaction, row: SnapSpot): void {
   const state = tx.current();

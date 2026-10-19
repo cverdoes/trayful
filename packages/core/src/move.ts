@@ -87,7 +87,7 @@ function moveToTarget(tx: Transaction, group: Group, to: string): void {
   const first = spots[0]!;
   if (first.mode === 'row') {
     group.objects.forEach((object, i) =>
-      tx.relocate(object, rowEnd(tx.current(), first, i), first.rot, first.ref),
+      tx.relocate(object, rowEnd(first, i), first.rot, first.ref),
     );
     return;
   }
