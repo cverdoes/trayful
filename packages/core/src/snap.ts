@@ -210,11 +210,12 @@ export function occupants(state: TableState, ref: string): TableObject[] {
   return Object.values(state.objects).filter((o) => o.snap === ref && onTable(o));
 }
 
-/** Whether a table point lies inside an area. */
-export function insideArea(spot: SnapSpot, point: Vec2): boolean {
+/** Whether a table point lies inside an area, or within `margin` of its edges. */
+export function insideArea(spot: SnapSpot, point: Vec2, margin = 0): boolean {
   if (!spot.area) return false;
-  const local = toLocal(spot, spot.area, point);
-  return local[0] >= 0 && local[1] >= 0 && local[0] <= spot.area[0] && local[1] <= spot.area[1];
+  const [w, h] = spot.area;
+  const [x, y] = toLocal(spot, spot.area, point);
+  return x >= -margin && y >= -margin && x <= w + margin && y <= h + margin;
 }
 
 /** A piece being dropped on the table, for finding the spot it snaps to. */
@@ -222,7 +223,7 @@ export interface Drop {
   /** The dropped piece's type; spots that do not accept it are skipped. */
   type: ComponentType | undefined;
   point: Vec2;
-  /** How far from `point` a spot may be, in millimetres. */
+  /** How far from `point` a spot (or the edge of a row) may be, in millimetres. */
   radius: number;
   /** Objects being moved, which neither offer spots nor take them up. */
   ignore?: ReadonlySet<string>;
@@ -243,7 +244,7 @@ export function snapFor(
   let best: { spot: SnapSpot; score: number } | undefined;
   for (const spot of candidates) {
     if (spot.area) {
-      if (insideArea(spot, point) && !best) best = { spot, score: Infinity };
+      if (catches(spot, point, radius) && !best) best = { spot, score: Infinity };
       continue;
     }
     const d = Math.hypot(spot.pos[0] - point[0], spot.pos[1] - point[1]);
@@ -255,6 +256,14 @@ export function snapFor(
     if (!best || score < best.score) best = { spot, score };
   }
   return best?.spot;
+}
+
+/**
+ * Whether an area takes a drop at `point`. A row is often narrower than what
+ * lies in it, so it also takes a piece dropped half over it.
+ */
+function catches(area: SnapSpot, point: Vec2, radius: number): boolean {
+  return insideArea(area, point, area.mode === 'row' ? radius : 0);
 }
 
 /** The piece id a `snap` reference belongs to. */
