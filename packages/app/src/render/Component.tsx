@@ -9,6 +9,7 @@ import {
   type DrawText,
 } from '@trayful/formats/browser';
 import type Konva from 'konva';
+import { createContext, useContext } from 'react';
 import { Circle, Ellipse, Group, Image, Path, Rect, RegularPolygon, Text } from 'react-konva';
 import { fontStyle, imageBox, layerSize, textBox, tileRect } from './face';
 import { sizeOf } from './geometry';
@@ -42,6 +43,18 @@ const HIGHLIGHT = {
   hovered: { stroke: '#7fb2fa', strokeWidth: 0.9 },
 } as const;
 
+/** How soft a piece's shadow is, in millimetres. */
+const SHADOW_BLUR = 2;
+/** The softest a shadow gets on screen, in pixels, however far the view is zoomed in. */
+const MAX_SHADOW_BLUR_PX = 4;
+
+/**
+ * Screen pixels per millimetre where the components are drawn, when it changes with
+ * zooming. A shadow's blur grows with the zoom, and a wide blur on every piece made
+ * each redraw many times slower, so it stops growing at `MAX_SHADOW_BLUR_PX`.
+ */
+export const DrawScale = createContext<number | undefined>(undefined);
+
 /**
  * Draws one component centred on (0, 0), in millimetres. The caller positions
  * and rotates it. How it looks is worked out by `drawingOf`; this only paints it.
@@ -53,6 +66,7 @@ export function Component({ piece, type, assets, highlight }: Readonly<Props>) {
     { face: piece.face, data: piece.data, value: piece.value },
     assets,
   );
+  const scale = useContext(DrawScale);
   const { outline, corner } = drawing;
   // Zones and locked pieces lie flat on the table, so they cast no shadow.
   const flat = drawing.dashed || piece.locked === true;
@@ -64,8 +78,11 @@ export function Component({ piece, type, assets, highlight }: Readonly<Props>) {
     dash: drawing.dashed ? [3, 2] : undefined,
     shadowColor: 'black',
     shadowOpacity: flat ? 0 : 0.25,
-    shadowBlur: 2,
+    shadowBlur: scale ? Math.min(SHADOW_BLUR, MAX_SHADOW_BLUR_PX / scale) : SHADOW_BLUR,
     shadowOffset: { x: 0.4, y: 0.6 },
+    // Only the fill casts the shadow. With the outline casting one too, Konva draws
+    // every piece into a window-sized buffer first, which costs more the more is shown.
+    shadowForStrokeEnabled: false,
   };
 
   return (
