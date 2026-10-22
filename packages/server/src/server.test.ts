@@ -122,9 +122,22 @@ describe('server', () => {
     const [ma, mb] = await Promise.all([a.next(), b.next()]);
     expect(ma).toEqual(mb);
     expect(ma).toMatchObject({ type: 'state', revision: 1, canUndo: true, canRedo: false });
+    expect(ma).toMatchObject({ activity: { motion: { kind: 'shuffle', ids: [DECK] } } });
 
     a.send({ type: 'undo' });
     expect(await b.next()).toMatchObject({ revision: 2, canUndo: false, canRedo: true });
+    a.socket.close();
+    b.socket.close();
+  });
+
+  it('has every client show a rolled die tumble', async () => {
+    const a = await connect();
+    const b = await connect();
+    await Promise.all([a.next(), b.next()]);
+    a.send({ type: 'command', command: { type: 'roll', id: 'd6.1' } });
+    for (const message of await Promise.all([a.next(), b.next()])) {
+      expect(message).toMatchObject({ activity: { motion: { kind: 'roll', ids: ['d6.1'] } } });
+    }
     a.socket.close();
     b.socket.close();
   });

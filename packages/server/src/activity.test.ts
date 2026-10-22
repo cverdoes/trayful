@@ -1,6 +1,6 @@
-import type { Command } from '@trayful/core';
+import type { Activity, Command, TableView } from '@trayful/core';
 import { describe, expect, it } from 'vitest';
-import { activityText } from './activity.js';
+import { activityFor, activityText, motionOf } from './activity.js';
 
 describe('activityText', () => {
   it('says what a command did without naming any piece', () => {
@@ -34,5 +34,34 @@ describe('activityText', () => {
     expect(activityText({ type: 'take', id: 'a', to: 'hand:bo' })).toBe(
       'took a piece from a pile into a hand',
     );
+  });
+});
+
+describe('motionOf', () => {
+  it('has tables show the dice that were rolled tumble and the piles shuffled riffle', () => {
+    expect(
+      motionOf([
+        { type: 'roll', id: 'd6.1' },
+        { type: 'flip', ids: ['a'] },
+        { type: 'roll', id: 'd6.2' },
+      ]),
+    ).toEqual({ kind: 'roll', ids: ['d6.1', 'd6.2'] });
+    expect(motionOf([{ type: 'shuffle', id: 'deck' }])).toEqual({ kind: 'shuffle', ids: ['deck'] });
+    expect(motionOf([{ type: 'flip', ids: ['a'] }])).toBeUndefined();
+  });
+});
+
+describe('activityFor', () => {
+  const view = { objects: { 'd6.1': {} } } as unknown as TableView;
+
+  it('shows each viewer only the rolls of pieces they can see', () => {
+    const rolled = {
+      by: 'person',
+      text: 'rolled',
+      motion: { kind: 'roll', ids: ['d6.1', 'd6.2'] },
+    };
+    expect(activityFor(rolled as Activity, view).motion).toEqual({ kind: 'roll', ids: ['d6.1'] });
+    const hidden = { ...rolled, motion: { kind: 'roll', ids: ['d6.2'] } } as Activity;
+    expect(activityFor(hidden, view)).toEqual({ by: 'person', text: 'rolled' });
   });
 });

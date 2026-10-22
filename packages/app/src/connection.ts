@@ -1,4 +1,5 @@
 import type { ProjectView, ServerMessage } from '@trayful/core';
+import { settleIn } from './motions';
 import { forgetJoin, route, tableQuery } from './route';
 import { snapshotTable } from './snapshot';
 import { dropWhileOffline, useStore, type Me } from './store';
@@ -54,6 +55,14 @@ async function loadView(): Promise<void> {
   useStore.setState({ view: (await response.json()) as ProjectView });
 }
 
+function sendSnapshot(socket: WebSocket, id: string): void {
+  try {
+    socket.send(JSON.stringify({ type: 'snapshot', id, png: snapshotTable() }));
+  } catch (err) {
+    socket.send(JSON.stringify({ type: 'snapshot', id, error: (err as Error).message }));
+  }
+}
+
 function open(previousAttempts: number): void {
   let attempt = previousAttempts;
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -72,14 +81,10 @@ function open(previousAttempts: number): void {
   socket.addEventListener('message', (event) => {
     const message = JSON.parse(String(event.data)) as ServerMessage;
     if (message.type === 'snapshot-request') {
-      // An agent asked to see the table.
-      try {
-        socket.send(JSON.stringify({ type: 'snapshot', id: message.id, png: snapshotTable() }));
-      } catch (err) {
-        socket.send(
-          JSON.stringify({ type: 'snapshot', id: message.id, error: (err as Error).message }),
-        );
-      }
+      // An agent asked to see the table. Dice still tumbling would show it a face they
+      // did not land on, so it waits for everything to come to rest.
+      const wait = settleIn(useStore.getState().moving, performance.now());
+      setTimeout(() => sendSnapshot(socket, message.id), wait);
       return;
     }
     if (message.type === 'render-request') {

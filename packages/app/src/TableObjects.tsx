@@ -1,10 +1,13 @@
 import { stackOffsets, type Piece, type Stack, type TableState } from '@trayful/core';
-import type { Assets } from '@trayful/formats/browser';
+import type { Assets, ComponentType } from '@trayful/formats/browser';
 import type Konva from 'konva';
 import { Circle, Group, Rect, Text } from 'react-konva';
 import { bagsOn, drawFromBag } from './bags';
 import type { Vec } from './drops';
 import { Component, type Highlight } from './render/Component';
+import { useMotionClock } from './motions';
+import { useRoll } from './rolls';
+import { gatherFrame, RIFFLE_CARDS, riffleFrame } from './shuffles';
 import { facePiece, sizeOf, type Types } from './render/geometry';
 import { useStore } from './store';
 
@@ -30,6 +33,28 @@ export function PieceView({
 }: ObjectViewProps & { piece: Piece }) {
   const type = types[piece.type];
   if (!type) return null;
+  return (
+    <TypedPieceView
+      piece={piece}
+      type={type}
+      assets={assets}
+      highlight={highlight}
+      register={register}
+      {...events}
+    />
+  );
+}
+
+function TypedPieceView({
+  piece,
+  type,
+  assets,
+  highlight,
+  register,
+  ...events
+}: Omit<ObjectViewProps, 'types'> & { piece: Piece; type: ComponentType }) {
+  const moving = useStore((s) => s.moving[piece.id]);
+  const roll = useRoll(moving?.kind === 'roll' ? moving.at : undefined, type);
   const counter = type.is === 'counter';
   return (
     <Group
@@ -61,7 +86,14 @@ export function PieceView({
       onMouseEnter={(e) => setCursor(e, piece.locked ? 'default' : 'grab')}
       onMouseLeave={(e) => setCursor(e, 'default')}
     >
-      <Component piece={piece} type={type} assets={assets} highlight={highlight} />
+      <Group rotation={roll?.turn ?? 0} scaleX={roll?.scale ?? 1} scaleY={roll?.scale ?? 1}>
+        <Component
+          piece={roll?.value === undefined ? piece : { ...piece, value: roll.value }}
+          type={type}
+          assets={assets}
+          highlight={highlight}
+        />
+      </Group>
     </Group>
   );
 }
@@ -91,6 +123,8 @@ export function StackView({
     table: TableState;
     wholeStack: boolean;
   }) {
+  const moving = useStore((s) => s.moving[stack.id]);
+  const shuffling = useMotionClock('shuffle', moving?.kind === 'shuffle' ? moving.at : undefined);
   const top = facePiece(table, stack);
   const type = top && types[top.type];
   if (!top || !type) return null;
@@ -104,6 +138,8 @@ export function StackView({
   };
   // A fan or spread shows every card, and any of them can be taken.
   const offsets = stack.layout ? stackOffsets(stack.layout, stack.items.length, [w, h]) : [];
+  // While shuffled, laid-out cards gather into one spot and spread out again.
+  const gathered = shuffling === undefined ? 0 : (gatherFrame(shuffling) ?? 0);
   const badge: Vec = [(offsets.at(-1)?.[0] ?? 0) + w / 2 - 1, -h / 2 + 1];
 
   return (
@@ -129,11 +165,23 @@ export function StackView({
         stack.items.map((id, i) => {
           const piece = table.objects[id];
           return piece?.kind === 'piece' ? (
-            <StackCard key={id} piece={piece} home={offsets[i]!} {...cards} />
+            <StackCard
+              key={id}
+              piece={piece}
+              home={[offsets[i]![0] * (1 - gathered), offsets[i]![1] * (1 - gathered)]}
+              {...cards}
+            />
           ) : null;
         })
       ) : (
-        <Pile stack={stack} table={table} top={top} size={[w, h]} cards={cards} />
+        <Pile
+          stack={stack}
+          table={table}
+          top={top}
+          size={[w, h]}
+          cards={cards}
+          shuffling={shuffling}
+        />
       )}
       <CountBadge count={stack.items.length} at={badge} />
     </Group>
@@ -148,14 +196,28 @@ type CardOptions = Readonly<{
   events: DrawEvents;
 }>;
 
-/** A pile seen from above: the top card, the edges of those underneath, and the next card. */
+/**
+ * A pile seen from above: the top card, the edges of those underneath, and the next card.
+ * While it is shuffled, `shuffling` ms in, it riffles instead.
+ */
 function Pile({
   stack,
   table,
   top,
   size: [w, h],
   cards,
-}: Readonly<{ stack: Stack; table: TableState; top: Piece; size: Vec; cards: CardOptions }>) {
+  shuffling,
+}: Readonly<{
+  stack: Stack;
+  table: TableState;
+  top: Piece;
+  size: Vec;
+  cards: CardOptions;
+  shuffling?: number;
+}>) {
+  if (shuffling !== undefined) {
+    return <Riffle stack={stack} table={table} elapsed={shuffling} width={w} cards={cards} />;
+  }
   const depth = Math.min(stack.items.length - 1, 4);
   const second = table.objects[stack.items.at(-2) ?? ''] as Piece | undefined;
   const secondType = second && cards.types[second.type];
@@ -185,6 +247,39 @@ function Pile({
       {/* Keyed by card, so a new top card gets a fresh node rather than the one dragged away. */}
       <StackCard key={top.id} piece={top} home={[0, 0]} {...cards} />
     </>
+  );
+}
+
+/** A pile being shuffled: its top cards split into two halves and riffle back together. */
+function Riffle({
+  stack,
+  table,
+  elapsed,
+  width,
+  cards,
+}: Readonly<{
+  stack: Stack;
+  table: TableState;
+  elapsed: number;
+  width: number;
+  cards: CardOptions;
+}>) {
+  const ids = stack.items.slice(-RIFFLE_CARDS);
+  const placements = riffleFrame(elapsed, ids.length, width) ?? [];
+  return (
+    <Group listening={false}>
+      {ids.map((id, i) => {
+        const piece = table.objects[id];
+        const type = piece?.kind === 'piece' ? cards.types[piece.type] : undefined;
+        const place = placements[i];
+        if (piece?.kind !== 'piece' || !type || !place) return null;
+        return (
+          <Group key={id} x={place.x} y={place.y} rotation={place.rot}>
+            <Component piece={piece} type={type} assets={cards.assets} />
+          </Group>
+        );
+      })}
+    </Group>
   );
 }
 

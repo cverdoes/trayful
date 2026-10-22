@@ -1,7 +1,7 @@
 import type { ServerMessage, TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { useStore } from './store';
+import { useStore, type Me } from './store';
 import { after, exampleTable } from './testing';
 
 let project: ResolvedProject;
@@ -46,6 +46,23 @@ describe('receive', () => {
     expect(useStore.getState()).toMatchObject({ revision: 3, canUndo: true });
     receive(state(2, { ...table, objects: {} }));
     expect(useStore.getState().table?.objects).toBe(table.objects);
+  });
+
+  it('sets dice tumbling whoever rolled them, but not for an undo', () => {
+    useStore.setState({ me: { player: { id: 'ann' } } as Me });
+    const rolled = {
+      by: 'person',
+      player: 'ann',
+      text: 'rolled',
+      motion: { kind: 'roll', ids: ['d6.1'] },
+    };
+    useStore.getState().receive(state(1, table, rolled));
+    expect(useStore.getState().moving).toEqual({
+      'd6.1': { kind: 'roll', at: expect.any(Number) },
+    });
+    useStore.setState({ moving: {} });
+    useStore.getState().receive(state(2, table, { by: 'person', text: 'undid their last change' }));
+    expect(useStore.getState().moving).toEqual({});
   });
 
   it('drops selected and hovered objects that went into a stack or away', () => {

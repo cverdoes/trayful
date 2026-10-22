@@ -54,9 +54,13 @@ export function toolContext(workspace: Workspace): ToolContext {
     } catch (err) {
       return failure(err);
     }
-    session().asAgent(activity, () => {
-      for (const command of commands) engine().dispatch(command, AGENT_PLAYER);
-    });
+    session().asAgent(
+      activity,
+      () => {
+        for (const command of commands) engine().dispatch(command, AGENT_PLAYER);
+      },
+      commands,
+    );
     return text(changes(before, engine().state));
   };
 
