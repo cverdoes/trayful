@@ -1,4 +1,10 @@
-import { HAND_PREFIX, type Command } from '@trayful/core';
+import {
+  HAND_PREFIX,
+  type Activity,
+  type Command,
+  type Motion,
+  type TableView,
+} from '@trayful/core';
 
 /** A few words on what a command did, for people watching. Never names a piece. */
 export function activityText(
@@ -39,4 +45,18 @@ export function activityText(
     default:
       return 'changed the table';
   }
+}
+
+/** What people at the table should see move as these commands land: the dice they roll. */
+export function motionOf(commands: readonly Command[]): Motion | undefined {
+  const ids = commands.flatMap((c) => (c.type === 'roll' ? [c.id] : []));
+  return ids.length > 0 ? { kind: 'roll', ids } : undefined;
+}
+
+/** The activity as one viewer may see it: motion only for the pieces in their view. */
+export function activityFor(activity: Activity, view: TableView): Activity {
+  if (!activity.motion) return activity;
+  const { motion, ...rest } = activity;
+  const ids = motion.ids.filter((id) => view.objects[id]);
+  return ids.length > 0 ? { ...rest, motion: { ...motion, ids } } : rest;
 }

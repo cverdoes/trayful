@@ -60,6 +60,17 @@ export interface Activity {
   name?: string;
   /** What happened, in a few words, such as "dealt 5 cards". Never names hidden pieces. */
   text: string;
+  /** Pieces every viewer should see animate, such as dice that were rolled. */
+  motion?: Motion;
+}
+
+/**
+ * Something tables show moving rather than just changing. Only for the eye: the
+ * state message carries the outcome. Each viewer gets only the ids they can see.
+ */
+export interface Motion {
+  kind: 'roll';
+  ids: string[];
 }
 
 /** A player as other players see them. */

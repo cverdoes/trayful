@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import type { Piece, Stack } from '@trayful/core';
+import type { Piece, ServerMessage, Stack } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createMcpServer } from '../mcp.js';
 import type { TableSession } from '../session.js';
@@ -44,7 +44,12 @@ describe('MCP play tools', () => {
   it('turns, rolls, sets and locks pieces', async () => {
     await call('rotate', { ids: ['worker.red.1'], steps: 1 });
     expect(piece('worker.red.1').rot).toBe(90);
+    const seen: ServerMessage[] = [];
+    session.subscribe((m) => seen.push(m));
     expect((await call('roll', { ids: ['d6.1', 'd6.2'] })).isError).toBeFalsy();
+    expect(seen.at(-1)).toMatchObject({
+      activity: { motion: { kind: 'roll', ids: ['d6.1', 'd6.2'] } },
+    });
     await call('set_counter', { id: 'coins', value: 7 });
     expect(piece('coins').value).toBe(7);
     await call('lock', { ids: ['coins'] });

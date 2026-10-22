@@ -1,10 +1,11 @@
 import { stackOffsets, type Piece, type Stack, type TableState } from '@trayful/core';
-import type { Assets } from '@trayful/formats/browser';
+import type { Assets, ComponentType } from '@trayful/formats/browser';
 import type Konva from 'konva';
 import { Circle, Group, Rect, Text } from 'react-konva';
 import { bagsOn, drawFromBag } from './bags';
 import type { Vec } from './drops';
 import { Component, type Highlight } from './render/Component';
+import { useRoll } from './rolls';
 import { facePiece, sizeOf, type Types } from './render/geometry';
 import { useStore } from './store';
 
@@ -30,6 +31,28 @@ export function PieceView({
 }: ObjectViewProps & { piece: Piece }) {
   const type = types[piece.type];
   if (!type) return null;
+  return (
+    <TypedPieceView
+      piece={piece}
+      type={type}
+      assets={assets}
+      highlight={highlight}
+      register={register}
+      {...events}
+    />
+  );
+}
+
+function TypedPieceView({
+  piece,
+  type,
+  assets,
+  highlight,
+  register,
+  ...events
+}: Omit<ObjectViewProps, 'types'> & { piece: Piece; type: ComponentType }) {
+  const rolledAt = useStore((s) => s.rolls[piece.id]);
+  const roll = useRoll(rolledAt, type);
   const counter = type.is === 'counter';
   return (
     <Group
@@ -61,7 +84,14 @@ export function PieceView({
       onMouseEnter={(e) => setCursor(e, piece.locked ? 'default' : 'grab')}
       onMouseLeave={(e) => setCursor(e, 'default')}
     >
-      <Component piece={piece} type={type} assets={assets} highlight={highlight} />
+      <Group rotation={roll?.turn ?? 0} scaleX={roll?.scale ?? 1} scaleY={roll?.scale ?? 1}>
+        <Component
+          piece={roll?.value === undefined ? piece : { ...piece, value: roll.value }}
+          type={type}
+          assets={assets}
+          highlight={highlight}
+        />
+      </Group>
     </Group>
   );
 }

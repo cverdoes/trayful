@@ -25,7 +25,7 @@ import {
   type TableState,
 } from '@trayful/core';
 import { formatDiagnostic, loadProject, type ResolvedProject } from '@trayful/formats';
-import { activityText } from './activity.js';
+import { activityFor, activityText, motionOf } from './activity.js';
 import { AGENT_PLAYER, type Player } from './players.js';
 
 export class ProjectLoadError extends Error {}
@@ -203,14 +203,15 @@ export class TableSession {
 
   /** The table as one player may see it. */
   stateMessage(viewer?: string): ServerMessage {
+    const state = this.viewFor(viewer);
     return {
       type: 'state',
-      state: this.viewFor(viewer),
+      state,
       revision: this.revision,
       // Each player undoes only their own changes.
       canUndo: this.engine.canUndoFor(viewer),
       canRedo: this.engine.canRedoFor(viewer),
-      ...(this.activity ? { activity: this.activity } : {}),
+      ...(this.activity ? { activity: activityFor(this.activity, state) } : {}),
     };
   }
 
@@ -219,21 +220,31 @@ export class TableSession {
     return viewFor(this.engine.state, viewer, this.aliases, this.project.types);
   }
 
-  /** Makes a change on behalf of an agent, labelled so people watching see what it did. */
-  asAgent<T>(text: string, change: () => T): T {
-    return this.as(AGENT_PLAYER, text, change);
+  /**
+   * Makes a change on behalf of an agent, labelled so people watching see what it did.
+   * `commands` are what the change runs, so tables can animate them.
+   */
+  asAgent<T>(text: string, change: () => T, commands: readonly Command[] = []): T {
+    return this.as(AGENT_PLAYER, text, change, commands);
   }
 
   /** Makes a change on behalf of a player, labelled with who did it and what. */
-  as<T>(player: string | undefined, text: string, change: () => T): T {
+  as<T>(
+    player: string | undefined,
+    text: string,
+    change: () => T,
+    commands: readonly Command[] = [],
+  ): T {
     const agent = player === AGENT_PLAYER;
     const first = player !== undefined && !this.seen.has(player);
     if (player) this.seen.set(player, Date.now());
     if (first) this.broadcastPlayers();
+    const motion = motionOf(commands);
     this.activity = {
       by: agent ? 'agent' : 'person',
       ...(player ? { player, name: this.players?.get(player)?.name ?? player } : {}),
       text,
+      ...(motion ? { motion } : {}),
     };
     try {
       return change();
@@ -251,7 +262,7 @@ export class TableSession {
     this.checkReach(real, player);
     const name = (id: string) =>
       id === player ? 'their' : `${this.players?.get(id)?.name ?? id}'s`;
-    this.as(player, activityText(real, name), () => this.engine.dispatch(real, player));
+    this.as(player, activityText(real, name), () => this.engine.dispatch(real, player), [real]);
   }
 
   /** Throws when a command names a piece out of the player's reach, or an unknown player. */

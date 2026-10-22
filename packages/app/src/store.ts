@@ -13,6 +13,7 @@ import {
 import { create } from 'zustand';
 import type { GroupPick } from './groups';
 import { loadHandHeight, loadHandMinimized } from './handTray';
+import { startRolls } from './rolls';
 
 /** Screen position of the table origin and pixels per millimetre. */
 export interface Viewport {
@@ -66,6 +67,8 @@ interface TrayfulStore {
   problems?: string[];
   /** The latest change someone else made, shown briefly to people watching. */
   activity?: { text: string; name: string; agent: boolean; at: number };
+  /** Dice rolling now, by id, with when they started on the `performance.now()` clock. */
+  rolls: Record<string, number>;
   /** Bumped when the server rejects a change, so the canvas redraws from server state. */
   redrawKey: number;
   shiftDown: boolean;
@@ -94,6 +97,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
   canRedo: false,
   status: 'connecting',
   selection: [],
+  rolls: {},
   redrawKey: 0,
   shiftDown: false,
   helpOpen: false,
@@ -139,6 +143,10 @@ export const useStore = create<TrayfulStore>((set, get) => ({
               at: Date.now(),
             },
           }
+        : {}),
+      // Everyone sees dice tumble, whoever rolled them.
+      ...(activity?.motion?.kind === 'roll'
+        ? { rolls: startRolls(s.rolls, activity.motion.ids, performance.now()) }
         : {}),
       // Drop selected and hovered ids that vanished or went into a stack.
       selection: s.selection.filter((id) => isOnTable(objects[id])),
