@@ -39,11 +39,14 @@ test('plays a hand: draw, flip, undo, shuffle and restack', async ({ page }) => 
   await page.mouse.move(at.x + 5, at.y + 5);
   // The page knows a face-down card by a stand-in id, so only check that something lit up.
   await expect.poll(() => hovered(page)).toBeDefined();
+  const litFaceUp = await hovered(page);
   await page.keyboard.press('f');
   await expect
     .poll(async () => ((await table(page)).objects[top] as Piece).face)
     .not.toBe(faceBefore);
   expect(await page.evaluate(() => window.__trayful!.store.getState().selection)).toEqual([]);
+  // The server has the flip before the page does; wait for the face-down card to light up.
+  await expect.poll(async () => [undefined, litFaceUp].includes(await hovered(page))).toBe(false);
   await page.keyboard.press('f');
   await expect.poll(async () => ((await table(page)).objects[top] as Piece).face).toBe(faceBefore);
 
