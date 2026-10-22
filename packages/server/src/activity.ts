@@ -47,10 +47,18 @@ export function activityText(
   }
 }
 
-/** What people at the table should see move as these commands land: the dice they roll. */
+/**
+ * What people at the table should see move as these commands land: the dice they roll,
+ * or else the piles they shuffle. One change does one or the other, so one kind will do.
+ */
 export function motionOf(commands: readonly Command[]): Motion | undefined {
-  const ids = commands.flatMap((c) => (c.type === 'roll' ? [c.id] : []));
-  return ids.length > 0 ? { kind: 'roll', ids } : undefined;
+  for (const kind of ['roll', 'shuffle'] as const) {
+    const ids = commands.flatMap((c) =>
+      (c.type === 'roll' || c.type === 'shuffle') && c.type === kind ? [c.id] : [],
+    );
+    if (ids.length > 0) return { kind, ids };
+  }
+  return undefined;
 }
 
 /** The activity as one viewer may see it: motion only for the pieces in their view. */

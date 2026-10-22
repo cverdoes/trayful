@@ -1,8 +1,7 @@
 import { valueAt, valueCount, valuesOf, type ComponentType } from '@trayful/formats/browser';
-import { useEffect, useState } from 'react';
+import { MOTION_MS, useMotionClock } from './motions';
 
-/** How long a die tumbles before it lies still, in milliseconds. */
-export const ROLL_MS = 1200;
+const ROLL_MS = MOTION_MS.roll;
 /** Whole turns a die makes while it tumbles; whole, so it ends the way it lay. */
 const TURNS = 2;
 /** Faces a die flicks through; the last one is the result. */
@@ -50,49 +49,16 @@ export interface ShownRoll {
   value?: number | string;
 }
 
-/**
- * Animates a die rolled at `rolledAt` (on the `performance.now()` clock), redrawing
- * it every frame until it has settled.
- */
+/** Animates a die rolled at `rolledAt` until it has settled. */
 export function useRoll(rolledAt: number | undefined, type: ComponentType): ShownRoll | undefined {
-  const [now, setNow] = useState(() => performance.now());
-  useEffect(() => {
-    if (rolledAt === undefined) return;
-    let frame = requestAnimationFrame(function tick(time) {
-      setNow(time);
-      if (time - rolledAt < ROLL_MS) frame = requestAnimationFrame(tick);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [rolledAt]);
-
+  const elapsed = useMotionClock('roll', rolledAt);
   const spec = valuesOf(type);
-  if (rolledAt === undefined || !spec) return undefined;
-  const frame = rollFrame(now - rolledAt, valueCount(spec));
+  if (elapsed === undefined || !spec) return undefined;
+  const frame = rollFrame(elapsed, valueCount(spec));
   if (!frame) return undefined;
   return {
     turn: frame.turn,
     scale: frame.scale,
     ...(frame.face === undefined ? {} : { value: valueAt(spec, frame.face) }),
   };
-}
-
-/** Rolls that started `ids` at `now`, keeping only those of `rolls` still under way. */
-export function startRolls(
-  rolls: Readonly<Record<string, number>>,
-  ids: readonly string[],
-  now: number,
-): Record<string, number> {
-  const next = Object.fromEntries(Object.entries(rolls).filter(([, at]) => now - at < ROLL_MS));
-  if (prefersReducedMotion()) return next;
-  for (const id of ids) next[id] = now;
-  return next;
-}
-
-/** Milliseconds until every die rolling now has settled, so a snapshot shows the results. */
-export function rollsSettleIn(rolls: Readonly<Record<string, number>>, now: number): number {
-  return Math.max(0, ...Object.values(rolls).map((at) => at + ROLL_MS - now));
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

@@ -57,10 +57,12 @@ describe('receive', () => {
       motion: { kind: 'roll', ids: ['d6.1'] },
     };
     useStore.getState().receive(state(1, table, rolled));
-    expect(Object.keys(useStore.getState().rolls)).toEqual(['d6.1']);
-    useStore.setState({ rolls: {} });
+    expect(useStore.getState().moving).toEqual({
+      'd6.1': { kind: 'roll', at: expect.any(Number) },
+    });
+    useStore.setState({ moving: {} });
     useStore.getState().receive(state(2, table, { by: 'person', text: 'undid their last change' }));
-    expect(useStore.getState().rolls).toEqual({});
+    expect(useStore.getState().moving).toEqual({});
   });
 
   it('drops selected and hovered objects that went into a stack or away', () => {

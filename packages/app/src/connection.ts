@@ -1,5 +1,5 @@
 import type { ProjectView, ServerMessage } from '@trayful/core';
-import { rollsSettleIn } from './rolls';
+import { settleIn } from './motions';
 import { forgetJoin, route, tableQuery } from './route';
 import { snapshotTable } from './snapshot';
 import { dropWhileOffline, useStore, type Me } from './store';
@@ -82,8 +82,8 @@ function open(previousAttempts: number): void {
     const message = JSON.parse(String(event.data)) as ServerMessage;
     if (message.type === 'snapshot-request') {
       // An agent asked to see the table. Dice still tumbling would show it a face they
-      // did not land on, so it waits for them.
-      const wait = rollsSettleIn(useStore.getState().rolls, performance.now());
+      // did not land on, so it waits for everything to come to rest.
+      const wait = settleIn(useStore.getState().moving, performance.now());
       setTimeout(() => sendSnapshot(socket, message.id), wait);
       return;
     }

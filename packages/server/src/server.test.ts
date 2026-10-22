@@ -122,6 +122,7 @@ describe('server', () => {
     const [ma, mb] = await Promise.all([a.next(), b.next()]);
     expect(ma).toEqual(mb);
     expect(ma).toMatchObject({ type: 'state', revision: 1, canUndo: true, canRedo: false });
+    expect(ma).toMatchObject({ activity: { motion: { kind: 'shuffle', ids: [DECK] } } });
 
     a.send({ type: 'undo' });
     expect(await b.next()).toMatchObject({ revision: 2, canUndo: false, canRedo: true });

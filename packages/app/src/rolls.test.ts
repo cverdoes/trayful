@@ -1,5 +1,8 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ROLL_MS, rollFrame, rollsSettleIn, startRolls } from './rolls';
+import { describe, expect, it } from 'vitest';
+import { MOTION_MS } from './motions';
+import { rollFrame } from './rolls';
+
+const ROLL_MS = MOTION_MS.roll;
 
 describe('rollFrame', () => {
   it('tumbles through faces, lands on the result, then lies still as it was', () => {
@@ -16,25 +19,5 @@ describe('rollFrame', () => {
     const turn = (at: number) => rollFrame(at * ROLL_MS, 6)!.turn;
     expect(turn(0.1) - turn(0)).toBeGreaterThan(turn(0.9) - turn(0.8));
     expect(rollFrame(-5, 6)).toMatchObject({ turn: 0, scale: 1 });
-  });
-});
-
-describe('startRolls', () => {
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('starts the rolled dice and forgets those that settled', () => {
-    expect(startRolls({ old: 0, recent: 900 }, ['d6'], 2000)).toEqual({ recent: 900, d6: 2000 });
-  });
-
-  it('keeps dice still for people who ask for less motion', () => {
-    vi.stubGlobal('matchMedia', () => ({ matches: true }));
-    expect(startRolls({}, ['d6'], 1000)).toEqual({});
-  });
-});
-
-describe('rollsSettleIn', () => {
-  it('waits for the last die to settle', () => {
-    expect(rollsSettleIn({}, 500)).toBe(0);
-    expect(rollsSettleIn({ a: 0, b: 400 }, 500)).toBe(ROLL_MS - 100);
   });
 });

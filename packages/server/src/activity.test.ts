@@ -38,7 +38,7 @@ describe('activityText', () => {
 });
 
 describe('motionOf', () => {
-  it('has tables show the dice that were rolled tumble', () => {
+  it('has tables show the dice that were rolled tumble and the piles shuffled riffle', () => {
     expect(
       motionOf([
         { type: 'roll', id: 'd6.1' },
@@ -46,7 +46,8 @@ describe('motionOf', () => {
         { type: 'roll', id: 'd6.2' },
       ]),
     ).toEqual({ kind: 'roll', ids: ['d6.1', 'd6.2'] });
-    expect(motionOf([{ type: 'shuffle', id: 'deck' }])).toBeUndefined();
+    expect(motionOf([{ type: 'shuffle', id: 'deck' }])).toEqual({ kind: 'shuffle', ids: ['deck'] });
+    expect(motionOf([{ type: 'flip', ids: ['a'] }])).toBeUndefined();
   });
 });
 
