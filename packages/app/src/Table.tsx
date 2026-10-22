@@ -7,7 +7,7 @@ import { doubleClickCommand, handDropCommands, inBox, type Vec } from './drops';
 import { pickFor } from './groups';
 import { HAND_DRAG, overHandTray } from './hand';
 import { useHover } from './hover';
-import type { Highlight } from './render/Component';
+import { DrawScale, type Highlight } from './render/Component';
 import { topLevel } from './render/geometry';
 import { setSnapshotStage } from './snapshot';
 import { useStore } from './store';
@@ -62,7 +62,9 @@ export function Table() {
         onWheel={onWheel}
       >
         <Layer key={redrawKey}>
-          <Objects drag={drag} />
+          <DrawScale.Provider value={viewport.scale}>
+            <Objects drag={drag} />
+          </DrawScale.Provider>
           <BagBadges types={view.types} />
           <SnapHints />
           {marquee.box && (
