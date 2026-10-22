@@ -2,7 +2,7 @@ import type { Command, Piece, TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
 import type { ComponentType } from '@trayful/formats/browser';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { actionsFor } from './actions';
+import { actionsFor, keyTargets } from './actions';
 import { selectedBagDraw } from './bags';
 import type { Types } from './render/geometry';
 import { after, exampleTable } from './testing';
@@ -174,5 +174,18 @@ describe('bags', () => {
       to: [35, 0],
     });
     expect(selectedBagDraw(withBag({}), types, ['sack'], 'alice')).toBeUndefined();
+  });
+});
+
+describe('keyTargets', () => {
+  it('acts on the hovered object when it is not selected', () => {
+    expect(keyTargets([], 'card')).toEqual(['card']);
+    expect(keyTargets(['coins', 'deck'], 'card')).toEqual(['card']);
+  });
+
+  it('acts on the selection when the pointer is over it or over nothing', () => {
+    expect(keyTargets(['coins', 'card'], 'card')).toEqual(['coins', 'card']);
+    expect(keyTargets(['coins'], undefined)).toEqual(['coins']);
+    expect(keyTargets([], undefined)).toEqual([]);
   });
 });

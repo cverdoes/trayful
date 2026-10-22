@@ -9,7 +9,7 @@ declare global {
   // The test hook the app installs; see packages/app/src/App.tsx.
   interface Window {
     __trayful?: {
-      store: { getState(): { status: string; selection: string[] } };
+      store: { getState(): { status: string; selection: string[]; hovered?: string } };
       worldToScreen(x: number, y: number): { x: number; y: number };
       faceToScreen?(side: 'front' | 'back', x: number, y: number): { x: number; y: number };
     };

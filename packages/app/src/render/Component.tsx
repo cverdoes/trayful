@@ -31,14 +31,22 @@ interface Props {
   piece: Piece;
   type: ComponentType;
   assets: Assets;
-  selected?: boolean;
+  /** Drawn with a strong outline when selected, a light one when under the pointer. */
+  highlight?: Highlight;
 }
+
+export type Highlight = 'selected' | 'hovered';
+
+const HIGHLIGHT = {
+  selected: { stroke: '#2f81f7', strokeWidth: 1.2 },
+  hovered: { stroke: '#7fb2fa', strokeWidth: 0.9 },
+} as const;
 
 /**
  * Draws one component centred on (0, 0), in millimetres. The caller positions
  * and rotates it. How it looks is worked out by `drawingOf`; this only paints it.
  */
-export function Component({ piece, type, assets, selected }: Readonly<Props>) {
+export function Component({ piece, type, assets, highlight }: Readonly<Props>) {
   const [w, h] = sizeOf(type);
   const drawing = drawingOf(
     type,
@@ -50,8 +58,9 @@ export function Component({ piece, type, assets, selected }: Readonly<Props>) {
   const flat = drawing.dashed || piece.locked === true;
   const outlineProps = {
     fill: drawing.fill,
-    stroke: selected ? '#2f81f7' : drawing.stroke,
-    strokeWidth: selected ? 1.2 : 0.3,
+    stroke: drawing.stroke,
+    strokeWidth: 0.3,
+    ...(highlight && HIGHLIGHT[highlight]),
     dash: drawing.dashed ? [3, 2] : undefined,
     shadowColor: 'black',
     shadowOpacity: flat ? 0 : 0.25,

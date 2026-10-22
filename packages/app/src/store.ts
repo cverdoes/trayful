@@ -7,6 +7,7 @@ import {
   type ProjectView,
   type ServerMessage,
   type SnapSpot,
+  type TableObject,
   type TableView,
 } from '@trayful/core';
 import { create } from 'zustand';
@@ -53,6 +54,8 @@ interface TrayfulStore {
   status: ConnectionStatus;
   /** Ids of selected top-level objects (pieces on the table and stacks). */
   selection: string[];
+  /** The top-level object under the pointer; keys act on it when it is not selected. */
+  hovered?: string;
   /** The latest error from the server, shown briefly. */
   error?: { message: string; at: number };
   /** Why the page cannot show a table at all, such as an unknown table name. */
@@ -137,11 +140,9 @@ export const useStore = create<TrayfulStore>((set, get) => ({
             },
           }
         : {}),
-      // Drop selected ids that vanished or went into a stack.
-      selection: s.selection.filter((id) => {
-        const o = objects[id];
-        return o && onTable(o);
-      }),
+      // Drop selected and hovered ids that vanished or went into a stack.
+      selection: s.selection.filter((id) => isOnTable(objects[id])),
+      hovered: s.hovered && isOnTable(objects[s.hovered]) ? s.hovered : undefined,
     }));
   },
   select: (ids, mode = 'replace') =>
@@ -156,6 +157,10 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       return { selection: [...next] };
     }),
 }));
+
+function isOnTable(object: TableObject | undefined): boolean {
+  return object !== undefined && onTable(object);
+}
 
 /** Stands in for `send` while there is no connection; the server sends the table again on reconnect. */
 export function dropWhileOffline(): void {

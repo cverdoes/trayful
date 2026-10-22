@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import type { Piece, Stack } from '@trayful/core';
-import { DECK, drag, freshTable, openTable, table } from './helpers.js';
+import { DECK, drag, freshTable, openTable, screen, table } from './helpers.js';
 
 test.beforeEach(async ({ baseURL }) => freshTable(baseURL!));
 
@@ -33,6 +33,20 @@ test('plays a hand: draw, flip, undo, shuffle and restack', async ({ page }) => 
   await page.keyboard.press('Control+z');
   await expect.poll(async () => ((await table(page)).objects[top] as Piece).face).toBe(faceBefore);
 
+  // Point at the card and flip it with the keyboard, without selecting it.
+  await page.keyboard.press('Escape');
+  const at = await screen(page, drawn.pos[0], drawn.pos[1]);
+  await page.mouse.move(at.x + 5, at.y + 5);
+  // The page knows a face-down card by a stand-in id, so only check that something lit up.
+  await expect.poll(() => hovered(page)).toBeDefined();
+  await page.keyboard.press('f');
+  await expect
+    .poll(async () => ((await table(page)).objects[top] as Piece).face)
+    .not.toBe(faceBefore);
+  expect(await page.evaluate(() => window.__trayful!.store.getState().selection)).toEqual([]);
+  await page.keyboard.press('f');
+  await expect.poll(async () => ((await table(page)).objects[top] as Piece).face).toBe(faceBefore);
+
   // Shuffle the deck from the toolbar.
   const order = ((await table(page)).objects[DECK] as Stack).items;
   await drag(page, [deck.pos[0], deck.pos[1]], [deck.pos[0], deck.pos[1]]);
@@ -49,3 +63,5 @@ test('plays a hand: draw, flip, undo, shuffle and restack', async ({ page }) => 
 
   await page.screenshot({ path: 'test-results/table.png' });
 });
+
+const hovered = (page: Page) => page.evaluate(() => window.__trayful!.store.getState().hovered);
