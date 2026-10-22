@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { GroupPicker } from './GroupPicker';
 import { Help } from './Help';
 import { useKeyboard } from './keyboard';
+import { Magnifier } from './Magnifier';
 import { Activity, ErrorToast, Problems } from './Notices';
 import { InviteDialog } from './Invite';
 import { Designer } from './design/Designer';
@@ -46,6 +47,7 @@ function TableApp() {
       <ErrorToast />
       <Activity />
       <RenderJob />
+      <Magnifier />
       {helpOpen && <Help />}
     </>
   );

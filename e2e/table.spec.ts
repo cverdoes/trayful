@@ -50,6 +50,24 @@ test('plays a hand: draw, flip, undo, shuffle and restack', async ({ page }) => 
   await page.keyboard.press('f');
   await expect.poll(async () => ((await table(page)).objects[top] as Piece).face).toBe(faceBefore);
 
+  // Tap Space to see the card large; tap again, press Esc or click to put it away.
+  const magnifier = page.getByRole('img', { name: 'Magnified piece' });
+  await page.keyboard.press(' ');
+  await expect(magnifier).toBeVisible();
+  await page.screenshot({ path: 'test-results/magnified.png' });
+  await page.keyboard.press(' ');
+  await expect(magnifier).toBeHidden();
+  await page.keyboard.press(' ');
+  await expect(magnifier).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(magnifier).toBeHidden();
+  await page.keyboard.press(' ');
+  await expect(magnifier).toBeVisible();
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(magnifier).toBeHidden();
+  expect(await page.evaluate(() => window.__trayful!.store.getState().selection)).toEqual([]);
+
   // Shuffle the deck from the toolbar.
   const order = ((await table(page)).objects[DECK] as Stack).items;
   await drag(page, [deck.pos[0], deck.pos[1]], [deck.pos[0], deck.pos[1]]);
