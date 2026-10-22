@@ -48,15 +48,22 @@ describe('receive', () => {
     expect(useStore.getState().table?.objects).toBe(table.objects);
   });
 
-  it('drops selected objects that went into a stack or away', () => {
+  it('drops selected and hovered objects that went into a stack or away', () => {
     useStore.getState().select(['action-card.raid.1', 'coins', 'gone']);
+    useStore.setState({ hovered: 'action-card.raid.1' });
     const stacked = after(project, table, {
       type: 'stack',
       ids: ['action-card.raid.1'],
       onto: 'deck:actions',
     });
     useStore.getState().receive(state(1, stacked));
-    expect(useStore.getState().selection).toEqual(['coins']);
+    expect(useStore.getState()).toMatchObject({ selection: ['coins'], hovered: undefined });
+  });
+
+  it('keeps the hovered object while it stays on the table', () => {
+    useStore.setState({ hovered: 'coins' });
+    useStore.getState().receive(state(1));
+    expect(useStore.getState().hovered).toBe('coins');
   });
 
   it('shows what someone else did, but not what this player did', () => {

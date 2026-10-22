@@ -6,6 +6,8 @@ import { TableDrag } from './drag';
 import { doubleClickCommand, handDropCommands, inBox, type Vec } from './drops';
 import { pickFor } from './groups';
 import { HAND_DRAG, overHandTray } from './hand';
+import { useHover } from './hover';
+import type { Highlight } from './render/Component';
 import { topLevel } from './render/geometry';
 import { setSnapshotStage } from './snapshot';
 import { useStore } from './store';
@@ -22,6 +24,7 @@ export function Table() {
   const size = useWindowSize();
   const drag = useRef(new TableDrag()).current;
   const marquee = useMarquee();
+  const pointer = useHover(drag.nodes);
   useFitOnce();
 
   if (!view || !table) return <div className="loading">Loading table…</div>;
@@ -50,7 +53,11 @@ export function Table() {
           }
         }}
         onMouseDown={marquee.onMouseDown}
-        onMouseMove={marquee.onMouseMove}
+        onMouseMove={(e) => {
+          pointer.onMouseMove(e);
+          marquee.onMouseMove(e);
+        }}
+        onMouseLeave={pointer.onMouseLeave}
         onMouseUp={() => marquee.onMouseUp(topLevel(table))}
         onWheel={onWheel}
       >
@@ -81,6 +88,7 @@ function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
   const view = useStore((s) => s.view)!;
   const table = useStore((s) => s.table)!;
   const selection = useStore((s) => s.selection);
+  const hovered = useStore((s) => s.hovered);
   const shiftDown = useStore((s) => s.shiftDown);
   const selected = new Set(selection);
   const types = view.types;
@@ -88,7 +96,7 @@ function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
     const common = {
       types,
       assets: view.assets,
-      selected: selected.has(object.id),
+      highlight: highlightOf(object.id, selected, hovered),
       register: (node: Konva.Group | null) => {
         if (node) drag.nodes.set(object.id, node);
         else drag.nodes.delete(object.id);
@@ -114,6 +122,16 @@ function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
       <PieceView key={object.id} piece={object} {...common} />
     );
   });
+}
+
+/** A selected object shows as selected even under the pointer. */
+function highlightOf(
+  id: string,
+  selected: Set<string>,
+  hovered: string | undefined,
+): Highlight | undefined {
+  if (selected.has(id)) return 'selected';
+  return id === hovered ? 'hovered' : undefined;
 }
 
 /** Selects what was clicked; a plain click on a piece in a crowded group also lists the group. */
