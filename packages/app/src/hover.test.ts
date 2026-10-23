@@ -1,7 +1,7 @@
-import type { TableState } from '@trayful/core';
+import type { Stack, TableState } from '@trayful/core';
 import Konva from 'konva';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { hoverShape } from './hover';
+import { hoverShape, STACK_CARD } from './hover';
 import { useStore } from './store';
 import { exampleTable } from './testing';
 
@@ -49,5 +49,30 @@ describe('hoverShape', () => {
     hoverShape(nodes, face);
     hoverShape(nodes, undefined);
     expect(useStore.getState().hovered).toBeUndefined();
+  });
+
+  it('notes the piece under the pointer, a locked board included, for the magnifier', () => {
+    const { nodes, face, boardFace } = scene();
+    hoverShape(nodes, face);
+    expect(useStore.getState().hoveredPiece).toBe('action-card.raid.1');
+    hoverShape(nodes, boardFace);
+    expect(useStore.getState().hoveredPiece).toBe('main-board');
+    hoverShape(nodes, undefined);
+    expect(useStore.getState().hoveredPiece).toBeUndefined();
+  });
+
+  it('notes the card pointed at in a stack, or else its top card', () => {
+    const stack = Object.values(table.objects).find((o): o is Stack => o.kind === 'stack')!;
+    const node = new Konva.Group();
+    const card = new Konva.Group({ id: stack.items[0], name: STACK_CARD });
+    const cardFace = new Konva.Rect();
+    const edge = new Konva.Rect();
+    card.add(cardFace);
+    node.add(card, edge);
+    const nodes = new Map([[stack.id, node]]);
+    hoverShape(nodes, cardFace);
+    expect(useStore.getState().hoveredPiece).toBe(stack.items[0]);
+    hoverShape(nodes, edge);
+    expect(useStore.getState().hoveredPiece).toBe(stack.items.at(-1));
   });
 });

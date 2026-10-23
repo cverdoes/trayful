@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { keyActions, type Actions } from './actions';
 import { toggleHandTray } from './hand';
+import { closeMagnifier, spaceKey } from './magnify';
 import { useStore } from './store';
 import { fitWindow, zoomWindow } from './viewport';
 
@@ -59,17 +60,28 @@ export function shortcutFor(press: KeyPress): Shortcut | undefined {
   return press.altKey ? undefined : KEYS.get(key);
 }
 
-/** The keyboard shortcuts of the table, and Shift for selecting and moving whole piles. */
+/**
+ * The keyboard shortcuts of the table, Shift for selecting and moving whole piles,
+ * and Space for magnifying the piece under the pointer.
+ */
 export function useKeyboard(): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Shift') useStore.setState({ shiftDown: e.type === 'keydown' });
-      if (e.type !== 'keydown') return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === ' ') {
+        if (spaceKey(e.type === 'keydown', e.repeat, performance.now())) e.preventDefault();
+        return;
+      }
+      if (e.type !== 'keydown') return;
       const shortcut = shortcutFor(e);
       if (shortcut && perform(shortcut)) e.preventDefault();
     };
-    const onBlur = () => useStore.setState({ shiftDown: false });
+    const onBlur = () => {
+      useStore.setState({ shiftDown: false });
+      // Space let go in another window would never come back up here.
+      closeMagnifier();
+    };
     window.addEventListener('keydown', onKey);
     window.addEventListener('keyup', onKey);
     window.addEventListener('blur', onBlur);
@@ -90,7 +102,8 @@ function perform(shortcut: Shortcut): boolean {
       state.send({ type: shortcut });
       return true;
     case 'escape':
-      if (state.helpOpen) useStore.setState({ helpOpen: false });
+      if (state.magnifier) closeMagnifier();
+      else if (state.helpOpen) useStore.setState({ helpOpen: false });
       else if (state.groupPick) useStore.setState({ groupPick: undefined });
       else state.select([]);
       return true;

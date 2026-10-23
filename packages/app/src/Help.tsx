@@ -17,6 +17,10 @@ const SHORTCUTS: [string, string][] = [
   ['Double-click in your hand', 'Play that card into the middle of the view'],
   ['Drag the top edge of your hand', 'Make it taller or shorter; double-click the edge to reset'],
   ['Point at a piece', 'It lights up, and the keys below act on it without selecting it'],
+  [
+    'Hold Space',
+    'Show the piece under the pointer large, with what lies on it; a quick tap keeps it open',
+  ],
   ['H', 'Shrink your hand to a bubble in the corner, or open it again'],
   ['F', 'Flip'],
   ['Q / E', 'Rotate left / right'],
@@ -28,7 +32,7 @@ const SHORTCUTS: [string, string][] = [
   ['L', 'Lock or unlock'],
   ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo your own last move'],
   ['0', 'Fit the table to the window'],
-  ['Esc', 'Close the group list, or clear the selection'],
+  ['Esc', 'Close the magnifier or the group list, or clear the selection'],
 ];
 
 /** The mouse and keyboard controls of the table. */

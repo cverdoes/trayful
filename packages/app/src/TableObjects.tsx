@@ -4,6 +4,7 @@ import type Konva from 'konva';
 import { Circle, Group, Rect, Text } from 'react-konva';
 import { bagsOn, drawFromBag } from './bags';
 import type { Vec } from './drops';
+import { STACK_CARD } from './hover';
 import { Component, type Highlight } from './render/Component';
 import { useMotionClock } from './motions';
 import { useRoll } from './rolls';
@@ -297,6 +298,8 @@ function StackCard({
   if (!type) return null;
   return (
     <Group
+      id={piece.id}
+      name={STACK_CARD}
       x={home[0]}
       y={home[1]}
       draggable={drawable}

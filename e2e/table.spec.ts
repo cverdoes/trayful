@@ -37,8 +37,9 @@ test('plays a hand: draw, flip, undo, shuffle and restack', async ({ page }) => 
   await page.keyboard.press('Escape');
   const at = await screen(page, drawn.pos[0], drawn.pos[1]);
   await page.mouse.move(at.x + 5, at.y + 5);
-  // The page knows a face-down card by a stand-in id, so only check that something lit up.
-  await expect.poll(() => hovered(page)).toBeDefined();
+  // The page knows a face-down card by a stand-in id, so check that the card it lit up
+  // already lies as the server has it after the undo, not as before.
+  await expect.poll(() => hoveredFace(page)).toBe(faceBefore);
   const litFaceUp = await hovered(page);
   await page.keyboard.press('f');
   await expect
@@ -49,6 +50,25 @@ test('plays a hand: draw, flip, undo, shuffle and restack', async ({ page }) => 
   await expect.poll(async () => [undefined, litFaceUp].includes(await hovered(page))).toBe(false);
   await page.keyboard.press('f');
   await expect.poll(async () => ((await table(page)).objects[top] as Piece).face).toBe(faceBefore);
+
+  // Tap Space to see the card large; tap again, press Esc or click to put it away.
+  const magnifier = page.getByRole('img', { name: 'Magnified piece' });
+  await expect.poll(() => hoveredFace(page)).toBe(faceBefore);
+  await page.keyboard.press(' ');
+  await expect(magnifier).toBeVisible();
+  await page.screenshot({ path: 'test-results/magnified.png' });
+  await page.keyboard.press(' ');
+  await expect(magnifier).toBeHidden();
+  await page.keyboard.press(' ');
+  await expect(magnifier).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(magnifier).toBeHidden();
+  await page.keyboard.press(' ');
+  await expect(magnifier).toBeVisible();
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(magnifier).toBeHidden();
+  expect(await page.evaluate(() => window.__trayful!.store.getState().selection)).toEqual([]);
 
   // Shuffle the deck from the toolbar.
   const order = ((await table(page)).objects[DECK] as Stack).items;
@@ -68,3 +88,12 @@ test('plays a hand: draw, flip, undo, shuffle and restack', async ({ page }) => 
 });
 
 const hovered = (page: Page) => page.evaluate(() => window.__trayful!.store.getState().hovered);
+
+const hoveredFace = (page: Page) =>
+  page.evaluate(() => {
+    const { table, hovered } = window.__trayful!.store.getState() as unknown as {
+      table?: { objects: Record<string, Partial<Piece>> };
+      hovered?: string;
+    };
+    return hovered === undefined ? undefined : table?.objects[hovered]?.face;
+  });

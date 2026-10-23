@@ -1,6 +1,11 @@
+import type { TableObject } from '@trayful/core';
 import type Konva from 'konva';
 import { useEffect, useRef } from 'react';
+import { facePiece } from './render/geometry';
 import { useStore } from './store';
+
+/** The name of a card's node inside a stack, whose id is the card's id. */
+export const STACK_CARD = 'stack-card';
 
 /**
  * Keeps track of the object under the pointer, which keys act on. Locked objects,
@@ -31,13 +36,29 @@ export function useHover(nodes: ReadonlyMap<string, Konva.Group>) {
   };
 }
 
-/** Lights up the object `shape` is part of, or nothing. */
+/**
+ * Lights up the object `shape` is part of, or nothing, and notes the piece under
+ * the pointer for the magnifier. That can be a locked board too: it does not light
+ * up, but its text may still need reading.
+ */
 export function hoverShape(nodes: ReadonlyMap<string, Konva.Group>, shape: Konva.Node | undefined) {
-  const { table, hovered } = useStore.getState();
+  const state = useStore.getState();
   const id = shape && objectOf(nodes, shape);
-  const object = id === undefined ? undefined : table?.objects[id];
-  const next = object && !object.locked ? object.id : undefined;
-  if (next !== hovered) useStore.setState({ hovered: next });
+  const object = id === undefined ? undefined : state.table?.objects[id];
+  const hovered = object && !object.locked ? object.id : undefined;
+  const hoveredPiece = object && shape && pieceOf(object, shape);
+  if (hovered !== state.hovered || hoveredPiece !== state.hoveredPiece) {
+    useStore.setState({ hovered, hoveredPiece });
+  }
+}
+
+/** The piece of `object` a shape belongs to: the card pointed at in a fan, or the top of a pile. */
+function pieceOf(object: TableObject, shape: Konva.Node): string | undefined {
+  if (object.kind === 'piece') return object.id;
+  const card = shape.findAncestors(`.${STACK_CARD}`, true).at(0)?.id();
+  if (card && object.items.includes(card)) return card;
+  const { table } = useStore.getState();
+  return table && facePiece(table, object)?.id;
 }
 
 /** Which object on the table a shape on the canvas is part of. */

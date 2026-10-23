@@ -22,6 +22,14 @@ export interface Viewport {
   scale: number;
 }
 
+/** A piece shown large in the middle of the screen, from the moment Space went down. */
+interface Magnifier {
+  piece: string;
+  opened: number;
+  /** Opened by a quick tap, so it stays until Space, Esc or a click closes it. */
+  sticky: boolean;
+}
+
 type ConnectionStatus = 'connecting' | 'online' | 'offline';
 
 /** Who this browser plays as, from `/api/me`. */
@@ -57,6 +65,9 @@ interface TrayfulStore {
   selection: string[];
   /** The top-level object under the pointer; keys act on it when it is not selected. */
   hovered?: string;
+  /** The piece under the pointer, on the table or in the hand, which Space magnifies. */
+  hoveredPiece?: string;
+  magnifier?: Magnifier;
   /** The latest error from the server, shown briefly. */
   error?: { message: string; at: number };
   /** Why the page cannot show a table at all, such as an unknown table name. */
@@ -148,9 +159,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       ...(activity?.motion
         ? { moving: startMotion(s.moving, activity.motion, performance.now()) }
         : {}),
-      // Drop selected and hovered ids that vanished or went into a stack.
-      selection: s.selection.filter((id) => isOnTable(objects[id])),
-      hovered: s.hovered && isOnTable(objects[s.hovered]) ? s.hovered : undefined,
+      ...withoutVanished(s, objects),
     }));
   },
   select: (ids, mode = 'replace') =>
@@ -165,6 +174,22 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       return { selection: [...next] };
     }),
 }));
+
+/**
+ * Drops selected and hovered ids that vanished or went into a stack, and closes the
+ * magnifier on a piece that is gone, such as a card someone else took into their hand.
+ */
+function withoutVanished(
+  s: Pick<TrayfulStore, 'selection' | 'hovered' | 'hoveredPiece' | 'magnifier'>,
+  objects: TableView['objects'],
+) {
+  return {
+    selection: s.selection.filter((id) => isOnTable(objects[id])),
+    hovered: s.hovered && isOnTable(objects[s.hovered]) ? s.hovered : undefined,
+    hoveredPiece: s.hoveredPiece && objects[s.hoveredPiece] ? s.hoveredPiece : undefined,
+    magnifier: s.magnifier && objects[s.magnifier.piece] ? s.magnifier : undefined,
+  };
+}
 
 function isOnTable(object: TableObject | undefined): boolean {
   return object !== undefined && onTable(object);

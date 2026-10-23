@@ -238,6 +238,10 @@ function HandCard({ piece, length }: Readonly<{ piece: Piece; length: number }>)
         e.dataTransfer.effectAllowed = 'move';
       }}
       onDoubleClick={play}
+      onMouseEnter={() => useStore.setState({ hoveredPiece: piece.id })}
+      onMouseLeave={() =>
+        useStore.setState((s) => (s.hoveredPiece === piece.id ? { hoveredPiece: undefined } : {}))
+      }
     >
       <Thumbnail piece={piece} length={length} face="up" />
     </div>
