@@ -1,4 +1,13 @@
-import type { Piece, TableState } from '@trayful/core';
+import {
+  boundsOf,
+  ridersOf,
+  toLocal,
+  type Bounds,
+  type Piece,
+  type TableObject,
+  type TableState,
+} from '@trayful/core';
+import type { Types } from './render/geometry';
 import { useStore } from './store';
 
 /** Releasing Space sooner than this after pressing it keeps the magnifier open. */
@@ -38,4 +47,37 @@ export function magnifiedPiece(table: TableState, id: string): Piece | undefined
   const piece = table.objects[id];
   if (piece?.kind !== 'piece') return undefined;
   return { ...piece, pos: [0, 0], rot: 0, face: piece.hand ? 'up' : piece.face };
+}
+
+/** What the magnifier shows: a piece, unturned around (0, 0), and what lies on it. */
+export interface MagnifiedScene {
+  piece: Piece;
+  /** Everything snapped onto the piece, and onto those in turn, bottom to top, placed relative to it. */
+  riders: TableObject[];
+  /** The box around the piece and its riders, to fit the window to. */
+  bounds: Bounds;
+}
+
+/**
+ * The magnified piece with whatever rides along with it, so a player board shows
+ * with the workers and cards on it. Only what the player may see is on the table,
+ * so riders show as they do there.
+ */
+export function magnifiedScene(
+  table: TableState,
+  types: Types,
+  id: string,
+): MagnifiedScene | undefined {
+  const piece = magnifiedPiece(table, id);
+  const owner = table.objects[id];
+  if (!piece || !owner) return undefined;
+  const riders = ridersOf(table.objects, [id])
+    .map((rider) => table.objects[rider]!)
+    .sort((a, b) => a.z - b.z)
+    .map((rider) => ({
+      ...rider,
+      pos: toLocal(owner, [0, 0], rider.pos),
+      rot: rider.rot - owner.rot,
+    }));
+  return { piece, riders, bounds: boundsOf(table, types, [piece, ...riders]) };
 }
