@@ -112,6 +112,8 @@ Agents can aim moves at board spots by name, such as `main-board/fields/3`, or d
 
 Agents can also build your prototype with you: ask Claude for "an event card with a title, a rule text and a season band, and a deck of six events", and it writes the component into your library, puts the cards in the box and looks at a picture of the result, while the new deck appears on your table. Every change is checked first, so an agent cannot leave your project broken. See [Let an agent build components](docs/howto/agent-builds-components.md).
 
+When your game lives in a repository of its own, `npx trayful skill` in that repository adds a [skill](skills/trayful/SKILL.md) that teaches Claude Code how to work with Trayful: the design loop, recipes for decks, tracks and boards, and the things that trip agents up. See [Use Trayful from your game's repository](docs/howto/game-repository.md).
+
 | Projects and authoring tools                                              | What they do                                                      |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `list_projects`, `open_table`, `duplicate_table`, `delete_table`          | Find projects and tables, and switch the table the agent plays on |
@@ -171,6 +173,7 @@ npx trayful migrate my-game
 | `trayful mcp [project-dir]`               | MCP server on stdio, for agents                                |
 | `trayful validate <project-dir> [--json]` | Check a project and report problems with file, line and column |
 | `trayful migrate <project-dir>`           | Rewrite a `trayful/1` project in the current file format       |
+| `trayful skill [repo-dir]`                | Add the agent skill to a repository, for Claude Code           |
 
 Run them as `npx trayful …`, or as `pnpm trayful …` from a clone of this repository. See the [CLI README](packages/cli/README.md) for every option.
 
@@ -232,6 +235,7 @@ pnpm trayful play examples/harvest-moon
 | [`examples/starter`](examples/starter)                     | The template `trayful new` copies; validated in CI                                                                |
 | [`examples/piecepack`](examples/piecepack)                 | The public-domain piecepack with Backgammon and Tablut, built to find what Trayful cannot do yet; validated in CI |
 | [`docs`](docs)                                             | HOWTO guides and the format reference (partly generated)                                                          |
+| [`skills/trayful`](skills/trayful)                         | The agent skill `trayful skill` installs: how to design and play over MCP; a test keeps it true to the tools      |
 | [`e2e`](e2e)                                               | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players                           |
 | [`scripts`](scripts)                                       | Code generation, example validation and the dev server                                                            |
 | [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml) | Running the server in a container; `scripts/docker.sh` starts it                                                  |

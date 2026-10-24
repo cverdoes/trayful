@@ -1,9 +1,9 @@
 // Files Trayful ships with besides its code: the browser app, the starter project,
-// the JSON Schemas and the docs.
+// the JSON Schemas, the docs and the agent skill.
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-export type Resource = 'app' | 'starter' | 'schemas' | 'docs';
+export type Resource = 'app' | 'starter' | 'schemas' | 'docs' | 'skill';
 
 /** Where each resource sits in this repository, from its root. The npm package copies them. */
 export const RESOURCE_SOURCES: Record<Resource, string> = {
@@ -11,6 +11,7 @@ export const RESOURCE_SOURCES: Record<Resource, string> = {
   starter: 'examples/starter',
   schemas: 'packages/formats/schema',
   docs: 'docs',
+  skill: 'skills/trayful',
 };
 
 /** The repository root, seen from `packages/server/src/`. */

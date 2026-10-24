@@ -11,7 +11,7 @@ pnpm trayful play my-game
 claude mcp add --transport http trayful http://127.0.0.1:4317/mcp
 ```
 
-See the [main README](../../README.md#let-an-agent-play) for other clients.
+See the [main README](../../README.md#let-an-agent-play) for other clients. If your game has a repository of its own, also add the Trayful skill to it, as in [Use Trayful from your game's repository](game-repository.md).
 
 ## Ask for what you want
 

@@ -11,6 +11,7 @@ describe('resourceDir', () => {
     expect(existsSync(path.join(resourceDir('starter'), 'trayful.yaml'))).toBe(true);
     expect(existsSync(path.join(resourceDir('schemas'), 'manifest.schema.json'))).toBe(true);
     expect(existsSync(path.join(resourceDir('docs'), 'README.md'))).toBe(true);
+    expect(existsSync(path.join(resourceDir('skill'), 'SKILL.md'))).toBe(true);
   });
 
   it('prefers the resources folder beside a packaged Trayful', () => {

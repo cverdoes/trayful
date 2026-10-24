@@ -11,6 +11,7 @@ pnpm trayful mcp examples/harvest-moon               # MCP server on stdio, for 
 pnpm trayful validate examples/harvest-moon          # human-readable report
 pnpm trayful validate examples/harvest-moon --json   # for tools and agents
 pnpm trayful migrate ../old-game                     # rewrite a trayful/1 project in trayful/2
+pnpm trayful skill ../my-game-repo                   # add the agent skill to a repository
 ```
 
 `new <folder> [--name <name>]` copies [`examples/starter`](../../examples/starter) into a new folder, names the game and points the editor schema hints at this checkout (or, from the npm package, at that release's schemas on jsDelivr).
@@ -35,6 +36,8 @@ pnpm trayful migrate ../old-game                     # rewrite a trayful/1 proje
 
 `migrate <project-dir>` rewrites a project in the first file format, `trayful/1`, in the current one, `trayful/2`, and lists the files it wrote (`migrateFolder` in the server package). Libraries are written afresh, keeping the comment lines at their top; images and palette colours move to a new `assets.yaml`; inventory entries name their `component` instead of their `type`; and setup steps that place a board get `lock: true`. The manifest, inventory and setups are edited in place, so their comments stay. It exits with `1` for a project that is already current or has errors, and changes nothing then. See [Versioning](../../docs/reference/versioning.md#moving-a-project-to-trayful2).
 
+`skill [repo-dir]` copies the agent skill from [`skills/trayful`](../../skills/trayful) into `<repo-dir>/.claude/skills/trayful/` (default: the current folder), where Claude Code finds it (`installSkill` in the server package). Running it again replaces the files Trayful ships with this version's, and leaves any other files in that folder alone.
+
 `bin/trayful.js` runs the CLI from source without `pnpm`, for MCP client configs: `node /path/to/trayful/packages/cli/bin/trayful.js mcp /path/to/project`.
 
 `--version` prints the version from this package's `package.json`.
@@ -45,7 +48,7 @@ pnpm trayful migrate ../old-game                     # rewrite a trayful/1 proje
 
 - `trayful.mjs`: the CLI, server, core and formats bundled into one file with esbuild, so the package has no dependencies to install.
 - `trayful.js`: the `trayful` command. It checks for Node.js 22.12 or newer, then loads the bundle.
-- `resources/`: the built browser app, the starter project, the JSON Schemas and the docs, where the server's `resourceDir` looks for them.
+- `resources/`: the built browser app, the starter project, the JSON Schemas, the docs and the agent skill, where the server's `resourceDir` looks for them.
 - `package.json` (generated, with this package's version), `README.md` (from [`npm/README.md`](npm/README.md), the npm page), `LICENSE.md` and `THIRD_PARTY_LICENSES.md` (the licence of every package bundled into the CLI or the browser app).
 
 Try it the way a user would: `cd packages/cli/dist && npm pack`, then `scripts/test-package.sh packages/cli/dist/trayful-<version>.tgz` from the repo root. It installs the tarball in an empty folder and runs `npx trayful --version`, `new`, `play` and an MCP handshake there. CI packs the package once and runs this script on Linux, macOS and Windows with Node 22 and 24; the packed tarball is attached to each run as `npm-package`.

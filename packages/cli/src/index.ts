@@ -5,6 +5,7 @@ import { migrate } from './migrate.js';
 import { newProject } from './new.js';
 import { parsePlayArgs } from './options.js';
 import { play } from './play.js';
+import { skill } from './skill.js';
 import { TunnelError } from './tunnel.js';
 import { validate } from './validate.js';
 import { version } from './version.js';
@@ -36,6 +37,9 @@ Commands:
                            Add --json for machine-readable output.
   migrate <project-dir>    Rewrite a project made for an earlier Trayful in the current
                            file format.
+  skill [repo-dir]         Add the Trayful skill to a repository (default: this folder),
+                           in .claude/skills/trayful, so Claude Code knows how to design
+                           and play with Trayful over MCP there.
   help                     Show this message.
   --version                Show which version of Trayful this is.
 `;
@@ -44,6 +48,7 @@ const USAGE: Record<string, string> = {
   new: 'trayful new <folder> [--name <name>]',
   validate: 'trayful validate <project-dir> [--json]',
   migrate: 'trayful migrate <project-dir>',
+  skill: 'trayful skill [repo-dir]',
   play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel] [--container]',
   mcp: 'trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>]',
 };
@@ -59,6 +64,8 @@ export async function run(args: string[], out = console.log, err = console.error
         return await newProject(rest, out);
       case 'migrate':
         return await migrate(rest, out);
+      case 'skill':
+        return await skill(rest, out);
       case 'play':
         return await play(parsePlayArgs(rest), out);
       case 'mcp':

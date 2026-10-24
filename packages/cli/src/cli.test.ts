@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -103,6 +103,23 @@ describe('trayful new', () => {
     const r = await capture(['new', 'game', '--name']);
     expect(r.code).toBe(2);
     expect(r.err).toContain('--name needs a name.');
+  });
+});
+
+describe('trayful skill', () => {
+  it('adds the skill to a repository, then brings it up to date', async () => {
+    const repo = await mkdtemp(path.join(os.tmpdir(), 'trayful-repo-'));
+    const dir = path.join(repo, '.claude', 'skills', 'trayful');
+    const added = await capture(['skill', repo]);
+    expect(added.code).toBe(0);
+    expect(added.out).toMatch(/^Added the Trayful skill in .*\.claude\/skills\/trayful\./);
+    expect(await readFile(path.join(dir, 'SKILL.md'), 'utf8')).toMatch(/^---\nname: trayful\n/);
+
+    await writeFile(path.join(dir, 'SKILL.md'), 'old');
+    await writeFile(path.join(dir, 'notes.md'), 'mine');
+    expect((await capture(['skill', repo])).out).toMatch(/^Updated the Trayful skill/);
+    expect(await readFile(path.join(dir, 'SKILL.md'), 'utf8')).not.toBe('old');
+    expect(await readFile(path.join(dir, 'notes.md'), 'utf8')).toBe('mine');
   });
 });
 

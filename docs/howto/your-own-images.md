@@ -86,6 +86,8 @@ When every card shows a different tile of the same sheet, write `tile: instance`
   is: piece
   flippable: true
   stackable: true
+  fields:
+    name: string
   face:
     image: { asset: creatures, tile: instance }
 ```
