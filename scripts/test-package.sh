@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Installs a packed trayful tarball in an empty folder and runs it the way a user
-# would: `npx trayful --version`, `new`, `play` and an MCP handshake.
+# would: `npx trayful --version`, `new`, `skill`, `play` and an MCP handshake.
 # Usage: scripts/test-package.sh path/to/trayful-x.y.z.tgz
 set -euo pipefail
 
@@ -18,6 +18,9 @@ test "$version" = "$(node -p 'require("./node_modules/trayful/package.json").ver
 
 npx trayful new my-game
 grep -q "cdn.jsdelivr.net/npm/trayful@$version/resources/schemas" my-game/trayful.yaml
+
+npx trayful skill
+grep -q "^name: trayful$" .claude/skills/trayful/SKILL.md
 
 # Checks that the table starts and serves the app, then exits.
 TRAYFUL_SMOKE_TEST=1 npx trayful play my-game --no-open

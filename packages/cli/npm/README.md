@@ -34,7 +34,7 @@ Add Trayful as an MCP server in Claude Desktop, Claude Code or another MCP clien
 }
 ```
 
-The agent can then see and play the table you have open, and design new components with you.
+The agent can then see and play the table you have open, and design new components with you. In your game's repository, `npx trayful skill` adds a skill that teaches Claude Code how to work with Trayful.
 
 ## More
 
