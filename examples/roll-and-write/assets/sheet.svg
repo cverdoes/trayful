@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1000" viewBox="0 0 140 100">
+  <!-- The Six Rows score sheet, drawn in millimetres. -->
+  <rect width="140" height="100" fill="#fbf7ee"/>
+  <g font-family="sans-serif" fill="#2b2a33">
+    <text x="6" y="12" font-size="7" font-weight="bold">SIX ROWS</text>
+    <text x="60" y="11" font-size="4">Name</text>
+    <text x="91" y="19" font-size="3.2">Score</text>
+    <text x="70" y="89.5" font-size="4" font-weight="bold">Total</text>
+    <text x="13" y="26.5" font-size="5" font-weight="bold" text-anchor="middle">1</text>
+    <text x="13" y="36.5" font-size="5" font-weight="bold" text-anchor="middle">2</text>
+    <text x="13" y="46.5" font-size="5" font-weight="bold" text-anchor="middle">3</text>
+    <text x="13" y="56.5" font-size="5" font-weight="bold" text-anchor="middle">4</text>
+    <text x="13" y="66.5" font-size="5" font-weight="bold" text-anchor="middle">5</text>
+    <text x="13" y="76.5" font-size="5" font-weight="bold" text-anchor="middle">6</text>
+  </g>
+  <g fill="none" stroke="#2b2a33" stroke-width="0.4">
+    <rect x="26" y="21" width="8" height="8" rx="1"/>
+    <rect x="36" y="21" width="8" height="8" rx="1"/>
+    <rect x="46" y="21" width="8" height="8" rx="1"/>
+    <rect x="56" y="21" width="8" height="8" rx="1"/>
+    <rect x="66" y="21" width="8" height="8" rx="1"/>
+    <rect x="76" y="21" width="8" height="8" rx="1"/>
+    <rect x="26" y="31" width="8" height="8" rx="1"/>
+    <rect x="36" y="31" width="8" height="8" rx="1"/>
+    <rect x="46" y="31" width="8" height="8" rx="1"/>
+    <rect x="56" y="31" width="8" height="8" rx="1"/>
+    <rect x="66" y="31" width="8" height="8" rx="1"/>
+    <rect x="76" y="31" width="8" height="8" rx="1"/>
+    <rect x="26" y="41" width="8" height="8" rx="1"/>
+    <rect x="36" y="41" width="8" height="8" rx="1"/>
+    <rect x="46" y="41" width="8" height="8" rx="1"/>
+    <rect x="56" y="41" width="8" height="8" rx="1"/>
+    <rect x="66" y="41" width="8" height="8" rx="1"/>
+    <rect x="76" y="41" width="8" height="8" rx="1"/>
+    <rect x="26" y="51" width="8" height="8" rx="1"/>
+    <rect x="36" y="51" width="8" height="8" rx="1"/>
+    <rect x="46" y="51" width="8" height="8" rx="1"/>
+    <rect x="56" y="51" width="8" height="8" rx="1"/>
+    <rect x="66" y="51" width="8" height="8" rx="1"/>
+    <rect x="76" y="51" width="8" height="8" rx="1"/>
+    <rect x="26" y="61" width="8" height="8" rx="1"/>
+    <rect x="36" y="61" width="8" height="8" rx="1"/>
+    <rect x="46" y="61" width="8" height="8" rx="1"/>
+    <rect x="56" y="61" width="8" height="8" rx="1"/>
+    <rect x="66" y="61" width="8" height="8" rx="1"/>
+    <rect x="76" y="61" width="8" height="8" rx="1"/>
+    <rect x="26" y="71" width="8" height="8" rx="1"/>
+    <rect x="36" y="71" width="8" height="8" rx="1"/>
+    <rect x="46" y="71" width="8" height="8" rx="1"/>
+    <rect x="56" y="71" width="8" height="8" rx="1"/>
+    <rect x="66" y="71" width="8" height="8" rx="1"/>
+    <rect x="76" y="71" width="8" height="8" rx="1"/>
+    <rect x="91" y="21" width="18" height="8" rx="1"/>
+    <rect x="91" y="31" width="18" height="8" rx="1"/>
+    <rect x="91" y="41" width="18" height="8" rx="1"/>
+    <rect x="91" y="51" width="18" height="8" rx="1"/>
+    <rect x="91" y="61" width="18" height="8" rx="1"/>
+    <rect x="91" y="71" width="18" height="8" rx="1"/>
+    <rect x="91" y="84" width="18" height="8" rx="1" stroke-width="0.8"/>
+    <line x1="71" y1="14" x2="129" y2="14"/>
+  </g>
+</svg>

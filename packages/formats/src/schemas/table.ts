@@ -6,6 +6,13 @@ import { TABLE_FORMAT, Vec2, Scalar, FaceSide } from './common.js';
 // Table state (written by Trayful)
 // ---------------------------------------------------------------------------
 
+export const Mark = z
+  .union([
+    z.strictObject({ stamp: z.string().describe('Id of the stamp pressed here.') }),
+    z.strictObject({ text: z.string().min(1).describe('The text written here.') }),
+  ])
+  .meta({ id: 'Mark', description: 'What is on one stamp or text spot: a stamp, or some text.' });
+
 export const PieceObject = z
   .strictObject({
     kind: z.literal('piece').describe('Marks a single piece.'),
@@ -37,6 +44,12 @@ export const PieceObject = z
       .optional()
       .describe(
         'The bag holding this piece, as `pieceId/target`. Nobody sees it until it is drawn; its `pos` is then unused.',
+      ),
+    marks: z
+      .record(z.string(), Mark)
+      .optional()
+      .describe(
+        "Stamps and text on the piece's `stamp` and `text` spots, by spot as `target/index`. Whoever sees the piece sees its marks.",
       ),
   })
   .meta({ id: 'PieceObject', description: 'One component on the table.' });
@@ -81,6 +94,7 @@ export const TableFile = z
     description: 'A saved table. Written by Trayful; not meant to be edited by hand.',
   });
 
+export type Mark = z.infer<typeof Mark>;
 export type PieceObject = z.infer<typeof PieceObject>;
 export type StackObject = z.infer<typeof StackObject>;
 export type TableFile = z.infer<typeof TableFile>;

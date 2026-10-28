@@ -1,5 +1,6 @@
 import type { Vec2 } from '@trayful/formats/browser';
 import type { StackLayout } from './layout.js';
+import { erase, mark } from './marks.js';
 import { move } from './move.js';
 import { flip, roll, rotate, setValue } from './piece-commands.js';
 import { deal, draw, layout, shuffle, stack, take } from './pile-commands.js';
@@ -55,7 +56,14 @@ export type Command =
   | { type: 'roll'; id: string }
   /** Set a counter's number or a die's face. */
   | { type: 'setValue'; id: string; value: number | string }
-  | { type: 'lock'; ids: string[]; locked: boolean };
+  | { type: 'lock'; ids: string[]; locked: boolean }
+  /**
+   * Press a `stamp` onto one stamp spot, or write `text` on one text spot, such as
+   * `sheet.1/boxes/4`; what was there before is replaced. Give one of the two.
+   */
+  | { type: 'mark'; at: string; stamp?: string; text?: string }
+  /** Take the stamp or text off one spot. */
+  | { type: 'erase'; at: string };
 
 export type CommandType = Command['type'];
 
@@ -99,6 +107,12 @@ export function applyCommand(state: TableState, command: Command, catalog: Catal
     case 'lock':
       for (const id of unique(command.ids))
         tx.update(tx.onTable(id), { locked: command.locked || undefined });
+      break;
+    case 'mark':
+      mark(tx, command);
+      break;
+    case 'erase':
+      erase(tx, command.at);
       break;
     default:
       throw new CommandError(`Unknown command "${(command as { type: string }).type}".`);

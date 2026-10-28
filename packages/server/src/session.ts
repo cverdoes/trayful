@@ -270,7 +270,8 @@ export class TableSession {
     if (typeof value === 'string') this.checkReference(value, player);
     else if (Array.isArray(value)) for (const v of value) this.checkReach(v, player);
     else if (value && typeof value === 'object') {
-      for (const v of Object.values(value)) this.checkReach(v, player);
+      // Text written on a sheet is only text: it names no piece.
+      for (const [key, v] of Object.entries(value)) if (key !== 'text') this.checkReach(v, player);
     }
   }
 

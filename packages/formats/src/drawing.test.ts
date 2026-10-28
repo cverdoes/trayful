@@ -53,6 +53,17 @@ describe('drawingOf: outline and fill', () => {
     expect(draw(piece({ is: 'zone' }))).toMatchObject({ fill: 'transparent', dashed: true });
   });
 
+  it('draws a stamp with neither background nor outline, unless it asks', () => {
+    expect(draw(piece({ is: 'stamp' }))).toMatchObject({
+      fill: 'transparent',
+      stroke: 'transparent',
+      dashed: false,
+    });
+    expect(draw(piece({ is: 'stamp', face: { stroke: 'red' } }))).toMatchObject({
+      stroke: '#d94b3d',
+    });
+  });
+
   it('draws a plain back for a flippable piece that does not describe its back', () => {
     const type = piece({ face: { fill: 'red' }, flippable: true });
     expect(draw(type, { face: 'down' })).toMatchObject({ fill: BACK_FILL, plainBack: true });

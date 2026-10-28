@@ -31,8 +31,9 @@ export function typeProblems(type: ComponentType): Problem[] {
 
 const BEHAVIOURS = ['flippable', 'rotates', 'stackable', 'container'] as const;
 
-/** Behaviours belong to pieces and zones, values to dice and counters. */
+/** Behaviours belong to pieces and zones, values to dice and counters; stamps have neither. */
 function representationProblems(type: ComponentType): Problem[] {
+  if (type.is === 'stamp') return stampProblems(type);
   const problems: Problem[] = [];
   if (isValued(type)) {
     for (const key of BEHAVIOURS) {
@@ -42,6 +43,29 @@ function representationProblems(type: ComponentType): Problem[] {
   } else if (type.values) {
     problems.push({ path: ['values'], message: 'Only dice and counters have values.' });
   }
+  return problems;
+}
+
+/** A stamp is only its face: no behaviours, values or data of its own. */
+function stampProblems(type: ComponentType): Problem[] {
+  const problems: Problem[] = [];
+  for (const key of [...BEHAVIOURS, 'values', 'fields'] as const) {
+    if (type[key] !== undefined)
+      problems.push({ path: [key], message: `A stamp cannot have "${key}".` });
+  }
+  for (const [i, label] of (type.face?.labels ?? []).entries()) {
+    if (label.field !== undefined)
+      problems.push({
+        path: ['face', 'labels', i, 'field'],
+        message: 'A stamp has no fields; give its label a "text".',
+      });
+  }
+  const image = type.face?.image;
+  if (typeof image === 'object' && image.tile === 'instance')
+    problems.push({
+      path: ['face', 'image', 'tile'],
+      message: 'A stamp is not in the inventory, so it cannot pick its own tile.',
+    });
   return problems;
 }
 
@@ -85,6 +109,11 @@ function snapProblems(type: ComponentType): Problem[] {
     }
     const mode = modeProblem(target);
     if (mode) problems.push({ path: ['container', i, 'mode'], message: mode });
+    if (target.mode === 'text' && target.accepts)
+      problems.push({
+        path: ['container', i, 'accepts'],
+        message: 'Text spots take text, not components; leave out "accepts".',
+      });
     if (ids.has(target.id)) {
       problems.push({
         path: ['container', i, 'id'],

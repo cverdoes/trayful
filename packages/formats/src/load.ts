@@ -221,6 +221,11 @@ class ProjectLoader {
         report(keyPath, `Unknown component "${entry.component}". Define it in a library first.`);
       return undefined;
     }
+    if (type.is === 'stamp') {
+      if (entry.deck) this.brokenDecks.add(entry.deck);
+      report(keyPath, `"${type.id}" is a stamp: it is pressed onto sheets, not kept in the box.`);
+      return undefined;
+    }
     const modes = (['items', 'from', 'each'] as const).filter((k) => entry[k] !== undefined);
     if (modes.length > 1) {
       report([...entryPath, modes[1]!], `Use only one of "items", "from" or "each" in an entry.`);

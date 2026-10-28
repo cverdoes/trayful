@@ -1,4 +1,4 @@
-import { holdsMany, type Vec2 } from '@trayful/formats/browser';
+import { holdsMany, takesMarks, type Vec2 } from '@trayful/formats/browser';
 import { roomIn } from './room.js';
 import {
   accepts,
@@ -256,15 +256,14 @@ export class Transaction {
    * that nothing is being put onto itself.
    */
   spots(ref: string, objects: TableObject[], moving: ReadonlySet<string>): SnapSpot[] {
-    let spots: SnapSpot[];
-    try {
-      spots = resolveSpots(this.current(), this.catalog, ref);
-    } catch (error) {
-      if (error instanceof SnapError) throw new CommandError(error.message);
-      throw error;
-    }
+    const spots = this.resolve(ref);
     const first = spots[0]!;
     if (moving.has(first.owner)) throw new CommandError(`Cannot put "${first.owner}" onto itself.`);
+    if (takesMarks(first.mode)) {
+      throw new CommandError(
+        `"${first.owner}/${first.target}" takes ${first.mode === 'stamp' ? 'stamps' : 'text'}, not pieces; use "mark".`,
+      );
+    }
     for (const piece of objects.flatMap((o) => this.piecesOf(o))) {
       const type = this.typeOf(piece);
       if (!accepts(first, type)) {
@@ -274,6 +273,16 @@ export class Transaction {
       }
     }
     return spots;
+  }
+
+  /** The spots a snap target names, as `resolveSpots` finds them, failing as a command. */
+  resolve(ref: string): SnapSpot[] {
+    try {
+      return resolveSpots(this.current(), this.catalog, ref);
+    } catch (error) {
+      if (error instanceof SnapError) throw new CommandError(error.message);
+      throw error;
+    }
   }
 
   isFree(ref: string, ignore: ReadonlySet<string> = new Set()): boolean {

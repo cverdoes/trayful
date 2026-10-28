@@ -54,7 +54,7 @@ export const Template = z.string().meta({
 // ---------------------------------------------------------------------------
 
 /** What a component is on the table. Its behaviours (flipping, stacking...) are separate properties. */
-export const REPRESENTATIONS = ['piece', 'zone', 'die', 'counter'] as const;
+export const REPRESENTATIONS = ['piece', 'zone', 'die', 'counter', 'stamp'] as const;
 export type Representation = (typeof REPRESENTATIONS)[number];
 
 /** What each representation is for, shown in the editor and the reference. */
@@ -66,6 +66,10 @@ export const REPRESENTATION_INFO: Record<Representation, { summary: string; valu
   zone: { summary: 'A marked area of the table, drawn as a dashed outline.', valued: false },
   die: { summary: 'Shows one of its values; rolls to a random one.', valued: true },
   counter: { summary: 'Shows one of its values; steps up and down.', valued: true },
+  stamp: {
+    summary: 'A mark pressed onto a stamp spot of a sheet, as often as you like; it never moves.',
+    valued: false,
+  },
 };
 
 export const SHAPES = [

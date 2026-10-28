@@ -3,6 +3,7 @@ import {
   dropAreas,
   dropMode,
   holdsMany,
+  takesMarks,
   type ComponentType,
   type DropMode,
   type Vec2,
@@ -38,6 +39,8 @@ export interface SnapSpot {
   mode: DropMode;
   /** Areas only: width and height before rotation. */
   area?: Vec2;
+  /** Grid spots only: the distance between cell centres, which is a cell's size. */
+  cell?: Vec2;
 }
 
 /** Space between things lying in a row, in millimetres. */
@@ -108,9 +111,11 @@ export function spotsOf(piece: Piece, type: ComponentType): SnapSpot[] {
       mode: dropMode(target),
     };
     let locals: Vec2[] = [];
+    let cell: Vec2 | undefined;
     if (target.grid) {
-      const { origin, cols, rows, cell } = target.grid;
-      const [cw, ch] = typeof cell === 'number' ? [cell, cell] : cell;
+      const { origin, cols, rows } = target.grid;
+      cell = sizeOf({ size: target.grid.cell });
+      const [cw, ch] = cell;
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++)
           locals.push([origin[0] + col * cw, origin[1] + row * ch]);
@@ -137,6 +142,7 @@ export function spotsOf(piece: Piece, type: ComponentType): SnapSpot[] {
         ref: `${piece.id}/${target.id}/${index}`,
         index,
         pos: toTable(piece, size, local),
+        ...(cell ? { cell } : {}),
       }),
     );
   }
@@ -199,8 +205,9 @@ function findOwner(state: TableState, ref: string): Piece {
   throw new SnapError(`No piece "${ref}" on the table.`);
 }
 
-/** Whether a piece of this kind may snap to the spot. */
+/** Whether a piece of this kind may snap to the spot. Stamp and text spots take no pieces. */
 export function accepts(spot: SnapSpot, type: ComponentType | undefined): boolean {
+  if (takesMarks(spot.mode)) return false;
   if (!spot.accepts) return true;
   return !!type && areaAccepts(spot, type);
 }

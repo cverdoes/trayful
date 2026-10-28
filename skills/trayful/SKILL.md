@@ -36,6 +36,7 @@ Other authoring tools: `rename_type`, `rename_field` and `rename_image` rename t
 - **Ids** are lowercase letters, digits and dashes. Components get ids such as `worker.red.1`; decks become stacks named `deck:<deck>`.
 - **Fields** feed `{{field}}` placeholders in labels, layers and colours. A face's own `image` takes no placeholder; use `tile: instance` to vary a tiled image per card.
 - **Boards and tracks** declare drop areas under `container`: `grid` for regular spots, `points` for a track that bends, `area` for a free space. `mode: group` lets several markers share a spot; `row` lines cards up; `bag` hides what goes in. Name a spot `board/area/3` and a whole area `board/area`.
+- **Score sheets** for roll-and-write games are pieces whose spots have `mode: stamp` (boxes to tick with a stamp it `accepts`) or `mode: text` (boxes to write in). Stamps are components with `is: stamp` and only a `face`; they are never put in the inventory, since any number can be pressed.
 - **Setups** (`setups/*.yaml`) and the manifest (`trayful.yaml`) have no tools. Edit them as files when the project folder is in your workspace, then run `validate_project`, or tell the person what to add.
 
 ### Images
@@ -44,12 +45,12 @@ Other authoring tools: `rename_type`, `rename_field` and `rename_image` rename t
 - Large images do not fit through MCP. Over HTTP a request is limited to 1 MiB, so an image over about 700 KB fails once in base64, and any base64 image costs a lot of context. When the project folder is in your workspace, copy the file into its `assets/` folder with your own file tools instead, name it in `assets.yaml` (`creatures: { file: assets/creatures.png, rows: 3, cols: 4 }`), and run `validate_project`. Open tables pick up the file at once.
 - Prefer SVG with a `viewBox` in millimetres for boards you draw yourself, such as `viewBox="0 0 600 400"`, so the drawing lines up with the drop areas. Trayful does not draw the spots; put them in the artwork.
 
-See [recipes.md](recipes.md) for worked examples: a deck from a tiled image, a score track, a board with drop areas, and a deck from a spreadsheet.
+See [recipes.md](recipes.md) for worked examples: a deck from a tiled image, a score track, a board with drop areas, a roll-and-write score sheet, and a deck from a spreadsheet.
 
 ## Playing
 
 1. Start with `describe_table`. It lists every pile and piece with its position, every drop area with its free spots, your hand and how many cards the others hold. `query_objects` gives the same as JSON, filtered by type, field values, region or what is inside a stack.
-2. Move with `move`, `draw`, `deal`, `take`, `stack`, `flip`, `rotate`, `roll`, `set_counter`, `shuffle`, `layout` and `lock`. Aim at spots by name rather than coordinates when the board has them.
+2. Move with `move`, `draw`, `deal`, `take`, `stack`, `flip`, `rotate`, `roll`, `set_counter`, `shuffle`, `layout` and `lock`. Aim at spots by name rather than coordinates when the board has them. On score sheets, `mark` presses a stamp onto a stamp spot or writes text on a text spot (`at: sheet.1/boxes/4`), and `erase` clears one; `describe_table` lists what each spot holds.
 3. `reset_table` starts over from the project's setup, and can be undone. `get_history` shows what people did since you last looked.
 
 Play fair:

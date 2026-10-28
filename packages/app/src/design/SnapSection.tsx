@@ -25,6 +25,8 @@ const MODE_LABEL: Record<DropMode, string> = {
   single: 'One thing per spot',
   pile: 'A stack on each spot',
   group: 'A group on each spot (pick any)',
+  stamp: 'A box to stamp',
+  text: 'A box to write in',
   free: 'Things where they are dropped',
   row: 'A row, left to right',
   bag: 'A bag: hidden, drawn at random',
@@ -37,7 +39,7 @@ const MODE_LABEL: Record<DropMode, string> = {
 export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
   const selected = useDesign((s) => s.target);
   const [adding, setAdding] = useState(false);
-  if (isValued(type)) return null;
+  if (isValued(type) || type.is === 'stamp') return null;
   const targets = type.container ?? [];
   const add = (kind: NewTargetKind) => {
     setAdding(false);
@@ -77,7 +79,12 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
 }
 
 /** What one spot of a target in this mode holds, as the list of drop areas names it. */
-const SPOT_NOUN: Partial<Record<DropMode, string>> = { pile: 'stack', group: 'group' };
+const SPOT_NOUN: Partial<Record<DropMode, string>> = {
+  pile: 'stack',
+  group: 'group',
+  stamp: 'stamp box',
+  text: 'text box',
+};
 
 function describe(target: SnapTarget): string {
   const kind = targetKind(target);
@@ -106,17 +113,19 @@ function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: n
           <TextInput id={id} value={target.id} onChange={(v) => setValue(at('id'))(v ?? '')} />
         )}
       </Row>
-      <Row label="Accepts" path={at('accepts')}>
-        {(id) => (
-          <ComponentPicker
-            id={id}
-            value={target.accepts}
-            options={acceptOptions(types)}
-            placeholder="anything"
-            onChange={setValue(at('accepts'))}
-          />
-        )}
-      </Row>
+      {target.mode !== 'text' && (
+        <Row label="Accepts" path={at('accepts')}>
+          {(id) => (
+            <ComponentPicker
+              id={id}
+              value={target.accepts}
+              options={acceptOptions(types, target.mode === 'stamp')}
+              placeholder={target.mode === 'stamp' ? 'any stamp' : 'anything'}
+              onChange={setValue(at('accepts'))}
+            />
+          )}
+        </Row>
+      )}
       <Row label="Holds" path={at('mode')}>
         {(id) => (
           <Select

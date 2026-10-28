@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=../../packages/formats/schema/assets.schema.json
+kind: assets
+images:
+  sheet: assets/sheet.svg
+  cross: assets/cross.svg
+  ring: assets/ring.svg
+colors:
+  ink: '#2b2a33'
+  paper: '#fbf7ee'
+  pen: '#2f5fa8'
+  pencil: '#b23a2e'

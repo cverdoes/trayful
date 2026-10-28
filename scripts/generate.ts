@@ -49,7 +49,7 @@ const KINDS: { kind: FileKind; file: string; example?: string; intro: string }[]
     file: 'library.md',
     example: 'library/cards.yaml',
     intro:
-      'Library files define components. A component has a name and a size in millimetres, says what it `is` (a piece, a zone, a die or a counter), describes its `face`, and switches on the behaviours it needs: `flippable`, `rotates`, `stackable`, `container`, or `values` for dice and counters. Each behaviour is off unless written, and `true` turns one on with its defaults.',
+      'Library files define components. A component has a name and a size in millimetres, says what it `is` (a piece, a zone, a die, a counter or a stamp), describes its `face`, and switches on the behaviours it needs: `flippable`, `rotates`, `stackable`, `container`, or `values` for dice and counters. A stamp has only its face. Each behaviour is off unless written, and `true` turns one on with its defaults.',
   },
   {
     kind: 'assets',

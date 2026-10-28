@@ -87,12 +87,19 @@ export function editType(type: ComponentType, path: Path, value: unknown): Compo
 /** Behaviours of pieces and zones, which dice and counters do not have. */
 const PIECE_BEHAVIOURS = ['flippable', 'rotates', 'stackable', 'container'] as const;
 
+/** What a kind of component cannot have. A stamp is only its face. */
+function notFor(is: ComponentType['is']): readonly string[] {
+  if (is === 'stamp') return [...PIECE_BEHAVIOURS, 'values', 'fields'];
+  return REPRESENTATION_INFO[is].valued ? PIECE_BEHAVIOURS : ['values'];
+}
+
 /**
  * The component as another kind of thing, without the behaviours that kind cannot
- * have: a die or counter keeps no flipping or drop areas, a piece or zone no values.
+ * have: a die or counter keeps no flipping or drop areas, a piece or zone no values,
+ * and a stamp neither, nor fields.
  */
 export function withRepresentation(type: ComponentType, is: ComponentType['is']): ComponentType {
-  const dropped: readonly string[] = REPRESENTATION_INFO[is].valued ? PIECE_BEHAVIOURS : ['values'];
+  const dropped = notFor(is);
   const kept = Object.entries(type).filter(([key]) => !dropped.includes(key));
   return { ...Object.fromEntries(kept), is } as ComponentType;
 }

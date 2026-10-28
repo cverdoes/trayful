@@ -9,3 +9,4 @@ export * from './layout.js';
 export * from './setup.js';
 export * from './sync.js';
 export * from './privacy.js';
+export { MAX_MARK_TEXT, markBoxes, markKey, stampsFor, type MarkBox } from './marks.js';

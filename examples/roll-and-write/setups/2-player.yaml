@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/setup.schema.json
+kind: setup
+name: Two players
+description: A score sheet for each player, and the dice between them.
+steps:
+  - place: sheet.1
+    at: [0, 0]
+  - place: sheet.2
+    at: [160, 0]
+  - place: d6
+    at: [60, 80]

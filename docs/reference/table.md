@@ -34,12 +34,31 @@ One component on the table.
 | `snap` | text |  | Snap spot the piece sits in, as `pieceId/target/index`. |
 | `hand` | text |  | Id of the player whose private hand holds this piece. Only that player sees it; its `pos` is then unused. |
 | `bag` | text |  | The bag holding this piece, as `pieceId/target`. Nobody sees it until it is drawn; its `pos` is then unused. |
+| `marks` | map of text to [Mark](#mark) |  | Stamps and text on the piece's `stamp` and `text` spots, by spot as `target/index`. Whoever sees the piece sees its marks. |
 
 ## Vec2
 
 An `[x, y]` pair in millimetres.
 
 Type: [number, number]
+
+## Mark
+
+What is on one stamp or text spot: a stamp, or some text.
+
+Type: object or object
+
+### Mark object form
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `stamp` | text | yes | Id of the stamp pressed here. |
+
+### Mark object form
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `text` | text | yes | The text written here. |
 
 ## StackObject
 

@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=../../packages/formats/schema/manifest.schema.json
+name: Six Rows
+format: trayful/2
+version: '0.1'
+description: A small roll-and-write game on score sheets with boxes to stamp and boxes to write in.
+units: mm
+assets: assets.yaml
+libraries: [library/*.yaml]
+inventory: inventory.yaml
+setup: 2-player

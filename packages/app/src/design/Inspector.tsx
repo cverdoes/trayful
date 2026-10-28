@@ -33,10 +33,11 @@ export function Inspector() {
       <BasicsSection type={draft} />
       <KindSection type={draft} />
       <SideSection type={draft} side="front" />
-      {isValued(draft) ? <ValueSection type={draft} /> : <BehaviourSection type={draft} />}
+      {isValued(draft) && <ValueSection type={draft} />}
+      {!isValued(draft) && draft.is !== 'stamp' && <BehaviourSection type={draft} />}
       {draft.flippable !== undefined && <SideSection type={draft} side="back" />}
       <SnapSection type={draft} />
-      <FieldsSection type={draft} />
+      {draft.is !== 'stamp' && <FieldsSection type={draft} />}
       <datalist id="design-fields">
         {Object.keys(draft.fields ?? {}).map((name) => (
           <option key={name} value={`{{${name}}}`} />
@@ -109,7 +110,7 @@ function BasicsSection({ type }: Readonly<{ type: ComponentType }>) {
   );
 }
 
-/** What it is: a piece, a zone, a die or a counter. Changing it drops what no longer applies. */
+/** What it is: a piece, a zone, a die, a counter or a stamp. Changing it drops what no longer applies. */
 function KindSection({ type }: Readonly<{ type: ComponentType }>) {
   return (
     <Section title="What it is">

@@ -21,6 +21,8 @@ All positions are in the container's own coordinates: millimetres from its top-l
 | `single` | spots | One thing per spot. Dropping on a taken spot puts the piece there anyway, on top.                                                              |
 | `pile`   | spots | A stack on each spot: whatever lands there is stacked onto what is already there, so only stackable components that may share a stack can go. Only the top is in reach. |
 | `group`  | spots | A group on each spot: everything stays a separate piece, spread a little around the spot, like score markers sharing a space. Any one can be picked up. |
+| `stamp`  | spots | No pieces. Each spot is a box that can be marked with one of the stamps it accepts, like ticking a box on a score sheet. See [Stamps and text](#stamps-and-text). |
+| `text`   | spots | No pieces. Each spot is a box that players write text in. See [Stamps and text](#stamps-and-text). |
 | `free`   | areas | Things stay where they are dropped.                                                                                                            |
 | `row`    | areas | A row from the left end, 2 mm apart, centred across the area and each turned like it. Dropping between two things puts it there; the rest close up when one leaves. A row has no end: when it is full, things carry on past its right end, so each stays in full view, and the area grows with them (plus room for one more), so a drop anywhere along the row joins it. |
 | `bag`    | areas | A bag. What goes in is out of sight for everyone, agents too, and stacks come apart. Only the number of pieces inside is shown. Draw takes pieces out at random. |
@@ -47,7 +49,7 @@ A spot is named `owner/area/index` and a whole drop area `owner/area`. `owner` i
 
 ## Accepts
 
-`accepts` lists the component ids, and the representations (`piece`, `zone`, `die`, `counter`), that may snap to a drop area, such as `[action-card]` or `[worker, die]`. Without it, anything may.
+`accepts` lists the component ids, and the representations (`piece`, `zone`, `die`, `counter`), that may snap to a drop area, such as `[action-card]` or `[worker, die]`. Without it, anything may. On a `stamp` drop area it lists the stamps that may be pressed there instead (without it, every stamp may), and a `text` drop area has none.
 
 ## Dropping by hand
 
@@ -86,3 +88,30 @@ On the table, clicking a piece in a group of two or more opens a list of the gro
 A bag's pieces are in no one's view; `describe_table` and every player see only how many there are. `draw` with `from` set to the bag's name (`sack/bag`) takes pieces out at random, using the table's seed, so a replay draws the same ones. On the table, clicking the count on a bag, or selecting the bag and pressing **D**, draws one into your hand.
 
 `describe_table` lists every drop area with its free and taken spots, so an agent knows where things can go.
+
+## Stamps and text
+
+Roll-and-write games are played on score sheets: boxes to tick, cross off or write in. In Trayful a sheet is a piece whose drop areas are in `stamp` or `text` mode, and a **stamp** is a component that `is: stamp`. A stamp has a size and a `face`, which is transparent with no outline unless it says otherwise, and nothing else: it does not move, turn, flip or stack. Stamps are never listed in the inventory, since any number of them can be pressed.
+
+<!-- example: examples/roll-and-write/library/sheet.yaml -->
+
+```yaml
+container:
+  # A row of six boxes for each die face: ring the boxes you use, cross out the ones you give up.
+  - id: boxes
+    grid: { origin: [30, 25], cols: 6, rows: 6, cell: 10 }
+    mode: stamp
+    accepts: [ring, cross]
+  # What each row scores, written in.
+  - id: score
+    grid: { origin: [100, 25], cols: 1, rows: 6, cell: [20, 10] }
+    mode: text
+```
+
+Each spot is a box centred on the spot: a `grid` spot is the size of its cell, a `points` spot as large as the largest stamp it takes, or 10 mm square for text. A stamp is drawn centred in its box; text is drawn centred too, as large as fits.
+
+On the table, a box lights up as a circle under the pointer. Clicking a stamp box stamps it, asking which stamp first when it takes more than one; clicking a text box asks for the text. Right-clicking a box erases it. A locked sheet can still be marked.
+
+Agents use `mark` with `at` set to one spot and either `stamp` or `text` (`at: sheet.1/boxes/4`, `stamp: ring`), and `erase` to clear one. Both can be undone like any other move.
+
+What is on a sheet is saved with it, under `marks` in the [table file](table.md), so it moves with the sheet. Whoever sees the sheet sees its marks: a sheet in a player's hand, or face down, keeps them to itself. To give each player a sheet, put one per player in the inventory. The [Six Rows](../../examples/roll-and-write/README.md) example is a whole game on two sheets.

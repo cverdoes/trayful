@@ -42,6 +42,10 @@ export function activityText(
       return 'set a value';
     case 'lock':
       return `${command.locked ? 'locked' : 'unlocked'} ${n(command.ids.length, 'piece')}`;
+    case 'mark':
+      return command.text === undefined ? 'stamped a box' : 'wrote in a box';
+    case 'erase':
+      return 'erased a box';
     default:
       return 'changed the table';
   }

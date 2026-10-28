@@ -217,7 +217,7 @@ export const Back = z.strictObject(SideCommon).meta({
 // ---------------------------------------------------------------------------
 
 /** What a drop area does with what lands in it: modes for spots, then modes for areas. */
-export const SPOT_MODES = ['single', 'pile', 'group'] as const;
+export const SPOT_MODES = ['single', 'pile', 'group', 'stamp', 'text'] as const;
 export const AREA_MODES = ['free', 'row', 'bag'] as const;
 const DROP_MODES = [...SPOT_MODES, ...AREA_MODES] as const;
 
@@ -230,7 +230,7 @@ export const SnapTarget = z
       .array(z.string())
       .optional()
       .describe(
-        'Component ids, or representations (`piece`, `zone`, `die`, `counter`), that may snap here. Default: anything.',
+        'Component ids, or representations (`piece`, `zone`, `die`, `counter`), that may snap here. Default: anything. In `stamp` mode: the stamps that may be pressed here (default: every stamp).',
       ),
     grid: z
       .strictObject({
@@ -240,12 +240,16 @@ export const SnapTarget = z
         cell: Size.describe('Distance between cell centres.'),
       })
       .optional()
-      .describe('A regular grid of spots, numbered left to right, then top to bottom, from 0.'),
+      .describe(
+        'A regular grid of spots, numbered left to right, then top to bottom, from 0. In `stamp` and `text` mode each spot is a box the size of a cell.',
+      ),
     points: z
       .array(Vec2)
       .min(1)
       .optional()
-      .describe('An ordered list of spots, such as a score track.'),
+      .describe(
+        'An ordered list of spots, such as a score track. In `stamp` mode each spot is as large as its largest stamp; in `text` mode, 10 mm square.',
+      ),
     area: z
       .strictObject({ at: Vec2.describe('Top-left corner.'), size: Size })
       .optional()
@@ -254,7 +258,7 @@ export const SnapTarget = z
       .enum(DROP_MODES)
       .optional()
       .describe(
-        'What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile; `group` keeps everything dropped on a spot as separate pieces side by side, like score markers sharing a space, so any one can be picked up. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random.',
+        'What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile; `group` keeps everything dropped on a spot as separate pieces side by side, like score markers sharing a space, so any one can be picked up; `stamp` takes no pieces, but each spot can be marked with one of the stamps it accepts, like ticking a box on a score sheet; `text` takes no pieces either, but each spot holds text that players write in. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random.',
       ),
   })
   .meta({

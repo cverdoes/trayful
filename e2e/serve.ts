@@ -1,5 +1,5 @@
 // Starts a Trayful server for the end-to-end tests on a scratch folder of projects:
-// a copy of the example, which the tests play on, and a project made from the starter.
+// copies of the examples, which the tests play on, and a project made from the starter.
 import { cp, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -10,6 +10,11 @@ await cp(new URL('../examples/harvest-moon', import.meta.url), path.join(root, '
   recursive: true,
   filter: (src) => path.basename(src) !== 'tables',
 });
+await cp(
+  new URL('../examples/roll-and-write', import.meta.url),
+  path.join(root, 'roll-and-write'),
+  { recursive: true, filter: (src) => path.basename(src) !== 'tables' },
+);
 await createProjectFolder(path.join(root, 'workshop'), 'Workshop');
 const server = await startServer({
   projectDir: root,

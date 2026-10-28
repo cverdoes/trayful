@@ -22,6 +22,14 @@ export function TrayPage() {
   if (!type) {
     return <main className="tray-page muted">Pick a component, or make a new one.</main>;
   }
+  if (type.is === 'stamp') {
+    return (
+      <main className="tray-page muted">
+        Stamps are not kept in the box: any number of them can be pressed into the boxes of a sheet
+        that accepts them.
+      </main>
+    );
+  }
   // A new key for each component, so nothing typed for one shows up for another.
   return <TrayEditor key={type.id} type={type} />;
 }

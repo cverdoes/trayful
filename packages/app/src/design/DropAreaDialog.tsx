@@ -17,6 +17,12 @@ export const DROP_AREA_KINDS: readonly { kind: NewTargetKind; name: string; abou
   },
   { kind: 'row', name: 'Row', about: 'A box that lines things up left to right.' },
   { kind: 'bag', name: 'Bag', about: 'A box whose contents are hidden and drawn at random.' },
+  {
+    kind: 'stamp',
+    name: 'Stamp boxes',
+    about: 'Boxes to tick with a stamp, like a score sheet.',
+  },
+  { kind: 'text', name: 'Text box', about: 'A box players write in, like a score.' },
 ];
 
 /** Picks the kind of drop area to add; closes on a pick, Cancel, Escape or a click outside. */

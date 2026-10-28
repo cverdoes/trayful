@@ -171,20 +171,27 @@ export class LibraryLoader {
     return this.types[id] !== undefined || this.brokenTypes.has(id);
   }
 
-  /** `accepts` lists must name components or representations. */
+  /** `accepts` lists must name components or representations; a stamp spot's, stamps. */
   private acceptsProblems(type: ComponentType) {
     return (type.container ?? []).flatMap((target, i) =>
-      (target.accepts ?? []).flatMap((name, j) =>
-        this.known(name) || (REPRESENTATIONS as readonly string[]).includes(name)
-          ? []
-          : [
-              {
-                path: ['container', i, 'accepts', j],
-                message: `"${name}" is neither a component nor a representation (${REPRESENTATIONS.join(', ')}).`,
-              },
-            ],
-      ),
+      (target.accepts ?? []).flatMap((name, j) => {
+        const message =
+          target.mode === 'stamp' ? this.stampProblem(name) : this.acceptedProblem(name);
+        return message ? [{ path: ['container', i, 'accepts', j], message }] : [];
+      }),
     );
+  }
+
+  private acceptedProblem(name: string): string | undefined {
+    if (this.known(name) || (REPRESENTATIONS as readonly string[]).includes(name)) return undefined;
+    return `"${name}" is neither a component nor a representation (${REPRESENTATIONS.join(', ')}).`;
+  }
+
+  private stampProblem(name: string): string | undefined {
+    if (name === 'stamp' || this.brokenTypes.has(name)) return undefined;
+    const type = this.types[name];
+    if (!type) return `There is no stamp "${name}".`;
+    return type.is === 'stamp' ? undefined : `"${name}" is a ${type.is}, not a stamp.`;
   }
 
   private stackProblems(type: ComponentType) {
