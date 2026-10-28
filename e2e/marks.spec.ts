@@ -16,11 +16,19 @@ async function marks(page: Page) {
 
 test('a person stamps boxes, writes in one and erases one', async ({ page }) => {
   await page.goto(`/?project=${PROJECT}`);
-  await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
+  // The table is drawn and fitted to the window once its state has arrived.
+  await page.waitForFunction(() => {
+    const state = window.__trayful?.store.getState() as
+      { table?: { objects: Record<string, unknown> }; viewport: { scale: number } } | undefined;
+    return state?.table?.objects['sheet.1'] !== undefined && state.viewport.scale !== 1;
+  });
 
   // The first row's second box takes a ring or a cross, so clicking it asks which.
   const box = await onSheet(page, 40, 25);
-  await page.mouse.click(box.x, box.y);
+  await expect(async () => {
+    await page.mouse.click(box.x, box.y);
+    await expect(page.getByRole('option', { name: 'Cross' })).toBeVisible({ timeout: 1000 });
+  }).toPass();
   await page.getByRole('option', { name: 'Cross' }).click();
   await expect.poll(() => marks(page)).toEqual({ 'boxes/1': { stamp: 'cross' } });
 
@@ -34,4 +42,10 @@ test('a person stamps boxes, writes in one and erases one', async ({ page }) => 
 
   await page.mouse.click(box.x, box.y, { button: 'right' });
   await expect.poll(() => marks(page)).toEqual({ 'score/0': { text: '12' } });
+
+  // Emptying a text box erases it, which leaves the sheet blank for the next run.
+  await page.mouse.click(score.x, score.y);
+  await page.getByLabel('Text', { exact: true }).fill('');
+  await page.keyboard.press('Enter');
+  await expect.poll(() => marks(page)).toBeUndefined();
 });
