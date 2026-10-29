@@ -1224,3 +1224,21 @@ label.button:hover {
   width: 100%;
   text-align: left;
 }
+
+.mark-dialog ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mark-dialog form {
+  display: flex;
+  gap: 6px;
+}
+
+.mark-dialog input {
+  width: 180px;
+}

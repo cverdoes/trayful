@@ -130,6 +130,16 @@
         "bag": {
           "description": "The bag holding this piece, as `pieceId/target`. Nobody sees it until it is drawn; its `pos` is then unused.",
           "type": "string"
+        },
+        "marks": {
+          "description": "Stamps and text on the piece's `stamp` and `text` spots, by spot as `target/index`. Whoever sees the piece sees its marks.",
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Mark"
+          }
         }
       },
       "required": [
@@ -158,6 +168,38 @@
       "minItems": 2,
       "maxItems": 2,
       "description": "An `[x, y]` pair in millimetres."
+    },
+    "Mark": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "stamp": {
+              "type": "string",
+              "description": "Id of the stamp pressed here."
+            }
+          },
+          "required": [
+            "stamp"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The text written here."
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "What is on one stamp or text spot: a stamp, or some text."
     },
     "StackObject": {
       "type": "object",

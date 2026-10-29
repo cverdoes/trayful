@@ -25,6 +25,7 @@ Describe your components (cards, boards, tokens, meeples, dice, counters) in pla
 - **A designer.** Build components in the browser with a live preview, from tiled image sheets, without writing YAML. Your comments in the files are kept.
 - **Playtest with others.** Send an invite link over your network or through a tunnel. Every player has a private hand and undoes only their own moves.
 - **AI agents over MCP.** Claude and other MCP clients can read the table, play on it and build components with you, and you see their moves live.
+- **Roll-and-write sheets.** Score sheets with boxes to stamp or write in, one per player.
 - **Print and play.** Print every component at real size.
 
 ## Using Trayful
@@ -152,7 +153,7 @@ To keep several games together, put their folders in one folder and run `npx tra
 
 The [HOWTO guides](docs/howto/README.md) walk through adding a deck, designing components in the browser, loading cards from a spreadsheet, boards with drop areas, meeples and dice, your own images and tiled sheets, setups, designing with an agent and printing. Every key is documented in the [format reference](docs/reference/README.md).
 
-A component describes what it `is` (a `piece`, `zone`, `die` or `counter`) and switches on what it can do: `flippable`, `rotates`, `stackable`, or `values` for dice and counters. A board is a piece that is a `container`: it declares **drop areas**, a `grid` of spots (card slots, action spaces), a list of `points` (a score track) or a free `area` (a supply), each optionally limited to some components with `accepts`. A **setup** file places components on those drop areas and on the table, locks the board, shuffles and deals; set `setup: <file name>` in `trayful.yaml` to start every new table from it. See [`library/pieces.yaml`](examples/harvest-moon/library/pieces.yaml) and [`setups/2-player.yaml`](examples/harvest-moon/setups/2-player.yaml) in the Harvest Moon sample.
+A component describes what it `is` (a `piece`, `zone`, `die`, `counter` or `stamp`) and switches on what it can do: `flippable`, `rotates`, `stackable`, or `values` for dice and counters. A board is a piece that is a `container`: it declares **drop areas**, a `grid` of spots (card slots, action spaces), a list of `points` (a score track) or a free `area` (a supply), each optionally limited to some components with `accepts`. A **setup** file places components on those drop areas and on the table, locks the board, shuffles and deals; set `setup: <file name>` in `trayful.yaml` to start every new table from it. See [`library/pieces.yaml`](examples/harvest-moon/library/pieces.yaml) and [`setups/2-player.yaml`](examples/harvest-moon/setups/2-player.yaml) in the Harvest Moon sample.
 
 #### Projects from an earlier Trayful
 
@@ -234,6 +235,7 @@ pnpm trayful play examples/harvest-moon
 | [`examples/harvest-moon`](examples/harvest-moon)           | Sample prototype that uses every file kind; validated in CI                                                       |
 | [`examples/starter`](examples/starter)                     | The template `trayful new` copies; validated in CI                                                                |
 | [`examples/piecepack`](examples/piecepack)                 | The public-domain piecepack with Backgammon and Tablut, built to find what Trayful cannot do yet; validated in CI |
+| [`examples/roll-and-write`](examples/roll-and-write)       | Six Rows, a small roll-and-write game on score sheets with stamp and text boxes; validated in CI                  |
 | [`docs`](docs)                                             | HOWTO guides and the format reference (partly generated)                                                          |
 | [`skills/trayful`](skills/trayful)                         | The agent skill `trayful skill` installs: how to design and play over MCP; a test keeps it true to the tools      |
 | [`e2e`](e2e)                                               | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players                           |
@@ -306,6 +308,7 @@ Dependabot opens weekly pull requests for npm packages, GitHub Actions and the D
 | 11. Containers             | Drop areas that hold a pile, a row or a bag of pieces                                                                 |
 | 12. Tray                   | What is in the box, edited in the browser: inventory entries, decks from every tile of a sheet, CSV card data         |
 | 13. Designer gaps          | Undo in the Tray, CSV columns, image renames, and MCP tools to rename fields and images and set colours               |
+| 14. Roll-and-write         | Stamps, and score sheets with boxes to stamp or write in, by hand and by agents                                       |
 
 ## Licence
 

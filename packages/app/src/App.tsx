@@ -3,6 +3,7 @@ import { GroupPicker } from './GroupPicker';
 import { Help } from './Help';
 import { useKeyboard } from './keyboard';
 import { Magnifier } from './Magnifier';
+import { MarkDialog } from './MarkDialog';
 import { Activity, ErrorToast, Problems } from './Notices';
 import { InviteDialog } from './Invite';
 import { Designer } from './design/Designer';
@@ -40,6 +41,7 @@ function TableApp() {
     <>
       <Table />
       <GroupPicker />
+      <MarkDialog />
       <Toolbar />
       <HandTray />
       {inviteOpen && <InviteDialog />}

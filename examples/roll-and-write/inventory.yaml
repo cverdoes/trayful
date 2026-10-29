@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../../packages/formats/schema/inventory.schema.json
+kind: inventory
+# Stamps are not listed: they are pressed onto the sheets as often as you like.
+components:
+  - component: sheet
+    count: 2
+  - component: d6
+    count: 3

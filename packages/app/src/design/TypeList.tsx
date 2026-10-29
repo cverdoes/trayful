@@ -7,6 +7,7 @@ const GROUP_NAMES: Record<(typeof REPRESENTATIONS)[number], string> = {
   zone: 'Zones',
   die: 'Dice',
   counter: 'Counters',
+  stamp: 'Stamps',
 };
 
 /** The project's components grouped by what they are, with how many of each are in the box. */
@@ -34,7 +35,9 @@ export function TypeList() {
                   aria-current={type.id === draft?.id}
                   onClick={() => void switchTo(type)}
                 >
-                  {type.name ?? type.id} <span className="muted">×{count(type.id)}</span>
+                  {type.name ?? type.id}{' '}
+                  {/* Stamps are never in the box, so there is no count to show. */}
+                  {type.is !== 'stamp' && <span className="muted">×{count(type.id)}</span>}
                 </button>
               </li>
             ))}

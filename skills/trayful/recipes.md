@@ -104,6 +104,43 @@ container:
 
 To keep it from being dragged by accident, lock it in the setup that places it (`- place: main-board`, `at: [0, 0]`, `lock: true`) or with the `lock` tool.
 
+## A roll-and-write score sheet
+
+> "Make a score sheet with a row of boxes to cross off for each die face, and a box to write each row's score in."
+
+1. Draw the sheet as an SVG with a `viewBox` in millimetres, boxes included, and `add_asset` it with `name: sheet`.
+2. `upsert_type` the stamps, then the sheet. A stamp has only a size and a face, which is transparent unless you fill it:
+
+   ```yaml
+   id: cross
+   size: 8
+   is: stamp
+   face:
+     labels:
+       - { text: X, at: [4, 4], align: center, valign: middle, font: { size: 18, weight: bold } }
+   ```
+
+   ```yaml
+   id: sheet
+   size: [140, 100]
+   is: piece
+   face:
+     image: sheet
+   container:
+     - id: boxes
+       grid: { origin: [30, 25], cols: 6, rows: 6, cell: 10 }
+       mode: stamp
+       accepts: [cross]
+     - id: score
+       grid: { origin: [100, 25], cols: 1, rows: 6, cell: [20, 10] }
+       mode: text
+   ```
+
+3. `set_inventory` with one sheet per player, such as `[{ component: sheet, count: 2 }]`. Never list the stamps.
+4. Play with `mark` (`at: sheet.1/boxes/3`, `stamp: cross`, or `at: sheet.1/score/0`, `text: "12"`) and `erase`.
+
+A grid spot is a box the size of its cell; a `points` spot is as large as its largest stamp. Without `accepts`, a stamp spot takes every stamp in the project.
+
 ## A deck from a spreadsheet
 
 > "Load the event cards from `data/events.csv`."

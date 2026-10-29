@@ -51,7 +51,8 @@
             "piece",
             "zone",
             "die",
-            "counter"
+            "counter",
+            "stamp"
           ],
           "description": "What the component is on the table."
         },
@@ -725,14 +726,14 @@
           "description": "Name of the drop area, used in setups and by agents as `component/area/index`."
         },
         "accepts": {
-          "description": "Component ids, or representations (`piece`, `zone`, `die`, `counter`), that may snap here. Default: anything.",
+          "description": "Component ids, or representations (`piece`, `zone`, `die`, `counter`), that may snap here. Default: anything. In `stamp` mode: the stamps that may be pressed here (default: every stamp).",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "grid": {
-          "description": "A regular grid of spots, numbered left to right, then top to bottom, from 0.",
+          "description": "A regular grid of spots, numbered left to right, then top to bottom, from 0. In `stamp` and `text` mode each spot is a box the size of a cell.",
           "type": "object",
           "properties": {
             "origin": {
@@ -763,7 +764,7 @@
           "additionalProperties": false
         },
         "points": {
-          "description": "An ordered list of spots, such as a score track.",
+          "description": "An ordered list of spots, such as a score track. In `stamp` mode each spot is as large as its largest stamp; in `text` mode, 10 mm square.",
           "minItems": 1,
           "type": "array",
           "items": {
@@ -789,12 +790,14 @@
           "additionalProperties": false
         },
         "mode": {
-          "description": "What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile; `group` keeps everything dropped on a spot as separate pieces side by side, like score markers sharing a space, so any one can be picked up. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random.",
+          "description": "What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile; `group` keeps everything dropped on a spot as separate pieces side by side, like score markers sharing a space, so any one can be picked up; `stamp` takes no pieces, but each spot can be marked with one of the stamps it accepts, like ticking a box on a score sheet; `text` takes no pieces either, but each spot holds text that players write in. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random.",
           "type": "string",
           "enum": [
             "single",
             "pile",
             "group",
+            "stamp",
+            "text",
             "free",
             "row",
             "bag"

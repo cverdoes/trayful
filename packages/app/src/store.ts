@@ -12,6 +12,7 @@ import {
 } from '@trayful/core';
 import { create } from 'zustand';
 import type { GroupPick } from './groups';
+import type { MarkPick } from './marks';
 import { loadHandHeight, loadHandMinimized } from './handTray';
 import { startMotion, type Moving } from './motions';
 
@@ -88,6 +89,8 @@ interface TrayfulStore {
   snapHint?: { spots: SnapSpot[]; size: [number, number]; active?: string };
   /** The pieces of a crowded group spot someone clicked, to pick one from. */
   groupPick?: GroupPick;
+  /** A stamp or text box someone clicked, waiting for them to pick a stamp or write. */
+  markPick?: MarkPick;
   viewport: Viewport;
 
   /** Sends a message to the server; set by the connection. */

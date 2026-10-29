@@ -5,12 +5,15 @@ import { Circle, Group, Rect, Text } from 'react-konva';
 import { bagsOn, drawFromBag } from './bags';
 import type { Vec } from './drops';
 import { STACK_CARD } from './hover';
+import { MarkTargets } from './MarkTargets';
 import { Component, type Highlight } from './render/Component';
+import { Marks } from './render/Marks';
 import { useMotionClock } from './motions';
 import { useRoll } from './rolls';
 import { gatherFrame, RIFFLE_CARDS, riffleFrame } from './shuffles';
 import { facePiece, sizeOf, type Types } from './render/geometry';
 import { useStore } from './store';
+import { setCursor } from './cursor';
 
 interface ObjectViewProps {
   types: Types;
@@ -38,6 +41,7 @@ export function PieceView({
     <TypedPieceView
       piece={piece}
       type={type}
+      types={types}
       assets={assets}
       highlight={highlight}
       register={register}
@@ -49,11 +53,12 @@ export function PieceView({
 function TypedPieceView({
   piece,
   type,
+  types,
   assets,
   highlight,
   register,
   ...events
-}: Omit<ObjectViewProps, 'types'> & { piece: Piece; type: ComponentType }) {
+}: ObjectViewProps & { piece: Piece; type: ComponentType }) {
   const moving = useStore((s) => s.moving[piece.id]);
   const roll = useRoll(moving?.kind === 'roll' ? moving.at : undefined, type);
   const counter = type.is === 'counter';
@@ -95,6 +100,8 @@ function TypedPieceView({
           highlight={highlight}
         />
       </Group>
+      <Marks piece={piece} types={types} assets={assets} />
+      <MarkTargets piece={piece} types={types} />
     </Group>
   );
 }
@@ -412,9 +419,4 @@ export function SnapHints() {
       })}
     </Group>
   );
-}
-
-function setCursor(e: Konva.KonvaEventObject<MouseEvent>, cursor: string) {
-  const container = e.target.getStage()?.container();
-  if (container) container.style.cursor = cursor;
 }

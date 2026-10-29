@@ -6,4 +6,5 @@ export const KIND_TEXT: Record<ComponentType['is'], { name: string; about: strin
   zone: { name: 'Zone', about: 'An area of the table that holds what is put on it.' },
   die: { name: 'Die', about: 'Rolls to one of its values.' },
   counter: { name: 'Counter', about: 'Keeps a number, stepped up and down.' },
+  stamp: { name: 'Stamp', about: 'A mark pressed into the boxes of a sheet; it never moves.' },
 };

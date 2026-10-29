@@ -119,6 +119,9 @@ describe('editType', () => {
     });
     const die = card({ is: 'die', values: { range: [1, 4] } });
     expect(withRepresentation(die, 'zone')).toEqual(card({ is: 'zone' }));
+    expect(
+      withRepresentation(card({ fields: { n: 'int' }, container: [], rotates: true }), 'stamp'),
+    ).toEqual(card({ is: 'stamp' }));
   });
 
   it('tidies away other objects an edit empties', () => {

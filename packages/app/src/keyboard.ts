@@ -105,6 +105,7 @@ function perform(shortcut: Shortcut): boolean {
       if (state.magnifier) closeMagnifier();
       else if (state.helpOpen) useStore.setState({ helpOpen: false });
       else if (state.groupPick) useStore.setState({ groupPick: undefined });
+      else if (state.markPick) useStore.setState({ markPick: undefined });
       else state.select([]);
       return true;
     case 'help':

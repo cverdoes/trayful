@@ -10,6 +10,7 @@ export function registerPlayTools(server: McpServer, ctx: ToolContext): void {
   registerDrawAndDeal(server, ctx);
   registerPieceTools(server, ctx);
   registerStackTools(server, ctx);
+  registerMarks(server, ctx);
   registerUndoRedo(server, ctx);
   registerReset(server, ctx);
 }
@@ -216,6 +217,39 @@ function registerStackTools(server: McpServer, ctx: ToolContext): void {
       inputSchema: { id: z.string().describe('Stack id.') },
     },
     ({ id }) => play(`shuffled ${id}`, [{ type: 'shuffle', id }]),
+  );
+}
+
+/** Stamps and text on score sheets, as in roll-and-write games. */
+function registerMarks(server: McpServer, ctx: ToolContext): void {
+  const { play } = ctx;
+  const At = z
+    .string()
+    .describe('One stamp or text spot, as `owner/area/index`, such as `sheet.1/boxes/4`.');
+  server.registerTool(
+    'mark',
+    {
+      title: 'Stamp or write in a box',
+      description:
+        'Press a stamp onto a stamp spot, or write text on a text spot, replacing what was there. describe_table lists the spots, what is on them and which stamps each takes.',
+      inputSchema: {
+        at: At,
+        stamp: z.string().optional().describe('Stamp spots: the id of a stamp the spot takes.'),
+        text: z.string().optional().describe('Text spots: what to write.'),
+      },
+    },
+    ({ at, stamp, text: written }) =>
+      play(`marked ${at}`, [{ type: 'mark', at, stamp, text: written }]),
+  );
+
+  server.registerTool(
+    'erase',
+    {
+      title: 'Erase a box',
+      description: 'Take the stamp or text off a stamp or text spot.',
+      inputSchema: { at: At },
+    },
+    ({ at }) => play(`erased ${at}`, [{ type: 'erase', at }]),
   );
 }
 

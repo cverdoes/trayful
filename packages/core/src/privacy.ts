@@ -12,8 +12,8 @@ import {
 /**
  * What one player may know about a table. Pieces in other players' hands and in
  * bags are left out (only how many each holds is shown), and face-down pieces keep
- * only the data their back shows and get a stand-in id, so neither their text nor
- * their id gives them away. The random generator's state is left out too, since it
+ * only the data their back shows (and none of their marks) and get a stand-in id,
+ * so neither their text nor their id gives them away. The random generator's state is left out too, since it
  * predicts shuffles.
  */
 export interface TableView extends TableState {
@@ -111,6 +111,7 @@ function viewObject(
     const data = buried.has(object.id) ? undefined : backData(object, catalog);
     if (data) hidden.data = data;
     else delete hidden.data;
+    delete hidden.marks;
     if (object.snap) hidden.snap = renameSnap(object.snap, name);
     return hidden;
   }

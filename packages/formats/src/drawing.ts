@@ -94,7 +94,8 @@ export function drawingOf(type: ComponentType, shown: Shown, assets: Assets): Dr
     outline: type.face?.shape ?? 'rect',
     corner: type.face?.corner ?? 0,
     fill: color(side?.fill) ?? defaultFill(type, back),
-    stroke: color(side?.stroke) ?? OUTLINE,
+    // A stamp is only its mark, with no card around it unless it asks for one.
+    stroke: color(side?.stroke) ?? (type.is === 'stamp' ? 'transparent' : OUTLINE),
     dashed: type.is === 'zone',
     layers,
     plainBack: back && side === undefined,
@@ -107,7 +108,7 @@ export function drawingOf(type: ComponentType, shown: Shown, assets: Assets): Dr
 
 function defaultFill(type: ComponentType, back: boolean): string {
   if (back) return BACK_FILL;
-  return type.is === 'zone' ? 'transparent' : DEFAULT_FILL;
+  return type.is === 'zone' || type.is === 'stamp' ? 'transparent' : DEFAULT_FILL;
 }
 
 interface Context {

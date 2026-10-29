@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Group, Layer, Stage } from 'react-konva';
 import { closeMagnifier, magnifiedScene } from './magnify';
 import { Component } from './render/Component';
+import { Marks } from './render/Marks';
 import { facePiece, sizeOf, type Types } from './render/geometry';
 import { useStore } from './store';
 
@@ -38,6 +39,7 @@ export function Magnifier() {
             scaleY={scale}
           >
             <Component piece={scene.piece} type={type} assets={view.assets} />
+            <Marks piece={scene.piece} types={view.types} assets={view.assets} />
             {scene.riders.map((rider) => (
               <Rider
                 key={rider.id}
@@ -79,6 +81,7 @@ function Rider({
         return (
           <Group key={id} x={offsets[i]![0]} y={offsets[i]![1]}>
             <Component piece={piece} type={type} assets={assets} />
+            <Marks piece={piece} types={types} assets={assets} />
           </Group>
         );
       })}

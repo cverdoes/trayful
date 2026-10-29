@@ -1,4 +1,4 @@
-import { REPRESENTATIONS, type ComponentType } from '@trayful/formats/browser';
+import type { ComponentType, Representation } from '@trayful/formats/browser';
 import { useId, useState, type KeyboardEvent } from 'react';
 
 /** Something a picker offers: the id it stores and what a person reads. */
@@ -113,17 +113,22 @@ export function componentOptions(
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-const ANY: Record<(typeof REPRESENTATIONS)[number], string> = {
+/** Any component of a kind, for drop areas that take pieces; stamps go in stamp boxes. */
+const ANY: Record<Exclude<Representation, 'stamp'>, string> = {
   piece: 'Any piece',
   zone: 'Any zone',
   die: 'Any die',
   counter: 'Any counter',
 };
 
-/** What a drop area can accept: any component of a kind, or particular components. */
-export function acceptOptions(types: Record<string, ComponentType>): PickOption[] {
+/**
+ * What a drop area can accept: any component of a kind, or particular components.
+ * A stamp drop area takes stamps, and the others take anything but.
+ */
+export function acceptOptions(types: Record<string, ComponentType>, stamps = false): PickOption[] {
+  if (stamps) return componentOptions(types, (t) => t.is === 'stamp');
   return [
-    ...REPRESENTATIONS.map((is) => ({ value: is, label: ANY[is] })),
-    ...componentOptions(types),
+    ...Object.entries(ANY).map(([is, label]) => ({ value: is, label })),
+    ...componentOptions(types, (t) => t.is !== 'stamp'),
   ];
 }

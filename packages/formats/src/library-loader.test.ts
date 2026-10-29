@@ -100,7 +100,28 @@ describe('LibraryLoader', () => {
         '  - { id: card, size: 10, is: piece }',
       ]),
     ).toEqual([
-      'lib.yaml:7:39  error  "gizmo" is neither a component nor a representation (piece, zone, die, counter). (at components[0].container[0].accepts[2])',
+      'lib.yaml:7:39  error  "gizmo" is neither a component nor a representation (piece, zone, die, counter, stamp). (at components[0].container[0].accepts[2])',
+    ]);
+  });
+
+  it('wants a stamp spot to accept stamps, and keeps stamps out of the inventory', async () => {
+    expect(
+      await messages(
+        [
+          '  - id: sheet',
+          '    size: 100',
+          '    is: piece',
+          '    container:',
+          '      - { id: a, mode: stamp, accepts: [cross, card, nothing], points: [[5, 5]] }',
+          '  - { id: card, size: 10, is: piece }',
+          '  - { id: cross, size: 8, is: stamp }',
+        ],
+        { 'inventory.yaml': 'kind: inventory\ncomponents:\n  - component: cross\n' },
+      ),
+    ).toEqual([
+      'lib.yaml:7:48  error  "card" is a piece, not a stamp. (at components[0].container[0].accepts[1])',
+      'lib.yaml:7:54  error  There is no stamp "nothing". (at components[0].container[0].accepts[2])',
+      'inventory.yaml:3:5  error  "cross" is a stamp: it is pressed onto sheets, not kept in the box. (at components[0].component)',
     ]);
   });
 

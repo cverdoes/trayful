@@ -1,7 +1,8 @@
-import type { DropMode, Vec2 } from '@trayful/formats/browser';
+import { takesMarks, type DropMode, type Mark, type Vec2 } from '@trayful/formats/browser';
 import { objectSize } from './layout.js';
+import { markKey, stampsFor } from './marks.js';
 import { backData } from './privacy.js';
-import { allSpots, occupants } from './snap.js';
+import { allSpots, occupants, type SnapSpot } from './snap.js';
 import {
   handCounts,
   handOf,
@@ -51,6 +52,8 @@ export interface ObjectSummary {
   snap?: string;
   /** Stacks laid out as a `fan` or `spread`, where every piece shows. */
   layout?: 'fan' | 'spread';
+  /** Pieces with stamp or text spots: what is on them, by `area/index`; hidden face down unless revealed. */
+  marks?: Record<string, Mark>;
 }
 
 export interface ObjectQuery {
@@ -119,6 +122,10 @@ export function summarize(
     ...(object.kind === 'piece' && object.parent ? { parent: object.parent } : {}),
     ...(object.snap ? { snap: object.snap } : {}),
     ...(layout && layout !== 'pile' ? { layout } : {}),
+    // Marks are written on the face, so a face-down sheet keeps them to itself.
+    ...(object.kind === 'piece' && object.marks && (reveal || object.face !== 'down')
+      ? { marks: object.marks }
+      : {}),
   };
 }
 
@@ -187,12 +194,28 @@ export function describeTable(
     ),
   ];
   if (hands.length) lines.push(...hands, '');
-  const targets = snapTargets(state, catalog);
+  const spots = allSpots(state, catalog);
+  const targets = snapTargets(
+    state,
+    spots.filter((s) => !takesMarks(s.mode)),
+  );
   if (targets.length) {
     lines.push(
       'Snap targets (use these as "to" in move, draw and deal; a spot number picks one spot):',
     );
-    lines.push(...targets);
+    lines.push(...targets, '');
+  }
+  const sheets = markLines(
+    state,
+    catalog,
+    spots.filter((s) => takesMarks(s.mode)),
+    options.reveal === true,
+  );
+  if (sheets.length) {
+    lines.push(
+      'Stamp and text spots (use "mark" with "at" as one spot, such as "sheet/boxes/3", and "erase" to clear one):',
+    );
+    lines.push(...sheets);
   }
   return lines.join('\n').trimEnd();
 }
@@ -263,14 +286,61 @@ function handLines(state: TableState, catalog: Catalog, viewer: string | undefin
   return lines;
 }
 
-/** One line per snap target on the table, saying which spots are taken and by what. */
-function snapTargets(state: TableState, catalog: Catalog): string[] {
-  const groups = new Map<string, ReturnType<typeof allSpots>>();
-  for (const spot of allSpots(state, catalog)) {
+/** Spots grouped by their drop area, as `owner/target`. */
+function byTarget(spots: SnapSpot[]): Map<string, SnapSpot[]> {
+  const groups = new Map<string, SnapSpot[]>();
+  for (const spot of spots) {
     const key = `${spot.owner}/${spot.target}`;
     groups.set(key, [...(groups.get(key) ?? []), spot]);
   }
-  return [...groups].map(([key, spots]) => {
+  return groups;
+}
+
+/**
+ * One line per stamp or text drop area, saying what is on each marked spot, unless
+ * its piece lies face down and `reveal` is off.
+ */
+function markLines(
+  state: TableState,
+  catalog: Catalog,
+  spots: SnapSpot[],
+  reveal: boolean,
+): string[] {
+  return [...byTarget(spots)].map(([key, group]) => {
+    const first = group[0]!;
+    const owner = state.objects[first.owner] as Piece;
+    const spotWord = group.length === 1 ? 'spot' : 'spots';
+    const kind =
+      first.mode === 'text'
+        ? `${group.length} text ${spotWord}`
+        : `${group.length} stamp ${spotWord} (stamps ${stampNames(first, catalog)})`;
+    if (owner.face === 'down' && !reveal) return `- ${key}: ${kind}, face down`;
+    const marks = owner.marks ?? {};
+    const marked: string[] = [];
+    const empty: number[] = [];
+    for (const spot of group) {
+      const mark = marks[markKey(spot)];
+      if (!mark) empty.push(spot.index!);
+      else marked.push(`${spot.index}: ${'text' in mark ? JSON.stringify(mark.text) : mark.stamp}`);
+    }
+    const parts = [kind];
+    if (marked.length) parts.push(`marked ${marked.join('; ')}`);
+    parts.push(empty.length ? `empty ${ranges(empty)}` : 'none empty');
+    return `- ${key}: ${parts.join(', ')}`;
+  });
+}
+
+function stampNames(spot: SnapSpot, catalog: Catalog): string {
+  return (
+    stampsFor(spot, catalog)
+      .map((t) => t.id)
+      .join(', ') || 'none'
+  );
+}
+
+/** One line per snap target on the table, saying which spots are taken and by what. */
+function snapTargets(state: TableState, spots: SnapSpot[]): string[] {
+  return [...byTarget(spots)].map(([key, spots]) => {
     const first = spots[0]!;
     const accepts = first.accepts ? ` (accepts ${first.accepts.join(', ')})` : '';
     if (first.mode === 'bag') {

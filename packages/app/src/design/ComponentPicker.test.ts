@@ -24,11 +24,13 @@ describe('options', () => {
   const types = {
     meeple: { id: 'meeple', size: 16, is: 'piece' as const, name: 'Worker' },
     cube: { id: 'cube', size: 10, is: 'piece' as const, stackable: true as const },
+    tick: { id: 'tick', size: 8, is: 'stamp' as const, name: 'Tick' },
   };
 
   it('lists components by name, leaving out the ones turned down', () => {
     expect(componentOptions(types)).toEqual([
       { value: 'cube', label: 'cube' },
+      { value: 'tick', label: 'Tick' },
       { value: 'meeple', label: 'Worker' },
     ]);
     expect(componentOptions(types, (t) => t.stackable !== undefined)).toEqual([
@@ -45,5 +47,9 @@ describe('options', () => {
       'cube',
       'Worker',
     ]);
+  });
+
+  it('offers only stamps for a stamp drop area', () => {
+    expect(acceptOptions(types, true)).toEqual([{ value: 'tick', label: 'Tick' }]);
   });
 });

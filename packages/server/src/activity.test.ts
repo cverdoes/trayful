@@ -18,6 +18,9 @@ describe('activityText', () => {
       [{ type: 'roll', id: 'd6' }, 'rolled'],
       [{ type: 'setValue', id: 'coins', value: 3 }, 'set a value'],
       [{ type: 'lock', ids: ['a'], locked: false }, 'unlocked 1 piece'],
+      [{ type: 'mark', at: 's/b/0', stamp: 'x' }, 'stamped a box'],
+      [{ type: 'mark', at: 's/b/0', text: '4' }, 'wrote in a box'],
+      [{ type: 'erase', at: 's/b/0' }, 'erased a box'],
       [{ type: 'other' } as unknown as Command, 'changed the table'],
     ];
     for (const [command, text] of cases) expect(activityText(command)).toBe(text);

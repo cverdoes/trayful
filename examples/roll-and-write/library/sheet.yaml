@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/library.schema.json
+kind: library
+components:
+  - id: sheet
+    name: Score sheet
+    size: [140, 100]
+    is: piece
+    face:
+      fill: paper
+      image: sheet
+    container:
+      # A row of six boxes for each die face: ring the boxes you use, cross out the ones you give up.
+      - id: boxes
+        grid: { origin: [30, 25], cols: 6, rows: 6, cell: 10 }
+        mode: stamp
+        accepts: [ring, cross]
+      # What each row scores, written in.
+      - id: score
+        grid: { origin: [100, 25], cols: 1, rows: 6, cell: [20, 10] }
+        mode: text
+      - id: total
+        grid: { origin: [100, 88], cols: 1, rows: 1, cell: [20, 10] }
+        mode: text
+      - id: name
+        grid: { origin: [100, 9], cols: 1, rows: 1, cell: [60, 10] }
+        mode: text
+  - id: ring
+    name: Ring
+    size: 8
+    is: stamp
+    face:
+      shape: circle
+      image: ring
+  - id: cross
+    name: Cross
+    size: 7
+    is: stamp
+    face:
+      image: cross
+  - id: d6
+    name: Die
+    size: 14
+    is: die
+    face:
+      corner: 2
+      fill: white

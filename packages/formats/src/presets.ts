@@ -73,6 +73,10 @@ export const TYPE_PRESETS: readonly TypePreset[] = [
   },
   { name: 'Counter', type: { size: [30, 20], is: 'counter', values: { range: [0, 99] } } },
   {
+    name: 'Stamp',
+    type: { size: 8, is: 'stamp', face: { shape: 'circle', stroke: '#2f5fa8' } },
+  },
+  {
     name: 'Board',
     type: { size: [300, 300], is: 'piece', face: { fill: '#e8dcc0' }, rotates: true },
   },

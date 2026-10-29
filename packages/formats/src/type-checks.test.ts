@@ -70,7 +70,10 @@ describe('typeProblems', () => {
         ],
       }),
     ).toEqual([
-      { path: ['container', 0, 'mode'], message: "Spots' mode is one of single, pile, group." },
+      {
+        path: ['container', 0, 'mode'],
+        message: "Spots' mode is one of single, pile, group, stamp, text.",
+      },
       { path: ['container', 1, 'mode'], message: "An area's mode is one of free, row, bag." },
     ]);
   });
@@ -144,5 +147,39 @@ describe('typeProblems', () => {
     expect(problems({ face: { labels: [{ field: 'title' }, { text: '{{title}}!' }] } })).toEqual(
       [],
     );
+  });
+
+  it('keeps a stamp to its face', () => {
+    expect(
+      problems({
+        is: 'stamp',
+        rotates: true,
+        fields: { n: 'int' },
+        face: { image: { asset: 'marks', tile: 'instance' }, labels: [{ field: 'n' }] },
+      }),
+    ).toEqual([
+      { path: ['rotates'], message: 'A stamp cannot have "rotates".' },
+      { path: ['fields'], message: 'A stamp cannot have "fields".' },
+      {
+        path: ['face', 'labels', 0, 'field'],
+        message: 'A stamp has no fields; give its label a "text".',
+      },
+      {
+        path: ['face', 'image', 'tile'],
+        message: 'A stamp is not in the inventory, so it cannot pick its own tile.',
+      },
+    ]);
+    expect(problems({ is: 'stamp', face: { shape: 'circle', fill: 'red' } })).toEqual([]);
+  });
+
+  it('wants text spots to accept nothing', () => {
+    expect(
+      problems({ container: [{ id: 'name', points: [[0, 0]], mode: 'text', accepts: ['card'] }] }),
+    ).toEqual([
+      {
+        path: ['container', 0, 'accepts'],
+        message: 'Text spots take text, not components; leave out "accepts".',
+      },
+    ]);
   });
 });

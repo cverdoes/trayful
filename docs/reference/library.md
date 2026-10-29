@@ -2,7 +2,7 @@
 
 # Library
 
-Library files define components. A component has a name and a size in millimetres, says what it `is` (a piece, a zone, a die or a counter), describes its `face`, and switches on the behaviours it needs: `flippable`, `rotates`, `stackable`, `container`, or `values` for dice and counters. Each behaviour is off unless written, and `true` turns one on with its defaults.
+Library files define components. A component has a name and a size in millimetres, says what it `is` (a piece, a zone, a die, a counter or a stamp), describes its `face`, and switches on the behaviours it needs: `flippable`, `rotates`, `stackable`, `container`, or `values` for dice and counters. A stamp has only its face. Each behaviour is off unless written, and `true` turns one on with its defaults.
 
 ## Top-level keys
 
@@ -21,6 +21,7 @@ A component's `is` says what kind of thing it is on the table.
 | `zone` |  | A marked area of the table, drawn as a dashed outline. |
 | `die` | yes | Shows one of its values; rolls to a random one. |
 | `counter` | yes | Shows one of its values; steps up and down. |
+| `stamp` |  | A mark pressed onto a stamp spot of a sheet, as often as you like; it never moves. |
 
 ## Component
 
@@ -32,7 +33,7 @@ A kind of component: its size, what it is, how it looks and which behaviours it 
 | `name` | text |  | Display name. Default: the id. |
 | `description` | text |  |  |
 | `size` | [Size](#size) | yes | Width and height in millimetres, or one number for a square. |
-| `is` | `"piece"`, `"zone"`, `"die"`, `"counter"` | yes | What the component is on the table. |
+| `is` | `"piece"`, `"zone"`, `"die"`, `"counter"`, `"stamp"` | yes | What the component is on the table. |
 | `fields` | map of text to [Field](#field) |  | Per-component data, filled by the inventory and usable as `{{field}}` in faces. |
 | `face` | [Face](#face) |  | Its outline and front side. |
 | `flippable` | [Flippable](#flippable) |  | Pieces and zones only. |
@@ -262,11 +263,11 @@ A drop area of a container: where other components snap when dropped on it. Give
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
 | `id` | text | yes | Name of the drop area, used in setups and by agents as `component/area/index`. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
-| `accepts` | list of text |  | Component ids, or representations (`piece`, `zone`, `die`, `counter`), that may snap here. Default: anything. |
-| `grid` | object, see [`grid`](#snaptarget-grid) |  | A regular grid of spots, numbered left to right, then top to bottom, from 0. |
-| `points` | list of [Vec2](#vec2) |  | An ordered list of spots, such as a score track. |
+| `accepts` | list of text |  | Component ids, or representations (`piece`, `zone`, `die`, `counter`), that may snap here. Default: anything. In `stamp` mode: the stamps that may be pressed here (default: every stamp). |
+| `grid` | object, see [`grid`](#snaptarget-grid) |  | A regular grid of spots, numbered left to right, then top to bottom, from 0. In `stamp` and `text` mode each spot is a box the size of a cell. |
+| `points` | list of [Vec2](#vec2) |  | An ordered list of spots, such as a score track. In `stamp` mode each spot is as large as its largest stamp; in `text` mode, 10 mm square. |
 | `area` | object, see [`area`](#snaptarget-area) |  | An area: components dropped inside it stay in it, as its `mode` says. |
-| `mode` | `"single"`, `"pile"`, `"group"`, `"free"`, `"row"`, `"bag"` |  | What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile; `group` keeps everything dropped on a spot as separate pieces side by side, like score markers sharing a space, so any one can be picked up. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random. |
+| `mode` | `"single"`, `"pile"`, `"group"`, `"stamp"`, `"text"`, `"free"`, `"row"`, `"bag"` |  | What the drop area does with what is dropped in it. Spots (`grid`, `points`): `single` (default) holds one thing per spot; `pile` piles everything dropped on a spot into one stack, like a discard pile; `group` keeps everything dropped on a spot as separate pieces side by side, like score markers sharing a space, so any one can be picked up; `stamp` takes no pieces, but each spot can be marked with one of the stamps it accepts, like ticking a box on a score sheet; `text` takes no pieces either, but each spot holds text that players write in. Areas: `free` (default) leaves things where they are dropped; `row` lines them up side by side, left to right; `bag` hides them from everyone, to be drawn at random. |
 
 ### SnapTarget grid
 
