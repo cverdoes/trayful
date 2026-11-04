@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FILE_KINDS, type FileKind } from './schemas.js';
+import { FILE_KINDS, type FileKind } from './index.js';
 
 /** JSON Schema (draft 2020-12) for each file kind, describing what authors may write. */
 export function toJsonSchemas(): Record<FileKind, Record<string, unknown>> {

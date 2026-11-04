@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { isMap, isScalar, isSeq, LineCounter, parseDocument, type Document, type Node } from 'yaml';
 import type { z } from 'zod';
-import { flattenIssues, type Diagnostic } from './diagnostics.js';
+import { flattenIssues, type Diagnostic } from '../diagnostics.js';
 
 /** A parsed YAML file that can map data paths back to line and column numbers. */
 export class SourceFile {

@@ -3,7 +3,7 @@
 // a drawing as it is, so it holds every decision about how a component looks.
 import { backOf, isValued, valueIndex, valuesOf, type Asset, type Assets } from './component.js';
 import { renderTemplate } from './fields.js';
-import type { ComponentType, ImageRef, Label, Layer, Scalar } from './schemas.js';
+import type { ComponentType, ImageRef, Label, Layer, Scalar } from '../schemas/index.js';
 
 export const DEFAULT_FILL = '#f4f1ea';
 export const BACK_FILL = '#3b4252';

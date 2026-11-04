@@ -1,6 +1,6 @@
-import { coerceValue } from './fields.js';
+import { coerceValue } from '../components/fields.js';
 import type { ResolvedType } from './resolved.js';
-import type { InventoryEntry, Scalar } from './schemas.js';
+import type { InventoryEntry, Scalar } from '../schemas/index.js';
 
 /** One design in an inventory entry, before it is checked against its type. */
 export interface Row {

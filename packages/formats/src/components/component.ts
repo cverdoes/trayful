@@ -10,7 +10,7 @@ import {
   type DropMode,
   type ImageRef,
   type SnapTarget,
-} from './schemas.js';
+} from '../schemas/index.js';
 
 /** An image asset with its tiling filled in. */
 export interface Asset {

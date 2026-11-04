@@ -1,7 +1,7 @@
 // Where a component's faces use its fields.
 import { backOf } from './component.js';
 import { templateRefs } from './fields.js';
-import type { Back, ComponentType, Face, Label, Layer } from './schemas.js';
+import type { Back, ComponentType, Face, Label, Layer } from '../schemas/index.js';
 
 /** A text that may hold `{{field}}` placeholders, and where it is in the component. */
 export interface TemplateAt {

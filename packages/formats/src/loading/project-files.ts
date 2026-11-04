@@ -2,8 +2,8 @@
 import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { glob, isDynamicPattern } from 'tinyglobby';
-import type { Diagnostic } from './diagnostics.js';
-import { byCodeUnit } from './order.js';
+import type { Diagnostic } from '../diagnostics.js';
+import { byCodeUnit } from '../order.js';
 import { SourceFile } from './source.js';
 
 /** The files of one project being loaded, and the diagnostics found so far. */

@@ -1,8 +1,8 @@
 // Starting points for new components, and checks for a component while it is being edited.
-import { flattenIssues, type Problem } from './diagnostics.js';
+import { flattenIssues, type Problem } from '../diagnostics.js';
 import { slugify } from './inventory.js';
-import { ComponentType } from './schemas.js';
-import { typeProblems } from './type-checks.js';
+import { ComponentType } from '../schemas/index.js';
+import { typeProblems } from '../components/type-checks.js';
 
 /** A common component to start a new type from: everything but its id. */
 // Names typed in the designer become ids and asset names the same way inventory ids do.

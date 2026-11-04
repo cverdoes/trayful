@@ -1,4 +1,4 @@
-import type { Field, FieldType, Scalar } from './schemas.js';
+import type { Field, FieldType, Scalar } from '../schemas/index.js';
 
 export interface NormalizedField {
   type: FieldType | 'enum';

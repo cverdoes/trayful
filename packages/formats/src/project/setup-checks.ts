@@ -1,7 +1,7 @@
 // Checks that a setup's steps refer to components, decks and drop areas that exist.
 import type { ComponentSpec, ResolvedType } from './resolved.js';
-import type { SetupStep, SnapTarget } from './schemas.js';
-import type { Problem } from './diagnostics.js';
+import type { SetupStep, SnapTarget } from '../schemas/index.js';
+import type { Problem } from '../diagnostics.js';
 
 /** What setups may refer to, as loaded from the libraries and the inventory. Read only. */
 export interface Known {

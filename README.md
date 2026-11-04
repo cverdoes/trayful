@@ -268,7 +268,7 @@ Each package keeps its code in `src/` and its unit tests in `test/`, in the same
 
 Packages are TypeScript run directly from source (through `tsx` and Vitest). Only the browser app is built, with Vite. `pnpm dev [project-dir]` serves the app with hot reload; it opens `examples/harvest-moon` unless you name another folder. Before `pnpm test:e2e` on a new machine, run `pnpm exec playwright install chromium` once.
 
-When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generate` and commit the regenerated files; CI fails when they are stale. When you change setup steps, scripts or commands, update this README in the same change. When you change what a HOWTO guide describes, update the guide; `scripts/test/docs.test.ts` checks that the files the guides quote still match `examples/`, and that their links work.
+When you change a schema in `packages/formats/src/schemas/index.ts`, run `pnpm generate` and commit the regenerated files; CI fails when they are stale. When you change setup steps, scripts or commands, update this README in the same change. When you change what a HOWTO guide describes, update the guide; `scripts/test/docs.test.ts` checks that the files the guides quote still match `examples/`, and that their links work.
 
 #### Architecture overview
 

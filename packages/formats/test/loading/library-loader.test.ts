@@ -2,10 +2,10 @@ import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { formatDiagnostic } from '../src/diagnostics.js';
-import { tileChoices } from '../src/library-loader.js';
-import { loadProject } from '../src/load.js';
-import type { ComponentType } from '../src/schemas.js';
+import { formatDiagnostic } from '../../src/diagnostics.js';
+import { tileChoices } from '../../src/loading/library-loader.js';
+import { loadProject } from '../../src/loading/load.js';
+import type { ComponentType } from '../../src/schemas/index.js';
 
 const MANIFEST =
   'name: Test\nformat: trayful/2\nlibraries: [lib.yaml]\ninventory: inventory.yaml\n';

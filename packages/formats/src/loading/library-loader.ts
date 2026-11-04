@@ -1,9 +1,15 @@
 // Loading a project's libraries and assets, in the current format or the first one.
 import { z } from 'zod';
-import { assetsOf, componentFields, imageRefs, NO_ASSETS, type Assets } from './component.js';
-import { isTemplate } from './fields.js';
+import {
+  assetsOf,
+  componentFields,
+  imageRefs,
+  NO_ASSETS,
+  type Assets,
+} from '../components/component.js';
+import { isTemplate } from '../components/fields.js';
 import type { ProjectFiles } from './project-files.js';
-import type { ResolvedType } from './resolved.js';
+import type { ResolvedType } from '../project/resolved.js';
 import {
   AssetsFile,
   ComponentType as ComponentSchema,
@@ -13,8 +19,8 @@ import {
   REPRESENTATIONS,
   type ComponentType,
   type ImageRef,
-} from './schemas.js';
-import { typeProblems } from './type-checks.js';
+} from '../schemas/index.js';
+import { typeProblems } from '../components/type-checks.js';
 import { AssetCollector, typesByBase, upgradeType } from './upgrade.js';
 
 /** An old type that passed its checks, and where it came from. */

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { freeTypeId, sameValue, TYPE_PRESETS, typeDraftProblems } from '../src/presets.js';
+import {
+  freeTypeId,
+  sameValue,
+  TYPE_PRESETS,
+  typeDraftProblems,
+} from '../../src/project/presets.js';
 
 describe('TYPE_PRESETS', () => {
   it('are all valid types once they have an id', () => {

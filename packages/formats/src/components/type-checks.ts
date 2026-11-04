@@ -1,7 +1,7 @@
 import { backOf, componentFields, isValued } from './component.js';
 import { coerceValue, templateRefs, type NormalizedField } from './fields.js';
 import { faceTemplates } from './templates.js';
-import type { Problem } from './diagnostics.js';
+import type { Problem } from '../diagnostics.js';
 import {
   AREA_MODES,
   SPOT_MODES,
@@ -10,7 +10,7 @@ import {
   type Face,
   type ImageRef,
   type SnapTarget,
-} from './schemas.js';
+} from '../schemas/index.js';
 
 /**
  * Checks a component for problems its schema cannot see on its own. Problems that

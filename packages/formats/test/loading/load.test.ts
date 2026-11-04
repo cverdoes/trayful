@@ -2,9 +2,9 @@ import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { formatDiagnostic } from '../src/diagnostics.js';
-import { loadProject } from '../src/load.js';
-import { examplePath } from './paths.js';
+import { formatDiagnostic } from '../../src/diagnostics.js';
+import { loadProject } from '../../src/loading/load.js';
+import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');
 

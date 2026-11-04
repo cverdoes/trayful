@@ -1,9 +1,9 @@
 // Converts a project in the first file format to the current one. The loader uses it
 // to open old projects, and `trayful migrate` to rewrite their files. The result looks
 // the same on the table: what has no simpler form stays in a face's advanced `layers`.
-import { isTemplate } from './fields.js';
-import { slugify } from './inventory.js';
-import { LEGACY_PRIMITIVES } from './schemas.js';
+import { isTemplate } from '../components/fields.js';
+import { slugify } from '../project/inventory.js';
+import { LEGACY_PRIMITIVES } from '../schemas/index.js';
 import type {
   AssetsFile,
   Back,
@@ -19,7 +19,7 @@ import type {
   ManifestFile,
   SetupFile,
   SnapTarget,
-} from './schemas.js';
+} from '../schemas/index.js';
 
 /** The image files and palette colours of the old libraries, as one assets file. */
 export class AssetCollector {

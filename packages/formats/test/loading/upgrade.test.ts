@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { LegacyComponentType, SetupFile } from '../src/schemas.js';
+import type { LegacyComponentType, SetupFile } from '../../src/schemas/index.js';
 import {
   AssetCollector,
   typesByBase,
@@ -7,7 +7,7 @@ import {
   upgradeManifest,
   upgradeSetup,
   upgradeType,
-} from '../src/upgrade.js';
+} from '../../src/loading/upgrade.js';
 
 type Legacy = Partial<LegacyComponentType> & Pick<LegacyComponentType, 'base'>;
 

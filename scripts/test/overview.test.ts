@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { frontMatter } from '../overview/concepts.js';
 import { resolveLinks } from '../overview/html.js';
 import { linksIn, type Registry } from '../overview/links.js';
+import { packagePage } from '../overview/pages-code.js';
 import { buildModel, checkModel } from '../overview/site.js';
 import { cleanComment, firstSentence, readSource } from '../overview/source.js';
 
@@ -116,5 +117,10 @@ describe('the architecture overview', () => {
     expect(checkModel(broken)).toContain(
       `${model.concepts[0]!.path}: [[core:Gone]] names nothing in the code.`,
     );
+
+    const formats = packagePage(model, 'formats', new Map()).body;
+    expect(formats).toMatch(/Entry point <a [^>]*><code>formats\/index\.ts<\/code>/);
+    expect(formats).toContain('<h3><code>loading/</code></h3>');
+    expect(formats.indexOf('browser.ts')).toBeLessThan(formats.indexOf('<h3>'));
   });
 });

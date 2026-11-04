@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Assets } from '../src/component.js';
+import { type Assets } from '../../src/components/component.js';
 import {
   BACK_FILL,
   DEFAULT_FILL,
@@ -7,8 +7,8 @@ import {
   isShown,
   resolveColor,
   type Shown,
-} from '../src/drawing.js';
-import type { ComponentType } from '../src/schemas.js';
+} from '../../src/components/drawing.js';
+import type { ComponentType } from '../../src/schemas/index.js';
 
 const assets: Assets = {
   images: {

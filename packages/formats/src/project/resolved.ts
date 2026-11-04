@@ -1,8 +1,8 @@
 // What loading a project produces: its components, what is in the box, and its setups.
-import type { Assets } from './component.js';
-import type { Diagnostic } from './diagnostics.js';
-import type { NormalizedField } from './fields.js';
-import type { ComponentType, ManifestFile, Scalar, SetupFile } from './schemas.js';
+import type { Assets } from '../components/component.js';
+import type { Diagnostic } from '../diagnostics.js';
+import type { NormalizedField } from '../components/fields.js';
+import type { ComponentType, ManifestFile, Scalar, SetupFile } from '../schemas/index.js';
 
 export interface ResolvedType extends ComponentType {
   /** Where the component is defined: its file, and its place in the file's list. */

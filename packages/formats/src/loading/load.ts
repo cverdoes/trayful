@@ -2,12 +2,17 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parse as parseCsv } from 'csv-parse/sync';
 import { glob } from 'tinyglobby';
-import { isStackable, stacksWith } from './component.js';
-import { cartesian, componentIds, resolveRow, type Row } from './inventory.js';
+import { isStackable, stacksWith } from '../components/component.js';
+import { cartesian, componentIds, resolveRow, type Row } from '../project/inventory.js';
 import { LibraryLoader, tileChoices } from './library-loader.js';
-import { byCodeUnit } from './order.js';
+import { byCodeUnit } from '../order.js';
 import { ProjectFiles } from './project-files.js';
-import type { ComponentSpec, LoadResult, ResolvedSetup, ResolvedType } from './resolved.js';
+import type {
+  ComponentSpec,
+  LoadResult,
+  ResolvedSetup,
+  ResolvedType,
+} from '../project/resolved.js';
 import {
   InventoryFile,
   FORMAT_VERSION,
@@ -18,8 +23,8 @@ import {
   SetupFile,
   type InventoryEntry,
   type Scalar,
-} from './schemas.js';
-import { stepProblems, type Known } from './setup-checks.js';
+} from '../schemas/index.js';
+import { stepProblems, type Known } from '../project/setup-checks.js';
 import type { SourceFile } from './source.js';
 import { upgradeEntry, upgradeManifest, upgradeSetup } from './upgrade.js';
 
@@ -29,9 +34,9 @@ export type {
   ResolvedProject,
   ResolvedSetup,
   ResolvedType,
-} from './resolved.js';
-export { slugify } from './inventory.js';
-export { snapSpotCount } from './setup-checks.js';
+} from '../project/resolved.js';
+export { slugify } from '../project/inventory.js';
+export { snapSpotCount } from '../project/setup-checks.js';
 
 export const MANIFEST_FILE = 'trayful.yaml';
 /** The assets file a project uses when its manifest names none. */

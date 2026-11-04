@@ -1,9 +1,24 @@
 /**
  * Architecture rules for the monorepo, checked by `pnpm lint:deps`.
  * Layers, lowest first: formats, core, then server and app, then cli.
- * A package may import only from layers below it.
+ * A package may import only from layers below it, and within a package the sub folders
+ * named in `foldersPointDown` are ordered the same way.
  */
 const pkg = (name) => `^packages/${name}/`;
+
+/**
+ * Inside a package, sub folders are layers too, lowest first: each folder may import
+ * only the folders listed before it. Files at the package's src root are not covered.
+ */
+function foldersPointDown(name, folders) {
+  return folders.slice(0, -1).map((folder, i) => ({
+    name: `${name}-${folder}-points-down`,
+    severity: 'error',
+    comment: `In ${name}, ${folder}/ may not import ${folders.slice(i + 1).join('/, ')}/; folders import only the ones before them in: ${folders.join(', ')}.`,
+    from: { path: `^packages/${name}/src/${folder}/` },
+    to: { path: `^packages/${name}/src/(${folders.slice(i + 1).join('|')})/` },
+  }));
+}
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -48,8 +63,9 @@ module.exports = {
       severity: 'error',
       comment: "formats' browser entry must not pull in the Node-only file loading code.",
       from: { path: '^packages/formats/src/browser\\.ts$' },
-      to: { path: '^packages/formats/src/(load|source)\\.ts$', reachable: true },
+      to: { path: '^packages/formats/src/loading/', reachable: true },
     },
+    ...foldersPointDown('formats', ['schemas', 'components', 'project', 'loading']),
     {
       name: 'src-never-imports-tests',
       severity: 'error',

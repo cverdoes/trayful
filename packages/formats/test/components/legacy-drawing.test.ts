@@ -4,18 +4,24 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { assetsOf } from '../src/component.js';
-import { drawingOf, isShown, resolveColor, type Drawing, type Shown } from '../src/drawing.js';
-import { renderTemplate } from '../src/fields.js';
-import { loadProject } from '../src/load.js';
+import { assetsOf } from '../../src/components/component.js';
+import {
+  drawingOf,
+  isShown,
+  resolveColor,
+  type Drawing,
+  type Shown,
+} from '../../src/components/drawing.js';
+import { renderTemplate } from '../../src/components/fields.js';
+import { loadProject } from '../../src/loading/load.js';
 import {
   LegacyLibraryFile,
   type Layer,
   type LegacyComponentType,
   type Scalar,
-} from '../src/schemas.js';
-import { AssetCollector, typesByBase, upgradeType } from '../src/upgrade.js';
-import { legacyHarvestMoon } from './paths.js';
+} from '../../src/schemas/index.js';
+import { AssetCollector, typesByBase, upgradeType } from '../../src/loading/upgrade.js';
+import { legacyHarvestMoon } from '../paths.js';
 
 type Data = Record<string, Scalar | undefined>;
 type OldDrawing = Pick<Drawing, 'outline' | 'corner' | 'fill' | 'stroke' | 'plainBack'> & {

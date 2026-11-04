@@ -42,6 +42,9 @@ pre code { padding: 0; background: none; }
 table { border-collapse: collapse; width: 100%; margin: 0.6rem 0 1rem; font-size: 0.92rem; }
 th, td { text-align: left; vertical-align: top; padding: 0.35rem 0.6rem; border-bottom: 1px solid var(--line); }
 th { color: var(--quiet); font-weight: 600; }
+.module-table { table-layout: fixed; }
+.module-table th:first-child { width: 14rem; }
+.module-table th:last-child { width: 4rem; }
 .crumbs, .quiet { color: var(--quiet); font-size: 0.9rem; }
 .lead { font-size: 1.1rem; }
 .case { border-top: 1px solid var(--line); }

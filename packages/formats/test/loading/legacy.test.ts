@@ -2,10 +2,10 @@ import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { formatDiagnostic } from '../src/diagnostics.js';
-import { loadProject } from '../src/load.js';
-import type { ResolvedType } from '../src/resolved.js';
-import { examplePath, legacyHarvestMoon } from './paths.js';
+import { formatDiagnostic } from '../../src/diagnostics.js';
+import { loadProject } from '../../src/loading/load.js';
+import type { ResolvedType } from '../../src/project/resolved.js';
+import { examplePath, legacyHarvestMoon } from '../paths.js';
 
 const legacy = legacyHarvestMoon;
 const example = examplePath('harvest-moon');
