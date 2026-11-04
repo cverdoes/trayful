@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { ProjectView } from '@trayful/core';
-import { go } from './route';
-import { useStore } from './store';
-import { suggestName, tableChoices } from './tables';
+import { go } from '../route';
+import { useStore } from '../store';
+import { suggestName, tableChoices } from '../tables';
 
 interface ProjectSummary {
   id: string;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useDesign } from './store';
-import { typeYaml } from './yaml';
+import { useDesign } from '../store';
+import { typeYaml } from '../yaml';
 
 /** The type as its library file will hold it, to read and copy. Edits happen in the designer or an editor. */
 export function YamlPane() {

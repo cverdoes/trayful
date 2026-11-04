@@ -6,7 +6,7 @@ import {
   spotsOf,
   targetHandles,
   withPoint,
-} from '../../src/design/snaps';
+} from '../../../src/design/canvas/snaps';
 
 const board: ComponentType = { id: 'board', is: 'piece', size: [300, 200] };
 const grid: SnapTarget = { id: 'fields', grid: { origin: [10, 20], cols: 3, rows: 2, cell: 10 } };

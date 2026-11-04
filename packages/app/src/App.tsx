@@ -1,19 +1,19 @@
 import { useEffect } from 'react';
-import { GroupPicker } from './GroupPicker';
-import { Help } from './Help';
-import { useKeyboard } from './keyboard';
-import { Magnifier } from './Magnifier';
-import { MarkDialog } from './MarkDialog';
+import { GroupPicker } from './table/GroupPicker';
+import { Help } from './toolbar/Help';
+import { useKeyboard } from './toolbar/keyboard';
+import { Magnifier } from './table/Magnifier';
+import { MarkDialog } from './table/MarkDialog';
 import { Activity, ErrorToast, Problems } from './Notices';
-import { InviteDialog } from './Invite';
+import { InviteDialog } from './toolbar/Invite';
 import { Designer } from './design/Designer';
 import { ClosedScreen, HandTray, JoinScreen } from './Players';
 import { Print } from './Print';
 import { RenderJob } from './render/Preview';
 import { route } from './route';
 import { useStore } from './store';
-import { Table } from './Table';
-import { Toolbar } from './Toolbar';
+import { Table } from './table/Table';
+import { Toolbar } from './toolbar/Toolbar';
 
 export function App() {
   useTestHook();

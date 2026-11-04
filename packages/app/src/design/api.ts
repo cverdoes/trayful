@@ -1,6 +1,6 @@
 // The server's authoring routes, as the designer calls them.
 import type { ComponentType, Scalar } from '@trayful/formats/browser';
-import type { TrayData } from './tray';
+import type { TrayData } from './tray/tray';
 
 /** Which library file each type is in, and the version of each file. */
 export interface Library {

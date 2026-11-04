@@ -16,7 +16,7 @@ summary: From a command line to a table in the browser, through all five package
 5. **The server listens.** [[server/server.ts]] registers the routes: the built app from [[server/routes/files.ts]], the JSON API, the WebSocket at [[route:GET /ws]] and MCP at [[route:POST /mcp]]. It listens on `127.0.0.1` only, unless asked to share.
 6. **The browser starts the app.** [[app/main.tsx]] calls [[app:start]], which asks [[route:GET /api/me]] who this browser is. The host, on the same computer, is let straight in.
 7. **The app loads the project and connects.** [[app:connect]] fetches the component types and assets from [[route:GET /api/project]] and opens the WebSocket. [[server:registerSocket]] answers with a [[message:state]] message, the table as this player may see it, and subscribes the socket to every later change.
-8. **The table is drawn.** The store in [[app/store.ts]] keeps the view, and [[app/Table.tsx]] draws each piece from its type's faces with [[app/render/Component.tsx]].
+8. **The table is drawn.** The store in [[app/store.ts]] keeps the view, and [[app/table/Table.tsx]] draws each piece from its type's faces with [[app/render/Component.tsx]].
 
 ## Roles
 

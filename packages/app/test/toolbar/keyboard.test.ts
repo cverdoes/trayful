@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { shortcutFor } from '../src/keyboard';
+import { shortcutFor } from '../../src/toolbar/keyboard';
 
 const press = (key: string, mods: Partial<Record<'ctrl' | 'meta' | 'shift' | 'alt', true>> = {}) =>
   shortcutFor({

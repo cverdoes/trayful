@@ -1,9 +1,9 @@
 // The inputs the Tray fills field values in with: one per kind of field.
 import type { Asset, Scalar } from '@trayful/formats/browser';
 import { useState } from 'react';
-import { ColorInput, NumberInput, TextInput } from './controls';
-import { parseValues } from './edit';
-import { TilePicker } from './TilePicker';
+import { ColorInput, NumberInput, TextInput } from '../panel/controls';
+import { parseValues } from '../edit';
+import { TilePicker } from '../assets/TilePicker';
 import type { Column } from './tray';
 
 /** A field's value for one design, edited the way its kind of field suits. */

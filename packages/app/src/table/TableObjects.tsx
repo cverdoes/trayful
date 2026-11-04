@@ -6,13 +6,13 @@ import { bagsOn, drawFromBag } from './bags';
 import type { Vec } from './drops';
 import { STACK_CARD } from './hover';
 import { MarkTargets } from './MarkTargets';
-import { Component, type Highlight } from './render/Component';
-import { Marks } from './render/Marks';
-import { useMotionClock } from './motions';
-import { useRoll } from './rolls';
-import { gatherFrame, RIFFLE_CARDS, riffleFrame } from './shuffles';
-import { facePiece, sizeOf, type Types } from './render/geometry';
-import { useStore } from './store';
+import { Component, type Highlight } from '../render/Component';
+import { Marks } from '../render/Marks';
+import { useMotionClock } from '../motion/motions';
+import { useRoll } from '../motion/rolls';
+import { gatherFrame, RIFFLE_CARDS, riffleFrame } from '../motion/shuffles';
+import { facePiece, sizeOf, type Types } from '../render/geometry';
+import { useStore } from '../store';
 import { setCursor } from './cursor';
 
 interface ObjectViewProps {

@@ -17,7 +17,7 @@ import {
   type Library,
 } from './api';
 import { editType, type Path, type Side } from './edit';
-import { redone, stepped, undone, type Steps } from './steps';
+import { redone, stepped, undone, type Steps } from './panel/steps';
 
 /**
  * Where the type being edited stands: saved to its file, waiting to be saved,

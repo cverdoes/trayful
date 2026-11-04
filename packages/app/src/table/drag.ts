@@ -10,8 +10,8 @@ import {
   type Vec,
 } from './drops';
 import { myId, overHandTray } from './hand';
-import { dropTarget, type Types } from './render/geometry';
-import { useStore } from './store';
+import { dropTarget, type Types } from '../render/geometry';
+import { useStore } from '../store';
 
 /**
  * Dragging on the table: whole objects (with the selection and whatever rides on

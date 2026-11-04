@@ -1,6 +1,6 @@
 // A CSV file an inventory entry reads, edited cell by cell in the Tray: its
 // header row names the fields, and each row below it is a design.
-import { TextInput } from './controls';
+import { TextInput } from '../panel/controls';
 import {
   nextColumn,
   replaced,

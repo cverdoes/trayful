@@ -1,9 +1,9 @@
 // Loading and saving one component's Tray: edits show at once and are saved a
 // moment after the last one, the way the designer saves a component.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { fetchTray, importCsv, saveTray } from './api';
-import { noSteps, redone, stepped, undone, type Steps } from './steps';
-import { projectId, UNDO_MERGE } from './store';
+import { fetchTray, importCsv, saveTray } from '../api';
+import { noSteps, redone, stepped, undone, type Steps } from '../panel/steps';
+import { projectId, UNDO_MERGE } from '../store';
 import { withUsedTables, type TrayData } from './tray';
 
 /** How long after the last edit the Tray is saved, in milliseconds. */

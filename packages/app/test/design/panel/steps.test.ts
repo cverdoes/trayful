@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { noSteps, redone, stepped, undone } from '../../src/design/steps';
+import { noSteps, redone, stepped, undone } from '../../../src/design/panel/steps';
 
 it('goes back and forward through the changes', () => {
   let steps = stepped(stepped(noSteps<number>(), 1, false), 2, false);

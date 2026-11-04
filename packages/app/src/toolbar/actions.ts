@@ -7,9 +7,9 @@ import {
   type ComponentType,
   type Control,
 } from '@trayful/formats/browser';
-import { selectedBagDraw } from './bags';
-import { objectSize, typeOf, type Types } from './render/geometry';
-import { useStore } from './store';
+import { selectedBagDraw } from '../table/bags';
+import { objectSize, typeOf, type Types } from '../render/geometry';
+import { useStore } from '../store';
 
 /** What the toolbar and keyboard can do with the current selection. */
 export interface Actions {

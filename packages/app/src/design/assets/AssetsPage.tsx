@@ -1,17 +1,17 @@
 import { slugify, type Asset } from '@trayful/formats/browser';
 import { useState } from 'react';
-import { useStore } from '../store';
+import { useStore } from '../../store';
 import {
   addImageAsset,
   removeColorAsset,
   removeImageAsset,
   setColorAsset,
   setImageAsset,
-} from './api';
-import { assetPath } from './edit';
-import { readImage } from './files';
-import { renameImage } from './projectEdits';
-import { projectId } from './store';
+} from '../api';
+import { assetPath } from '../edit';
+import { readImage } from '../files';
+import { renameImage } from '../projectEdits';
+import { projectId } from '../store';
 import { TilePicker } from './TilePicker';
 
 /** Runs a change to the assets file; a refusal comes back as the message to show. */

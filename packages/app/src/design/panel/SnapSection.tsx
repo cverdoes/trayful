@@ -8,15 +8,15 @@ import {
   type SnapTarget,
 } from '@trayful/formats/browser';
 import { useState } from 'react';
-import { sizeOf } from '../render/geometry';
-import { useStore } from '../store';
+import { sizeOf } from '../../render/geometry';
+import { useStore } from '../../store';
 import { acceptOptions, ComponentPicker, NO_TYPES } from './ComponentPicker';
 import { DropAreaDialog, DROP_AREA_KINDS } from './DropAreaDialog';
-import { setIn } from './edit';
+import { setIn } from '../edit';
 import { NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
 import { Section } from './Section';
-import { newTarget, spotsOf, targetKind, type NewTargetKind } from './snaps';
-import { editDraft, setValue, useDesign } from './store';
+import { newTarget, spotsOf, targetKind, type NewTargetKind } from '../canvas/snaps';
+import { editDraft, setValue, useDesign } from '../store';
 
 /** A drop area kind's name, as the dialog that adds one offers it. */
 const kindName = (kind: NewTargetKind) => DROP_AREA_KINDS.find((k) => k.kind === kind)?.name;

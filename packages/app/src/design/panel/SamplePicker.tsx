@@ -1,5 +1,5 @@
-import { designName, distinctDesigns } from './samples';
-import { useDesign } from './store';
+import { designName, distinctDesigns } from '../samples';
+import { useDesign } from '../store';
 
 /**
  * Which design's field values fill the faces: one per distinct design in the box,

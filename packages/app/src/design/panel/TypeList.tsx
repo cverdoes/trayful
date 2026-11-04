@@ -1,6 +1,6 @@
 import { REPRESENTATIONS, type ComponentType } from '@trayful/formats/browser';
-import { useStore } from '../store';
-import { duplicateType, openType, removeDraftType, settle, useDesign } from './store';
+import { useStore } from '../../store';
+import { duplicateType, openType, removeDraftType, settle, useDesign } from '../store';
 
 const GROUP_NAMES: Record<(typeof REPRESENTATIONS)[number], string> = {
   piece: 'Pieces',

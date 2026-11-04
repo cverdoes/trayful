@@ -1,6 +1,6 @@
 // Bags on the table: what they hold, as far as anyone may know, and drawing out of them.
 import { allSpots, type Command, type SnapSpot, type TableState } from '@trayful/core';
-import type { Types } from './render/geometry';
+import type { Types } from '../render/geometry';
 
 /** A bag on the table and how many pieces it holds. */
 export interface Bag {

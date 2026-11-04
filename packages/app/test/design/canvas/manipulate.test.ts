@@ -11,8 +11,8 @@ import {
   snapLines,
   snapPoint,
   unrotate,
-} from '../../src/design/manipulate';
-import { layerBounds } from '../../src/design/layout';
+} from '../../../src/design/canvas/manipulate';
+import { layerBounds } from '../../../src/design/canvas/layout';
 
 const face: [number, number] = [63, 88];
 const rect: Layer = { shape: 'rect', at: [10, 10], size: [20, 10] };

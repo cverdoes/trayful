@@ -1,6 +1,6 @@
 // Where things are on the designer canvas, in millimetres on a face.
 import type { Layer } from '@trayful/formats/browser';
-import { boxStart, layerSize } from '../render/face';
+import { boxStart, layerSize } from '../../render/face';
 
 /** 1 typographic point in millimetres, as the renderer uses it. */
 const PT = 0.3528;

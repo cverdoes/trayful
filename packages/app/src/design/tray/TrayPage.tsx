@@ -1,8 +1,8 @@
 // The Tray: what is in the box of the component picked in the list, edited in
 // place and saved to the inventory as you go.
 import type { Asset, ComponentType } from '@trayful/formats/browser';
-import { useStore } from '../store';
-import { useDesign } from './store';
+import { useStore } from '../../store';
+import { useDesign } from '../store';
 import {
   columnsOf,
   everyTile,
@@ -13,7 +13,7 @@ import {
   type TrayEntry,
 } from './tray';
 import { TrayEntryCard, type EntryContext } from './TrayEntry';
-import { HistoryButtons } from './UndoButtons';
+import { HistoryButtons } from '../panel/UndoButtons';
 import { useTray, type TrayStatus } from './useTray';
 
 export function TrayPage() {

@@ -1,8 +1,8 @@
 import type { ProjectView } from '@trayful/core';
 import type { Actions } from './actions';
 import type { MenuItem } from './MoreMenu';
-import { go } from './route';
-import { useStore } from './store';
+import { go } from '../route';
+import { useStore } from '../store';
 
 /** A toolbar button: what it says, what its tooltip adds, its key, and what it does. */
 export interface ButtonProps {

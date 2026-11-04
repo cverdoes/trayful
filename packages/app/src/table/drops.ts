@@ -9,7 +9,7 @@ import {
   type TableState,
 } from '@trayful/core';
 import { sidesOf, valuesOf } from '@trayful/formats/browser';
-import { dropTarget, facePiece, pieceSize, type Types } from './render/geometry';
+import { dropTarget, facePiece, pieceSize, type Types } from '../render/geometry';
 
 export type Vec = [number, number];
 

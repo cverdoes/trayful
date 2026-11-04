@@ -1,5 +1,5 @@
 import type { ProjectView, ServerMessage } from '@trayful/core';
-import { settleIn } from './motions';
+import { settleIn } from './motion/motions';
 import { forgetJoin, route, tableQuery } from './route';
 import { snapshotTable } from './snapshot';
 import { dropWhileOffline, useStore, type Me } from './store';

@@ -1,6 +1,6 @@
 import type Konva from 'konva';
 import { useStore } from './store';
-import { tableBounds } from './viewport';
+import { tableBounds } from './table/viewport';
 
 /** Longest side of a snapshot in pixels: enough to read card titles. */
 const SNAPSHOT_SIZE = 1600;

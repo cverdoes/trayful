@@ -7,8 +7,8 @@ import {
   type TableObject,
   type TableState,
 } from '@trayful/core';
-import type { Types } from './render/geometry';
-import { useStore } from './store';
+import type { Types } from '../render/geometry';
+import { useStore } from '../store';
 
 /** Releasing Space sooner than this after pressing it keeps the magnifier open. */
 export const TAP_MS = 300;

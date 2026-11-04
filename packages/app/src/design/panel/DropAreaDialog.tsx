@@ -1,4 +1,4 @@
-import type { NewTargetKind } from './snaps';
+import type { NewTargetKind } from '../canvas/snaps';
 
 /** The kinds of drop area to add, in the order offered, each with what it is for. */
 export const DROP_AREA_KINDS: readonly { kind: NewTargetKind; name: string; about: string }[] = [

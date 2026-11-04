@@ -1,8 +1,8 @@
 import { REPRESENTATIONS, TYPE_PRESETS, type ComponentType } from '@trayful/formats/browser';
 import { useState } from 'react';
 import { SizeInput } from './controls';
-import { KIND_TEXT } from './kinds';
-import { createType, useDesign } from './store';
+import { KIND_TEXT } from '../kinds';
+import { createType, useDesign } from '../store';
 
 type Start = Omit<ComponentType, 'id'>;
 

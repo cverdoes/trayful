@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { Group, Rect } from 'react-konva';
 import { setCursor } from './cursor';
 import { clickBox, eraseBox } from './marks';
-import { localBoxes } from './render/Marks';
-import type { Types } from './render/geometry';
-import { useStore } from './store';
+import { localBoxes } from '../render/Marks';
+import type { Types } from '../render/geometry';
+import { useStore } from '../store';
 
 /**
  * The stamp and text boxes of a piece on the table, drawn in the piece's own

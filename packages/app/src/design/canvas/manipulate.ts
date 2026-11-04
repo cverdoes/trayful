@@ -2,8 +2,8 @@
 // to the grid, the face's edges and centre, and the other layers. Everything is in
 // millimetres on the face; the canvas turns pointer pixels into these first.
 import type { Layer } from '@trayful/formats/browser';
-import { textBox } from '../render/face';
-import { setIn } from './edit';
+import { textBox } from '../../render/face';
+import { setIn } from '../edit';
 import { layerBounds, type Box } from './layout';
 
 /** Grid spacing on the faces, in millimetres. */

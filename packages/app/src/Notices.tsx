@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useStore } from './store';
-import { keepTableInView } from './viewport';
+import { keepTableInView } from './table/viewport';
 
 /** Shown while the project files have errors; the table keeps the last good version. */
 export function Problems() {

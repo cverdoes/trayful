@@ -1,7 +1,7 @@
 import type { TableState } from '@trayful/core';
 import { handTrayHeight } from './hand';
-import { bounds, topLevel, type Types } from './render/geometry';
-import { useStore, type Viewport } from './store';
+import { bounds, topLevel, type Types } from '../render/geometry';
+import { useStore, type Viewport } from '../store';
 
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 12;

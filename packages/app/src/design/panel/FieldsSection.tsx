@@ -9,11 +9,11 @@ import {
   setIn,
   withFieldRenamed,
   type FieldSpec,
-} from './edit';
+} from '../edit';
 import { Row, Select, TextInput } from './controls';
-import { renameDraftField } from './projectEdits';
+import { renameDraftField } from '../projectEdits';
 import { Section } from './Section';
-import { editDraft } from './store';
+import { editDraft } from '../store';
 
 const KINDS = [...FIELD_TYPES, 'enum'] as const;
 

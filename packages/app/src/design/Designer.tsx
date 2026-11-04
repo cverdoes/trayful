@@ -3,11 +3,11 @@ import { go, route, showDesignPage, showTypeInAddress, type DesignPage } from '.
 import { useStore } from '../store';
 import { migrateProject } from './api';
 import { Mark } from '../Mark';
-import { AssetsPage } from './AssetsPage';
-import { DesignCanvas } from './DesignCanvas';
-import { Inspector } from './Inspector';
-import { NewTypeDialog } from './NewTypeDialog';
-import { SamplePicker } from './SamplePicker';
+import { AssetsPage } from './assets/AssetsPage';
+import { DesignCanvas } from './canvas/DesignCanvas';
+import { Inspector } from './panel/Inspector';
+import { NewTypeDialog } from './panel/NewTypeDialog';
+import { SamplePicker } from './panel/SamplePicker';
 import {
   keepMine,
   loadLibrary,
@@ -17,10 +17,10 @@ import {
   useDesign,
   type SaveStatus,
 } from './store';
-import { TrayPage } from './TrayPage';
-import { TypeList } from './TypeList';
-import { UndoButtons } from './UndoButtons';
-import { YamlPane } from './YamlPane';
+import { TrayPage } from './tray/TrayPage';
+import { TypeList } from './panel/TypeList';
+import { UndoButtons } from './panel/UndoButtons';
+import { YamlPane } from './panel/YamlPane';
 
 /**
  * Design mode: the project's components, saved to its library files as you go,

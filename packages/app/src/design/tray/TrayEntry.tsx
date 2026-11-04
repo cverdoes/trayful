@@ -1,6 +1,6 @@
 // One inventory entry in the Tray: its deck and copies, and the designs it makes.
 import type { Asset, Scalar } from '@trayful/formats/browser';
-import { NumberInput, TextInput } from './controls';
+import { NumberInput, TextInput } from '../panel/controls';
 import { CsvGrid } from './CsvGrid';
 import { FieldInput, ListInput } from './TrayCells';
 import {

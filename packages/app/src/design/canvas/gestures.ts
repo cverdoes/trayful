@@ -2,8 +2,8 @@
 // target, and starts dragging it, one of its handles, or a new snap spot. A drag
 // is a `Gesture` that turns each pointer position into the type as it would be.
 import type { ComponentType, Layer } from '@trayful/formats/browser';
-import { sizeOf } from '../render/geometry';
-import { itemsOf, layersOf, setIn, withItem, type Side } from './edit';
+import { sizeOf } from '../../render/geometry';
+import { itemsOf, layersOf, setIn, withItem, type Side } from '../edit';
 import { layerAt, layerBounds, type Box } from './layout';
 import {
   handlesOf,

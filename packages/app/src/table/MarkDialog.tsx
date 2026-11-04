@@ -2,8 +2,8 @@ import { MAX_MARK_TEXT, type Piece } from '@trayful/core';
 import { useState } from 'react';
 import { pickerCorner } from './groups';
 import { textCommand, type MarkPick } from './marks';
-import { Thumbnail } from './render/Thumbnail';
-import { useStore } from './store';
+import { Thumbnail } from '../render/Thumbnail';
+import { useStore } from '../store';
 
 /** Length of the longer side of each stamp in the picker, in pixels. */
 const THUMB = 40;

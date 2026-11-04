@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MOTION_MS } from '../src/motions';
-import { rollFrame } from '../src/rolls';
+import { MOTION_MS } from '../../src/motion/motions';
+import { rollFrame } from '../../src/motion/rolls';
 
 const ROLL_MS = MOTION_MS.roll;
 

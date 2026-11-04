@@ -2,9 +2,9 @@
 // problems found at its path in the type.
 import { formatPath } from '@trayful/formats/browser';
 import { useId, useState, type ReactNode } from 'react';
-import { useStore } from '../store';
-import { useDesign } from './store';
-import type { Path } from './edit';
+import { useStore } from '../../store';
+import { useDesign } from '../store';
+import type { Path } from '../edit';
 
 /** Problems with the value at exactly this path. */
 function useProblemsAt(path: Path | undefined): string[] {

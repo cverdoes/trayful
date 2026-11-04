@@ -1,6 +1,6 @@
 import { isValued, type ComponentType, type ImageRef } from '@trayful/formats/browser';
-import { useStore } from '../store';
-import { getIn, sidePath, type Side } from './edit';
+import { useStore } from '../../store';
+import { getIn, sidePath, type Side } from '../edit';
 import {
   imageChoice,
   imageRef,
@@ -9,8 +9,8 @@ import {
   type ImageChoice,
   type TileMode,
 } from './images';
-import { Row, Select } from './controls';
-import { setValue } from './store';
+import { Row, Select } from '../panel/controls';
+import { setValue } from '../store';
 import { TilePicker } from './TilePicker';
 
 const MODE_LABEL: Record<TileMode, string> = {

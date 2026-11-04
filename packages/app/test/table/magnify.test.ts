@@ -1,9 +1,9 @@
 import type { Piece, TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { magnifiedPiece, magnifiedScene, spaceKey, TAP_MS } from '../src/magnify';
-import { useStore } from '../src/store';
-import { exampleTable } from './helpers';
+import { magnifiedPiece, magnifiedScene, spaceKey, TAP_MS } from '../../src/table/magnify';
+import { useStore } from '../../src/store';
+import { exampleTable } from '../helpers';
 
 let table: TableState;
 let project: ResolvedProject;

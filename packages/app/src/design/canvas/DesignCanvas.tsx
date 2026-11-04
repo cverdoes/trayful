@@ -3,19 +3,19 @@ import type Konva from 'konva';
 import { useEffect, useRef, useState } from 'react';
 import { Group, Layer, Line, Stage } from 'react-konva';
 import { useShallow } from 'zustand/react/shallow';
-import { Component } from '../render/Component';
-import { sizeOf } from '../render/geometry';
-import { previewPiece } from '../render/Preview';
-import { useStore } from '../store';
+import { Component } from '../../render/Component';
+import { sizeOf } from '../../render/geometry';
+import { previewPiece } from '../../render/Preview';
+import { useStore } from '../../store';
 import { Guides, LayerHandles, SnapTargets } from './CanvasOverlays';
-import { twoSided, type Side } from './edit';
+import { twoSided, type Side } from '../edit';
 import { press, type Gesture } from './gestures';
 import { fitScale } from './layout';
 import { GRID, type Guide, type Point } from './manipulate';
-import { sampleData } from './samples';
-import { readImage } from './files';
-import { addImage } from './projectEdits';
-import { editDraft, useDesign } from './store';
+import { sampleData } from '../samples';
+import { readImage } from '../files';
+import { addImage } from '../projectEdits';
+import { editDraft, useDesign } from '../store';
 
 /** Space between the front and the back, in millimetres. */
 const GAP = 12;

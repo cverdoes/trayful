@@ -1,6 +1,6 @@
 // Group spots on the table: separate pieces sharing one spot, any of which can be picked.
 import { allSpots, occupants, type Command, type Piece, type TableState } from '@trayful/core';
-import type { Types } from './render/geometry';
+import type { Types } from '../render/geometry';
 
 /** A group's pieces, for the picker: where they lie, and the one that was clicked. */
 export interface GroupPick {

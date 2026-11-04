@@ -1,6 +1,6 @@
 import type { Asset } from '@trayful/formats/browser';
-import { projectFileUrl } from '../render/images';
-import { useStore } from '../store';
+import { projectFileUrl } from '../../render/images';
+import { useStore } from '../../store';
 import { tileCount } from './images';
 
 /**

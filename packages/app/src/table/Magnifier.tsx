@@ -3,10 +3,10 @@ import type { Assets } from '@trayful/formats/browser';
 import { useEffect } from 'react';
 import { Group, Layer, Stage } from 'react-konva';
 import { closeMagnifier, magnifiedScene } from './magnify';
-import { Component } from './render/Component';
-import { Marks } from './render/Marks';
-import { facePiece, sizeOf, type Types } from './render/geometry';
-import { useStore } from './store';
+import { Component } from '../render/Component';
+import { Marks } from '../render/Marks';
+import { facePiece, sizeOf, type Types } from '../render/geometry';
+import { useStore } from '../store';
 
 /** How much of the window the magnified piece may fill. */
 const FILL = 0.85;

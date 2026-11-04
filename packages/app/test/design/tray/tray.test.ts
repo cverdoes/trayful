@@ -14,7 +14,7 @@ import {
   withoutColumn,
   withUsedTables,
   withValue,
-} from '../../src/design/tray';
+} from '../../../src/design/tray/tray';
 
 const terrain: ComponentType = {
   id: 'terrain',

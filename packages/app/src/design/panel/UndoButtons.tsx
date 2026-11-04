@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { redo, undo, useDesign } from './store';
+import { redo, undo, useDesign } from '../store';
 
 /** What a key press asks of the designer's history, if anything. */
 export function historyKey(

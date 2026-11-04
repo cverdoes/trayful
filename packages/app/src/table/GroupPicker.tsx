@@ -1,6 +1,6 @@
 import { pickEntries, pickerCorner, raise } from './groups';
-import { Thumbnail } from './render/Thumbnail';
-import { useStore } from './store';
+import { Thumbnail } from '../render/Thumbnail';
+import { useStore } from '../store';
 
 /** Length of the longer side of each piece in the picker, in pixels. */
 const THUMB = 48;

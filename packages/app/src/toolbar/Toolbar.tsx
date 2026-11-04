@@ -1,11 +1,11 @@
 import { selectionActions } from './actions';
-import { Mark } from './Mark';
-import { PlayerList } from './Players';
+import { Mark } from '../Mark';
+import { PlayerList } from '../Players';
 import { MoreMenu } from './MoreMenu';
-import { useStore } from './store';
+import { useStore } from '../store';
 import { TableMenu } from './TableMenu';
 import { moreItems, selectionButtons, type ButtonProps } from './toolbarItems';
-import { fitWindow } from './viewport';
+import { fitWindow } from '../table/viewport';
 
 const STATUS_ICON = { online: '●', connecting: '◌', offline: '○' } as const;
 

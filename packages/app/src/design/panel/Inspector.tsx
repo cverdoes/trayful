@@ -6,17 +6,17 @@ import {
   type ComponentType,
   type Control,
 } from '@trayful/formats/browser';
-import { useStore } from '../store';
+import { useStore } from '../../store';
 import { ComponentPicker, componentOptions, NO_TYPES } from './ComponentPicker';
-import { parseValues, setIn, withRepresentation, type Path } from './edit';
+import { parseValues, setIn, withRepresentation, type Path } from '../edit';
 import { Checkbox, NumberInput, PairInput, Row, SizeInput, TextInput } from './controls';
 import { FieldsSection } from './FieldsSection';
-import { KIND_TEXT } from './kinds';
-import { renameDraftType } from './projectEdits';
+import { KIND_TEXT } from '../kinds';
+import { renameDraftType } from '../projectEdits';
 import { Section } from './Section';
 import { SideSection } from './SideSection';
 import { SnapSection } from './SnapSection';
-import { editDraft, setValue, useDesign } from './store';
+import { editDraft, setValue, useDesign } from '../store';
 
 /**
  * The panel on the right: the component built up step by step, top to bottom.

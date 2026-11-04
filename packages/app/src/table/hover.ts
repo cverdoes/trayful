@@ -1,8 +1,8 @@
 import type { TableObject } from '@trayful/core';
 import type Konva from 'konva';
 import { useEffect, useRef } from 'react';
-import { facePiece } from './render/geometry';
-import { useStore } from './store';
+import { facePiece } from '../render/geometry';
+import { useStore } from '../store';
 
 /** The name of a card's node inside a stack, whose id is the card's id. */
 export const STACK_CARD = 'stack-card';

@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { keyActions, type Actions } from './actions';
-import { toggleHandTray } from './hand';
-import { closeMagnifier, spaceKey } from './magnify';
-import { useStore } from './store';
-import { fitWindow, zoomWindow } from './viewport';
+import { toggleHandTray } from '../table/hand';
+import { closeMagnifier, spaceKey } from '../table/magnify';
+import { useStore } from '../store';
+import { fitWindow, zoomWindow } from '../table/viewport';
 
 /** The toolbar actions that have a key of their own. */
 type ActionName =

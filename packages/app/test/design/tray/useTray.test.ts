@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TrayData } from '../../src/design/tray';
-import { TraySaver, type TrayStatus } from '../../src/design/useTray';
+import type { TrayData } from '../../../src/design/tray/tray';
+import { TraySaver, type TrayStatus } from '../../../src/design/tray/useTray';
 
 const tray = (count: number): TrayData => ({ entries: [{ count }], tables: {} });
 

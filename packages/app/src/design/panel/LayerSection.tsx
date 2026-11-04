@@ -1,7 +1,7 @@
 import { SHAPES, type Layer } from '@trayful/formats/browser';
-import { editType, layerKind, type Item, type Path } from './edit';
+import { editType, layerKind, type Item, type Path } from '../edit';
 import { ColorInput, NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
-import { editDraft, setValue } from './store';
+import { editDraft, setValue } from '../store';
 
 type TextLayer = Extract<Layer, { text: string }>;
 type ImageLayer = Extract<Layer, { image: string }>;

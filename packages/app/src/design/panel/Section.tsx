@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { isFolded, setFolded, useDesign } from './store';
+import { isFolded, setFolded, useDesign } from '../store';
 
 /**
  * One part of the inspector under its heading, which folds it away when

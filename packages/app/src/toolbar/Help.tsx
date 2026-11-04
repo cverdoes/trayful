@@ -1,4 +1,4 @@
-import { useStore } from './store';
+import { useStore } from '../store';
 
 const SHORTCUTS: [string, string][] = [
   ['Drag', 'Move a piece, or take the top card off a pile'],

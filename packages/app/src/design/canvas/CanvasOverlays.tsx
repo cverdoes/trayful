@@ -4,8 +4,8 @@
 // number of pixels on screen.
 import type { ComponentType, SnapTarget } from '@trayful/formats/browser';
 import { Circle, Group, Line, Rect, Text } from 'react-konva';
-import { sizeOf } from '../render/geometry';
-import { layersOf, type Side } from './edit';
+import { sizeOf } from '../../render/geometry';
+import { layersOf, type Side } from '../edit';
 import { rotateHandle } from './gestures';
 import { layerBounds } from './layout';
 import { handlesOf, pivotOf, type Guide } from './manipulate';

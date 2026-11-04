@@ -3,10 +3,10 @@ import { useState, type KeyboardEvent, type PointerEvent, type SubmitEvent } fro
 import { connect, join } from './connection';
 import { Mark } from './Mark';
 import { Thumbnail } from './render/Thumbnail';
-import { HAND_DRAG, toggleHandTray } from './hand';
-import { clampHandHeight, HAND_HEIGHT, handCardHeight, saveHandHeight } from './handTray';
+import { HAND_DRAG, toggleHandTray } from './table/hand';
+import { clampHandHeight, HAND_HEIGHT, handCardHeight, saveHandHeight } from './table/handTray';
 import { useStore } from './store';
-import { windowCentre } from './viewport';
+import { windowCentre } from './table/viewport';
 
 /** How far one arrow key press moves the top edge of the hand tray, in pixels. */
 const RESIZE_STEP = 16;

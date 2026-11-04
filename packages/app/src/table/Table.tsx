@@ -7,10 +7,10 @@ import { doubleClickCommand, handDropCommands, inBox, type Vec } from './drops';
 import { pickFor } from './groups';
 import { HAND_DRAG, overHandTray } from './hand';
 import { useHover } from './hover';
-import { DrawScale, type Highlight } from './render/Component';
-import { topLevel } from './render/geometry';
-import { setSnapshotStage } from './snapshot';
-import { useStore } from './store';
+import { DrawScale, type Highlight } from '../render/Component';
+import { topLevel } from '../render/geometry';
+import { setSnapshotStage } from '../snapshot';
+import { useStore } from '../store';
 import { BagBadges, PieceView, SnapHints, StackView } from './TableObjects';
 import { fitToTable, toWorld, zoomAt } from './viewport';
 

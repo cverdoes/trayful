@@ -13,12 +13,12 @@ import {
   type Item,
   type LayerKind,
   type Side,
-} from './edit';
+} from '../edit';
 import { ColorInput, NumberInput, Row, Select } from './controls';
-import { ImagePicker } from './ImagePicker';
+import { ImagePicker } from '../assets/ImagePicker';
 import { LayerSection } from './LayerSection';
 import { Section } from './Section';
-import { editDraft, setValue, useDesign } from './store';
+import { editDraft, setValue, useDesign } from '../store';
 
 /**
  * One side of a component, the way it is built up: its colours and outline, an

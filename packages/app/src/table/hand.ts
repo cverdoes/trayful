@@ -1,5 +1,5 @@
 import { saveHandMinimized } from './handTray';
-import { useStore } from './store';
+import { useStore } from '../store';
 
 /** Data a hand card carries while dragged onto the table. */
 export const HAND_DRAG = 'application/x-trayful-hand';

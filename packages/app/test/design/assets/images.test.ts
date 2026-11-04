@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { imageChoice, imageRef, tileModes, withAsset } from '../../src/design/images';
+import { imageChoice, imageRef, tileModes, withAsset } from '../../../src/design/assets/images';
 
 const images = {
   art: { file: 'art.svg', rows: 1, cols: 1 },
