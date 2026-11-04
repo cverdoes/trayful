@@ -237,6 +237,7 @@ pnpm trayful play examples/harvest-moon
 | [`examples/piecepack`](examples/piecepack)                 | The public-domain piecepack with Backgammon and Tablut, built to find what Trayful cannot do yet; validated in CI |
 | [`examples/roll-and-write`](examples/roll-and-write)       | Six Rows, a small roll-and-write game on score sheets with stamp and text boxes; validated in CI                  |
 | [`docs`](docs)                                             | HOWTO guides and the format reference (partly generated)                                                          |
+| [`architecture`](architecture)                             | Hand-written pages of the architecture overview: interaction walkthroughs and concepts                            |
 | [`skills/trayful`](skills/trayful)                         | The agent skill `trayful skill` installs: how to design and play over MCP; a test keeps it true to the tools      |
 | [`e2e`](e2e)                                               | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players                           |
 | [`scripts`](scripts)                                       | Code generation, example validation and the dev server                                                            |
@@ -244,27 +245,34 @@ pnpm trayful play examples/harvest-moon
 
 ### Development
 
-| Command                  | What it does                                                             |
-| ------------------------ | ------------------------------------------------------------------------ |
-| `pnpm dev`               | Table server plus the app with hot reload at http://localhost:5173       |
-| `pnpm build`             | Build the browser app (needed before `trayful play`)                     |
-| `pnpm package`           | Build the `trayful` npm package in `packages/cli/dist`                   |
-| `pnpm test`              | Run all unit tests (Vitest)                                              |
-| `pnpm test:e2e`          | Play in a real browser, by hand and as an agent; run `pnpm build` first  |
-| `pnpm test:watch`        | Re-run tests on change                                                   |
-| `pnpm test:coverage`     | Unit tests with a coverage report in `coverage/`; fails below the floor  |
-| `pnpm typecheck`         | Type-check every package                                                 |
-| `pnpm lint`              | ESLint (incl. complexity and size limits) and Prettier check             |
-| `pnpm quality`           | Package boundaries, unused code and copy-paste duplication               |
-| `pnpm quality:summary`   | Coverage, complexity and duplication as Markdown                         |
-| `pnpm format`            | Format everything with Prettier                                          |
-| `pnpm generate`          | Regenerate JSON Schemas and the format reference after changing a schema |
-| `pnpm validate:examples` | Validate every project in `examples/`                                    |
-| `pnpm check`             | Everything CI runs, in one go                                            |
+| Command                  | What it does                                                               |
+| ------------------------ | -------------------------------------------------------------------------- |
+| `pnpm dev`               | Table server plus the app with hot reload at http://localhost:5173         |
+| `pnpm build`             | Build the browser app (needed before `trayful play`)                       |
+| `pnpm package`           | Build the `trayful` npm package in `packages/cli/dist`                     |
+| `pnpm test`              | Run all unit tests (Vitest)                                                |
+| `pnpm test:e2e`          | Play in a real browser, by hand and as an agent; run `pnpm build` first    |
+| `pnpm test:watch`        | Re-run tests on change                                                     |
+| `pnpm test:coverage`     | Unit tests with a coverage report in `coverage/`; fails below the floor    |
+| `pnpm typecheck`         | Type-check every package                                                   |
+| `pnpm lint`              | ESLint (incl. complexity and size limits) and Prettier check               |
+| `pnpm quality`           | Package boundaries, unused code and copy-paste duplication                 |
+| `pnpm quality:summary`   | Coverage, complexity and duplication as Markdown                           |
+| `pnpm format`            | Format everything with Prettier                                            |
+| `pnpm generate`          | Regenerate JSON Schemas and the format reference after changing a schema   |
+| `pnpm validate:examples` | Validate every project in `examples/`                                      |
+| `pnpm docs:overview`     | Build the architecture overview in `.reports/overview/`; `--open` opens it |
+| `pnpm check`             | Everything CI runs, in one go                                              |
 
 Packages are TypeScript run directly from source (through `tsx` and Vitest). Only the browser app is built, with Vite. `pnpm dev [project-dir]` serves the app with hot reload; it opens `examples/harvest-moon` unless you name another folder. Before `pnpm test:e2e` on a new machine, run `pnpm exec playwright install chromium` once.
 
 When you change a schema in `packages/formats/src/schemas.ts`, run `pnpm generate` and commit the regenerated files; CI fails when they are stale. When you change setup steps, scripts or commands, update this README in the same change. When you change what a HOWTO guide describes, update the guide; `scripts/docs.test.ts` checks that the files the guides quote still match `examples/`, and that their links work.
+
+#### Architecture overview
+
+`pnpm docs:overview` builds a clickable site about the code into `.reports/overview/`: open its `index.html` in a browser, no server needed (`pnpm docs:overview --open` does that for you). It shows the packages in their layers, every module with its purpose, exports and imports, the key types, the table commands, the WebSocket messages, the MCP tools, the HTTP routes and the CLI, all read from the source each time it runs, plus walkthroughs of what happens when someone drags a card, draws into a hand, undoes, joins or designs a component.
+
+The walkthroughs and concepts are Markdown in [`architecture/`](architecture/README.md). They name code with symbol links such as `[[core:TableEngine]]` instead of paths, and `pnpm docs:overview --check` (part of `pnpm check`) fails when one names something that is gone, when a key type disappears, when a source file has no comment saying what it is for, or when a package is in no page. When you rename or move what a page explains, update the page in the same change. CI attaches the site to each run as `architecture-overview`, and the Pages workflow publishes the overview of `main` to the repository's GitHub Pages site.
 
 #### Code quality
 
