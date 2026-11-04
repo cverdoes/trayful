@@ -61,14 +61,31 @@ ${layerSvg(model.packages)}
   return { path: pagePath.index(), title: 'Overview', body };
 }
 
+/** The folder a module sits in inside its package's `src/`; '' for the top level. */
+function folderOf(m: ModuleInfo): string {
+  return m.id.split('/').slice(1, -1).join('/');
+}
+
 function moduleRows(modules: ModuleInfo[]): string {
   return modules
     .map((m) => {
-      const name = m.id.split('/').slice(1).join('/');
+      const name = m.id.split('/').at(-1)!;
       const what = m.purpose ? firstSentence(m.purpose) : '';
       return `<tr><td>${link(P, pagePath.module(m.id), `<code>${esc(name)}</code>`)}</td><td>${inline(what)}</td><td>${m.lines}</td></tr>`;
     })
     .join('');
+}
+
+/** One table per folder, the package's top level first, then its folders by name. */
+function moduleSections(modules: ModuleInfo[]): string {
+  const folders = [...new Set(modules.map(folderOf))].sort((a, b) => a.localeCompare(b));
+  return folders
+    .map((folder) => {
+      const inFolder = modules.filter((m) => folderOf(m) === folder);
+      const heading = folder ? `<h3><code>${esc(folder)}/</code></h3>` : '';
+      return `${heading}<table class="module-table"><thead><tr><th>Module</th><th>What it is for</th><th>Lines</th></tr></thead><tbody>${moduleRows(inFolder)}</tbody></table>`;
+    })
+    .join('\n');
 }
 
 export function packagePage(model: Model, name: string, usage: Usage): Page {
@@ -78,14 +95,14 @@ export function packagePage(model: Model, name: string, usage: Usage): Page {
   const concepts = [...new Set(modules.flatMap((m) => usage.get(m.id) ?? []))];
   const pkgLinks = (names: string[]) =>
     names.map((n) => link(P, pagePath.pkg(n), `<code>${esc(n)}</code>`)).join(', ') || 'nothing';
-  const entry = modules.find((m) => m.id.endsWith('/index.ts'));
+  const entry = modules.find((m) => m.id === `${name}/index.ts`);
   const body = `<h1><code>${esc(pkg.npmName)}</code></h1>
 <p>${inline(pkg.summary)}</p>
 <p>Layer ${pkg.layer}. Uses ${pkgLinks(Object.keys(pkg.uses))}. Used by ${pkgLinks(usedBy)}. <a href="${esc(sourceUrl(model, `packages/${name}/README.md`))}">README on GitHub</a>.</p>
 ${entry ? `<p>Entry point ${moduleLink(entry.id)} re-exports ${entry.imports.length} modules.</p>` : ''}
 ${takesPartIn(concepts)}
 <h2>Modules</h2>
-<table><thead><tr><th>Module</th><th>What it is for</th><th>Lines</th></tr></thead><tbody>${moduleRows(modules)}</tbody></table>`;
+${moduleSections(modules)}`;
   return { path: pagePath.pkg(name), title: pkg.npmName, body };
 }
 
