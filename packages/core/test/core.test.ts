@@ -1,8 +1,8 @@
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { applyCommand, CommandError } from '../src/commands.js';
+import { applyCommand, CommandError } from '../src/commands/index.js';
 import { TableEngine } from '../src/engine.js';
-import { shuffled } from '../src/rng.js';
+import { shuffled } from '../src/table/rng.js';
 import { createTable } from '../src/setup.js';
 import {
   checkIntegrity,
@@ -11,7 +11,7 @@ import {
   type Piece,
   type Stack,
   type TableState,
-} from '../src/state.js';
+} from '../src/table/state.js';
 import { examplePath } from './paths.js';
 
 const example = examplePath('harvest-moon');

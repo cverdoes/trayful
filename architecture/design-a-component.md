@@ -23,4 +23,4 @@ Editing a file by hand works too: the workspace watches the project folder and r
 
 - [[server/authoring.ts]] and [[server/yaml-patch.ts]] are the only code that writes project files.
 - [[formats]] decides whether the files are valid, for saves and hand edits alike.
-- [[core/sync.ts]] decides how a table changes when the files do.
+- [[core/table/sync.ts]] decides how a table changes when the files do.

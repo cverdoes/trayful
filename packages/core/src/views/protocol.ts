@@ -1,5 +1,5 @@
 import type { Assets, ComponentType } from '@trayful/formats/browser';
-import type { Command } from './commands.js';
+import type { Command } from '../commands/index.js';
 import type { TableView } from './privacy.js';
 
 /**

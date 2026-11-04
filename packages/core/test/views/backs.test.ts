@@ -1,10 +1,10 @@
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { describeTable, summarizePiece } from '../src/describe.js';
-import { AliasBook, viewFor } from '../src/privacy.js';
-import { createTable } from '../src/setup.js';
-import type { Piece, TableState } from '../src/state.js';
-import { examplePath } from './paths.js';
+import { describeTable, summarizePiece } from '../../src/views/describe.js';
+import { AliasBook, viewFor } from '../../src/views/privacy.js';
+import { createTable } from '../../src/setup.js';
+import type { Piece, TableState } from '../../src/table/state.js';
+import { examplePath } from '../paths.js';
 
 // The piecepack's coins show their suit on the back; its tiles show no field there.
 const example = examplePath('piecepack');

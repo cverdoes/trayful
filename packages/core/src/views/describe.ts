@@ -1,8 +1,8 @@
 import { takesMarks, type DropMode, type Mark, type Vec2 } from '@trayful/formats/browser';
-import { objectSize } from './layout.js';
-import { markKey, stampsFor } from './marks.js';
+import { objectSize } from '../table/layout.js';
+import { markKey, stampsFor } from '../commands/marks.js';
 import { backData } from './privacy.js';
-import { allSpots, occupants, type SnapSpot } from './snap.js';
+import { allSpots, occupants, type SnapSpot } from '../placement/snap.js';
 import {
   handCounts,
   handOf,
@@ -13,7 +13,7 @@ import {
   type Piece,
   type TableObject,
   type TableState,
-} from './state.js';
+} from '../table/state.js';
 
 /**
  * Readable views of a table for agents. Face-down cards keep their secrets:

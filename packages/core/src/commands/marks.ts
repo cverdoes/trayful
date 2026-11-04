@@ -6,8 +6,8 @@ import {
   type Mark,
   type Vec2,
 } from '@trayful/formats/browser';
-import { spotsOf, type SnapSpot } from './snap.js';
-import { sizeOf, type Catalog, type Piece } from './state.js';
+import { spotsOf, type SnapSpot } from '../placement/snap.js';
+import { sizeOf, type Catalog, type Piece } from '../table/state.js';
 import { CommandError, type Transaction } from './transaction.js';
 
 /** The longest text a text spot holds. */

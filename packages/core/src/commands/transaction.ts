@@ -1,5 +1,5 @@
 import { holdsMany, takesMarks, type Vec2 } from '@trayful/formats/browser';
-import { roomIn } from './room.js';
+import { roomIn } from '../placement/room.js';
 import {
   accepts,
   occupants,
@@ -11,7 +11,7 @@ import {
   toLocal,
   toTable,
   type SnapSpot,
-} from './snap.js';
+} from '../placement/snap.js';
 import {
   handTarget,
   onTable,
@@ -23,7 +23,7 @@ import {
   type TableObject,
   type TableState,
   withChanges,
-} from './state.js';
+} from '../table/state.js';
 
 /**
  * Where something goes: an `[x, y]` position in millimetres, a snap target such

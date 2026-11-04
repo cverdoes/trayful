@@ -1,9 +1,9 @@
 import { loadProject, type ComponentSpec, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createTable } from '../src/setup.js';
-import { checkIntegrity, type Piece, type Stack, type TableState } from '../src/state.js';
-import { syncTable } from '../src/sync.js';
-import { examplePath } from './paths.js';
+import { createTable } from '../../src/setup.js';
+import { checkIntegrity, type Piece, type Stack, type TableState } from '../../src/table/state.js';
+import { syncTable } from '../../src/table/sync.js';
+import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');
 

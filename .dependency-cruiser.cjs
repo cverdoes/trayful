@@ -66,6 +66,7 @@ module.exports = {
       to: { path: '^packages/formats/src/loading/', reachable: true },
     },
     ...foldersPointDown('formats', ['schemas', 'components', 'project', 'loading']),
+    ...foldersPointDown('core', ['table', 'placement', 'commands', 'views']),
     {
       name: 'src-never-imports-tests',
       severity: 'error',

@@ -7,8 +7,8 @@ import {
   valuesOf,
   type ComponentType,
 } from '@trayful/formats/browser';
-import { nextInt } from './rng.js';
-import type { Piece, TableObject } from './state.js';
+import { nextInt } from '../table/rng.js';
+import type { Piece, TableObject } from '../table/state.js';
 import { CommandError, type Transaction } from './transaction.js';
 
 /** Turns a piece over, or a whole stack, which also reverses its order. */

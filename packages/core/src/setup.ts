@@ -1,10 +1,18 @@
 import { TABLE_FORMAT, sidesOf, type SetupStep } from '@trayful/formats/browser';
 import type { ResolvedProject } from '@trayful/formats';
-import { BOX_WIDTH, deckStackId, MARGIN, newDeck, newPiece, rows, type Sized } from './box.js';
-import { applyCommand, CommandError, type Command } from './commands.js';
-import { boundsOf, objectSize } from './layout.js';
-import { seedState } from './rng.js';
-import { resolveSpots, SnapError } from './snap.js';
+import {
+  BOX_WIDTH,
+  deckStackId,
+  MARGIN,
+  newDeck,
+  newPiece,
+  rows,
+  type Sized,
+} from './table/box.js';
+import { applyCommand, CommandError, type Command } from './commands/index.js';
+import { boundsOf, objectSize } from './table/layout.js';
+import { seedState } from './table/rng.js';
+import { resolveSpots, SnapError } from './placement/snap.js';
 import {
   onTable,
   sizeOf,
@@ -13,7 +21,7 @@ import {
   type Piece,
   type TableObject,
   type TableState,
-} from './state.js';
+} from './table/state.js';
 
 export interface CreateTableOptions {
   name: string;

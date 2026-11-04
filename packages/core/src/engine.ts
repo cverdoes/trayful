@@ -1,5 +1,5 @@
-import { applyCommand, CommandError, type Command } from './commands.js';
-import { removeObject, type Catalog, type TableObject, type TableState } from './state.js';
+import { applyCommand, CommandError, type Command } from './commands/index.js';
+import { removeObject, type Catalog, type TableObject, type TableState } from './table/state.js';
 
 /** A history step: a command, or a whole-table replacement such as a reset. */
 export type HistoryStep = Command | { type: 'replace' };

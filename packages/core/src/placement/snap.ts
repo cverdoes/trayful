@@ -8,7 +8,7 @@ import {
   type DropMode,
   type Vec2,
 } from '@trayful/formats/browser';
-import { objectSize } from './layout.js';
+import { objectSize } from '../table/layout.js';
 import {
   onTable,
   sizeOf,
@@ -16,7 +16,7 @@ import {
   type Piece,
   type TableObject,
   type TableState,
-} from './state.js';
+} from '../table/state.js';
 
 /**
  * Containers declare drop areas, made of numbered spots or an area. A spot is

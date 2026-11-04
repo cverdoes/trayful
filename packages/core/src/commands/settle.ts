@@ -2,10 +2,17 @@
 // down: piles gather into one stack, groups spread out around their spot, rows
 // close up left to right, and bags take their contents out of sight.
 import type { Vec2 } from '@trayful/formats/browser';
-import { objectSize } from './layout.js';
-import { stack } from './pile-commands.js';
-import { roundPos } from './room.js';
-import { allSpots, occupants, ROW_GAP, toLocal, toTable, type SnapSpot } from './snap.js';
+import { objectSize } from '../table/layout.js';
+import { stack } from './piles.js';
+import { roundPos } from '../placement/room.js';
+import {
+  allSpots,
+  occupants,
+  ROW_GAP,
+  toLocal,
+  toTable,
+  type SnapSpot,
+} from '../placement/snap.js';
 import type { Transaction } from './transaction.js';
 
 /**
