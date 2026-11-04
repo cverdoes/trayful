@@ -57,4 +57,4 @@ With `TRAYFUL_SMOKE_TEST=1` set, `play` starts, checks that the app is served, a
 
 Exit codes: `0` success, `1` the project has errors (or the server could not start, or there is nothing to migrate), `2` wrong usage.
 
-Test with `pnpm vitest run packages/cli` from the repo root.
+Test with `pnpm vitest run packages/cli` from the repo root. The tests live in `test/`, in the same folders as the code they test in `src/`.

@@ -40,7 +40,7 @@ module.exports = {
       name: 'core-and-app-stay-off-node',
       severity: 'error',
       comment: 'core runs in the browser too, and app is browser-only: no Node built-ins.',
-      from: { path: '^packages/(core|app)/src/', pathNot: '\\.test\\.ts$' },
+      from: { path: '^packages/(core|app)/src/' },
       to: { dependencyTypes: ['core'] },
     },
     {
@@ -51,13 +51,21 @@ module.exports = {
       to: { path: '^packages/formats/src/(load|source)\\.ts$', reachable: true },
     },
     {
+      name: 'src-never-imports-tests',
+      severity: 'error',
+      comment:
+        "Tests and their helpers live in each package's test/ folder; shipped code must not need them.",
+      from: { path: '^packages/[^/]+/src/' },
+      to: { path: '^packages/[^/]+/test/' },
+    },
+    {
       name: 'no-orphans',
       severity: 'error',
       comment: 'A source file nothing imports is dead code (knip also reports these).',
       from: {
         orphan: true,
         path: '^packages/[^/]+/src/',
-        pathNot: ['\\.test\\.ts$', '\\.d\\.ts$', '/src/(index|main|browser)\\.tsx?$'],
+        pathNot: ['\\.d\\.ts$', '/src/(index|main|browser)\\.tsx?$'],
       },
       to: {},
     },

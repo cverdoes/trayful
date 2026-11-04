@@ -28,4 +28,4 @@ engine.dispatch({ type: 'roll', id: 'die.1' }, 'bob');
 engine.undo('alice'); // puts the deck back in order, leaves Bob's roll
 ```
 
-Test with `pnpm vitest run packages/core` from the repo root.
+Test with `pnpm vitest run packages/core` from the repo root. The tests live in `test/`, in the same folders as the code they test in `src/`.

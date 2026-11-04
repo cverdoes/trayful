@@ -91,4 +91,4 @@ Resources: `trayful://projects`, each table's state and PNG snapshot, each proje
 
 Agents play as player `claude`: `describe_table` and `query_objects` (`inside: "hand:claude"`) show their own hand and only counts of other hands, moves to `hand:<player>` deal into hands, and `get_history` names pieces in other hands only as hidden. Tools send the same commands as the browser, through the same session, so people see agent moves live. `undo` and `redo` take back only the agent's own moves, just as each person undoes only theirs. Each tool call changes all or nothing. `/mcp` serves it over HTTP; `trayful mcp` in the CLI serves it over stdio. Pictures (`snapshot`, `render_component`) are drawn by a browser that has the table open: the server asks over the WebSocket and the browser answers with a PNG.
 
-Test with `pnpm vitest run packages/server` from the repo root.
+Test with `pnpm vitest run packages/server` from the repo root. The tests live in `test/`, in the same folders as the code they test in `src/`.

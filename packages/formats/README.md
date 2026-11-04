@@ -15,4 +15,4 @@ const { project, diagnostics } = await loadProject('examples/harvest-moon');
 diagnostics.forEach((d) => console.log(formatDiagnostic(d)));
 ```
 
-Test with `pnpm vitest run packages/formats` from the repo root.
+Test with `pnpm vitest run packages/formats` from the repo root. The tests live in `test/`, in the same folders as the code they test in `src/`.

@@ -2,11 +2,10 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['packages/*/src/**/*.test.ts', 'scripts/**/*.test.ts'],
+    include: ['packages/*/test/**/*.test.ts', 'scripts/test/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       include: ['packages/*/src/**'],
-      exclude: ['**/*.test.ts'],
       reporter: ['text-summary', 'html', 'json-summary'],
       // A floor per package, so a well-tested package cannot hide one with no tests. A
       // coverage run raises a floor when tests land, to 2 points under what it measured: some

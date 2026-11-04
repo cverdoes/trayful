@@ -1,7 +1,7 @@
 {
   "path": ["packages", "scripts"],
   "pattern": "**/*.{ts,tsx}",
-  "ignore": ["**/node_modules/**", "**/dist/**", "**/*.test.ts"],
+  "ignore": ["**/node_modules/**", "**/dist/**", "packages/*/test/**", "scripts/test/**"],
   "minLines": 8,
   "minTokens": 60,
   "threshold": 1,
