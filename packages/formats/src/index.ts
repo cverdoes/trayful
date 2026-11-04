@@ -1,3 +1,4 @@
+/** Everything in @trayful/formats, including the Node-only project loader (`./browser` leaves it out). */
 export * from './schemas.js';
 export * from './diagnostics.js';
 export * from './fields.js';

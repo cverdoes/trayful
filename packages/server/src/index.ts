@@ -1,3 +1,4 @@
+/** The server's public API: starting it, table sessions, the MCP server, workspaces and migration. */
 export * from './server.js';
 export * from './session.js';
 export * from './mcp.js';

@@ -1,3 +1,4 @@
+/** The browser entry point: connects to the server and draws the app. */
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';

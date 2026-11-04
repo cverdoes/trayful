@@ -1,3 +1,4 @@
+/** The table engine's public API: state, commands, the engine, the wire protocol and their helpers. */
 export * from './state.js';
 export * from './commands.js';
 export * from './engine.js';

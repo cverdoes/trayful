@@ -6,7 +6,15 @@ import sonarjs from 'eslint-plugin-sonarjs';
 export const COGNITIVE_COMPLEXITY_LIMIT = 15;
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', 'packages/formats/schema/**', 'coverage/**'] },
+  {
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'packages/formats/schema/**',
+      'coverage/**',
+      '.reports/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
