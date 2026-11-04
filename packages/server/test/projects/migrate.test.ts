@@ -5,12 +5,12 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { afterEach, describe, expect, it } from 'vitest';
-import { removeType, setInventory, upsertType } from '../src/authoring.js';
-import { createMcpServer } from '../src/mcp.js';
-import { migrateFolder, MigrateError } from '../src/migrate.js';
-import { renameField, renameType } from '../src/renaming.js';
-import { Workspace } from '../src/workspace.js';
-import { examplePath, legacyHarvestMoon } from './paths.js';
+import { removeType, setInventory, upsertType } from '../../src/projects/authoring.js';
+import { createMcpServer } from '../../src/mcp/server.js';
+import { migrateFolder, MigrateError } from '../../src/projects/migrate.js';
+import { renameField, renameType } from '../../src/projects/renaming.js';
+import { Workspace } from '../../src/projects/workspace.js';
+import { examplePath, legacyHarvestMoon } from '../paths.js';
 
 const legacy = legacyHarvestMoon;
 const current = examplePath('harvest-moon');

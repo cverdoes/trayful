@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { describeTable, handTarget, resolveSpots, type Command } from '@trayful/core';
 import { z } from 'zod';
-import { AGENT_PLAYER } from '../players.js';
+import { AGENT_PLAYER } from '../play/players.js';
 import { count, Face, failure, Ids, Pos, Target, text, type ToolContext } from './context.js';
 
 /** Tools for playing: every command, the agent's undo and redo, and starting over. */

@@ -5,7 +5,7 @@ import type { Piece, ProjectView, ServerMessage, Stack, TableView } from '@trayf
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { isLocalOrigin, startServer, type RunningServer } from '../src/server.js';
-import { frameText } from '../src/frames.js';
+import { frameText } from '../src/routes/frames.js';
 import { examplePath } from './paths.js';
 
 const example = examplePath('harvest-moon');

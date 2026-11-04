@@ -1,9 +1,9 @@
 import { ResourceTemplate, type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { withoutOtherHands } from '@trayful/core';
 import { toJsonSchemas } from '@trayful/formats';
-import { docFiles, docsIndex, readDoc } from '../docs.js';
-import { AGENT_PLAYER } from '../players.js';
-import type { Workspace } from '../workspace.js';
+import { docFiles, docsIndex, readDoc } from '../shipped/docs.js';
+import { AGENT_PLAYER } from '../play/players.js';
+import type { Workspace } from '../projects/workspace.js';
 import type { ToolContext } from './context.js';
 
 const json = (uri: URL, value: unknown) => ({

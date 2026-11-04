@@ -2,9 +2,9 @@ import { cp, mkdtemp, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { importCsv, readTray, saveTray } from '../src/tray.js';
-import { Workspace } from '../src/workspace.js';
-import { examplePath } from './paths.js';
+import { importCsv, readTray, saveTray } from '../../src/projects/tray.js';
+import { Workspace } from '../../src/projects/workspace.js';
+import { examplePath } from '../paths.js';
 
 const starter = examplePath('starter');
 

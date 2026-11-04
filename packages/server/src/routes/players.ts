@@ -1,5 +1,5 @@
-import { addToken, caller, cookie, INVITE_COOKIE, PLAYER_COOKIE } from '../access.js';
-import { tableKey } from '../players.js';
+import { addToken, caller, cookie, INVITE_COOKIE, PLAYER_COOKIE } from '../play/access.js';
+import { tableKey } from '../play/players.js';
 import { NOT_INVITED, type RouteContext, type TableQuery } from './context.js';
 
 /** Joining, renaming and invites. */

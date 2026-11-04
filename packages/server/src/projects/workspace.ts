@@ -10,9 +10,9 @@ import {
   type Diagnostic,
   type ResolvedProject,
 } from '@trayful/formats';
-import { packagedVersion, resourceDir } from './resources.js';
-import { FilePlayerStore, Players, type Player, type PlayerStore } from './players.js';
-import { checkTableName, ProjectLoadError, TableSession, tableFile } from './session.js';
+import { packagedVersion, resourceDir } from '../shipped/resources.js';
+import { FilePlayerStore, Players, type Player, type PlayerStore } from '../play/players.js';
+import { checkTableName, ProjectLoadError, TableSession, tableFile } from '../play/session.js';
 
 /** One project folder in the workspace. */
 export interface ProjectEntry {

@@ -13,9 +13,9 @@ import {
   removeType,
   setInventory,
   upsertType,
-} from '../src/authoring.js';
-import { createProjectFolder, Workspace } from '../src/workspace.js';
-import { examplePath } from './paths.js';
+} from '../../src/projects/authoring.js';
+import { createProjectFolder, Workspace } from '../../src/projects/workspace.js';
+import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');
 

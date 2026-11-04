@@ -40,7 +40,7 @@ async function toolGroups(): Promise<Map<string, string>> {
   const dir = path.join(ROOT, 'packages/server/src');
   const groups = new Map<string, string>();
   for (const file of await readdir(dir, { recursive: true })) {
-    if (!file.endsWith('.ts') || file.endsWith('.test.ts')) continue;
+    if (!file.endsWith('.ts')) continue;
     const text = await readFile(path.join(dir, file), 'utf8');
     for (const match of text.matchAll(/registerTool\(\s*'([a-z_]+)'/g)) {
       groups.set(match[1]!, `server/${file.split(path.sep).join('/')}`);

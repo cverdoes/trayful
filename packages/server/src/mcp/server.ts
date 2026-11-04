@@ -1,13 +1,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { registerAuthoringTools } from './mcp/authoring.js';
-import { toolContext } from './mcp/context.js';
-import { registerPlayTools } from './mcp/play.js';
-import { registerReadingTools } from './mcp/reading.js';
-import { registerResources } from './mcp/resources.js';
-import { registerTableTools } from './mcp/tables.js';
-import { AGENT_PLAYER } from './players.js';
-import { packagedVersion } from './resources.js';
-import type { Workspace } from './workspace.js';
+import { registerAuthoringTools } from './authoring.js';
+import { toolContext } from './context.js';
+import { registerPlayTools } from './play.js';
+import { registerReadingTools } from './reading.js';
+import { registerResources } from './resources.js';
+import { registerTableTools } from './tables.js';
+import { AGENT_PLAYER } from '../play/players.js';
+import { packagedVersion } from '../shipped/resources.js';
+import type { Workspace } from '../projects/workspace.js';
 
 export interface McpOptions {
   /** Where people can watch the table, mentioned to the agent. */

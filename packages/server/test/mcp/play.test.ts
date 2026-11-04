@@ -5,9 +5,9 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { Piece, ServerMessage, Stack } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createMcpServer } from '../../src/mcp.js';
-import type { TableSession } from '../../src/session.js';
-import { Workspace } from '../../src/workspace.js';
+import { createMcpServer } from '../../src/mcp/server.js';
+import type { TableSession } from '../../src/play/session.js';
+import { Workspace } from '../../src/projects/workspace.js';
 import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');

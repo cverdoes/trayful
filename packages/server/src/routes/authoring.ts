@@ -1,7 +1,7 @@
 import type { FastifyReply } from 'fastify';
-import { libraryFiles, removeType, upsertType } from '../authoring.js';
-import { migrateFolder } from '../migrate.js';
-import { renameField, renameType } from '../renaming.js';
+import { libraryFiles, removeType, upsertType } from '../projects/authoring.js';
+import { migrateFolder } from '../projects/migrate.js';
+import { renameField, renameType } from '../projects/renaming.js';
 import type { RouteContext } from './context.js';
 
 export interface ProjectQuery {

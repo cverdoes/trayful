@@ -1,4 +1,4 @@
-import { allowed, caller, isLocalRequest } from '../access.js';
+import { allowed, caller, isLocalRequest } from '../play/access.js';
 import type { RouteContext, TableQuery } from './context.js';
 
 /** Projects and tables: viewing them, and the host's table menu. */

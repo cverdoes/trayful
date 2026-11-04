@@ -2,6 +2,8 @@
 
 The local Trayful server. It serves a workspace of projects, keeps every browser looking at a table in sync (each seeing only what their player may), lets invited guests join, reloads projects when their files change, and lets agents play and author over MCP.
 
+The code in `src/` is in folders, each importing only the ones before it: `play/` (a live table's session, its players and who may reach it), `shipped/` (the files Trayful ships besides its code), `projects/` (the workspace and every edit to project files), `mcp/` (the MCP server and its tools) and `routes/` (the HTTP and WebSocket routes). `server.ts` puts them together.
+
 ```ts
 import { startServer } from '@trayful/server';
 
@@ -18,24 +20,24 @@ await server.close(); // saves every open table first
 
 ## Workspace
 
-`Workspace` in `workspace.ts` holds the projects and their open tables:
+`Workspace` in `projects/workspace.ts` holds the projects and their open tables:
 
 - The root is either one project folder (with a `trayful.yaml`) or a folder whose sub-folders are projects. Projects are addressed by folder name.
 - `table(project, name)` opens a table, creating it from the project and its setup if it is not saved yet. `duplicateTable`, `deleteTable` and `tables` manage the saved ones in each project's `tables/` folder. `active` is the table agents play on.
 - Project folders are watched. On save, the project is reloaded and every open table switches to the new definitions (`TableSession.setProject`): changed components redraw, new ones arrive and removed ones leave, as one undoable step (`syncTable` in core). A project that no longer loads keeps its last good version, and its tables are told the problems.
 - `createProject(name)` copies [`examples/starter`](../../examples/starter), as `trayful new` does through `createProjectFolder`.
 
-`authoring.ts` changes project files for agents: `upsertType`, `removeType`, `setInventory` and `addAsset`. Edits go through the YAML document API, so comments and formatting elsewhere stay. After each edit the project is reloaded; if it no longer loads, the files are put back and an `AuthoringError` lists the problems. A project still in `trayful/1` is refused (`requireCurrentFormat`) until it is migrated.
+`projects/authoring.ts` changes project files for agents: `upsertType`, `removeType`, `setInventory` and `addAsset`. Edits go through the YAML document API, so comments and formatting elsewhere stay. After each edit the project is reloaded; if it no longer loads, the files are put back and an `AuthoringError` lists the problems. A project still in `trayful/1` is refused (`requireCurrentFormat`) until it is migrated.
 
-`resources.ts` finds the files Trayful ships with besides its code: the built browser app, the starter project, the JSON Schemas and the docs. A packaged Trayful keeps them in a `resources/` folder beside its bundled file; in this repository `resourceDir` falls back to where each lives in its package.
+`shipped/resources.ts` finds the files Trayful ships with besides its code: the built browser app, the starter project, the JSON Schemas and the docs. A packaged Trayful keeps them in a `resources/` folder beside its bundled file; in this repository `resourceDir` falls back to where each lives in its package.
 
-`migrate.ts` rewrites a `trayful/1` project in the current format (`migrateFolder`), for `trayful migrate`, the `migrate_project` tool and `POST /api/migrate`. Libraries are written afresh, keeping their header comments; images and palette colours go to a new assets file; the manifest, inventory and setups are patched in place, keeping their comments. A project that is already current or does not load raises a `MigrateError`.
+`projects/migrate.ts` rewrites a `trayful/1` project in the current format (`migrateFolder`), for `trayful migrate`, the `migrate_project` tool and `POST /api/migrate`. Libraries are written afresh, keeping their header comments; images and palette colours go to a new assets file; the manifest, inventory and setups are patched in place, keeping their comments. A project that is already current or does not load raises a `MigrateError`.
 
 ## Players and access
 
-`players.ts` keeps the players of a workspace (`Players`): the host, guests and the agent player `claude`. The host is named after the account running the server, or `TRAYFUL_HOST_NAME` when set (as `compose.yaml` does, since a container's account is not yours). They are stored through a `PlayerStore`; `FilePlayerStore` writes `.trayful/players.json` in the served folder, and a hosted service could keep them elsewhere behind the same interface. Each guest proves who they are with a secret in an HttpOnly cookie; only its SHA-256 fingerprint is stored. The same file keeps one invite per table (`invite(project, table)`, made on first use; `renew` replaces its token), and the tables each guest was invited to (`grant`), so a guest keeps their tables when an invite is renewed.
+`play/players.ts` keeps the players of a workspace (`Players`): the host, guests and the agent player `claude`. The host is named after the account running the server, or `TRAYFUL_HOST_NAME` when set (as `compose.yaml` does, since a container's account is not yours). They are stored through a `PlayerStore`; `FilePlayerStore` writes `.trayful/players.json` in the served folder, and a hosted service could keep them elsewhere behind the same interface. Each guest proves who they are with a secret in an HttpOnly cookie; only its SHA-256 fingerprint is stored. The same file keeps one invite per table (`invite(project, table)`, made on first use; `renew` replaces its token), and the tables each guest was invited to (`grant`), so a guest keeps their tables when an invite is renewed.
 
-`access.ts` decides who a request is from:
+`play/access.ts` decides who a request is from:
 
 - A request from this computer (a loopback address, a loopback `Host`, and no proxy headers such as `x-forwarded-for`) is the host, even without a cookie. Tunnels add proxy headers, so requests through them never count as local, and the `Host` check stops DNS rebinding. In a container (`container` in the options) the computer running it reaches the server from the container's gateway (`containerGateway` reads it from `/proc/net/route`), so that address counts as this computer too; the port must then be published on the computer's loopback only.
 - Anyone else may reach only the tables they were invited to: by an invite in their invite cookie (set by `/join/<invite>`), or granted to their player when they joined. Other tables, their routes and their socket answer 403, and `/api/projects` lists only their tables (`allowed` and `allowedProject`).
@@ -79,7 +81,7 @@ The server binds to `127.0.0.1` unless told otherwise (`trayful play --share` bi
 
 ## MCP
 
-`createMcpServer(workspace)` in `mcp.ts` builds the MCP server from the tool groups in `src/mcp/` (reading, play, tables, authoring, resources), which share a `ToolContext`. Tools act on the active table:
+`createMcpServer(workspace)` in `mcp/server.ts` builds the MCP server from the tool groups in `src/mcp/` (reading, play, tables, authoring, resources), which share a `ToolContext`. Tools act on the active table:
 
 - Reading: `describe_table`, `query_objects`, `snapshot`.
 - Playing: `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `set_counter`, `lock`, with drop areas such as `main-board/market/2` wherever a position goes.
@@ -87,7 +89,7 @@ The server binds to `127.0.0.1` unless told otherwise (`trayful play --share` bi
 - Projects and tables: `list_projects`, `open_table`, `duplicate_table`, `delete_table`, `create_project`, `validate_project`.
 - Authoring: `upsert_type`, `rename_type`, `remove_type`, `set_inventory`, `add_asset`, `render_component`, `migrate_project`.
 
-Resources: `trayful://projects`, each table's state and PNG snapshot, each project's manifest and components, the JSON Schemas (`trayful://schema`), and the [docs](../../docs) (`trayful://docs` and `trayful://docs/<path>`, from `docs.ts`).
+Resources: `trayful://projects`, each table's state and PNG snapshot, each project's manifest and components, the JSON Schemas (`trayful://schema`), and the [docs](../../docs) (`trayful://docs` and `trayful://docs/<path>`, from `shipped/docs.ts`).
 
 Agents play as player `claude`: `describe_table` and `query_objects` (`inside: "hand:claude"`) show their own hand and only counts of other hands, moves to `hand:<player>` deal into hands, and `get_history` names pieces in other hands only as hidden. Tools send the same commands as the browser, through the same session, so people see agent moves live. `undo` and `redo` take back only the agent's own moves, just as each person undoes only theirs. Each tool call changes all or nothing. `/mcp` serves it over HTTP; `trayful mcp` in the CLI serves it over stdio. Pictures (`snapshot`, `render_component`) are drawn by a browser that has the table open: the server asks over the WebSocket and the browser answers with a PNG.
 

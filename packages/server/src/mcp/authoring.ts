@@ -1,10 +1,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { checkImageName, setColor, setImage } from '../assets.js';
-import { addAsset, removeType, setInventory, upsertType } from '../authoring.js';
-import { migrateFolder } from '../migrate.js';
-import { renameField, renameImage, renameType } from '../renaming.js';
+import { checkImageName, setColor, setImage } from '../projects/assets.js';
+import { addAsset, removeType, setInventory, upsertType } from '../projects/authoring.js';
+import { migrateFolder } from '../projects/migrate.js';
+import { renameField, renameImage, renameType } from '../projects/renaming.js';
 import { count, failure, projectParam, text, type ToolContext } from './context.js';
 
 const authored = (summary: string): CallToolResult =>
