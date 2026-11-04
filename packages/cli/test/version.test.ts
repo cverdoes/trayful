@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { run } from './index.js';
-import { version } from './version.js';
+import { run } from '../src/index.js';
+import { version } from '../src/version.js';
 
 describe('version', () => {
   it("is the cli package's version in this repository", async () => {

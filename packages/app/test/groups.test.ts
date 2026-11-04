@@ -1,7 +1,7 @@
 import { TABLE_FORMAT, type ComponentType } from '@trayful/formats/browser';
 import type { Piece, TableState } from '@trayful/core';
 import { describe, expect, it } from 'vitest';
-import { groupMembers, pickEntries, pickerCorner, pickFor, raise } from './groups';
+import { groupMembers, pickEntries, pickerCorner, pickFor, raise } from '../src/groups';
 
 const types: Record<string, ComponentType> = {
   board: {

@@ -1,13 +1,13 @@
-import { fileURLToPath } from 'node:url';
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { describeTable, summarizePiece } from './describe.js';
-import { AliasBook, viewFor } from './privacy.js';
-import { createTable } from './setup.js';
-import type { Piece, TableState } from './state.js';
+import { describeTable, summarizePiece } from '../src/describe.js';
+import { AliasBook, viewFor } from '../src/privacy.js';
+import { createTable } from '../src/setup.js';
+import type { Piece, TableState } from '../src/state.js';
+import { examplePath } from './paths.js';
 
 // The piecepack's coins show their suit on the back; its tiles show no field there.
-const example = fileURLToPath(new URL('../../../examples/piecepack', import.meta.url));
+const example = examplePath('piecepack');
 
 let project: ResolvedProject;
 let state: TableState;

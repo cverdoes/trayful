@@ -4,10 +4,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ProjectLoadError, startServer } from '@trayful/server';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { parsePlayArgs } from './options.js';
-import { play } from './play.js';
-import { fakeCloudflared, scratchExamples, scratchProject } from './testing.js';
-import { TunnelError } from './tunnel.js';
+import { parsePlayArgs } from '../src/options.js';
+import { play } from '../src/play.js';
+import { fakeCloudflared, scratchExamples, scratchProject } from './helpers.js';
+import { TunnelError } from '../src/tunnel.js';
 
 let appDir: string;
 

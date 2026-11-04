@@ -1,15 +1,15 @@
 import { cp, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { Piece } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createMcpServer } from '../mcp.js';
-import { Workspace } from '../workspace.js';
+import { createMcpServer } from '../../src/mcp.js';
+import { Workspace } from '../../src/workspace.js';
+import { examplePath } from '../paths.js';
 
-const example = fileURLToPath(new URL('../../../../examples/roll-and-write', import.meta.url));
+const example = examplePath('roll-and-write');
 
 interface ToolResult {
   content: { type: string; text?: string }[];

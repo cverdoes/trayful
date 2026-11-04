@@ -1,12 +1,12 @@
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { formatDiagnostic } from './diagnostics.js';
-import { loadProject } from './load.js';
+import { formatDiagnostic } from '../src/diagnostics.js';
+import { loadProject } from '../src/load.js';
+import { examplePath } from './paths.js';
 
-const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const example = examplePath('harvest-moon');
 
 /** Writes a small project to a temp folder. Files not given use a valid default. */
 async function project(files: Record<string, string>): Promise<string> {

@@ -1,9 +1,9 @@
 import { TABLE_FORMAT, type ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
-import { applyCommand, type Command } from './commands.js';
-import { describeTable } from './describe.js';
-import { snapFor } from './snap.js';
-import type { Catalog, Piece, TableState } from './state.js';
+import { applyCommand, type Command } from '../src/commands.js';
+import { describeTable } from '../src/describe.js';
+import { snapFor } from '../src/snap.js';
+import type { Catalog, Piece, TableState } from '../src/state.js';
 
 /** A board with a score track whose spaces hold groups, a free region, and pieces for both. */
 const catalog: Catalog = Object.fromEntries(

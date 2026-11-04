@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ComponentType } from './schemas.js';
-import { typeProblems } from './type-checks.js';
+import type { ComponentType } from '../src/schemas.js';
+import { typeProblems } from '../src/type-checks.js';
 
 function problems(type: Partial<ComponentType>) {
   return typeProblems({ id: 't', is: 'piece', size: 10, ...type });

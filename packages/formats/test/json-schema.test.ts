@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toJsonSchemas } from './json-schema.js';
+import { toJsonSchemas } from '../src/json-schema.js';
 
 describe('toJsonSchemas', () => {
   it('makes one JSON Schema per file kind, with an id that points at its published file', () => {

@@ -1,14 +1,12 @@
 import { cp, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { startServer, type RunningServer } from '../server.js';
+import { startServer, type RunningServer } from '../../src/server.js';
+import { examplePath, legacyHarvestMoon } from '../paths.js';
 
-const example = fileURLToPath(new URL('../../../../examples/harvest-moon', import.meta.url));
-const legacy = fileURLToPath(
-  new URL('../../../formats/fixtures/legacy-harvest-moon', import.meta.url),
-);
+const example = examplePath('harvest-moon');
+const legacy = legacyHarvestMoon;
 
 let server: RunningServer;
 

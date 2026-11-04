@@ -1,14 +1,14 @@
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { formatDiagnostic } from './diagnostics.js';
-import { loadProject } from './load.js';
-import type { ResolvedType } from './resolved.js';
+import { formatDiagnostic } from '../src/diagnostics.js';
+import { loadProject } from '../src/load.js';
+import type { ResolvedType } from '../src/resolved.js';
+import { examplePath, legacyHarvestMoon } from './paths.js';
 
-const legacy = fileURLToPath(new URL('../fixtures/legacy-harvest-moon', import.meta.url));
-const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const legacy = legacyHarvestMoon;
+const example = examplePath('harvest-moon');
 
 /** A component as written, without what the loader adds. */
 function written({ source: _source, normalizedFields: _fields, ...type }: ResolvedType) {

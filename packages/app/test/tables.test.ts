@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { suggestName, tableChoices } from './tables';
+import { suggestName, tableChoices } from '../src/tables';
 
 describe('tableChoices', () => {
   const view = { project: 'harvest', table: 'table-2' };

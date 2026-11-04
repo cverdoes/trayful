@@ -1,8 +1,8 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parseYaml, patchNode, yamlText } from './yaml-patch.js';
+import { parseYaml, patchNode, yamlText } from '../src/yaml-patch.js';
+import { examples } from './paths.js';
 
 /** Patches the whole document to hold `value` and returns the text it writes. */
 function patched(text: string, value: unknown): string {
@@ -63,7 +63,7 @@ describe('patchNode', () => {
 
 describe('yamlText', () => {
   it('writes every example file back exactly as it was read', async () => {
-    const root = fileURLToPath(new URL('../../../examples', import.meta.url));
+    const root = examples;
     const files = (await readdir(root, { recursive: true })).filter(
       (file) => file.endsWith('.yaml') && !file.includes('tables'),
     );

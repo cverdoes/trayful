@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MOTION_MS, settleIn, startMotion } from './motions';
+import { MOTION_MS, settleIn, startMotion } from '../src/motions';
 
 const roll = (at: number) => ({ kind: 'roll' as const, at });
 

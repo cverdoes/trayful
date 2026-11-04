@@ -6,9 +6,9 @@ import {
   loadHandHeight,
   loadHandMinimized,
   saveHandHeight,
-} from './handTray';
-import { handTrayHeight, toggleHandTray } from './hand';
-import { useStore } from './store';
+} from '../src/handTray';
+import { handTrayHeight, toggleHandTray } from '../src/hand';
+import { useStore } from '../src/store';
 
 function fakeStorage(): Storage {
   const items = new Map<string, string>();

@@ -19,8 +19,8 @@ import {
   valueIndex,
   valuesOf,
   type ValueSpec,
-} from './component.js';
-import type { ComponentType } from './schemas.js';
+} from '../src/component.js';
+import type { ComponentType } from '../src/schemas.js';
 
 const piece = (props: Partial<ComponentType> = {}): ComponentType => ({
   id: 'p',

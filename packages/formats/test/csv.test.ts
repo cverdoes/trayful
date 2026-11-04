@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { csvTable, csvText } from './csv.js';
+import { csvTable, csvText } from '../src/csv.js';
 
 describe('CSV tables', () => {
   it('reads a header and rows, padding short rows to the header', () => {

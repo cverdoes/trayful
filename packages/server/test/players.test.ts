@@ -8,7 +8,7 @@ import {
   MemoryPlayerStore,
   Players,
   type PlayersData,
-} from './players.js';
+} from '../src/players.js';
 
 describe('Players', () => {
   it('gives each player a unique id and a secret only they know', async () => {

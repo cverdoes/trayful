@@ -1,9 +1,9 @@
 import type { Stack, TableState } from '@trayful/core';
 import Konva from 'konva';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { hoverShape, STACK_CARD } from './hover';
-import { useStore } from './store';
-import { exampleTable } from './testing';
+import { hoverShape, STACK_CARD } from '../src/hover';
+import { useStore } from '../src/store';
+import { exampleTable } from './helpers';
 
 let table: TableState;
 const initial = useStore.getState();

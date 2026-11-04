@@ -7,7 +7,7 @@ import {
   textBox,
   tileRect,
   type TextLayer,
-} from './face';
+} from '../../src/render/face';
 
 describe('boxStart', () => {
   it('starts a box at its anchor, centred on it, or ending at it', () => {

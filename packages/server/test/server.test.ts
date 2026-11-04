@@ -1,14 +1,14 @@
 import { cp, mkdtemp, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { Piece, ProjectView, ServerMessage, Stack, TableView } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
-import { isLocalOrigin, startServer, type RunningServer } from './server.js';
-import { frameText } from './frames.js';
+import { isLocalOrigin, startServer, type RunningServer } from '../src/server.js';
+import { frameText } from '../src/frames.js';
+import { examplePath } from './paths.js';
 
-const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const example = examplePath('harvest-moon');
 
 let dir: string;
 let server: RunningServer;

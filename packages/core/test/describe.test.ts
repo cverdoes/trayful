@@ -1,12 +1,12 @@
-import { fileURLToPath } from 'node:url';
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { describeTable, queryObjects } from './describe.js';
-import { TableEngine } from './engine.js';
-import { createTable } from './setup.js';
-import { checkIntegrity, type Piece, type Stack } from './state.js';
+import { describeTable, queryObjects } from '../src/describe.js';
+import { TableEngine } from '../src/engine.js';
+import { createTable } from '../src/setup.js';
+import { checkIntegrity, type Piece, type Stack } from '../src/state.js';
+import { examplePath } from './paths.js';
 
-const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const example = examplePath('harvest-moon');
 const DECK = 'deck:actions';
 
 let project: ResolvedProject;

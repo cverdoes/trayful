@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acceptOptions, componentOptions, findOption } from './ComponentPicker';
+import { acceptOptions, componentOptions, findOption } from '../../src/design/ComponentPicker';
 
 const options = [
   { value: 'card', label: 'Card' },

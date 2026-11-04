@@ -1,9 +1,15 @@
 import { startValue, TABLE_FORMAT, type ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
-import { applyCommand, type Command } from './commands.js';
-import { describeTable, queryObjects } from './describe.js';
-import { seedState } from './rng.js';
-import { checkIntegrity, type Catalog, type Piece, type Stack, type TableState } from './state.js';
+import { applyCommand, type Command } from '../src/commands.js';
+import { describeTable, queryObjects } from '../src/describe.js';
+import { seedState } from '../src/rng.js';
+import {
+  checkIntegrity,
+  type Catalog,
+  type Piece,
+  type Stack,
+  type TableState,
+} from '../src/state.js';
 
 /** Components with one behaviour each, so every test can say which one it is about. */
 const types: ComponentType[] = [

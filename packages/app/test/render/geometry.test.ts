@@ -2,8 +2,8 @@ import { applyCommand, type TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
 import type { ComponentType } from '@trayful/formats/browser';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { after, exampleTable } from '../testing';
-import { dropTarget, typeOf, type Types } from './geometry';
+import { after, exampleTable } from '../helpers';
+import { dropTarget, typeOf, type Types } from '../../src/render/geometry';
 
 let project: ResolvedProject;
 let table: TableState;

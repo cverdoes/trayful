@@ -4,8 +4,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { Stack } from '@trayful/core';
 import { startServer } from '@trayful/server';
 import { describe, expect, it, vi } from 'vitest';
-import { mcp } from './mcp.js';
-import { scratchExamples, scratchProject } from './testing.js';
+import { mcp } from '../src/mcp.js';
+import { scratchExamples, scratchProject } from './helpers.js';
 
 /**
  * Runs `trayful mcp` in this process with a client on its stdin and stdout. Returns the

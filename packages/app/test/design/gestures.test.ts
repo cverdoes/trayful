@@ -1,6 +1,6 @@
 import type { ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
-import { press, rotateHandle, type Press } from './gestures';
+import { press, rotateHandle, type Press } from '../../src/design/gestures';
 
 const card: ComponentType = {
   id: 'card',

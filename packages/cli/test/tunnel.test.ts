@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { fakeCloudflared } from './testing.js';
-import { startTunnel } from './tunnel.js';
+import { fakeCloudflared } from './helpers.js';
+import { startTunnel } from '../src/tunnel.js';
 
 describe.skipIf(process.platform === 'win32')('startTunnel', () => {
   it('reads the quick tunnel address from cloudflared', async () => {

@@ -48,7 +48,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.test.ts', 'e2e/**'],
+    files: ['packages/*/test/**', 'scripts/test/**', 'e2e/**'],
     rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',

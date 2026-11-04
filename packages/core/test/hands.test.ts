@@ -1,10 +1,9 @@
-import { fileURLToPath } from 'node:url';
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { applyCommand, type Command } from './commands.js';
-import { describeTable } from './describe.js';
-import { AliasBook, resolveAliases, viewFor, withoutOtherHands } from './privacy.js';
-import { createTable } from './setup.js';
+import { applyCommand, type Command } from '../src/commands.js';
+import { describeTable } from '../src/describe.js';
+import { AliasBook, resolveAliases, viewFor, withoutOtherHands } from '../src/privacy.js';
+import { createTable } from '../src/setup.js';
 import {
   checkIntegrity,
   handCounts,
@@ -12,9 +11,10 @@ import {
   type Piece,
   type Stack,
   type TableState,
-} from './state.js';
+} from '../src/state.js';
+import { examplePath } from './paths.js';
 
-const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const example = examplePath('harvest-moon');
 const DECK = 'deck:actions';
 
 let project: ResolvedProject;

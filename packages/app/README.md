@@ -39,4 +39,4 @@ Units on the canvas are millimetres; the viewport scales them to pixels. When th
 - `pnpm build` (from the repo root) builds into `dist/`, which `trayful play` serves.
 - `pnpm dev` (from the repo root) runs a table server and this app with hot reload at http://localhost:5173.
 
-The plain modules (`actions.ts`, `drops.ts`, `keyboard.ts`, `viewport.ts`, `store.ts`, `tables.ts` and `render/face.ts`) have unit tests, which play on the Harvest Moon example through `src/testing.ts`; the components are covered by the end-to-end tests. `window.__trayful` exposes the store and a `worldToScreen` helper for the end-to-end tests in [`e2e/`](../../e2e).
+The plain modules (`actions.ts`, `drops.ts`, `keyboard.ts`, `viewport.ts`, `store.ts`, `tables.ts` and `render/face.ts`) have unit tests, which play on the Harvest Moon example through `test/helpers.ts` (tests live in `test/`, in the same folders as the code in `src/`); the components are covered by the end-to-end tests. `window.__trayful` exposes the store and a `worldToScreen` helper for the end-to-end tests in [`e2e/`](../../e2e).

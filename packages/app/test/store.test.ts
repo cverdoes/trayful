@@ -1,8 +1,8 @@
 import type { ServerMessage, TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { useStore, type Me } from './store';
-import { after, exampleTable } from './testing';
+import { useStore, type Me } from '../src/store';
+import { after, exampleTable } from './helpers';
 
 let project: ResolvedProject;
 let table: TableState;

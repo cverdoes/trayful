@@ -2,12 +2,12 @@ import { cp, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { addImage, removeImage, setColor, setImage } from './assets.js';
-import { Workspace } from './workspace.js';
+import { addImage, removeImage, setColor, setImage } from '../src/assets.js';
+import { Workspace } from '../src/workspace.js';
+import { examplePath } from './paths.js';
 
-const starter = fileURLToPath(new URL('../../../examples/starter', import.meta.url));
+const starter = examplePath('starter');
 const SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20"/>').toString(
   'base64',
 );

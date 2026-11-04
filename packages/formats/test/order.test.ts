@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byCodeUnit } from './order.js';
+import { byCodeUnit } from '../src/order.js';
 
 describe('byCodeUnit', () => {
   it('puts capitals before lower case, whatever the machine’s locale', () => {

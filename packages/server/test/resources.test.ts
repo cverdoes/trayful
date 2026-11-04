@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { packagedVersion, resourceDir } from './resources.js';
+import { packagedVersion, resourceDir } from '../src/resources.js';
 
 describe('resourceDir', () => {
   it('finds each resource in this repository', () => {

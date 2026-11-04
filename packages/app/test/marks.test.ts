@@ -1,7 +1,7 @@
 import { markBoxes, type Piece } from '@trayful/core';
 import type { ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
-import { clickBox, eraseBox, textCommand, textSize } from './marks';
+import { clickBox, eraseBox, textCommand, textSize } from '../src/marks';
 
 const types: Record<string, ComponentType> = {
   sheet: {

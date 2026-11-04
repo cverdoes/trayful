@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MOTION_MS } from './motions';
-import { gatherFrame, riffleFrame } from './shuffles';
+import { MOTION_MS } from '../src/motions';
+import { gatherFrame, riffleFrame } from '../src/shuffles';
 
 const at = (share: number) => share * MOTION_MS.shuffle;
 /** Whether a card lies square on the pile, ignoring the sign of zero. */

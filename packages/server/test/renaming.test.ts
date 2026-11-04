@@ -1,13 +1,13 @@
 import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { AuthoringError } from './authoring.js';
-import { renameField, renameImage, renameType } from './renaming.js';
-import { Workspace } from './workspace.js';
+import { AuthoringError } from '../src/authoring.js';
+import { renameField, renameImage, renameType } from '../src/renaming.js';
+import { Workspace } from '../src/workspace.js';
+import { examplePath } from './paths.js';
 
-const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const example = examplePath('harvest-moon');
 
 let workspace: Workspace;
 let dir: string;

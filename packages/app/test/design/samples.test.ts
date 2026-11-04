@@ -1,8 +1,8 @@
 import type { ComponentType } from '@trayful/formats/browser';
 import { expect, it } from 'vitest';
-import type { BoxComponent } from './api';
-import { designName, distinctDesigns, sampleData } from './samples';
-import { typeYaml } from './yaml';
+import type { BoxComponent } from '../../src/design/api';
+import { designName, distinctDesigns, sampleData } from '../../src/design/samples';
+import { typeYaml } from '../../src/design/yaml';
 
 const type = {
   id: 'card',

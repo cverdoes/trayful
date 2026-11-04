@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextChoice } from './MoreMenu';
+import { nextChoice } from '../src/MoreMenu';
 
 describe('nextChoice', () => {
   it('moves down and up the list, wrapping around at the ends', () => {

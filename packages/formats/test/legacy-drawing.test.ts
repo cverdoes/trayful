@@ -2,15 +2,20 @@
 // way the first format's renderer did, and compare that with drawingOf on the upgraded
 // component.
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { assetsOf } from './component.js';
-import { drawingOf, isShown, resolveColor, type Drawing, type Shown } from './drawing.js';
-import { renderTemplate } from './fields.js';
-import { loadProject } from './load.js';
-import { LegacyLibraryFile, type Layer, type LegacyComponentType, type Scalar } from './schemas.js';
-import { AssetCollector, typesByBase, upgradeType } from './upgrade.js';
+import { assetsOf } from '../src/component.js';
+import { drawingOf, isShown, resolveColor, type Drawing, type Shown } from '../src/drawing.js';
+import { renderTemplate } from '../src/fields.js';
+import { loadProject } from '../src/load.js';
+import {
+  LegacyLibraryFile,
+  type Layer,
+  type LegacyComponentType,
+  type Scalar,
+} from '../src/schemas.js';
+import { AssetCollector, typesByBase, upgradeType } from '../src/upgrade.js';
+import { legacyHarvestMoon } from './paths.js';
 
 type Data = Record<string, Scalar | undefined>;
 type OldDrawing = Pick<Drawing, 'outline' | 'corner' | 'fill' | 'stroke' | 'plainBack'> & {
@@ -134,7 +139,7 @@ function expectSameLook(
   }
 }
 
-const fixture = fileURLToPath(new URL('../fixtures/legacy-harvest-moon', import.meta.url));
+const fixture = legacyHarvestMoon;
 
 async function readLegacyLibrary(file: string) {
   return LegacyLibraryFile.parse(parse(await readFile(`${fixture}/${file}`, 'utf8')));

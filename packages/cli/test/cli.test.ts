@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { run } from './index.js';
-import { examples, scratchLegacyProject, scratchProject } from './testing.js';
+import { run } from '../src/index.js';
+import { examples, scratchLegacyProject, scratchProject } from './helpers.js';
 
 const example = path.join(examples, 'harvest-moon');
 const notAProject = fileURLToPath(new URL('.', import.meta.url));

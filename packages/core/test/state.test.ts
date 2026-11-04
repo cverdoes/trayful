@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { removeObject, withChanges, type TableObject } from './state.js';
+import { removeObject, withChanges, type TableObject } from '../src/state.js';
 
 describe('withChanges', () => {
   it('applies changes and keeps the other keys', () => {

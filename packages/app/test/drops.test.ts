@@ -10,9 +10,9 @@ import {
   moveCommands,
   snapHint,
   type Vec,
-} from './drops';
-import { topLevel } from './render/geometry';
-import { after, exampleTable } from './testing';
+} from '../src/drops';
+import { topLevel } from '../src/render/geometry';
+import { after, exampleTable } from './helpers';
 
 let project: ResolvedProject;
 let table: TableState;

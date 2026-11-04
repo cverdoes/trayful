@@ -1,11 +1,11 @@
-import { fileURLToPath } from 'node:url';
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import type { SetupStep } from '@trayful/formats/browser';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { applySetup, createTable, SetupError } from './setup.js';
-import { checkIntegrity, type Piece, type Stack, type TableState } from './state.js';
+import { applySetup, createTable, SetupError } from '../src/setup.js';
+import { checkIntegrity, type Piece, type Stack, type TableState } from '../src/state.js';
+import { examplePath } from './paths.js';
 
-const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const example = examplePath('harvest-moon');
 
 let project: ResolvedProject;
 

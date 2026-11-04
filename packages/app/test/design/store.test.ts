@@ -1,7 +1,7 @@
 import { TYPE_PRESETS, type ComponentType } from '@trayful/formats/browser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useStore } from '../store';
-import type { Library } from './api';
+import { useStore } from '../../src/store';
+import type { Library } from '../../src/design/api';
 import {
   createType,
   duplicateType,
@@ -13,7 +13,7 @@ import {
   setValue,
   settle,
   useDesign,
-} from './store';
+} from '../../src/design/store';
 
 const card: ComponentType = { id: 'card', is: 'piece', size: [63, 88] };
 const FILE = 'library/cards.yaml';

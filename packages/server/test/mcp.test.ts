@@ -1,20 +1,20 @@
 import { cp, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { ServerMessage, Stack } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
-import { createMcpServer } from './mcp.js';
-import { startServer, type RunningServer } from './server.js';
-import type { TableSession } from './session.js';
-import { Workspace } from './workspace.js';
-import { frameText } from './frames.js';
+import { createMcpServer } from '../src/mcp.js';
+import { startServer, type RunningServer } from '../src/server.js';
+import type { TableSession } from '../src/session.js';
+import { Workspace } from '../src/workspace.js';
+import { frameText } from '../src/frames.js';
+import { examplePath } from './paths.js';
 
-const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const example = examplePath('harvest-moon');
 const DECK = 'deck:actions';
 
 async function scratchProject(): Promise<string> {

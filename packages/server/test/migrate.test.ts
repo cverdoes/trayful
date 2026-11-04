@@ -1,21 +1,19 @@
 import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { afterEach, describe, expect, it } from 'vitest';
-import { removeType, setInventory, upsertType } from './authoring.js';
-import { createMcpServer } from './mcp.js';
-import { migrateFolder, MigrateError } from './migrate.js';
-import { renameField, renameType } from './renaming.js';
-import { Workspace } from './workspace.js';
+import { removeType, setInventory, upsertType } from '../src/authoring.js';
+import { createMcpServer } from '../src/mcp.js';
+import { migrateFolder, MigrateError } from '../src/migrate.js';
+import { renameField, renameType } from '../src/renaming.js';
+import { Workspace } from '../src/workspace.js';
+import { examplePath, legacyHarvestMoon } from './paths.js';
 
-const legacy = fileURLToPath(
-  new URL('../../formats/fixtures/legacy-harvest-moon', import.meta.url),
-);
-const current = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const legacy = legacyHarvestMoon;
+const current = examplePath('harvest-moon');
 
 /** A copy of a project folder to change. */
 async function copy(source: string): Promise<string> {

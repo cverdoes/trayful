@@ -1,7 +1,7 @@
 import type { ProjectView } from '@trayful/core';
 import { describe, expect, it } from 'vitest';
-import { useStore } from './store';
-import { moreItems, selectionButtons } from './toolbarItems';
+import { useStore } from '../src/store';
+import { moreItems, selectionButtons } from '../src/toolbarItems';
 
 const view = { project: 'harvest-moon', table: 'table-1' } as ProjectView;
 const noop = () => undefined;

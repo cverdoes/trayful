@@ -1,6 +1,6 @@
 import type { Activity, Command, TableView } from '@trayful/core';
 import { describe, expect, it } from 'vitest';
-import { activityFor, activityText, motionOf } from './activity.js';
+import { activityFor, activityText, motionOf } from '../src/activity.js';
 
 describe('activityText', () => {
   it('says what a command did without naming any piece', () => {

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeField } from './fields.js';
-import { cartesian, componentIds, resolveRow, slugify, type Row } from './inventory.js';
-import type { ResolvedType } from './resolved.js';
-import type { InventoryEntry, Scalar } from './schemas.js';
+import { normalizeField } from '../src/fields.js';
+import { cartesian, componentIds, resolveRow, slugify, type Row } from '../src/inventory.js';
+import type { ResolvedType } from '../src/resolved.js';
+import type { InventoryEntry, Scalar } from '../src/schemas.js';
 
 const card = {
   id: 'card',

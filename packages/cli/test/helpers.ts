@@ -14,7 +14,7 @@ export function scratchProject(): Promise<string> {
 /** A copy of the Harvest Moon example as it was written in the first file format. */
 export function scratchLegacyProject(): Promise<string> {
   return scratchCopy(
-    fileURLToPath(new URL('../../formats/fixtures/legacy-harvest-moon', import.meta.url)),
+    fileURLToPath(new URL('../../formats/test/fixtures/legacy-harvest-moon', import.meta.url)),
   );
 }
 

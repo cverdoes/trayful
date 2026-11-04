@@ -84,7 +84,7 @@ export function complexityLinter() {
     cwd: root,
     overrideConfigFile: true,
     overrideConfig: [
-      { ignores: ['**/node_modules/**', '**/dist/**', '**/*.test.ts'] },
+      { ignores: ['**/node_modules/**', '**/dist/**'] },
       {
         files: ['packages/*/src/**/*.{ts,tsx}'],
         languageOptions: { parser: tseslint.parser },

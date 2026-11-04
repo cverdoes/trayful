@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitScale, layerAt, layerBounds } from './layout';
+import { fitScale, layerAt, layerBounds } from '../../src/design/layout';
 
 const face: [number, number] = [63, 88];
 

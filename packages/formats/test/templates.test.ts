@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ComponentType } from './schemas.js';
-import { backFields } from './templates.js';
+import type { ComponentType } from '../src/schemas.js';
+import { backFields } from '../src/templates.js';
 
 const card = (flippable: ComponentType['flippable']): ComponentType => ({
   id: 'card',

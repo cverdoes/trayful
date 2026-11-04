@@ -6,9 +6,9 @@ import {
   coverageByPackage,
   emptyCoverage,
   readScores,
-} from './quality-summary.js';
+} from '../quality-summary.js';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 
 const coverage = (covered: number, total: number) => {
   const c = emptyCoverage();

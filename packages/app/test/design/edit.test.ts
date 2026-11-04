@@ -26,7 +26,7 @@ import {
   withFieldRenamed,
   withItem,
   withRepresentation,
-} from './edit';
+} from '../../src/design/edit';
 
 const card = (fields: Partial<ComponentType> = {}): ComponentType => ({
   id: 'card',

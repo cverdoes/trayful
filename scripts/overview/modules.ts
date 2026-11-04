@@ -11,12 +11,11 @@ import type { ModuleInfo, PackageInfo } from './model.js';
 import { readSource } from './source.js';
 
 const SOURCE = /^packages\/([^/]+)\/src\/(.+\.tsx?)$/;
-const SKIP = /\.test\.tsx?$|\.d\.ts$/;
 
 /** `packages/core/src/engine.ts` → `core/engine.ts`; undefined for anything else. */
 function moduleId(file: string): string | undefined {
   const match = SOURCE.exec(file);
-  return match && !SKIP.test(file) ? `${match[1]}/${match[2]}` : undefined;
+  return match && !file.endsWith('.d.ts') ? `${match[1]}/${match[2]}` : undefined;
 }
 
 async function cruiseSources(): Promise<IModule[]> {
@@ -25,7 +24,7 @@ async function cruiseSources(): Promise<IModule[]> {
     {
       validate: false,
       doNotFollow: { path: 'node_modules' },
-      exclude: { path: '(^|/)(dist|coverage|schema|node_modules)/|\\.test\\.tsx?$' },
+      exclude: { path: '(^|/)(dist|coverage|schema|node_modules|test)/' },
       tsPreCompilationDeps: true,
       combinedDependencies: true,
       enhancedResolveOptions: {
@@ -72,7 +71,7 @@ async function readModule(found: IModule, id: string): Promise<ModuleInfo> {
   };
 }
 
-/** Every non-test source module in `packages/*\/src`, with imports both ways. */
+/** Every source module in `packages/*\/src`, with imports both ways. */
 export async function readModules(): Promise<ModuleInfo[]> {
   const modules: ModuleInfo[] = [];
   for (const found of await cruiseSources()) {

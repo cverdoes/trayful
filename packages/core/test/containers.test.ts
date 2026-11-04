@@ -1,9 +1,9 @@
 import { TABLE_FORMAT, type ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
-import { applyCommand, CommandError, type Command } from './commands.js';
-import { describeTable } from './describe.js';
-import { AliasBook, viewFor, withoutOtherHands } from './privacy.js';
-import { snapFor } from './snap.js';
+import { applyCommand, CommandError, type Command } from '../src/commands.js';
+import { describeTable } from '../src/describe.js';
+import { AliasBook, viewFor, withoutOtherHands } from '../src/privacy.js';
+import { snapFor } from '../src/snap.js';
 import {
   bagCounts,
   checkIntegrity,
@@ -12,7 +12,7 @@ import {
   type Piece,
   type Stack,
   type TableState,
-} from './state.js';
+} from '../src/state.js';
 
 /** A board with a discard pile, a row for a tableau and a bag, and things to put there. */
 const catalog: Catalog = Object.fromEntries(

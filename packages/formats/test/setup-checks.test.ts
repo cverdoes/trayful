@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { ResolvedType } from './resolved.js';
-import type { SetupStep } from './schemas.js';
-import { snapSpotCount, stepProblems, type Known } from './setup-checks.js';
+import type { ResolvedType } from '../src/resolved.js';
+import type { SetupStep } from '../src/schemas.js';
+import { snapSpotCount, stepProblems, type Known } from '../src/setup-checks.js';
 
 const board = {
   id: 'board',

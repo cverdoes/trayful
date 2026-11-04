@@ -6,7 +6,7 @@ import {
   renderTemplate,
   templateRefs,
   type NormalizedField,
-} from './fields.js';
+} from '../src/fields.js';
 
 const field = (type: NormalizedField['type'], extra: Partial<NormalizedField> = {}) => ({
   type,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePlayArgs } from './options.js';
+import { parsePlayArgs } from '../src/options.js';
 
 describe('parsePlayArgs', () => {
   it('plays the current folder in a browser by default', () => {

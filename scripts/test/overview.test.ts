@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { frontMatter } from './concepts.js';
-import { resolveLinks } from './html.js';
-import { linksIn, type Registry } from './links.js';
-import { buildModel, checkModel } from './site.js';
-import { cleanComment, firstSentence, readSource } from './source.js';
+import { frontMatter } from '../overview/concepts.js';
+import { resolveLinks } from '../overview/html.js';
+import { linksIn, type Registry } from '../overview/links.js';
+import { buildModel, checkModel } from '../overview/site.js';
+import { cleanComment, firstSentence, readSource } from '../overview/source.js';
 
 describe('reading a source file', () => {
   const text = `/**

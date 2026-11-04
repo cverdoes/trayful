@@ -1,12 +1,12 @@
 import { cp, mkdtemp, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { containerGateway } from './container.js';
-import { startServer, type RunningServer } from './server.js';
+import { containerGateway } from '../src/container.js';
+import { startServer, type RunningServer } from '../src/server.js';
+import { examplePath } from './paths.js';
 
-const example = fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url));
+const example = examplePath('harvest-moon');
 
 async function tempDir(): Promise<string> {
   return mkdtemp(path.join(os.tmpdir(), 'trayful-container-'));

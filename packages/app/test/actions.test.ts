@@ -2,10 +2,10 @@ import type { Command, Piece, TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
 import type { ComponentType } from '@trayful/formats/browser';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { actionsFor, keyTargets } from './actions';
-import { selectedBagDraw } from './bags';
-import type { Types } from './render/geometry';
-import { after, exampleTable } from './testing';
+import { actionsFor, keyTargets } from '../src/actions';
+import { selectedBagDraw } from '../src/bags';
+import type { Types } from '../src/render/geometry';
+import { after, exampleTable } from './helpers';
 
 let project: ResolvedProject;
 let table: TableState;

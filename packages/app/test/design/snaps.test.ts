@@ -1,6 +1,12 @@
 import type { ComponentType, SnapTarget } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
-import { draggedTarget, newTarget, spotsOf, targetHandles, withPoint } from './snaps';
+import {
+  draggedTarget,
+  newTarget,
+  spotsOf,
+  targetHandles,
+  withPoint,
+} from '../../src/design/snaps';
 
 const board: ComponentType = { id: 'board', is: 'piece', size: [300, 200] };
 const grid: SnapTarget = { id: 'fields', grid: { origin: [10, 20], cols: 3, rows: 2, cell: 10 } };

@@ -1,12 +1,12 @@
 import { cp, mkdtemp, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { importCsv, readTray, saveTray } from './tray.js';
-import { Workspace } from './workspace.js';
+import { importCsv, readTray, saveTray } from '../src/tray.js';
+import { Workspace } from '../src/workspace.js';
+import { examplePath } from './paths.js';
 
-const starter = fileURLToPath(new URL('../../../examples/starter', import.meta.url));
+const starter = examplePath('starter');
 
 let workspace: Workspace | undefined;
 afterEach(async () => {
