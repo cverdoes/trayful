@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { docTitle } from '../src/docs.js';
+import { docTitle } from '../../src/shipped/docs.js';
 
 describe('docTitle', () => {
   it('reads the first top-level heading', () => {

@@ -1,9 +1,9 @@
 // What the HTTP routes share: the workspace, finding the table a request names, and who is asking.
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { caller, isLocalOrigin, isLocalRequest, type Caller } from '../access.js';
-import type { Invite, Player, Players } from '../players.js';
-import type { TableSession } from '../session.js';
-import type { Workspace } from '../workspace.js';
+import { caller, isLocalOrigin, isLocalRequest, type Caller } from '../play/access.js';
+import type { Invite, Player, Players } from '../play/players.js';
+import type { TableSession } from '../play/session.js';
+import type { Workspace } from '../projects/workspace.js';
 
 /** A table named in a request; either part may be left out. */
 export interface TableQuery {

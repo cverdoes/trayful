@@ -5,11 +5,11 @@ import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { readDoc } from '../src/docs.js';
-import { createMcpServer } from '../src/mcp.js';
-import { resourceDir } from '../src/resources.js';
-import { Workspace } from '../src/workspace.js';
-import { examplePath } from './paths.js';
+import { readDoc } from '../../src/shipped/docs.js';
+import { createMcpServer } from '../../src/mcp/server.js';
+import { resourceDir } from '../../src/shipped/resources.js';
+import { Workspace } from '../../src/projects/workspace.js';
+import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');
 const skillDir = resourceDir('skill');

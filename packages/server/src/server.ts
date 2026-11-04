@@ -1,8 +1,8 @@
 import os from 'node:os';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { isLocalOrigin } from './access.js';
-import { resourceDir } from './resources.js';
+import { isLocalOrigin } from './play/access.js';
+import { resourceDir } from './shipped/resources.js';
 import { routeContext, type TableQuery } from './routes/context.js';
 import { registerAssetRoutes } from './routes/assets.js';
 import { registerAuthoringRoutes } from './routes/authoring.js';
@@ -13,8 +13,8 @@ import { registerMcp } from './routes/mcp.js';
 import { registerPlayerRoutes } from './routes/players.js';
 import { registerSocket } from './routes/socket.js';
 import { registerTableRoutes } from './routes/tables.js';
-import type { TableSession } from './session.js';
-import { Workspace } from './workspace.js';
+import type { TableSession } from './play/session.js';
+import { Workspace } from './projects/workspace.js';
 
 export const DEFAULT_PORT = 4317;
 

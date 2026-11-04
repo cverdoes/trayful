@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { describeTable, queryObjects } from '@trayful/core';
 import { z } from 'zod';
-import { AGENT_PLAYER } from '../players.js';
+import { AGENT_PLAYER } from '../play/players.js';
 import { failure, text, type ToolContext } from './context.js';
 
 /** Tools for looking at the table. */

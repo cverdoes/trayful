@@ -1,7 +1,7 @@
 import type { FastifyReply } from 'fastify';
-import { addImage, removeImage, setColor, setImage } from '../assets.js';
-import { libraryFiles } from '../authoring.js';
-import { renameImage } from '../renaming.js';
+import { addImage, removeImage, setColor, setImage } from '../projects/assets.js';
+import { libraryFiles } from '../projects/authoring.js';
+import { renameImage } from '../projects/renaming.js';
 import type { RouteContext } from './context.js';
 import { newName, projectOf, type ProjectQuery, type RenameBody } from './authoring.js';
 

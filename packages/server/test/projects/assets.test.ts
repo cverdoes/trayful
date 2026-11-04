@@ -3,9 +3,9 @@ import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { addImage, removeImage, setColor, setImage } from '../src/assets.js';
-import { Workspace } from '../src/workspace.js';
-import { examplePath } from './paths.js';
+import { addImage, removeImage, setColor, setImage } from '../../src/projects/assets.js';
+import { Workspace } from '../../src/projects/workspace.js';
+import { examplePath } from '../paths.js';
 
 const starter = examplePath('starter');
 const SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20"/>').toString(

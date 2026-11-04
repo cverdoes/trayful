@@ -1,8 +1,8 @@
 import { SetupError } from '@trayful/core';
-import { allowed, allowedProject, caller, isTrustedOrigin } from '../access.js';
-import { AuthoringError, ConflictError } from '../authoring.js';
-import { PlayerError } from '../players.js';
-import { ProjectLoadError } from '../session.js';
+import { allowed, allowedProject, caller, isTrustedOrigin } from '../play/access.js';
+import { AuthoringError, ConflictError } from '../projects/authoring.js';
+import { PlayerError } from '../play/players.js';
+import { ProjectLoadError } from '../play/session.js';
 import { NOT_INVITED, type RouteContext, type TableQuery } from './context.js';
 
 /** API routes anyone may call, invited or not. */

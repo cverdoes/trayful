@@ -14,8 +14,8 @@ export const RESOURCE_SOURCES: Record<Resource, string> = {
   skill: 'skills/trayful',
 };
 
-/** The repository root, seen from `packages/server/src/`. */
-const REPOSITORY_ROOT = '../../../';
+/** The repository root, seen from `packages/server/src/shipped/`. */
+const REPOSITORY_ROOT = '../../../../';
 
 /**
  * The folder holding a resource. A packaged Trayful is one bundled file with a

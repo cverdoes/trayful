@@ -11,7 +11,7 @@ summary: The words the code and these pages use, and where each lives.
 | Workspace            | The folder the server was started on: one project, or a folder of projects.                             | [[server:Workspace]]                                                       |
 | Component type       | A kind of component: its size, its faces and the behaviours it has, such as `flippable` or `stackable`. | [[formats:ResolvedType]], [[format:library]]                               |
 | Inventory, the box   | How many of each component there are. Each copy gets a stable id.                                       | [[formats:ComponentSpec]], [[format:inventory]]                            |
-| Tray                 | The designer's page for the inventory.                                                                  | [[app/design/TrayPage.tsx]], [[server/tray.ts]]                            |
+| Tray                 | The designer's page for the inventory.                                                                  | [[app/design/TrayPage.tsx]], [[server/projects/tray.ts]]                   |
 | Table                | One game in progress: where every piece lies. A project can have many, saved in `tables/`.              | [[core:TableState]], [[server:TableSession]]                               |
 | Piece                | One component on the table, in a stack, in a hand or in a bag.                                          | [[core:Piece]]                                                             |
 | Stack                | A pile, fan or spread of pieces, such as a deck.                                                        | [[core:Stack]], [[core:StackLayout]]                                       |
@@ -24,6 +24,6 @@ summary: The words the code and these pages use, and where each lives.
 | Stand-in id          | The id a hidden piece gets in a view, so its id does not give it away.                                  | [[core:Aliases]], [[core:resolveAliases]]                                  |
 | Player               | Someone at the table: the host, an invited guest, or the agent `claude`.                                | [[server:Players]], [[server:AGENT_PLAYER]]                                |
 | Invite               | A link that lets a guest join one table.                                                                | [[server:Invite]], [[concept:join-by-invite]]                              |
-| Activity             | Who did what, sent with a change so others can follow along, with the motion to animate.                | [[core:Activity]], [[server/activity.ts]]                                  |
+| Activity             | Who did what, sent with a change so others can follow along, with the motion to animate.                | [[core:Activity]], [[server/play/activity.ts]]                             |
 | Stamp, mark          | A roll-and-write mark pressed or written onto a sheet.                                                  | [[command:mark]], [[core/commands/marks.ts]]                               |
 | Designer             | The browser pages for editing component types, the Tray and assets.                                     | [[app/design/Designer.tsx]], [[concept:design-a-component]]                |

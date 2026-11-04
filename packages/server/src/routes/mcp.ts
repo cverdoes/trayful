@@ -1,7 +1,7 @@
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { FastifyReply } from 'fastify';
-import { isLocalOrigin, isLocalRequest } from '../access.js';
-import { createMcpServer } from '../mcp.js';
+import { isLocalOrigin, isLocalRequest } from '../play/access.js';
+import { createMcpServer } from '../mcp/server.js';
 import type { RouteContext } from './context.js';
 
 /**

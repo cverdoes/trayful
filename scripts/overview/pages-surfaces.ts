@@ -70,7 +70,7 @@ ${memberTable(t.inputs, 'Input')}</section>`,
   .join('\n')}`;
   });
   const body = `<h1>MCP tools</h1>
-<p>${model.tools.length} tools, listed from a running MCP server. Agents reach them over stdio (<code>trayful mcp</code>) or HTTP at <code>/mcp</code>; ${link(P, pagePath.module('server/mcp.ts'), '<code>server/mcp.ts</code>')} builds the server.</p>
+<p>${model.tools.length} tools, listed from a running MCP server. Agents reach them over stdio (<code>trayful mcp</code>) or HTTP at <code>/mcp</code>; ${link(P, pagePath.module('server/mcp/server.ts'), '<code>server/mcp/server.ts</code>')} builds the server.</p>
 <p>${model.tools.map((t) => `<a href="#${esc(t.name)}"><code>${esc(t.name)}</code></a>`).join(' · ')}</p>
 ${sections.join('\n')}`;
   return { path: pagePath.surface('mcp'), title: 'MCP tools', body };

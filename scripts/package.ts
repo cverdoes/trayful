@@ -1,7 +1,7 @@
 /**
  * Builds the `trayful` npm package in `packages/cli/dist`: one bundled file with the
  * CLI, server, core and formats, a launcher that checks the Node version, and the
- * resources the server reads at run time (see packages/server/src/resources.ts).
+ * resources the server reads at run time (see packages/server/src/shipped/resources.ts).
  * Run it through `pnpm package`, which builds the browser app first.
  */
 import { execFileSync } from 'node:child_process';

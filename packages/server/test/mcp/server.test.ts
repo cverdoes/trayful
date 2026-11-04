@@ -7,12 +7,12 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { ServerMessage, Stack } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
-import { createMcpServer } from '../src/mcp.js';
-import { startServer, type RunningServer } from '../src/server.js';
-import type { TableSession } from '../src/session.js';
-import { Workspace } from '../src/workspace.js';
-import { frameText } from '../src/frames.js';
-import { examplePath } from './paths.js';
+import { createMcpServer } from '../../src/mcp/server.js';
+import { startServer, type RunningServer } from '../../src/server.js';
+import type { TableSession } from '../../src/play/session.js';
+import { Workspace } from '../../src/projects/workspace.js';
+import { frameText } from '../../src/routes/frames.js';
+import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');
 const DECK = 'deck:actions';

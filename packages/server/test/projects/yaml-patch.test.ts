@@ -1,8 +1,8 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseYaml, patchNode, yamlText } from '../src/yaml-patch.js';
-import { examples } from './paths.js';
+import { parseYaml, patchNode, yamlText } from '../../src/projects/yaml-patch.js';
+import { examples } from '../paths.js';
 
 /** Patches the whole document to hold `value` and returns the text it writes. */
 function patched(text: string, value: unknown): string {

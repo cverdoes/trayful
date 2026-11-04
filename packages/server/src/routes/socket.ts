@@ -1,6 +1,6 @@
 import type { ClientMessage, ServerMessage } from '@trayful/core';
-import { isTrustedOrigin } from '../access.js';
-import { frameText } from '../frames.js';
+import { isTrustedOrigin } from '../play/access.js';
+import { frameText } from './frames.js';
 import type { RouteContext, TableQuery } from './context.js';
 
 /** The live connection a browser plays a table over. */

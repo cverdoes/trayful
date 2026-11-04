@@ -2,10 +2,10 @@ import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { AuthoringError } from '../src/authoring.js';
-import { renameField, renameImage, renameType } from '../src/renaming.js';
-import { Workspace } from '../src/workspace.js';
-import { examplePath } from './paths.js';
+import { AuthoringError } from '../../src/projects/authoring.js';
+import { renameField, renameImage, renameType } from '../../src/projects/renaming.js';
+import { Workspace } from '../../src/projects/workspace.js';
+import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');
 

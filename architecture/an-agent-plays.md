@@ -19,6 +19,6 @@ An agent such as Claude Code connects over MCP and calls tools like [[mcp:draw]]
 
 ## Roles
 
-- [[server/mcp.ts]] and its tool modules translate between MCP and commands; they hold no game rules.
+- [[server/mcp/server.ts]] and its tool modules translate between MCP and commands; they hold no game rules.
 - [[core]] treats the agent like anyone else; only [[server:TableSession]] knows it is an agent.
 - The tool list on [[concept:index|the overview]] is generated from a running server, see [MCP tools](../surfaces/mcp.html).

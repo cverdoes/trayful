@@ -10,9 +10,9 @@ import {
   type TableState,
 } from '@trayful/core';
 import { z } from 'zod';
-import { AGENT_PLAYER } from '../players.js';
-import type { TableSession } from '../session.js';
-import type { Workspace } from '../workspace.js';
+import { AGENT_PLAYER } from '../play/players.js';
+import type { TableSession } from '../play/session.js';
+import type { Workspace } from '../projects/workspace.js';
 
 /** The workspace, and the active table at the moment a tool runs. */
 export interface ToolContext {

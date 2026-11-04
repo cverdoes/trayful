@@ -1,4 +1,4 @@
-import { importCsv, readTray, saveTray, type Tray } from '../tray.js';
+import { importCsv, readTray, saveTray, type Tray } from '../projects/tray.js';
 import { projectOf, type ProjectQuery } from './authoring.js';
 import type { RouteContext } from './context.js';
 

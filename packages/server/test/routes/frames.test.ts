@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { frameText } from '../src/frames.js';
+import { frameText } from '../../src/routes/frames.js';
 
 describe('frameText', () => {
   it('reads a message delivered as one buffer', () => {
