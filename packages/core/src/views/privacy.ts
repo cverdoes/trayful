@@ -7,7 +7,7 @@ import {
   type Stack,
   type TableObject,
   type TableState,
-} from './state.js';
+} from '../table/state.js';
 
 /**
  * What one player may know about a table. Pieces in other players' hands and in

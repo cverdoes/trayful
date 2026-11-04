@@ -1,9 +1,9 @@
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { applyCommand, type Command } from '../src/commands.js';
-import { describeTable } from '../src/describe.js';
-import { AliasBook, resolveAliases, viewFor, withoutOtherHands } from '../src/privacy.js';
-import { createTable } from '../src/setup.js';
+import { applyCommand, type Command } from '../../src/commands/index.js';
+import { describeTable } from '../../src/views/describe.js';
+import { AliasBook, resolveAliases, viewFor, withoutOtherHands } from '../../src/views/privacy.js';
+import { createTable } from '../../src/setup.js';
 import {
   checkIntegrity,
   handCounts,
@@ -11,8 +11,8 @@ import {
   type Piece,
   type Stack,
   type TableState,
-} from '../src/state.js';
-import { examplePath } from './paths.js';
+} from '../../src/table/state.js';
+import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');
 const DECK = 'deck:actions';

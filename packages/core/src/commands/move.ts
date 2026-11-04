@@ -1,8 +1,8 @@
 import { holdsMany, sidesOf, type Vec2 } from '@trayful/formats/browser';
-import { boundsOf } from './layout.js';
-import { roomIn } from './room.js';
-import { rowEnd, snapOwner, type SnapSpot } from './snap.js';
-import { handTarget, sizeOf, type Piece, type TableObject } from './state.js';
+import { boundsOf } from '../table/layout.js';
+import { roomIn } from '../placement/room.js';
+import { rowEnd, snapOwner, type SnapSpot } from '../placement/snap.js';
+import { handTarget, sizeOf, type Piece, type TableObject } from '../table/state.js';
 import { CommandError, unique, type Target, type Transaction } from './transaction.js';
 
 /** The fields of a `move` command; see `Command` for what each does. */

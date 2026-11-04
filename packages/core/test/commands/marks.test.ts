@@ -1,11 +1,11 @@
 import { TABLE_FORMAT, type ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
-import { applyCommand, type Command } from '../src/commands.js';
-import { describeTable } from '../src/describe.js';
-import { markBoxes } from '../src/marks.js';
-import { AliasBook, viewFor } from '../src/privacy.js';
-import { snapFor } from '../src/snap.js';
-import type { Catalog, Piece, TableState } from '../src/state.js';
+import { applyCommand, type Command } from '../../src/commands/index.js';
+import { describeTable } from '../../src/views/describe.js';
+import { markBoxes } from '../../src/commands/marks.js';
+import { AliasBook, viewFor } from '../../src/views/privacy.js';
+import { snapFor } from '../../src/placement/snap.js';
+import type { Catalog, Piece, TableState } from '../../src/table/state.js';
 
 /** A score sheet with a grid of boxes to tick, a box for the total, and two stamps. */
 const catalog: Catalog = Object.fromEntries(

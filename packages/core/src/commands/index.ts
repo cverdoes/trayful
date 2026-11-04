@@ -1,11 +1,11 @@
 import type { Vec2 } from '@trayful/formats/browser';
-import type { StackLayout } from './layout.js';
+import type { StackLayout } from '../table/layout.js';
 import { erase, mark } from './marks.js';
 import { move } from './move.js';
-import { flip, roll, rotate, setValue } from './piece-commands.js';
-import { deal, draw, layout, shuffle, stack, take } from './pile-commands.js';
+import { flip, roll, rotate, setValue } from './pieces.js';
+import { deal, draw, layout, shuffle, stack, take } from './piles.js';
 import { settle } from './settle.js';
-import type { Catalog, TableState } from './state.js';
+import type { Catalog, TableState } from '../table/state.js';
 import { CommandError, Transaction, unique, type Target } from './transaction.js';
 
 export { CommandError, type Target };

@@ -1,10 +1,10 @@
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { describeTable, queryObjects } from '../src/describe.js';
-import { TableEngine } from '../src/engine.js';
-import { createTable } from '../src/setup.js';
-import { checkIntegrity, type Piece, type Stack } from '../src/state.js';
-import { examplePath } from './paths.js';
+import { describeTable, queryObjects } from '../../src/views/describe.js';
+import { TableEngine } from '../../src/engine.js';
+import { createTable } from '../../src/setup.js';
+import { checkIntegrity, type Piece, type Stack } from '../../src/table/state.js';
+import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');
 const DECK = 'deck:actions';

@@ -1,13 +1,13 @@
 /** The table engine's public API: state, commands, the engine, the wire protocol and their helpers. */
-export * from './state.js';
-export * from './commands.js';
+export * from './table/state.js';
+export * from './commands/index.js';
 export * from './engine.js';
-export * from './rng.js';
-export * from './protocol.js';
-export * from './describe.js';
-export * from './snap.js';
-export * from './layout.js';
+export * from './table/rng.js';
+export * from './views/protocol.js';
+export * from './views/describe.js';
+export * from './placement/snap.js';
+export * from './table/layout.js';
 export * from './setup.js';
-export * from './sync.js';
-export * from './privacy.js';
-export { MAX_MARK_TEXT, markBoxes, markKey, stampsFor, type MarkBox } from './marks.js';
+export * from './table/sync.js';
+export * from './views/privacy.js';
+export { MAX_MARK_TEXT, markBoxes, markKey, stampsFor, type MarkBox } from './commands/marks.js';

@@ -1,12 +1,12 @@
 import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { applyCommand, CommandError, type Command } from '../src/commands.js';
-import { describeTable } from '../src/describe.js';
-import { stackOffsets } from '../src/layout.js';
-import { createTable, SetupError } from '../src/setup.js';
-import { resolveSpots, snapFor } from '../src/snap.js';
-import { checkIntegrity, type Piece, type Stack, type TableState } from '../src/state.js';
-import { examplePath } from './paths.js';
+import { applyCommand, CommandError, type Command } from '../../src/commands/index.js';
+import { describeTable } from '../../src/views/describe.js';
+import { stackOffsets } from '../../src/table/layout.js';
+import { createTable, SetupError } from '../../src/setup.js';
+import { resolveSpots, snapFor } from '../../src/placement/snap.js';
+import { checkIntegrity, type Piece, type Stack, type TableState } from '../../src/table/state.js';
+import { examplePath } from '../paths.js';
 
 const example = examplePath('harvest-moon');
 

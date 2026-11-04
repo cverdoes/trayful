@@ -22,7 +22,7 @@ Every player looks at the same table, but not the same view of it. Drawing a car
 
 ## Roles
 
-- [[core/privacy.ts]] decides what each player may know; it is the only place that does.
+- [[core/views/privacy.ts]] decides what each player may know; it is the only place that does.
 - [[server:TableSession]] calls it once per watcher for every change, and remembers who watches as whom.
 - [[app]] never receives what it may not show, so nothing hidden can leak from the browser, its devtools or a screenshot.
 

@@ -1,7 +1,7 @@
 import { isStackable, stacksWith, type ComponentType } from '@trayful/formats/browser';
-import type { StackLayout } from './layout.js';
-import { shuffled } from './rng.js';
-import type { Stack, TableObject } from './state.js';
+import type { StackLayout } from '../table/layout.js';
+import { shuffled } from '../table/rng.js';
+import type { Stack, TableObject } from '../table/state.js';
 import {
   CommandError,
   isVec2,

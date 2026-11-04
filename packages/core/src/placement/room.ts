@@ -1,8 +1,8 @@
 // Where something can go in a free area without covering what already lies there.
 import type { Vec2 } from '@trayful/formats/browser';
-import { boundsOf, type Bounds } from './layout.js';
+import { boundsOf, type Bounds } from '../table/layout.js';
 import { occupants, toTable, type SnapSpot } from './snap.js';
-import type { Catalog, TableState } from './state.js';
+import type { Catalog, TableState } from '../table/state.js';
 
 /** Space kept between things placed side by side in an area, in millimetres. */
 const GAP = 2;
