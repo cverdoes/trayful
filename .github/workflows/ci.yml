@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history, so the architecture overview can show when files last changed.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -21,6 +24,14 @@ jobs:
       - run: pnpm test:coverage
       - run: pnpm check:generated
       - run: pnpm validate:examples
+      # The architecture overview: fails when architecture/ no longer matches the code.
+      - run: pnpm docs:overview
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: architecture-overview
+          path: .reports/overview/
+          if-no-files-found: ignore
       # Architecture boundaries, unused code and copy-paste duplication.
       - run: pnpm quality
       # Coverage, complexity and duplication, on the run's summary page.

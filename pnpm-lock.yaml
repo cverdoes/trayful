@@ -50,9 +50,15 @@ importers:
       knip:
         specifier: ^6.41.0
         version: 6.41.0
+      marked:
+        specifier: ^16.4.2
+        version: 16.4.2
       prettier:
         specifier: ^3.9.10
         version: 3.9.10
+      trayful:
+        specifier: workspace:*
+        version: link:packages/cli
       tsx:
         specifier: ^4.23.15
         version: 4.23.15
@@ -1741,6 +1747,11 @@ packages:
 
   magicast@0.5.5:
     resolution: {integrity: sha512-UicdXN8zQ3JHlxVq+28afMXPr1z7WNY6+7EJnzTdQWkTAlMLF5fNCCKxJHBQwGaNGR11581EiQmQzx73+MvszA==}
+
+  marked@16.4.2:
+    resolution: {integrity: sha512-TI3V8YYWvkVf3KJe1dRkpnjs68JUPyEa5vjKrp1XEEJUAOaQc+Qj+L1qWbPd0SJuAdQkFU0h73sXXqwDYxsiDA==}
+    engines: {node: '>= 20'}
+    hasBin: true
 
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
@@ -3823,6 +3834,8 @@ snapshots:
       '@babel/parser': 7.29.9
       '@babel/types': 7.29.8
       source-map-js: 1.2.2
+
+  marked@16.4.2: {}
 
   math-intrinsics@1.1.0: {}
 
