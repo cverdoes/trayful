@@ -11,10 +11,10 @@ import {
   type TableView,
 } from '@trayful/core';
 import { create } from 'zustand';
-import type { GroupPick } from './groups';
-import type { MarkPick } from './marks';
-import { loadHandHeight, loadHandMinimized } from './handTray';
-import { startMotion, type Moving } from './motions';
+import type { GroupPick } from './table/groups';
+import type { MarkPick } from './table/marks';
+import { loadHandHeight, loadHandMinimized } from './table/handTray';
+import { startMotion, type Moving } from './motion/motions';
 
 /** Screen position of the table origin and pixels per millimetre. */
 export interface Viewport {

@@ -1,7 +1,7 @@
 import type { ComponentType } from '@trayful/formats/browser';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { editDraft, openType, redo, setValue, undo, useDesign } from '../../src/design/store';
-import { historyKey } from '../../src/design/UndoButtons';
+import { historyKey } from '../../src/design/panel/UndoButtons';
 
 const card: ComponentType = { id: 'card', is: 'piece', size: [63, 88] };
 

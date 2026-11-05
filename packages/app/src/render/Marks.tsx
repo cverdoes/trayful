@@ -1,7 +1,7 @@
 import { markBoxes, type MarkBox, type Piece } from '@trayful/core';
 import type { Assets } from '@trayful/formats/browser';
 import { Group, Text } from 'react-konva';
-import { textSize } from '../marks';
+import { textSize } from '../table/marks';
 import { Component } from './Component';
 import type { Types } from './geometry';
 

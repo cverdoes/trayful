@@ -9,8 +9,8 @@ Dropping a card on a board's row of cards is the path every change takes: the br
 
 ## Steps
 
-1. **The drag.** [[app:TableDrag]] in [[app/drag.ts]] moves the card's canvas node while the pointer moves, and asks [[app:snapHint]] for the drop areas it could land in, which the table highlights.
-2. **The drop becomes a command.** On release, [[app:moveCommands]] in [[app/drops.ts]] decides what the drop means. Over a row's area it is a [[command:move]] with `into` naming the row, such as `{ type: 'move', ids: ['card.3'], by: [12, -40], into: 'board.1/market' }`. The app never changes the table itself.
+1. **The drag.** [[app:TableDrag]] in [[app/table/drag.ts]] moves the card's canvas node while the pointer moves, and asks [[app:snapHint]] for the drop areas it could land in, which the table highlights.
+2. **The drop becomes a command.** On release, [[app:moveCommands]] in [[app/table/drops.ts]] decides what the drop means. Over a row's area it is a [[command:move]] with `into` naming the row, such as `{ type: 'move', ids: ['card.3'], by: [12, -40], into: 'board.1/market' }`. The app never changes the table itself.
 3. **The command goes over the WebSocket.** The store's `command` wraps it in a [[message:command]] message and sends it on the socket that [[app:connect]] opened.
 4. **The server finds the table and the player.** [[server:registerSocket]] parses the message and passes it, with the sender's player id, to [[server:TableSession|TableSession.handle]].
 5. **The session checks reach.** [[server:TableSession|TableSession.act]] swaps stand-in ids for real ones with [[core:resolveAliases]], refuses pieces in someone else's hand, and labels the change for others with [[server:activityText]], such as "moved a card".
@@ -18,7 +18,7 @@ Dropping a card on a board's row of cards is the path every change takes: the br
 7. **The row settles.** After every command [[core:settle]] tidies the drop areas it touched: a row closes up left to right with a small gap, grows by one slot so the next drop also lands in it, and centres its cards across. The rules for spots live in [[core/placement/snap.ts]].
 8. **Undo is recorded.** The engine keeps a [[core:HistoryEntry]] with the state before and after, under the player who made the change.
 9. **Everyone gets their view.** The engine's listener in the session sends each watcher a [[message:state]] message built by [[core:viewFor]]: the same table, but with other players' hands and face-down faces hidden. The session also saves the table to `tables/<name>.json` a moment later.
-10. **The browsers redraw.** [[app/store.ts]] takes the new view, newer than its last revision, and [[app/Table.tsx]] redraws the moved card where the server put it.
+10. **The browsers redraw.** [[app/store.ts]] takes the new view, newer than its last revision, and [[app/table/Table.tsx]] redraws the moved card where the server put it.
 
 ## Roles
 
