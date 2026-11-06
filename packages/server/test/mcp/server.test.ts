@@ -53,6 +53,7 @@ describe('MCP tools', () => {
     expect(tools.map((t) => t.name).sort()).toEqual(
       [
         'add_asset',
+        'cancel_prompt',
         'create_project',
         'deal',
         'delete_table',
@@ -64,11 +65,13 @@ describe('MCP tools', () => {
         'get_history',
         'layout',
         'list_projects',
+        'list_prompts',
         'lock',
         'mark',
         'migrate_project',
         'move',
         'open_table',
+        'prompt',
         'query_objects',
         'redo',
         'remove_type',
@@ -89,6 +92,7 @@ describe('MCP tools', () => {
         'undo',
         'upsert_type',
         'validate_project',
+        'wait_for_events',
       ].sort(),
     );
   });

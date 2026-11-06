@@ -2,6 +2,7 @@ import {
   onTable,
   type ClientMessage,
   type PlayerInfo,
+  type PlayerPrompt,
   type RenderRequest,
   type Command,
   type ProjectView,
@@ -51,6 +52,8 @@ interface TrayfulStore {
   gate?: 'join' | 'closed';
   /** Everyone at this table. */
   players: PlayerInfo[];
+  /** Questions and messages this player has still to answer, oldest first. */
+  prompts: PlayerPrompt[];
   /** While a piece is dragged over the hand tray. */
   overHand: boolean;
   /** Height of the hand tray in pixels; people can drag its top edge. */
@@ -103,6 +106,7 @@ interface TrayfulStore {
 export const useStore = create<TrayfulStore>((set, get) => ({
   revision: -1,
   players: [],
+  prompts: [],
   overHand: false,
   handHeight: loadHandHeight(),
   handMinimized: loadHandMinimized(),
@@ -119,24 +123,8 @@ export const useStore = create<TrayfulStore>((set, get) => ({
   send: dropWhileOffline,
   command: (command) => get().send({ type: 'command', command }),
   receive: (message) => {
-    if (message.type === 'snapshot-request' || message.type === 'render-request') return;
-    if (message.type === 'project') {
-      set({ view: message.view, problems: undefined });
-      return;
-    }
-    if (message.type === 'problems') {
-      set({ problems: message.problems });
-      return;
-    }
-    if (message.type === 'players') {
-      set({ players: message.players });
-      return;
-    }
-    if (message.type === 'error') {
-      set((s) => ({
-        error: { message: message.message, at: Date.now() },
-        redrawKey: s.redrawKey + 1,
-      }));
+    if (message.type !== 'state') {
+      set((s) => besideTheTable(message, s));
       return;
     }
     if (message.revision < get().revision) return;
@@ -177,6 +165,28 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       return { selection: [...next] };
     }),
 }));
+
+/** What a message other than a new table changes in the store. */
+function besideTheTable(
+  message: Exclude<ServerMessage, { type: 'state' }>,
+  s: Pick<TrayfulStore, 'redrawKey'>,
+): Partial<TrayfulStore> {
+  switch (message.type) {
+    case 'project':
+      return { view: message.view, problems: undefined };
+    case 'problems':
+      return { problems: message.problems };
+    case 'players':
+      return { players: message.players };
+    case 'prompts':
+      return { prompts: message.prompts };
+    case 'error':
+      return { error: { message: message.message, at: Date.now() }, redrawKey: s.redrawKey + 1 };
+    default:
+      // Picture requests are answered by the connection itself.
+      return {};
+  }
+}
 
 /**
  * Drops selected and hovered ids that vanished or went into a stack, and closes the

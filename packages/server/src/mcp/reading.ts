@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { describeTable, queryObjects } from '@trayful/core';
+import { describeTable, queryObjects, type PlayerInfo } from '@trayful/core';
 import { z } from 'zod';
 import { AGENT_PLAYER } from '../play/players.js';
 import { failure, text, type ToolContext } from './context.js';
@@ -12,7 +12,7 @@ export function registerReadingTools(server: McpServer, ctx: ToolContext): void 
 
 /** The text overview and the JSON query of what is on the table. */
 function registerDescribe(server: McpServer, ctx: ToolContext): void {
-  const { engine, types } = ctx;
+  const { engine, types, session } = ctx;
   server.registerTool(
     'describe_table',
     {
@@ -22,7 +22,13 @@ function registerDescribe(server: McpServer, ctx: ToolContext): void {
       inputSchema: { reveal: z.boolean().optional().describe('Also show face-down cards.') },
       annotations: { readOnlyHint: true },
     },
-    ({ reveal }) => text(describeTable(engine().state, types(), { reveal, viewer: AGENT_PLAYER })),
+    ({ reveal }) =>
+      text(
+        [
+          describeTable(engine().state, types(), { reveal, viewer: AGENT_PLAYER }),
+          playerLines(session().roster()),
+        ].join('\n\n'),
+      ),
   );
 
   server.registerTool(
@@ -112,4 +118,12 @@ function registerSnapshotAndHistory(server: McpServer, ctx: ToolContext): void {
       return text(steps);
     },
   );
+}
+
+/** Who is at the table, by the ids that `hand:<id>` targets and prompts take. */
+function playerLines(players: readonly PlayerInfo[]): string {
+  if (players.length === 0) return 'Players: nobody has joined this table yet.';
+  const line = (p: PlayerInfo) =>
+    `- ${p.id}: ${p.name} (${p.role}${p.online ? ', here now' : ', away'})`;
+  return ['Players (ids for `hand:<id>` and for prompt `to`):', ...players.map(line)].join('\n');
 }

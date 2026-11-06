@@ -219,6 +219,71 @@ button:disabled {
   cursor: default;
 }
 
+/* A question or message from whatever runs the game, above the player's hand. */
+.prompt {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(480px, calc(100% - 32px));
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--bar);
+  border: 1px solid var(--accent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  z-index: 15;
+}
+
+.prompt header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.prompt header .muted {
+  margin-left: auto;
+}
+
+.prompt-from {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.prompt p {
+  margin: 8px 0 12px;
+  white-space: pre-wrap;
+}
+
+.prompt-options {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.prompt-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.prompt-actions .muted {
+  margin-right: auto;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 .toast {
   position: fixed;
   left: 50%;

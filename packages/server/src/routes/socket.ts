@@ -26,6 +26,8 @@ export function registerSocket({
         const problems = workspace.entry(session.projectId).problems;
         if (problems.length) send({ type: 'problems', problems });
         const unsubscribe = session.subscribe(send, viewer);
+        // The browser starts with no prompts, so an empty list needs no message.
+        if (session.prompts.waitingFor(viewer).length) send(session.promptsMessage(viewer));
         socket.on('message', (data) => {
           let message: ClientMessage | null;
           try {

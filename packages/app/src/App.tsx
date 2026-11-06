@@ -9,6 +9,7 @@ import { InviteDialog } from './toolbar/Invite';
 import { Designer } from './design/Designer';
 import { ClosedScreen, HandTray, JoinScreen } from './Players';
 import { Print } from './Print';
+import { Prompts } from './Prompts';
 import { RenderJob } from './render/Preview';
 import { route } from './route';
 import { useStore } from './store';
@@ -44,6 +45,7 @@ function TableApp() {
       <MarkDialog />
       <Toolbar />
       <HandTray />
+      <Prompts />
       {inviteOpen && <InviteDialog />}
       <Problems />
       <ErrorToast />
