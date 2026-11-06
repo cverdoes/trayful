@@ -3,6 +3,9 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['packages/*/test/**/*.test.ts', 'scripts/test/**/*.test.ts'],
+    // The JSON report gives `pnpm quality:summary` the test counts per package.
+    reporters: ['default', 'json'],
+    outputFile: { json: '.reports/vitest/results.json' },
     coverage: {
       provider: 'v8',
       include: ['packages/*/src/**'],

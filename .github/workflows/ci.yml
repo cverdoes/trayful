@@ -59,6 +59,9 @@ jobs:
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+      # Browser test counts per spec file, on the run's summary page.
+      - run: pnpm e2e:summary
+        if: ${{ !cancelled() }}
       - uses: actions/upload-artifact@v7
         if: always()
         with:

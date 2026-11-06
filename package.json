@@ -29,7 +29,8 @@
     "build": "pnpm --filter @trayful/app build",
     "package": "pnpm build && tsx scripts/package.ts",
     "dev": "tsx scripts/dev.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "e2e:summary": "tsx scripts/e2e-summary.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

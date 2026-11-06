@@ -259,7 +259,8 @@ Each package keeps its code in `src/` and its unit tests in `test/`, in the same
 | `pnpm typecheck`         | Type-check every package                                                   |
 | `pnpm lint`              | ESLint (incl. complexity and size limits) and Prettier check               |
 | `pnpm quality`           | Package boundaries, unused code and copy-paste duplication                 |
-| `pnpm quality:summary`   | Coverage, complexity and duplication as Markdown                           |
+| `pnpm quality:summary`   | Test counts, coverage, complexity and duplication as Markdown              |
+| `pnpm e2e:summary`       | Browser test counts per spec file as Markdown, after `pnpm test:e2e`       |
 | `pnpm format`            | Format everything with Prettier                                            |
 | `pnpm generate`          | Regenerate JSON Schemas and the format reference after changing a schema   |
 | `pnpm validate:examples` | Validate every project in `examples/`                                      |
@@ -282,7 +283,7 @@ CI enforces limits a person would otherwise have to police in review. ESLint che
 
 Every file meets these limits, so a violation fails the build; fix the code rather than switching a rule off. When your tests raise a package's coverage, `pnpm test:coverage` raises its floor in `vitest.config.ts` to 2 points under the new number; commit that change with your tests.
 
-Each CI run's summary page shows coverage per package, the most complex functions and duplication, and the HTML coverage report is attached to the run as `coverage-report`.
+Each CI run's summary page shows the number of unit tests and the coverage of each package next to its floor, the most complex functions, duplication, and the number of browser tests in each e2e spec file. The HTML coverage report is attached to the run as `coverage-report`.
 
 Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for readability, naming and design, locally, before opening a pull request. There is no review on the pull request itself.
 
