@@ -34,6 +34,10 @@ describe('MCP prompt tools', () => {
     };
   };
   const lastPrompts = () => seen.findLast((m) => m.type === 'prompts');
+  const handOf = (player: string) =>
+    Object.values(session.engine.state.objects)
+      .filter((o) => o.kind === 'piece' && o.hand === player)
+      .map((o) => o.id);
 
   beforeEach(async () => {
     const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-prompts-'));
@@ -140,5 +144,108 @@ describe('MCP prompt tools', () => {
       { kind: 'joined', player: 'bo' },
       { kind: 'left', player: 'bo' },
     ]);
+  });
+
+  it('shows a face-down candidate by its stand-in id and hears the real one back', async () => {
+    await call('draw', { from: 'deck:actions', to: [100, 400] });
+    const card = Object.values(session.engine.state.objects).find(
+      (o) => o.kind === 'piece' && o.face === 'down' && o.pos[0] === 100,
+    )!;
+    const { id } = (
+      await call('prompt', {
+        to: [ann],
+        kind: 'pick',
+        text: 'Pick the card you drew',
+        candidates: [card.id, 'worker.red.1'],
+      })
+    ).json();
+    const shown = lastPrompts() as { prompts: { candidates: string[] }[] };
+    const standIn = shown.prompts[0]!.candidates[0]!;
+    expect(standIn).not.toBe(card.id);
+    expect(standIn.startsWith('hidden-')).toBe(true);
+    expect(shown.prompts[0]!.candidates[1]).toBe('worker.red.1');
+
+    session.handle({ type: 'answer', prompt: id as string, answer: [standIn] }, ann);
+    expect(session.prompts.status(id as string).answers[ann]).toEqual([card.id]);
+  });
+
+  it('refuses to name pieces a player cannot see, and places that do not exist', async () => {
+    await call('draw', { from: 'deck:actions', to: 'hand:claude' });
+    const [mine] = handOf('claude');
+    const hidden = await call('prompt', {
+      to: [ann],
+      kind: 'pick',
+      text: 'Pick',
+      candidates: [mine!],
+    });
+    expect(hidden).toMatchObject({ isError: true });
+    expect(hidden.text).toContain("in another player's hand");
+    const nowhere = await call('prompt', {
+      to: [ann],
+      kind: 'place',
+      text: 'Where?',
+      candidates: ['worker.red.1/nowhere'],
+    });
+    expect(nowhere.isError).toBe(true);
+    const missing = await call('prompt', {
+      to: [ann],
+      kind: 'message',
+      text: 'Look',
+      anchor: 'nope',
+    });
+    expect(missing.text).toBe('There is no piece "nope" on the table.');
+  });
+
+  it('asks everyone at the table, and closes on the first answer when asked to', async () => {
+    const bo = (await workspace.players.join('Bo', 'guest')).player.id;
+    session.subscribe(() => undefined, bo);
+    const asked = (
+      await call('prompt', { to: 'everyone', kind: 'confirm', text: 'Ready?', until: 'first' })
+    ).json();
+    expect(asked.to).toEqual(expect.arrayContaining([ann, bo]));
+    expect(asked.to).not.toContain('claude');
+    session.handle({ type: 'answer', prompt: asked.id as string, answer: true }, bo);
+    expect((await call('list_prompts')).json()).toMatchObject([
+      { open: false, closed: 'answered' },
+    ]);
+  });
+
+  it('keeps open prompts with the table when it closes, and brings them back', async () => {
+    const { id } = (
+      await call('prompt', { to: [ann], kind: 'text', text: 'Name your farm' })
+    ).json();
+    await workspace.close();
+    const reopened = await Workspace.open(session.project.dir, {
+      watch: false,
+      playerStore: new MemoryPlayerStore(),
+    });
+    try {
+      expect(reopened.active.prompts.waitingFor(ann).map((p) => p.id)).toEqual([id]);
+    } finally {
+      await reopened.close();
+    }
+  });
+
+  it('names the pieces a move changed, and those an undo put back', async () => {
+    const { next } = (await call('wait_for_events', { seconds: 0 })).json();
+    await call('move', { ids: ['worker.red.1'], to: [50, 50] });
+    await call('undo');
+    const page = (await call('wait_for_events', { since: next, seconds: 0 })).json();
+    expect(page.events).toMatchObject([
+      { kind: 'changed', change: 'apply', objects: ['worker.red.1'] },
+      { kind: 'changed', change: 'undo', objects: ['worker.red.1'] },
+    ]);
+  });
+
+  it('offers a run-game starter to clients', async () => {
+    const { prompts } = await client.listPrompts();
+    expect(prompts.map((p) => p.name)).toContain('run-game');
+    const got = await client.getPrompt({
+      name: 'run-game',
+      arguments: { rules: 'rules.md', style: 'tutorial' },
+    });
+    const first = got.messages[0]!.content as { text: string };
+    expect(first.text).toContain('rules.md');
+    expect(first.text).toContain('wait_for_events');
   });
 });

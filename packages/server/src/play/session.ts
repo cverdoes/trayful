@@ -1,12 +1,10 @@
 import { randomBytes } from 'node:crypto';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   AliasBook,
   CommandError,
   handCounts,
-  HAND_PREFIX,
-  HIDDEN_PREFIX,
   PromptError,
   resolveAliases,
   viewFor,
@@ -26,22 +24,21 @@ import {
   type TableState,
 } from '@trayful/core';
 import { formatDiagnostic, loadProject, type ResolvedProject } from '@trayful/formats';
-import { activityFor, activityText, motionOf } from './activity.js';
+import { activityFor, activityText, changedInSight, motionOf } from './activity.js';
 import { EventFeed } from './feed.js';
 import { PictureRequests } from './pictures.js';
-import { AGENT_PLAYER, type Player } from './players.js';
+import { AGENT_PLAYER, type PlayerDirectory } from './players.js';
 import { PromptBoard } from './prompts.js';
+import { checkPromptReach, checkReach, promptAsSeenBy } from './reach.js';
+import { promptsFile, readSavedPrompts, savePrompts, tableFile, writeJson } from './tableFiles.js';
 
 export { SnapshotError } from './pictures.js';
+export type { PlayerDirectory } from './players.js';
+export { tableFile } from './tableFiles.js';
 
 export class ProjectLoadError extends Error {}
 
 const TABLE_NAME = /^[a-z0-9][a-z0-9-]*$/;
-
-/** The players a table may name. A workspace hands its `Players` registry here. */
-export interface PlayerDirectory {
-  get(id: string): Player | undefined;
-}
 
 /** An agent counts as at the table this long after it last acted. */
 const AGENT_ONLINE_MS = 5 * 60_000;
@@ -79,7 +76,14 @@ export class TableSession {
   /** What happens at this table, for whatever runs the game to follow. */
   readonly events = new EventFeed();
   /** Questions and messages for players, asked by whatever runs the game. */
-  readonly prompts = new PromptBoard(this.events, (players) => this.sendPrompts(players));
+  readonly prompts = new PromptBoard(
+    this.events,
+    (players) => {
+      this.sendPrompts(players);
+      this.scheduleSave();
+    },
+    (request, to) => checkPromptReach(this.engine.state, this.project.types, request, to),
+  );
 
   private readonly saveDelayMs: number;
   private version: number;
@@ -93,6 +97,7 @@ export class TableSession {
     this.saveDelayMs = options.saveDelayMs ?? 250;
     this.version = options.version ?? 1;
     this.players = options.players;
+    let before = engine.state;
     engine.subscribe((state, change) => {
       this.revision++;
       // After a shuffle, an undo or a whole new table nobody may follow a hidden piece
@@ -111,8 +116,12 @@ export class TableSession {
           : {}),
         text: this.activity?.text ?? 'caught up with the project files',
         revision: this.revision,
+        objects: changedInSight(before, state),
       });
+      before = state;
       for (const [listener, viewer] of this.listeners) listener(this.stateMessage(viewer));
+      // Stand-in ids may have changed, and prompts name pieces by them.
+      this.sendPrompts(this.playersWaiting());
       this.scheduleSave();
     });
   }
@@ -164,6 +173,7 @@ export class TableSession {
       new TableEngine(state, project.types),
       options,
     );
+    session.prompts.restore(await readSavedPrompts(promptsFile(project, tableName)));
     await session.save();
     return session;
   }
@@ -282,31 +292,8 @@ export class TableSession {
   }
 
   /** Throws when a command names a piece out of the player's reach, or an unknown player. */
-  checkReach(value: unknown, player: string | undefined): void {
-    if (typeof value === 'string') this.checkReference(value, player);
-    else if (Array.isArray(value)) for (const v of value) this.checkReach(v, player);
-    else if (value && typeof value === 'object') {
-      // Text written on a sheet is only text: it names no piece.
-      for (const [key, v] of Object.entries(value)) if (key !== 'text') this.checkReach(v, player);
-    }
-  }
-
-  /** Checks one string in a command, which may name a piece, a snap spot or a hand. */
-  private checkReference(value: string, player: string | undefined): void {
-    const id = value.split('/')[0]!;
-    if (id.startsWith(HIDDEN_PREFIX)) {
-      throw new CommandError(
-        'That hidden piece is no longer where you saw it (it was shuffled or moved). Look at the table again.',
-      );
-    }
-    const object = this.engine.state.objects[id];
-    if (object?.kind === 'piece' && object.hand && object.hand !== player) {
-      throw new CommandError("That piece is in another player's hand.");
-    }
-    const owner = value.startsWith(HAND_PREFIX) ? value.slice(HAND_PREFIX.length) : undefined;
-    if (owner !== undefined && this.players && !this.players.get(owner)) {
-      throw new CommandError(`There is no player "${owner}".`);
-    }
+  checkReach(command: unknown, player: string | undefined): void {
+    checkReach(this.engine.state, this.players, command, player);
   }
 
   /** Who is at this table: everyone watching, holding pieces, or who has acted here. */
@@ -362,9 +349,16 @@ export class TableSession {
 
   /** The prompts one player has still to answer. */
   promptsMessage(viewer: string | undefined): ServerMessage {
-    return { type: 'prompts', prompts: this.prompts.waitingFor(viewer) };
+    const prompts = this.prompts.waitingFor(viewer);
+    return {
+      type: 'prompts',
+      prompts: viewer
+        ? prompts.map((p) => promptAsSeenBy(p, this.engine.state, viewer, this.aliases))
+        : [],
+    };
   }
 
+  /** Sends the players named their prompts, when they have some or just had some. */
   private sendPrompts(players: readonly string[]): void {
     for (const [listener, viewer] of this.listeners) {
       if (viewer && players.includes(viewer)) listener(this.promptsMessage(viewer));
@@ -400,7 +394,7 @@ export class TableSession {
           return undefined;
         case 'answer':
           if (!player) throw new PromptError('Join the table to answer.');
-          this.prompts.answer(player, message.prompt, message.answer);
+          this.prompts.answer(player, message.prompt, resolveAliases(message.answer, this.aliases));
           return undefined;
         default:
           return {
@@ -447,6 +441,13 @@ export class TableSession {
     };
   }
 
+  /** The players watching who have prompts still to answer. */
+  private playersWaiting(): string[] {
+    return [...this.listeners.values()].filter(
+      (v): v is string => this.prompts.waitingFor(v).length > 0,
+    );
+  }
+
   private isWatching(player: string): boolean {
     return [...this.listeners.values()].includes(player);
   }
@@ -460,30 +461,27 @@ export class TableSession {
     this.saveTimer = setTimeout(() => void this.save(), this.saveDelayMs);
   }
 
-  /** Writes the table now. Writes go to a temporary file first so a crash never leaves half a file. */
+  /** Writes the table, and the prompts still open beside it, now. */
   save(): Promise<void> {
     clearTimeout(this.saveTimer);
     const state = this.engine.state;
+    const open = this.prompts.saved();
     this.saving = this.saving.then(async () => {
       const file = this.file;
       await mkdir(path.dirname(file), { recursive: true });
-      const tmp = `${file}.tmp`;
-      await writeFile(tmp, JSON.stringify(toTableFile(state), null, 2) + '\n');
-      await rename(tmp, file);
+      await writeJson(file, toTableFile(state));
+      await savePrompts(promptsFile(this.project, this.tableName), open);
     });
     return this.saving;
   }
 
   async close(): Promise<void> {
     this.pictures.cancelAll('The server is stopping.');
+    this.prompts.dispose();
     this.events.close();
     await this.save();
     this.listeners.clear();
   }
-}
-
-export function tableFile(project: ResolvedProject, name: string): string {
-  return path.join(project.dir, 'tables', `${name}.json`);
 }
 
 /** A project's id in its workspace: the name of its folder. */

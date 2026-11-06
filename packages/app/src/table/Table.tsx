@@ -7,6 +7,8 @@ import { doubleClickCommand, handDropCommands, inBox, type Vec } from './drops';
 import { pickFor } from './groups';
 import { HAND_DRAG, overHandTray } from './hand';
 import { useHover } from './hover';
+import { clickForPrompt, promptMarks } from './promptTargets';
+import { PromptPlaces } from './PromptPlaces';
 import { DrawScale, type Highlight } from '../render/Component';
 import { topLevel } from '../render/geometry';
 import { setSnapshotStage } from '../snapshot';
@@ -67,6 +69,7 @@ export function Table() {
           </DrawScale.Provider>
           <BagBadges types={view.types} />
           <SnapHints />
+          <PromptPlaces />
           {marquee.box && (
             <Rect
               x={Math.min(marquee.box.from[0], marquee.box.to[0])}
@@ -92,13 +95,17 @@ function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
   const selection = useStore((s) => s.selection);
   const hovered = useStore((s) => s.hovered);
   const shiftDown = useStore((s) => s.shiftDown);
-  const selected = new Set(selection);
+  const prompt = useStore((s) => s.prompts[0]);
+  const picked = useStore((s) => s.picked);
+  // What a prompt picked shows as selected; what it asks about glows.
+  const selected = new Set([...selection, ...picked]);
+  const marked = promptMarks(prompt);
   const types = view.types;
   return topLevel(table).map((object) => {
     const common = {
       types,
       assets: view.assets,
-      highlight: highlightOf(object.id, selected, hovered),
+      highlight: highlightOf(object, selected, marked, hovered),
       register: (node: Konva.Group | null) => {
         if (node) drag.nodes.set(object.id, node);
         else drag.nodes.delete(object.id);
@@ -126,19 +133,28 @@ function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
   });
 }
 
-/** A selected object shows as selected even under the pointer. */
+/**
+ * A selected object shows as selected even under the pointer. A stack glows when a
+ * prompt asks about any card in it, such as one in a spread-out market.
+ */
 function highlightOf(
-  id: string,
+  object: TableObject,
   selected: Set<string>,
+  marked: Set<string>,
   hovered: string | undefined,
 ): Highlight | undefined {
-  if (selected.has(id)) return 'selected';
-  return id === hovered ? 'hovered' : undefined;
+  if (selected.has(object.id)) return 'selected';
+  if (object.id === hovered) return 'hovered';
+  const inside = object.kind === 'stack' ? object.items : [];
+  return [object.id, ...inside].some((id) => marked.has(id)) ? 'prompted' : undefined;
 }
 
 /** Selects what was clicked; a plain click on a piece in a crowded group also lists the group. */
 function click(object: TableObject, evt: MouseEvent) {
-  const { table, view, select } = useStore.getState();
+  const { table, view, select, hoveredPiece } = useStore.getState();
+  // A prompt asking for pieces takes the click: the card pointed at, or the whole object.
+  if (hoveredPiece && clickForPrompt(hoveredPiece, 'pick')) return;
+  if (clickForPrompt(object.id, 'pick')) return;
   const adding = evt.shiftKey || evt.metaKey || evt.ctrlKey;
   select([object.id], adding ? 'toggle' : 'replace');
   if (adding || !table || !view) return;

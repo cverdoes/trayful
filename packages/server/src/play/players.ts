@@ -28,6 +28,11 @@ export interface Invite {
   table: string;
 }
 
+/** The players a table may name. A workspace hands its `Players` registry here. */
+export interface PlayerDirectory {
+  get(id: string): Player | undefined;
+}
+
 /** Everything the registry keeps between runs. */
 export interface PlayersData {
   invites: Invite[];

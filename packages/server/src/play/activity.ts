@@ -1,5 +1,9 @@
 import {
   HAND_PREFIX,
+  isHidden,
+  onTable,
+  type TableObject,
+  type TableState,
   type Activity,
   type Command,
   type Motion,
@@ -71,4 +75,18 @@ export function activityFor(activity: Activity, view: TableView): Activity {
   const { motion, ...rest } = activity;
   const ids = motion.ids.filter((id) => view.objects[id]);
   return ids.length > 0 ? { ...rest, motion: { ...motion, ids } } : rest;
+}
+
+/**
+ * The pieces and stacks on the table that a change touched, as a spectator sees them:
+ * nothing in a hand or a bag, and no face-down piece, so the list gives nothing away.
+ */
+export function changedInSight(before: TableState, after: TableState): string[] {
+  const inSight = (o: TableObject | undefined) =>
+    o !== undefined && onTable(o) && !(o.kind === 'piece' && isHidden(o, undefined));
+  const ids = new Set([...Object.keys(before.objects), ...Object.keys(after.objects)]);
+  return [...ids].filter((id) => {
+    const [was, is] = [before.objects[id], after.objects[id]];
+    return was !== is && (inSight(was) || inSight(is));
+  });
 }
