@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerAuthoringTools } from './authoring.js';
 import { toolContext } from './context.js';
 import { registerPlayTools } from './play.js';
+import { registerPromptTools } from './prompts.js';
 import { registerReadingTools } from './reading.js';
 import { registerResources } from './resources.js';
 import { registerTableTools } from './tables.js';
@@ -34,6 +35,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
         'Face-down cards are hidden: their fields (apart from those printed on the back) and the order of piles only show with reveal: true, which is like peeking, so only use it when the game allows.',
         `You play as the player "${AGENT_PLAYER}". Each player has a private hand that only they see: \`hand:${AGENT_PLAYER}\` is yours, \`hand:<player>\` gives a piece to someone else. Move a piece from your hand to a position or spot to play it (face up unless you say \`face: "down"\`). Other players' hands are never shown to you, not even with reveal.`,
         'To design components, read trayful://docs (HOWTO guides and the format reference), then use upsert_type, rename_type, set_inventory and add_asset; render_component shows a type as people will see it. Edits are checked and undone if they would break the project.',
+        'To run a game or a tutorial, ask players with prompt (a message, yes or no, or a choice shown above their hand) and follow the table with wait_for_events, passing back its `next` as `since` each time.',
         'Every change goes into the same history as the people at the table, but each player undoes only their own changes, you included. Trayful does not know the rules; you bring them.',
       ].join('\n'),
     },
@@ -42,6 +44,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
   registerReadingTools(server, ctx);
   registerPlayTools(server, ctx);
   registerTableTools(server, ctx);
+  registerPromptTools(server, ctx);
   registerAuthoringTools(server, ctx);
   registerResources(server, ctx);
   return server;

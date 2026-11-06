@@ -62,3 +62,39 @@ test('an agent deals and plays a round while a person watches', async ({ page, b
   await page.screenshot({ path: 'test-results/agent-round.png' });
   await claude.client.close();
 });
+
+test('an agent asks the person a question, who answers above their hand', async ({
+  page,
+  baseURL,
+}) => {
+  await openTable(page);
+  const claude = await agent(baseURL!);
+  const me = await page.evaluate(
+    () => (window.__trayful!.store.getState() as unknown as { me: { player: { id: string } } }).me,
+  );
+  const start = JSON.parse(
+    (await claude.call('wait_for_events', { seconds: 0 })).content[0]!.text!,
+  ) as { next: number };
+
+  await claude.call('prompt', {
+    to: [me.player.id],
+    kind: 'choice',
+    title: 'Your turn',
+    text: 'Take 2 coins or draw a card?',
+    options: [
+      { id: 'coins', label: 'Take 2 coins' },
+      { id: 'card', label: 'Draw a card' },
+    ],
+  });
+  const prompt = page.getByRole('dialog', { name: 'Your turn' });
+  await expect(prompt).toContainText('Take 2 coins or draw a card?');
+  await page.screenshot({ path: 'test-results/agent-prompt.png' });
+  await prompt.getByRole('button', { name: 'Draw a card' }).click();
+  await expect(prompt).toBeHidden();
+
+  const page2 = JSON.parse(
+    (await claude.call('wait_for_events', { since: start.next, seconds: 5 })).content[0]!.text!,
+  ) as { events: { kind: string; answer?: unknown }[] };
+  expect(page2.events.find((e) => e.kind === 'answered')).toMatchObject({ answer: ['card'] });
+  await claude.client.close();
+});

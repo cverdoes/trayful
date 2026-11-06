@@ -168,6 +168,15 @@ A grid spot is a box the size of its cell; a `points` spot is as large as its la
 
 > "Shuffle the deck, deal three cards to each of us and play a round."
 
-1. `describe_table` to find the deck's id (such as `deck:actions`), the players and free spots.
-2. `shuffle` with `id: deck:actions`, then `deal` with `from: deck:actions`, `to: [hand:claude, hand:<player>]`, `count: 3`. A player's id is their name in lowercase with dashes, such as `hand:sam`; if Trayful says there is no such player, ask the person what name they joined with.
+1. `describe_table` to find the deck's id (such as `deck:actions`), the players (listed by id at the end) and free spots.
+2. `shuffle` with `id: deck:actions`, then `deal` with `from: deck:actions`, `to: [hand:claude, hand:<player>]`, `count: 3`.
 3. Take turns by the rules, using `describe_table` or `query_objects` with `inside: hand:claude` to see your cards, and `get_history` to see what the others did.
+
+## Running a game or a tutorial
+
+> "Teach us the game: walk us through the first round and tell us whose turn it is."
+
+1. `describe_table` for the players' ids, then `wait_for_events` with `seconds: 0` to learn where the table's events stand now (its `next`).
+2. Tell everyone what is about to happen with `prompt`, `kind: message`, `to` every player id. Ask the player whose turn it is with `kind: choice`, `options: [{ id: coins, label: Take 2 coins }, { id: card, label: Draw a card }]`.
+3. Loop: `wait_for_events` with `since` set to the last `next`. React to `answered` events by doing the move (for example `draw` with `to: hand:<player>`), and to `changed` events by checking the move against the rules and saying so in a message. Undo is each player's own; if a move breaks a rule, explain it in a prompt rather than undoing it.
+4. When the round is over, `cancel_prompt` anything still open.

@@ -1,6 +1,7 @@
 import type { Assets, ComponentType } from '@trayful/formats/browser';
 import type { Command } from '../commands/index.js';
 import type { TableView } from './privacy.js';
+import type { PlayerPrompt, PromptAnswer } from './prompts.js';
 
 /**
  * Messages between a Trayful server and its clients (the browser table today,
@@ -16,7 +17,9 @@ export type ClientMessage =
    */
   | { type: 'reset'; seed?: number; setup?: string | false }
   /** Answer to a `snapshot-request`: the whole table as a base64 PNG, or why it failed. */
-  | { type: 'snapshot'; id: string; png?: string; error?: string };
+  | { type: 'snapshot'; id: string; png?: string; error?: string }
+  /** A player's answer to a prompt they were shown. */
+  | { type: 'answer'; prompt: string; answer: PromptAnswer };
 
 export type ServerMessage =
   | {
@@ -43,7 +46,12 @@ export type ServerMessage =
   /** The project files changed but have errors; the table keeps the last good version. */
   | { type: 'problems'; problems: string[] }
   /** Who is at the table. Sent on connect and whenever someone joins, leaves or renames. */
-  | { type: 'players'; players: PlayerInfo[]; you?: string };
+  | { type: 'players'; players: PlayerInfo[]; you?: string }
+  /**
+   * The prompts this player has still to answer, oldest first. Sent on connect and
+   * whenever one is asked, answered or withdrawn; an empty list clears them.
+   */
+  | { type: 'prompts'; prompts: PlayerPrompt[] };
 
 /** What to draw for `render-request`: a type, with field values for its `{{field}}` placeholders. */
 export interface RenderRequest {

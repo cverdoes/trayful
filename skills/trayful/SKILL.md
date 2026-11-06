@@ -52,6 +52,7 @@ See [recipes.md](recipes.md) for worked examples: a deck from a tiled image, a s
 1. Start with `describe_table`. It lists every pile and piece with its position, every drop area with its free spots, your hand and how many cards the others hold. `query_objects` gives the same as JSON, filtered by type, field values, region or what is inside a stack.
 2. Move with `move`, `draw`, `deal`, `take`, `stack`, `flip`, `rotate`, `roll`, `set_counter`, `shuffle`, `layout` and `lock`. Aim at spots by name rather than coordinates when the board has them. On score sheets, `mark` presses a stamp onto a stamp spot or writes text on a text spot (`at: sheet.1/boxes/4`), and `erase` clears one; `describe_table` lists what each spot holds.
 3. `reset_table` starts over from the project's setup, and can be undone. `get_history` shows what people did since you last looked.
+4. To run the game or teach it, ask players with `prompt`: a `message` they dismiss, a `confirm` (yes or no) or a `choice` of options, shown in a panel above their hand. Follow the table with `wait_for_events`, which returns as soon as someone moves, answers or comes and goes; pass its `next` back as `since` each time. `list_prompts` shows what is still unanswered, and `cancel_prompt` withdraws a question.
 
 Play fair:
 
@@ -68,6 +69,6 @@ Play fair:
 - Inventory rows may only set fields the type declares under `fields` (labels' fields count too), plus `tile`, `count` and `id`. Declare a field before filling it.
 - A drop area's `accepts`, and `stackable.with`, may only name types that exist. Add the pieces before the board that takes them.
 - Every CSV row needs every column of the header, even if a value is empty.
-- Player ids are names in lowercase with dashes (`hand:sam`). `describe_table` names other players only once they hold something; if a hand is refused, ask the person what name they joined with.
+- Player ids are names in lowercase with dashes (`hand:sam`). `describe_table` lists everyone who has been at the table under Players; someone who never opened it is not there yet.
 - A `pile` spot only takes stackable pieces that may share a stack; markers that share a space want `mode: group`.
 - A face's own `image` names an image in `assets.yaml`, never a path. Image fields and image layers also take a file path, and a misspelt path there shows as an empty box, not an error.

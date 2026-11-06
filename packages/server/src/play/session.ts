@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
@@ -7,6 +7,7 @@ import {
   handCounts,
   HAND_PREFIX,
   HIDDEN_PREFIX,
+  PromptError,
   resolveAliases,
   viewFor,
   type Command,
@@ -26,12 +27,14 @@ import {
 } from '@trayful/core';
 import { formatDiagnostic, loadProject, type ResolvedProject } from '@trayful/formats';
 import { activityFor, activityText, motionOf } from './activity.js';
+import { EventFeed } from './feed.js';
+import { PictureRequests } from './pictures.js';
 import { AGENT_PLAYER, type Player } from './players.js';
+import { PromptBoard } from './prompts.js';
+
+export { SnapshotError } from './pictures.js';
 
 export class ProjectLoadError extends Error {}
-
-/** A snapshot could not be taken, usually because no browser has the table open. */
-export class SnapshotError extends Error {}
 
 const TABLE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -69,10 +72,14 @@ export class TableSession {
   private saveTimer: NodeJS.Timeout | undefined;
   private saving: Promise<void> = Promise.resolve();
   private activity: Activity | undefined;
-  private snapshots = new Map<
-    string,
-    { resolve: (png: Buffer) => void; reject: (err: Error) => void; timer: NodeJS.Timeout }
-  >();
+  private pictures = new PictureRequests(
+    (message) => this.broadcast(message),
+    () => this.listeners.size,
+  );
+  /** What happens at this table, for whatever runs the game to follow. */
+  readonly events = new EventFeed();
+  /** Questions and messages for players, asked by whatever runs the game. */
+  readonly prompts = new PromptBoard(this.events, (players) => this.sendPrompts(players));
 
   private readonly saveDelayMs: number;
   private version: number;
@@ -96,6 +103,15 @@ export class TableSession {
         if (stack?.kind === 'stack') this.aliases.forget(stack.items);
       }
       this.aliases.prune(state);
+      this.events.push({
+        kind: 'changed',
+        change: change.kind,
+        ...(this.activity?.player
+          ? { player: this.activity.player, name: this.activity.name }
+          : {}),
+        text: this.activity?.text ?? 'caught up with the project files',
+        revision: this.revision,
+      });
       for (const [listener, viewer] of this.listeners) listener(this.stateMessage(viewer));
       this.scheduleSave();
     });
@@ -336,40 +352,23 @@ export class TableSession {
 
   /** Asks a watching browser to render the whole table, and resolves with the PNG. */
   requestSnapshot(timeoutMs = 10_000): Promise<Buffer> {
-    return this.requestPicture((id) => ({ type: 'snapshot-request', id }), timeoutMs);
+    return this.pictures.request((id) => ({ type: 'snapshot-request', id }), timeoutMs);
   }
 
   /** Asks a watching browser to draw one component, and resolves with the PNG. */
   requestRender(component: RenderRequest, timeoutMs = 10_000): Promise<Buffer> {
-    return this.requestPicture((id) => ({ type: 'render-request', id, component }), timeoutMs);
+    return this.pictures.request((id) => ({ type: 'render-request', id, component }), timeoutMs);
   }
 
-  private requestPicture(request: (id: string) => ServerMessage, timeoutMs: number) {
-    if (this.listeners.size === 0) {
-      return Promise.reject(
-        new SnapshotError(
-          'No browser has the table open, so there is nothing to draw the picture with. Open the table in a browser first.',
-        ),
-      );
+  /** The prompts one player has still to answer. */
+  promptsMessage(viewer: string | undefined): ServerMessage {
+    return { type: 'prompts', prompts: this.prompts.waitingFor(viewer) };
+  }
+
+  private sendPrompts(players: readonly string[]): void {
+    for (const [listener, viewer] of this.listeners) {
+      if (viewer && players.includes(viewer)) listener(this.promptsMessage(viewer));
     }
-    const id = randomUUID();
-    return new Promise<Buffer>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.snapshots.delete(id);
-        reject(new SnapshotError('The browser did not send the picture in time.'));
-      }, timeoutMs);
-      this.snapshots.set(id, { resolve, reject, timer });
-      this.broadcast(request(id));
-    });
-  }
-
-  private answerSnapshot(id: string, png?: string, error?: string): void {
-    const pending = this.snapshots.get(id);
-    if (!pending) return; // Another browser answered first, or it timed out.
-    this.snapshots.delete(id);
-    clearTimeout(pending.timer);
-    if (png) pending.resolve(Buffer.from(png, 'base64'));
-    else pending.reject(new SnapshotError(error ?? 'The browser could not draw the table.'));
   }
 
   /**
@@ -397,7 +396,11 @@ export class TableSession {
           );
           return undefined;
         case 'snapshot':
-          this.answerSnapshot(message.id, message.png, message.error);
+          this.pictures.answer(message.id, message.png, message.error);
+          return undefined;
+        case 'answer':
+          if (!player) throw new PromptError('Join the table to answer.');
+          this.prompts.answer(player, message.prompt, message.answer);
           return undefined;
         default:
           return {
@@ -408,7 +411,7 @@ export class TableSession {
     } catch (err) {
       // Commands never change state when they throw, so any error is safe to report and move on.
       const text =
-        err instanceof CommandError || err instanceof SetupError
+        err instanceof CommandError || err instanceof SetupError || err instanceof PromptError
           ? err.message
           : `Invalid message: ${(err as Error).message}`;
       return {
@@ -432,13 +435,20 @@ export class TableSession {
    * players show as online to the others while they are subscribed.
    */
   subscribe(listener: Listener, viewer?: string): () => void {
+    if (viewer && !this.isWatching(viewer)) this.events.push({ kind: 'joined', player: viewer });
     this.listeners.set(listener, viewer);
     if (viewer) this.seen.set(viewer, this.seen.get(viewer) ?? 0);
     this.broadcastPlayers();
     return () => {
       this.listeners.delete(listener);
+      // A player may have the table open in several tabs; they leave with the last.
+      if (viewer && !this.isWatching(viewer)) this.events.push({ kind: 'left', player: viewer });
       this.broadcastPlayers();
     };
+  }
+
+  private isWatching(player: string): boolean {
+    return [...this.listeners.values()].includes(player);
   }
 
   private broadcast(message: ServerMessage): void {
@@ -465,8 +475,8 @@ export class TableSession {
   }
 
   async close(): Promise<void> {
-    for (const [id] of this.snapshots)
-      this.answerSnapshot(id, undefined, 'The server is stopping.');
+    this.pictures.cancelAll('The server is stopping.');
+    this.events.close();
     await this.save();
     this.listeners.clear();
   }

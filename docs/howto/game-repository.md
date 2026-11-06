@@ -52,5 +52,8 @@ For example:
 - "Create a score tracker from 0 to 20 for four players."
 - "Add a board with a market of five card slots and a supply."
 - "Deal three cards each and play a round against me."
+- "Walk us through the first round of the rules in `rules.md`, and tell each of us when it is our turn."
 
 Since the prototype is in the agent's workspace, it can copy your images straight into `prototype/assets/`, which works for files of any size, and write setups, which have no tool of their own. The table reloads as soon as a file changes.
+
+The agent can also run the game for you and the people you play with. It asks players with prompts that appear in a panel above their hand (a message, a yes or no question, or a choice), and follows every move and answer as it happens, so it can explain the rules, say whose turn it is or ask "Take 2 coins or draw a card?". It never stops anyone from moving pieces; it only advises.

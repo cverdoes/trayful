@@ -75,6 +75,8 @@ function open(previousAttempts: number): void {
     useStore.setState({
       status: 'online',
       revision: -1,
+      // The server sends the prompts still waiting, if there are any.
+      prompts: [],
       send: (m) => socket.send(JSON.stringify(m)),
     });
   });
