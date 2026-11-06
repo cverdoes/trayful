@@ -32,15 +32,19 @@ interface Props {
   piece: Piece;
   type: ComponentType;
   assets: Assets;
-  /** Drawn with a strong outline when selected, a light one when under the pointer. */
+  /**
+   * Drawn with a strong outline when selected, a light one when under the pointer, and
+   * a gold one when a prompt asks about it.
+   */
   highlight?: Highlight;
 }
 
-export type Highlight = 'selected' | 'hovered';
+export type Highlight = 'selected' | 'hovered' | 'prompted';
 
 const HIGHLIGHT = {
   selected: { stroke: '#2f81f7', strokeWidth: 1.2 },
   hovered: { stroke: '#7fb2fa', strokeWidth: 0.9 },
+  prompted: { stroke: '#e3b341', strokeWidth: 1.2 },
 } as const;
 
 /** How soft a piece's shadow is, in millimetres. */

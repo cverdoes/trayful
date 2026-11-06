@@ -278,6 +278,40 @@ button:disabled {
   margin-right: auto;
 }
 
+.prompt.bubble {
+  width: min(360px, calc(100% - 32px));
+}
+
+.prompt-actions input {
+  font: inherit;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #0d1117;
+  color: var(--bar-text);
+  min-width: 0;
+  flex: 1;
+}
+
+.prompt-actions input[type='number'] {
+  flex: 0 0 96px;
+}
+
+.prompt-hint {
+  margin: 0;
+}
+
+.hand-card.prompted {
+  outline: 3px solid #e3b341;
+  outline-offset: 2px;
+}
+
+.hand-card.picked {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
 button.primary {
   background: var(--accent);
   border-color: var(--accent);

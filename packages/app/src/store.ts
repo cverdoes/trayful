@@ -54,6 +54,8 @@ interface TrayfulStore {
   players: PlayerInfo[];
   /** Questions and messages this player has still to answer, oldest first. */
   prompts: PlayerPrompt[];
+  /** What the player has picked so far for the first prompt, when it asks for pieces or a place. */
+  picked: string[];
   /** While a piece is dragged over the hand tray. */
   overHand: boolean;
   /** Height of the hand tray in pixels; people can drag its top edge. */
@@ -107,6 +109,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
   revision: -1,
   players: [],
   prompts: [],
+  picked: [],
   overHand: false,
   handHeight: loadHandHeight(),
   handMinimized: loadHandMinimized(),
@@ -169,7 +172,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
 /** What a message other than a new table changes in the store. */
 function besideTheTable(
   message: Exclude<ServerMessage, { type: 'state' }>,
-  s: Pick<TrayfulStore, 'redrawKey'>,
+  s: Pick<TrayfulStore, 'redrawKey' | 'prompts'>,
 ): Partial<TrayfulStore> {
   switch (message.type) {
     case 'project':
@@ -179,7 +182,10 @@ function besideTheTable(
     case 'players':
       return { players: message.players };
     case 'prompts':
-      return { prompts: message.prompts };
+      // Picks so far belong to the prompt on show; a new one starts with none.
+      return message.prompts[0]?.id === s.prompts[0]?.id
+        ? { prompts: message.prompts }
+        : { prompts: message.prompts, picked: [] };
     case 'error':
       return { error: { message: message.message, at: Date.now() }, redrawKey: s.redrawKey + 1 };
     default:

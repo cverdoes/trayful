@@ -5,6 +5,7 @@ import { Mark } from './Mark';
 import { Thumbnail } from './render/Thumbnail';
 import { HAND_DRAG, toggleHandTray } from './table/hand';
 import { clampHandHeight, HAND_HEIGHT, handCardHeight, saveHandHeight } from './table/handTray';
+import { clickForPrompt, promptMarks } from './table/promptTargets';
 import { useStore } from './store';
 import { windowCentre } from './table/viewport';
 
@@ -220,6 +221,8 @@ function ResizeHandle({ height }: Readonly<{ height: number }>) {
 }
 
 function HandCard({ piece, length }: Readonly<{ piece: Piece; length: number }>) {
+  const marked = useStore((s) => promptMarks(s.prompts[0]).has(piece.id));
+  const picked = useStore((s) => s.picked.includes(piece.id));
   const play = () => {
     // Double-click plays the card into the middle of the view.
     const [x, y] = windowCentre();
@@ -229,7 +232,7 @@ function HandCard({ piece, length }: Readonly<{ piece: Piece; length: number }>)
   };
   return (
     <div
-      className="hand-card"
+      className={`hand-card${promptClass(picked, marked)}`}
       draggable
       title="Drag onto the table to play it (hold Alt for face down), or double-click"
       data-id={piece.id}
@@ -237,6 +240,7 @@ function HandCard({ piece, length }: Readonly<{ piece: Piece; length: number }>)
         e.dataTransfer.setData(HAND_DRAG, piece.id);
         e.dataTransfer.effectAllowed = 'move';
       }}
+      onClick={() => clickForPrompt(piece.id, 'pick')}
       onDoubleClick={play}
       onMouseEnter={() => useStore.setState({ hoveredPiece: piece.id })}
       onMouseLeave={() =>
@@ -246,4 +250,10 @@ function HandCard({ piece, length }: Readonly<{ piece: Piece; length: number }>)
       <Thumbnail piece={piece} length={length} face="up" />
     </div>
   );
+}
+
+/** How a hand card shows a prompt about it: picked, or glowing to be picked. */
+function promptClass(picked: boolean, marked: boolean): string {
+  if (picked) return ' picked';
+  return marked ? ' prompted' : '';
 }

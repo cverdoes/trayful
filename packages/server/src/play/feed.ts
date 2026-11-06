@@ -14,9 +14,11 @@ export type EventBody =
       /** The same few words people watching see, such as "drew 1 piece into their hand". */
       text: string;
       revision: number;
+      /** The pieces and stacks on the table that changed, as anyone watching sees them. */
+      objects: string[];
     }
   | { kind: 'answered'; prompt: string; player: string; answer: PromptAnswer }
-  | { kind: 'prompt-closed'; prompt: string; reason: 'answered' | 'cancelled' }
+  | { kind: 'prompt-closed'; prompt: string; reason: 'answered' | 'cancelled' | 'expired' }
   | { kind: 'joined' | 'left'; player: string };
 
 /** What a reader gets: the events after the one it saw last, and where to go on from. */

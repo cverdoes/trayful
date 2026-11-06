@@ -13,6 +13,7 @@ import {
 import { packagedVersion, resourceDir } from '../shipped/resources.js';
 import { FilePlayerStore, Players, type Player, type PlayerStore } from '../play/players.js';
 import { checkTableName, ProjectLoadError, TableSession, tableFile } from '../play/session.js';
+import { promptsFile, PROMPTS_SUFFIX } from '../play/tableFiles.js';
 
 /** One project folder in the workspace. */
 export interface ProjectEntry {
@@ -180,7 +181,10 @@ export class Workspace {
     const names = new Set<string>();
     try {
       for (const file of await readdir(path.join(entry.dir, 'tables'))) {
-        if (file.endsWith('.json')) names.add(file.slice(0, -'.json'.length));
+        // Open prompts are kept beside a table, in `<name>.prompts.json`.
+        if (file.endsWith('.json') && !file.endsWith(PROMPTS_SUFFIX)) {
+          names.add(file.slice(0, -'.json'.length));
+        }
       }
     } catch {
       // No tables folder yet.
@@ -228,6 +232,7 @@ export class Workspace {
       this.sessions.delete(key);
     }
     await rm(tableFile(project, name), { force: true });
+    await rm(promptsFile(project, name), { force: true });
   }
 
   /** Makes a new project from the starter template. Only when the root is a folder of projects. */

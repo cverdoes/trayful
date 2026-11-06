@@ -77,6 +77,7 @@ function open(previousAttempts: number): void {
       revision: -1,
       // The server sends the prompts still waiting, if there are any.
       prompts: [],
+      picked: [],
       send: (m) => socket.send(JSON.stringify(m)),
     });
   });

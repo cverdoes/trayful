@@ -5,6 +5,7 @@ import { registerPlayTools } from './play.js';
 import { registerPromptTools } from './prompts.js';
 import { registerReadingTools } from './reading.js';
 import { registerResources } from './resources.js';
+import { registerStarters } from './starters.js';
 import { registerTableTools } from './tables.js';
 import { AGENT_PLAYER } from '../play/players.js';
 import { packagedVersion } from '../shipped/resources.js';
@@ -35,7 +36,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
         'Face-down cards are hidden: their fields (apart from those printed on the back) and the order of piles only show with reveal: true, which is like peeking, so only use it when the game allows.',
         `You play as the player "${AGENT_PLAYER}". Each player has a private hand that only they see: \`hand:${AGENT_PLAYER}\` is yours, \`hand:<player>\` gives a piece to someone else. Move a piece from your hand to a position or spot to play it (face up unless you say \`face: "down"\`). Other players' hands are never shown to you, not even with reveal.`,
         'To design components, read trayful://docs (HOWTO guides and the format reference), then use upsert_type, rename_type, set_inventory and add_asset; render_component shows a type as people will see it. Edits are checked and undone if they would break the project.',
-        'To run a game or a tutorial, ask players with prompt (a message, yes or no, or a choice shown above their hand) and follow the table with wait_for_events, passing back its `next` as `since` each time.',
+        'To run a game or a tutorial, ask players with prompt (a message, a yes or no question, a choice, pieces or a place to click, or a number or text to type) and follow the table with wait_for_events, passing back its `next` as `since` each time. Prompts only advise: players may still move anything.',
         'Every change goes into the same history as the people at the table, but each player undoes only their own changes, you included. Trayful does not know the rules; you bring them.',
       ].join('\n'),
     },
@@ -47,5 +48,6 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
   registerPromptTools(server, ctx);
   registerAuthoringTools(server, ctx);
   registerResources(server, ctx);
+  registerStarters(server);
   return server;
 }

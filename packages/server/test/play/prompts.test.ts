@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { EventFeed } from '../../src/play/feed.js';
 import { PromptBoard } from '../../src/play/prompts.js';
 
@@ -44,7 +44,7 @@ describe('the prompt board', () => {
     const { prompts } = board();
     const { prompt } = prompts.ask(vote, ['ann', 'bo'], 'Claude');
     expect(() => prompts.answer('cy', prompt.id, ['ann'])).toThrow('no longer waiting');
-    expect(() => prompts.answer('ann', prompt.id, ['zed'])).toThrow('not one of the options');
+    expect(() => prompts.answer('ann', prompt.id, ['zed'])).toThrow('not one you could pick');
     prompts.answer('ann', prompt.id, ['ann']);
     expect(() => prompts.answer('ann', prompt.id, ['bo'])).toThrow('no longer waiting');
   });
@@ -65,6 +65,65 @@ describe('the prompt board', () => {
     const second = prompts.ask({ kind: 'message', text: 'Again' }, ['ann'], 'Claude').prompt;
     prompts.answer('ann', first.id, true);
     expect(prompts.list().map((s) => s.prompt.id)).toEqual([second.id, first.id]);
+  });
+
+  it('closes on the first answer when asked to', () => {
+    const { prompts } = board();
+    const { prompt } = prompts.ask(vote, ['ann', 'bo'], 'Claude', { until: 'first' });
+    prompts.answer('bo', prompt.id, ['ann']);
+    expect(prompts.status(prompt.id)).toMatchObject({ open: false, closed: 'answered' });
+    expect(prompts.waitingFor('ann')).toEqual([]);
+  });
+
+  it('closes a prompt nobody answered in time', () => {
+    vi.useFakeTimers();
+    try {
+      const { feed, prompts } = board();
+      const { prompt } = prompts.ask({ kind: 'confirm', text: 'Ready?' }, ['ann'], 'Claude', {
+        expires: 30,
+      });
+      expect(prompt.expires).toBeDefined();
+      vi.advanceTimersByTime(30_000);
+      expect(prompts.status(prompt.id)).toMatchObject({ open: false, closed: 'expired' });
+      expect(feed.since(0).events).toMatchObject([{ kind: 'prompt-closed', reason: 'expired' }]);
+      expect(() => prompts.ask(vote, ['ann'], 'Claude', { expires: 0 })).toThrow('more than 0');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('brings back saved prompts, closing those that expired meanwhile', async () => {
+    const first = board();
+    const kept = first.prompts.ask({ kind: 'message', text: 'Hi' }, ['ann'], 'Claude');
+    const late = first.prompts.ask({ kind: 'message', text: 'Late' }, ['ann'], 'Claude', {
+      expires: 60,
+    });
+    const saved = structuredClone(first.prompts.saved());
+    saved[1]!.prompt.expires = new Date(Date.now() - 1000).toISOString();
+    first.prompts.dispose();
+
+    const second = board();
+    second.prompts.restore(saved);
+    expect(second.prompts.waitingFor('ann').map((p) => p.id)).toEqual([
+      kept.prompt.id,
+      late.prompt.id,
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(second.prompts.waitingFor('ann').map((p) => p.id)).toEqual([kept.prompt.id]);
+    second.prompts.dispose();
+  });
+
+  it('asks the reach check before it shows anything', () => {
+    const feed = new EventFeed();
+    const prompts = new PromptBoard(
+      feed,
+      () => undefined,
+      () => {
+        throw new Error('out of reach');
+      },
+    );
+    expect(() => prompts.ask(vote, ['ann'], 'Claude')).toThrow('out of reach');
+    expect(prompts.list()).toEqual([]);
   });
 
   it('needs someone to ask', () => {

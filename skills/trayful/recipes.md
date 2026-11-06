@@ -176,7 +176,10 @@ A grid spot is a box the size of its cell; a `points` spot is as large as its la
 
 > "Teach us the game: walk us through the first round and tell us whose turn it is."
 
+People can also start this with the `run-game` MCP prompt (`/trayful:run-game` in Claude Code).
+
 1. `describe_table` for the players' ids, then `wait_for_events` with `seconds: 0` to learn where the table's events stand now (its `next`).
-2. Tell everyone what is about to happen with `prompt`, `kind: message`, `to` every player id. Ask the player whose turn it is with `kind: choice`, `options: [{ id: coins, label: Take 2 coins }, { id: card, label: Draw a card }]`.
-3. Loop: `wait_for_events` with `since` set to the last `next`. React to `answered` events by doing the move (for example `draw` with `to: hand:<player>`), and to `changed` events by checking the move against the rules and saying so in a message. Undo is each player's own; if a move breaks a rule, explain it in a prompt rather than undoing it.
-4. When the round is over, `cancel_prompt` anything still open.
+2. Teach a step with `prompt`, `kind: message`, `to: everyone`, `anchor: main-board/market` and `highlight: [deck:actions]`: it shows as a bubble by the market, with the deck glowing.
+3. Ask the player whose turn it is. An action: `kind: choice`, `options: [{ id: coins, label: Take 2 coins }, { id: card, label: Draw a card }]`. A card from the market: `kind: pick`, `candidates` the card ids from `query_objects` with `inside`. Where to put a worker: `kind: place`, `candidates: [main-board/fields]`. An amount: `kind: number`, `min: 1`, `max: 3`.
+4. Loop: `wait_for_events` with `since` set to the last `next`. React to `answered` events by doing the move (for example `take` with the picked card and `to: hand:<player>`), and to `changed` events by checking the move against the rules (its `objects` say what moved) and saying so in a message. Undo is each player's own; if a move breaks a rule, explain it in a prompt rather than undoing it.
+5. When the round is over, `cancel_prompt` anything still open.
