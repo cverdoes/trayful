@@ -23,7 +23,7 @@ export default defineConfig({
         'packages/formats/src/**': { statements: 95, branches: 93, functions: 97, lines: 96 },
         'packages/server/src/**': { statements: 91, branches: 81, functions: 94, lines: 93 },
         'packages/cli/src/**': { statements: 92, branches: 88, functions: 85, lines: 94 },
-        'packages/app/src/**': { statements: 65, branches: 68, functions: 68, lines: 66 },
+        'packages/app/src/**': { statements: 79, branches: 77, functions: 78, lines: 80 },
       },
     },
   },
