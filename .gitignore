@@ -8,3 +8,4 @@ examples/*/tables/
 .trayful/
 test-results/
 playwright-report/
+.referee.json
