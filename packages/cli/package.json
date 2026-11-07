@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.32.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@trayful/core": "workspace:*",
     "@trayful/formats": "workspace:*",
     "@trayful/server": "workspace:*",
