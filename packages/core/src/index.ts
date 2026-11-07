@@ -11,4 +11,5 @@ export * from './setup.js';
 export * from './table/sync.js';
 export * from './views/privacy.js';
 export * from './views/prompts.js';
+export * from './views/events.js';
 export { MAX_MARK_TEXT, markBoxes, markKey, stampsFor, type MarkBox } from './commands/marks.js';

@@ -11,6 +11,21 @@ import {
 } from '../../src/play/players.js';
 
 describe('Players', () => {
+  it('admits an engine to one table, maybe seeing everything, until it is sent away', async () => {
+    const players = await Players.open(new MemoryPlayerStore());
+    const { player, secret } = await players.admitEngine('Referee', 'game/table-1', true);
+    expect(player).toMatchObject({ id: 'referee', kind: 'agent', role: 'engine' });
+    expect(players.tablesOf('referee')).toEqual(['game/table-1']);
+    expect(players.seesEverything('referee', 'game/table-1')).toBe(true);
+    expect(players.seesEverything('referee', 'game/other')).toBe(false);
+    const plain = await players.admitEngine('Referee', 'game/table-1', false);
+    expect(players.seesEverything(plain.player.id, 'game/table-1')).toBe(false);
+
+    await players.dismiss('referee');
+    expect(players.authenticate('referee', secret)).toBeUndefined();
+    await expect(players.dismiss(AGENT_PLAYER)).rejects.toThrow('No engine "claude"');
+  });
+
   it('gives each player a unique id and a secret only they know', async () => {
     const players = await Players.open(new MemoryPlayerStore());
     expect(players.get(AGENT_PLAYER)).toMatchObject({ name: 'Claude', kind: 'agent' });

@@ -20,4 +20,4 @@ Trayful does not know any game's rules. Something outside the table can bring th
 
 - [[core/views/prompts.ts]] defines prompts and answers and checks them; it knows nothing about players or the network.
 - [[server:PromptBoard]] knows who was asked and who has answered; [[server:EventFeed]] keeps the order of events. The session wires them to its listeners.
-- [[server/mcp/prompts.ts]] is a thin adapter: another way in, such as a WebSocket for a program written in another language, could use the same board and feed.
+- [[server/mcp/prompts.ts]] is a thin adapter. Engines, programs in any language, use the same board and feed over the WebSocket ([[concept:an-engine-knocks]]).

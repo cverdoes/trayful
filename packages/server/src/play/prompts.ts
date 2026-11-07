@@ -23,6 +23,10 @@ export interface PromptStatus {
   answers: Record<string, PromptAnswer>;
   open: boolean;
   closed?: CloseReason;
+  /** The player who asked, when it was an engine; only they may withdraw it. */
+  by?: string;
+  /** Not kept with the table: whoever asked is gone after a restart, so it would mean nothing. */
+  passing?: boolean;
 }
 
 /** How a prompt is asked, besides what it says. */
@@ -30,6 +34,10 @@ export interface AskOptions {
   until?: 'all' | 'first';
   /** Seconds until it closes by itself, if nobody has answered by then. */
   expires?: number;
+  /** Leave it out of what is saved with the table. */
+  passing?: boolean;
+  /** The engine asking, if one is. */
+  by?: string;
 }
 
 /** How many closed prompts a table remembers, so whoever asked can still read the answers. */
@@ -44,6 +52,7 @@ const KEEP_CLOSED = 50;
 export class PromptBoard {
   private prompts = new Map<string, PromptStatus>();
   private timers = new Map<string, NodeJS.Timeout>();
+  private settling = new Map<string, ((status: PromptStatus) => void)[]>();
 
   constructor(
     private readonly feed: EventFeed,
@@ -81,6 +90,8 @@ export class PromptBoard {
       until: options.until ?? 'all',
       answers: {},
       open: true,
+      ...(options.passing ? { passing: true } : {}),
+      ...(options.by ? { by: options.by } : {}),
     };
     this.add(status);
     this.changed(status.to);
@@ -114,6 +125,20 @@ export class PromptBoard {
     return status;
   }
 
+  /** The engine that asked a prompt, if an engine did and the board still remembers it. */
+  asker(id: string): string | undefined {
+    return this.prompts.get(id)?.by;
+  }
+
+  /** Resolves once a prompt closes, however it closes. */
+  settled(id: string): Promise<PromptStatus> {
+    const status = this.status(id);
+    if (!status.open) return Promise.resolve(status);
+    return new Promise((resolve) => {
+      this.settling.set(id, [...(this.settling.get(id) ?? []), resolve]);
+    });
+  }
+
   /** Every prompt still open, oldest first, and the latest closed ones after them. */
   list(): PromptStatus[] {
     const all = [...this.prompts.values()];
@@ -130,7 +155,7 @@ export class PromptBoard {
 
   /** The open prompts, to keep with the table so a restart does not lose them. */
   saved(): PromptStatus[] {
-    return [...this.prompts.values()].filter((s) => s.open);
+    return [...this.prompts.values()].filter((s) => s.open && !s.passing);
   }
 
   /** Brings back saved open prompts. Those that expired while the table was closed close now. */
@@ -140,10 +165,15 @@ export class PromptBoard {
     }
   }
 
-  /** Stops the expiry timers, when the table closes. */
+  /** Stops the expiry timers and lets go of whoever waits, when the table closes. */
   dispose(): void {
     for (const timer of this.timers.values()) clearTimeout(timer);
     this.timers.clear();
+    // Whoever waits hears the prompt as it stands: still open, never to be answered here.
+    for (const [id, waiting] of this.settling) {
+      for (const resolve of waiting) resolve(this.status(id));
+    }
+    this.settling.clear();
   }
 
   private add(status: PromptStatus): void {
@@ -163,6 +193,8 @@ export class PromptBoard {
     this.timers.delete(status.prompt.id);
     this.feed.push({ kind: 'prompt-closed', prompt: status.prompt.id, reason });
     this.changed(status.to);
+    for (const resolve of this.settling.get(status.prompt.id) ?? []) resolve(status);
+    this.settling.delete(status.prompt.id);
   }
 
   private forgetOldest(): void {

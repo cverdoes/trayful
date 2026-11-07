@@ -2,7 +2,13 @@ import { loadProject, type ResolvedProject } from '@trayful/formats';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { applyCommand, type Command } from '../../src/commands/index.js';
 import { describeTable } from '../../src/views/describe.js';
-import { AliasBook, resolveAliases, viewFor, withoutOtherHands } from '../../src/views/privacy.js';
+import {
+  AliasBook,
+  fullView,
+  resolveAliases,
+  viewFor,
+  withoutOtherHands,
+} from '../../src/views/privacy.js';
 import { createTable } from '../../src/setup.js';
 import {
   checkIntegrity,
@@ -145,6 +151,14 @@ describe('viewFor', () => {
     expect(view.objects[handOf(state, 'alice')[0]!.id]).toBeDefined();
     expect(view.objects[handOf(state, 'bob')[0]!.id]).toBeUndefined();
     expect(view.hands).toEqual({ alice: 1, bob: 1 });
+  });
+
+  it('shows an engine with a full view every hand, but not the random generator', () => {
+    const state = run(fresh(), { type: 'deal', from: DECK, to: ['hand:alice', 'hand:bob'] });
+    const view = fullView(state);
+    expect(view.objects[handOf(state, 'bob')[0]!.id]).toBeDefined();
+    expect(view.hands).toEqual({ alice: 1, bob: 1 });
+    expect(view.rng).toBe(0);
   });
 
   it('gives shuffled cards new stand-ins', () => {

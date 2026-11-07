@@ -1,8 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { PromptError } from '@trayful/core';
 import type { PromptStatus } from '../play/prompts.js';
-import type { TableSession } from '../play/session.js';
+import { playersFor } from '../play/engines.js';
 import { failure, text, type ToolContext } from './context.js';
 
 /** How long `wait_for_events` waits at most, so a tool call never hangs on a quiet table. */
@@ -196,17 +195,4 @@ function report(status: PromptStatus) {
     ...(prompt.expires ? { expires: prompt.expires } : {}),
     waitingFor: open ? to.filter((p) => !Object.hasOwn(answers, p)) : [],
   };
-}
-
-/** The player ids a prompt is for: those named, who must have been at the table, or every person there. */
-function playersFor(session: TableSession, to: string[] | 'everyone'): string[] {
-  const roster = session.roster();
-  if (to === 'everyone') {
-    const people = roster.filter((p) => p.kind === 'person').map((p) => p.id);
-    if (people.length === 0) throw new PromptError('Nobody has joined this table yet.');
-    return people;
-  }
-  const unknown = to.find((id) => !roster.some((p) => p.id === id));
-  if (unknown) throw new PromptError(`There is no player "${unknown}" at this table.`);
-  return to;
 }

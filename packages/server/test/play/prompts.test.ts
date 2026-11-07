@@ -126,6 +126,24 @@ describe('the prompt board', () => {
     expect(prompts.list()).toEqual([]);
   });
 
+  it('tells whoever waits when a prompt closes, and keeps passing ones out of the save', async () => {
+    const { prompts } = board();
+    const kept = prompts.ask(vote, ['ann'], 'Claude', { by: 'referee' }).prompt;
+    const passing = prompts.ask(vote, ['ann'], 'Trayful', { passing: true }).prompt;
+    expect(prompts.saved().map((s) => s.prompt.id)).toEqual([kept.id]);
+    expect(prompts.asker(kept.id)).toBe('referee');
+    expect(prompts.asker(passing.id)).toBeUndefined();
+
+    const settling = prompts.settled(passing.id);
+    prompts.answer('ann', passing.id, ['bo']);
+    expect(await settling).toMatchObject({ open: false, answers: { ann: ['bo'] } });
+    expect(await prompts.settled(passing.id)).toMatchObject({ closed: 'answered' });
+
+    const unanswered = prompts.settled(kept.id);
+    prompts.dispose();
+    expect(await unanswered).toMatchObject({ open: true });
+  });
+
   it('needs someone to ask', () => {
     expect(() => board().prompts.ask(vote, [], 'Claude')).toThrow('which players');
   });

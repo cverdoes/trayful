@@ -3,6 +3,7 @@ import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   AliasBook,
+  fullView,
   CommandError,
   handCounts,
   PromptError,
@@ -27,8 +28,9 @@ import { formatDiagnostic, loadProject, type ResolvedProject } from '@trayful/fo
 import { activityFor, activityText, changedInSight, motionOf } from './activity.js';
 import { EventFeed } from './feed.js';
 import { PictureRequests } from './pictures.js';
-import { AGENT_PLAYER, type PlayerDirectory } from './players.js';
+import { AGENT_PLAYER, tableKey, type PlayerDirectory } from './players.js';
 import { PromptBoard } from './prompts.js';
+import { rosterOf } from './roster.js';
 import { checkPromptReach, checkReach, promptAsSeenBy } from './reach.js';
 import { promptsFile, readSavedPrompts, savePrompts, tableFile, writeJson } from './tableFiles.js';
 
@@ -39,9 +41,6 @@ export { tableFile } from './tableFiles.js';
 export class ProjectLoadError extends Error {}
 
 const TABLE_NAME = /^[a-z0-9][a-z0-9-]*$/;
-
-/** An agent counts as at the table this long after it last acted. */
-const AGENT_ONLINE_MS = 5 * 60_000;
 
 type Listener = (message: ServerMessage) => void;
 
@@ -243,7 +242,14 @@ export class TableSession {
 
   /** The table as one player may see it: other hands and face-down faces hidden. */
   viewFor(viewer: string | undefined) {
+    if (this.seesEverything(viewer)) return fullView(this.engine.state);
     return viewFor(this.engine.state, viewer, this.aliases, this.project.types);
+  }
+
+  /** Whether the host let a player, an engine, see everything at this table. */
+  seesEverything(viewer: string | undefined): boolean {
+    const key = tableKey(this.projectId, this.tableName);
+    return viewer !== undefined && (this.players?.seesEverything?.(viewer, key) ?? false);
   }
 
   /**
@@ -298,30 +304,9 @@ export class TableSession {
 
   /** Who is at this table: everyone watching, holding pieces, or who has acted here. */
   roster(): PlayerInfo[] {
-    const watching = new Set(this.listeners.values());
-    const ids = new Set([
-      ...watching,
-      ...this.seen.keys(),
-      ...Object.keys(handCounts(this.engine.state)),
-    ]);
-    const now = Date.now();
-    const infos: PlayerInfo[] = [];
-    for (const id of ids) {
-      if (!id) continue;
-      const player = this.players?.get(id) ?? {
-        id,
-        name: id,
-        color: '#6c757d',
-        kind: id === AGENT_PLAYER ? 'agent' : 'person',
-        role: id === AGENT_PLAYER ? 'agent' : 'guest',
-      };
-      const online =
-        watching.has(id) ||
-        (player.kind === 'agent' && now - (this.seen.get(id) ?? 0) < AGENT_ONLINE_MS);
-      infos.push({ ...player, online });
-    }
-    const order = { host: 0, guest: 1, agent: 2 };
-    return infos.sort((a, b) => order[a.role] - order[b.role] || a.name.localeCompare(b.name));
+    const ids = [...this.listeners.values(), ...this.seen.keys()];
+    ids.push(...Object.keys(handCounts(this.engine.state)));
+    return rosterOf(ids, new Set(this.listeners.values()), this.seen, this.players);
   }
 
   /** Tells everyone watching who is at the table, for example after someone renamed. */

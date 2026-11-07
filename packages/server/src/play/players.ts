@@ -11,14 +11,19 @@ export interface Player {
   name: string;
   color: string;
   kind: 'person' | 'agent';
-  /** The host runs the server; guests joined through an invite link. */
-  role: 'host' | 'guest' | 'agent';
+  /**
+   * The host runs the server; guests joined through an invite link; engines are
+   * programs that knocked and the host let in.
+   */
+  role: 'host' | 'guest' | 'agent' | 'engine';
 }
 
 interface StoredPlayer extends Player {
   secretHash: string;
-  /** Tables a guest was invited to, as `project/table`. */
+  /** Tables a guest was invited to, or an engine let into, as `project/table`. */
   tables?: string[];
+  /** Tables where an engine was let see everything, every hand included. */
+  fullView?: string[];
 }
 
 /** An invite to one table. Anyone holding its token may join that table as a guest. */
@@ -31,6 +36,8 @@ export interface Invite {
 /** The players a table may name. A workspace hands its `Players` registry here. */
 export interface PlayerDirectory {
   get(id: string): Player | undefined;
+  /** Whether a player was let see everything at a table, as `project/table`. */
+  seesEverything?(id: string, table: string): boolean;
 }
 
 /** Everything the registry keeps between runs. */
@@ -104,6 +111,8 @@ const COLORS = [
   '#adb5bd',
 ];
 const MAX_NAME = 40;
+/** Engines are drawn in a quiet grey, apart from the people's colours. */
+const ENGINE_COLOR = '#8d99ae';
 
 export class PlayerError extends Error {}
 
@@ -177,9 +186,43 @@ export class Players {
   }
 
   /** Adds a player and returns the secret they prove themselves with from now on. */
-  async join(name: string, role: 'host' | 'guest'): Promise<{ player: Player; secret: string }> {
+  join(name: string, role: 'host' | 'guest'): Promise<{ player: Player; secret: string }> {
+    const people = this.data.players.filter((p) => p.kind === 'person').length;
+    return this.add(name, { kind: 'person', role, color: COLORS[people % COLORS.length]! });
+  }
+
+  /**
+   * Adds an engine the host let into one table, maybe seeing everything there, and
+   * returns the secret it connects with.
+   */
+  admitEngine(
+    name: string,
+    table: string,
+    full: boolean,
+  ): Promise<{ player: Player; secret: string }> {
+    const extra = { tables: [table], ...(full ? { fullView: [table] } : {}) };
+    return this.add(name, { kind: 'agent', role: 'engine', color: ENGINE_COLOR, ...extra });
+  }
+
+  /** Whether a player was let see everything at a table, as `project/table`. */
+  seesEverything(id: string, table: string): boolean {
+    return this.data.players.find((p) => p.id === id)?.fullView?.includes(table) ?? false;
+  }
+
+  /** Sends an engine away for good: its secret stops working. Only engines can be. */
+  async dismiss(id: string): Promise<void> {
+    const at = this.data.players.findIndex((p) => p.id === id);
+    if (this.data.players[at]?.role !== 'engine') throw new PlayerError(`No engine "${id}".`);
+    this.data.players.splice(at, 1);
+    await this.store.save(this.data);
+  }
+
+  private async add(
+    name: string,
+    details: Omit<StoredPlayer, 'id' | 'name' | 'secretHash'>,
+  ): Promise<{ player: Player; secret: string }> {
     const clean = cleanName(name);
-    const base = slug(clean) || role;
+    const base = slug(clean) || details.role;
     let id = base;
     let n = 2;
     while (this.data.players.some((p) => p.id === id)) {
@@ -187,14 +230,7 @@ export class Players {
       n++;
     }
     const key = secret(24);
-    const stored: StoredPlayer = {
-      id,
-      name: clean,
-      color: COLORS[this.data.players.filter((p) => p.kind === 'person').length % COLORS.length]!,
-      kind: 'person',
-      role,
-      secretHash: hash(key),
-    };
+    const stored: StoredPlayer = { id, name: clean, ...details, secretHash: hash(key) };
     this.data.players.push(stored);
     await this.store.save(this.data);
     return { player: publicPlayer(stored), secret: key };
@@ -253,7 +289,8 @@ function asHostName(name: string): string {
   return name ? name[0]!.toUpperCase() + name.slice(1) : 'Host';
 }
 
-function cleanName(name: unknown): string {
+/** A name as players see it: spaces tidied, cut to length. Throws when nothing is left. */
+export function cleanName(name: unknown): string {
   const clean = typeof name === 'string' ? name.replace(/\s+/g, ' ').trim().slice(0, MAX_NAME) : '';
   if (!clean) throw new PlayerError('Give a name to join with.');
   return clean;
@@ -264,7 +301,12 @@ function slug(name: string): string {
   return slugify(name).slice(0, 24).replace(/-$/, '');
 }
 
-function publicPlayer({ secretHash: _secret, tables: _tables, ...player }: StoredPlayer): Player {
+function publicPlayer({
+  secretHash: _secret,
+  tables: _tables,
+  fullView: _full,
+  ...player
+}: StoredPlayer): Player {
   return player;
 }
 

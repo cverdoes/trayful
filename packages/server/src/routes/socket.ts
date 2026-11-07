@@ -1,15 +1,17 @@
 import type { ClientMessage, ServerMessage } from '@trayful/core';
 import { isTrustedOrigin } from '../play/access.js';
+import { EngineLink, isEngineMessage } from '../play/engines.js';
 import { frameText } from './frames.js';
 import type { RouteContext, TableQuery } from './context.js';
 
-/** The live connection a browser plays a table over. */
+/** The live connection a browser plays a table over, and an engine runs the game over. */
 export function registerSocket({
   app,
   workspace,
   shareBases,
   sessionFor,
   identify,
+  connections,
 }: RouteContext): void {
   app.get<{ Querystring: TableQuery }>('/ws', { websocket: true }, (socket, request) => {
     // Only Trayful pages may drive the table; this stops other websites open in the
@@ -26,6 +28,8 @@ export function registerSocket({
         const problems = workspace.entry(session.projectId).problems;
         if (problems.length) send({ type: 'problems', problems });
         const unsubscribe = session.subscribe(send, viewer);
+        const engine = new EngineLink(session, player, send);
+        const forget = viewer ? connections.add(viewer, socket) : undefined;
         // The browser starts with no prompts, so an empty list needs no message.
         if (session.prompts.waitingFor(viewer).length) send(session.promptsMessage(viewer));
         socket.on('message', (data) => {
@@ -41,10 +45,16 @@ export function registerSocket({
             send({ type: 'error', message: 'Join the table to play.' });
             return;
           }
-          const error = session.handle(message, viewer);
+          const error = isEngineMessage(message)
+            ? engine.handle(message)
+            : session.handle(message, viewer);
           if (error) send(error);
         });
-        socket.on('close', unsubscribe);
+        socket.on('close', () => {
+          unsubscribe();
+          engine.close();
+          forget?.();
+        });
       },
       (err: unknown) => {
         send({ type: 'error', message: err instanceof Error ? err.message : String(err) });

@@ -16,5 +16,6 @@ Short guides for the things you do most when building a prototype. Each one star
 | [Use Trayful from your game's repository](game-repository.md) | Keep the prototype next to your rules and let your agent use it  |
 | [Print and play](print-and-play.md)                           | Print your components at real size to cut out                    |
 | [Play with others](play-with-others.md)                       | Let playtesters join from their own computers, with hidden hands |
+| [Run your game with an engine](game-engine.md)                | Write a program that runs the game and asks players questions    |
 
 When you need every key of a file, see the [format reference](../reference/README.md).

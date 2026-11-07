@@ -3,10 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import type { Piece, ProjectView, ServerMessage, Stack, TableView } from '@trayful/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import WebSocket from 'ws';
 import { isLocalOrigin, startServer, type RunningServer } from '../src/server.js';
-import { frameText } from '../src/routes/frames.js';
 import { examplePath } from './paths.js';
+import { openSocket } from './sockets.js';
 
 const example = examplePath('harvest-moon');
 
@@ -29,43 +28,9 @@ afterEach(async () => {
   await server.close();
 });
 
-/**
- * Opens a socket and collects messages; `next()` waits for the next one. Player
- * lists are kept apart in `players`, since they arrive whenever someone comes or goes.
- */
-async function connect(origin?: string, headers: Record<string, string> = {}) {
-  const socket = new WebSocket(server.url.replace('http', 'ws') + '/ws', {
-    headers,
-    ...(origin ? { origin } : {}),
-  });
-  const queue: ServerMessage[] = [];
-  const waiting: ((m: ServerMessage) => void)[] = [];
-  const players: ServerMessage[] = [];
-  socket.on('message', (data) => {
-    const message = JSON.parse(frameText(data)) as ServerMessage;
-    if (message.type === 'players') {
-      players.push(message);
-      return;
-    }
-    const waiter = waiting.shift();
-    if (waiter) waiter(message);
-    else queue.push(message);
-  });
-  await new Promise((resolve, reject) => {
-    socket.once('open', resolve);
-    socket.once('error', reject);
-  });
-  return {
-    socket,
-    players,
-    send: (message: unknown) => socket.send(JSON.stringify(message)),
-    next: () =>
-      new Promise<ServerMessage>((resolve) => {
-        const queued = queue.shift();
-        if (queued) resolve(queued);
-        else waiting.push(resolve);
-      }),
-  };
+/** Opens a socket to the test server; see `openSocket`. */
+function connect(origin?: string, headers: Record<string, string> = {}) {
+  return openSocket(server.url, origin, headers);
 }
 
 const DECK = 'deck:actions';
