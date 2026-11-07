@@ -234,6 +234,7 @@ Each package keeps its code in `src/` and its unit tests in `test/`, in the same
 | [`packages/server`](packages/server)                       | Local server: projects and tables, players and invites, live reload, WebSocket sync, MCP                          |
 | [`packages/app`](packages/app)                             | Browser table (React and Konva)                                                                                   |
 | [`packages/cli`](packages/cli)                             | The `trayful` command line                                                                                        |
+| [`packages/engine-client`](packages/engine-client)         | The client engines use to run a game at a table, published as `trayful/engine`                                    |
 | [`examples/harvest-moon`](examples/harvest-moon)           | Sample prototype that uses every file kind; validated in CI                                                       |
 | [`examples/starter`](examples/starter)                     | The template `trayful new` copies; validated in CI                                                                |
 | [`examples/piecepack`](examples/piecepack)                 | The public-domain piecepack with Backgammon and Tablut, built to find what Trayful cannot do yet; validated in CI |
@@ -279,7 +280,7 @@ The walkthroughs and concepts are Markdown in [`architecture/`](architecture/REA
 
 #### Code quality
 
-CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below each package's floor in `vitest.config.ts`. The app's React components (`.tsx`) are left out of the coverage report, because the e2e suite covers them; the app's floor guards its plain modules.
+CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli; the engine client stands alone) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below each package's floor in `vitest.config.ts`. The app's React components (`.tsx`) are left out of the coverage report, because the e2e suite covers them; the app's floor guards its plain modules.
 
 Every file meets these limits, so a violation fails the build; fix the code rather than switching a rule off. When your tests raise a package's coverage, `pnpm test:coverage` raises its floor in `vitest.config.ts` to 2 points under the new number; commit that change with your tests.
 

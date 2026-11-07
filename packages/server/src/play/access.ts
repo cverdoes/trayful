@@ -31,13 +31,18 @@ export interface Caller {
   tables: Set<string>;
   /** Invite tokens the browser holds, still valid. */
   tokens: string[];
+  /** Sent an engine's credential that proves nobody, such as one the host sent away. */
+  refused: boolean;
 }
 
 export function caller(request: FastifyRequest, players: Players): Caller {
   const cookies = parseCookies(request.headers.cookie);
   const local = isLocalRequest(request);
-  const [id, secret] = splitOnce(cookies[PLAYER_COOKIE] ?? bearer(request), ':');
+  const credential = bearer(request);
+  const [id, secret] = splitOnce(cookies[PLAYER_COOKIE] ?? credential, ':');
   const player = id ? players.authenticate(id, secret) : undefined;
+  // A bad credential is never taken for the host, even from this computer.
+  const refused = credential !== '' && !player;
   const tokens = inviteTokens(request).filter((t) => players.byToken(t));
   const tables = new Set([
     ...tokens.map((t) => {
@@ -46,7 +51,8 @@ export function caller(request: FastifyRequest, players: Players): Caller {
     }),
     ...(player ? players.tablesOf(player.id) : []),
   ]);
-  return { local, invited: local || tables.size > 0, player, tables, tokens };
+  if (refused) return { local: false, invited: false, tables: new Set(), tokens: [], refused };
+  return { local, invited: local || tables.size > 0, player, tables, tokens, refused };
 }
 
 /** Whether a caller may see and play one table: the host any, a guest those they were invited to. */

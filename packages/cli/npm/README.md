@@ -36,6 +36,20 @@ Add Trayful as an MCP server in Claude Desktop, Claude Code or another MCP clien
 
 The agent can then see and play the table you have open, and design new components with you. In your game's repository, `npx trayful skill` adds a skill that teaches Claude Code how to work with Trayful.
 
+## Run your game with an engine
+
+A program you write can run the game at the table: it knocks, you let it in from a prompt, and it moves pieces and asks players questions.
+
+```js
+import { knock, TableConnection } from 'trayful/engine';
+
+const table = await TableConnection.open(await knock('http://127.0.0.1:4317', 'Referee'));
+const prompt = await table.ask('everyone', { kind: 'confirm', text: 'Ready to start?' });
+console.log(await table.answers(prompt.id));
+```
+
+See the [engine guide](https://github.com/cverdoes/trayful/blob/main/docs/howto/game-engine.md).
+
 ## More
 
 `npx trayful help` lists every command. Guides and the file format reference are at [github.com/cverdoes/trayful](https://github.com/cverdoes/trayful).

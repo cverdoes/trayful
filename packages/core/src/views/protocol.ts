@@ -9,6 +9,7 @@ import type { PlayerPrompt, PromptAnswer, PromptRequest } from './prompts.js';
  * MCP and remote players later). Sent as JSON over a WebSocket at `/ws`.
  */
 export type ClientMessage =
+  /** A change to the table. With a `requestId`, the sender hears `done` or an `error` back. */
   | { type: 'command'; command: Command; requestId?: string }
   | { type: 'undo' }
   | { type: 'redo' }
@@ -56,6 +57,8 @@ export type ServerMessage =
       activity?: Activity;
     }
   | { type: 'error'; message: string; requestId?: string }
+  /** A command sent with a `requestId` was applied. */
+  | { type: 'done'; requestId: string }
   /** Asks a browser to render the table to a PNG and answer with a `snapshot` message. */
   | { type: 'snapshot-request'; id: string }
   /**

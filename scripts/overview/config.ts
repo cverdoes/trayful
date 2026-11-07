@@ -21,6 +21,8 @@ export const PACKAGES: { name: string; layer: number; column: number }[] = [
   { name: 'server', layer: 2, column: 0.22 },
   { name: 'app', layer: 2, column: 0.78 },
   { name: 'cli', layer: 3, column: 0.22 },
+  // Imports no other package: it talks to the server over the wire, as the app does.
+  { name: 'engine-client', layer: 3, column: 0.78 },
 ];
 
 /** Types with a page of their own: the ones most of the code is about. `package:Name`. */

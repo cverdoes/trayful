@@ -52,6 +52,14 @@ module.exports = {
       to: { path: '^packages/(server|app|cli)/', pathNot: '^packages/$1/' },
     },
     {
+      name: 'engine-client-stands-alone',
+      severity: 'error',
+      comment:
+        'The engine client is published with its own type declarations, so it may import no other workspace package.',
+      from: { path: '^packages/engine-client/src/' },
+      to: { path: '^packages/(formats|core|server|app|cli)/' },
+    },
+    {
       name: 'core-and-app-stay-off-node',
       severity: 'error',
       comment: 'core runs in the browser too, and app is browser-only: no Node built-ins.',
