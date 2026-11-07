@@ -7,6 +7,8 @@ export default defineConfig({
   timeout: 30_000,
   // Tests share one server and table, so they run one at a time.
   workers: 1,
+  // The JSON report gives `pnpm e2e:summary` the test counts per spec file.
+  reporter: [['list'], ['json', { outputFile: 'test-results/e2e.json' }]],
   use: { baseURL: `http://127.0.0.1:${port}`, viewport: { width: 1280, height: 800 } },
   // Each run plays on a fresh copy of the example project.
   webServer: {

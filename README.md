@@ -259,7 +259,8 @@ Each package keeps its code in `src/` and its unit tests in `test/`, in the same
 | `pnpm typecheck`         | Type-check every package                                                   |
 | `pnpm lint`              | ESLint (incl. complexity and size limits) and Prettier check               |
 | `pnpm quality`           | Package boundaries, unused code and copy-paste duplication                 |
-| `pnpm quality:summary`   | Coverage, complexity and duplication as Markdown                           |
+| `pnpm quality:summary`   | Test counts, coverage, complexity and duplication as Markdown              |
+| `pnpm e2e:summary`       | Browser test counts per spec file as Markdown, after `pnpm test:e2e`       |
 | `pnpm format`            | Format everything with Prettier                                            |
 | `pnpm generate`          | Regenerate JSON Schemas and the format reference after changing a schema   |
 | `pnpm validate:examples` | Validate every project in `examples/`                                      |
@@ -278,11 +279,11 @@ The walkthroughs and concepts are Markdown in [`architecture/`](architecture/REA
 
 #### Code quality
 
-CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below each package's floor in `vitest.config.ts`; the app's components are covered by the e2e suite instead.
+CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below each package's floor in `vitest.config.ts`. The app's React components (`.tsx`) are left out of the coverage report, because the e2e suite covers them; the app's floor guards its plain modules.
 
 Every file meets these limits, so a violation fails the build; fix the code rather than switching a rule off. When your tests raise a package's coverage, `pnpm test:coverage` raises its floor in `vitest.config.ts` to 2 points under the new number; commit that change with your tests.
 
-Each CI run's summary page shows coverage per package, the most complex functions and duplication, and the HTML coverage report is attached to the run as `coverage-report`.
+Each CI run's summary page shows the number of unit tests and the coverage of each package next to its floor, the most complex functions, duplication, and the number of browser tests in each e2e spec file. The HTML coverage report is attached to the run as `coverage-report`.
 
 Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for readability, naming and design, locally, before opening a pull request. There is no review on the pull request itself.
 

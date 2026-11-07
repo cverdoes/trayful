@@ -43,9 +43,18 @@ test('a person stamps boxes, writes in one and erases one', async ({ page }) => 
   await page.mouse.click(box.x, box.y, { button: 'right' });
   await expect.poll(() => marks(page)).toEqual({ 'score/0': { text: '12' } });
 
-  // Emptying a text box erases it, which leaves the sheet blank for the next run.
-  await page.mouse.click(score.x, score.y);
-  await page.getByLabel('Text', { exact: true }).fill('');
+  // Emptying a text box erases it, which leaves the sheet blank for the next run. The dialog
+  // starts from the text the page knows, so wait until the page has the 12: emptying a box
+  // that the page still sees as blank sends nothing.
+  const text = page.getByLabel('Text', { exact: true });
+  await expect(async () => {
+    await page.mouse.click(score.x, score.y);
+    if ((await text.inputValue({ timeout: 1000 })) !== '12') {
+      await page.keyboard.press('Escape');
+      throw new Error('The dialog opened before the page had the text');
+    }
+  }).toPass();
+  await text.fill('');
   await page.keyboard.press('Enter');
   await expect.poll(() => marks(page)).toBeUndefined();
 });
