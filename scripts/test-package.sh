@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Installs a packed trayful tarball in an empty folder and runs it the way a user
-# would: `npx trayful --version`, `new`, `skill`, `play` and an MCP handshake.
+# would: `npx trayful --version`, `new`, `skill`, importing `trayful/engine`, `play`
+# and an MCP handshake.
 # Usage: scripts/test-package.sh path/to/trayful-x.y.z.tgz
 set -euo pipefail
 
@@ -21,6 +22,13 @@ grep -q "cdn.jsdelivr.net/npm/trayful@$version/resources/schemas" my-game/trayfu
 
 npx trayful skill
 grep -q "^name: trayful$" .claude/skills/trayful/SKILL.md
+
+# Engines import the client from the package, with its type declarations beside it.
+node --input-type=module -e "
+  import { knock, KnockRefused, TableConnection } from 'trayful/engine';
+  if (typeof knock !== 'function' || typeof TableConnection.open !== 'function' || !KnockRefused) process.exit(1);
+"
+test -f node_modules/trayful/engine/index.d.ts
 
 # Checks that the table starts and serves the app, then exits.
 TRAYFUL_SMOKE_TEST=1 npx trayful play my-game --no-open

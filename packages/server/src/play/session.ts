@@ -352,7 +352,7 @@ export class TableSession {
 
   /**
    * Applies a client message from a player (or a spectator, who can reach no hand).
-   * Returns an error message for the sender only, or nothing on success.
+   * Returns a reply for the sender only: an error, `done` for a command with a request id, or nothing.
    */
   handle(message: ClientMessage | null, player?: string): ServerMessage | undefined {
     if (message === null || typeof message !== 'object') {
@@ -362,7 +362,7 @@ export class TableSession {
       switch (message.type) {
         case 'command':
           this.act(player, message.command);
-          return undefined;
+          return message.requestId ? { type: 'done', requestId: message.requestId } : undefined;
         case 'undo':
           this.as(player, 'undid their last change', () => this.engine.undo(player));
           return undefined;

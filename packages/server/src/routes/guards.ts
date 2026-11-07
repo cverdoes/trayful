@@ -28,6 +28,11 @@ export function registerGuards({ app, players, shareBases, target }: RouteContex
   app.addHook('preHandler', async (request, reply) => {
     const route = request.url.split('?')[0]!;
     const who = caller(request, players);
+    if (who.refused) {
+      return reply
+        .code(403)
+        .send({ error: 'That secret lets nobody in any more. Knock to be let in again.' });
+    }
     let ok = true;
     if (route === '/api/project' || route === '/api/table' || route === '/ws') {
       const { project, table } = target(request.query as TableQuery);

@@ -139,6 +139,15 @@ importers:
         specifier: workspace:*
         version: link:../formats
 
+  packages/engine-client:
+    devDependencies:
+      '@trayful/core':
+        specifier: workspace:*
+        version: link:../core
+      '@trayful/server':
+        specifier: workspace:*
+        version: link:../server
+
   packages/formats:
     dependencies:
       csv-parse:

@@ -1,7 +1,8 @@
 /**
  * Builds the `trayful` npm package in `packages/cli/dist`: one bundled file with the
- * CLI, server, core and formats, a launcher that checks the Node version, and the
- * resources the server reads at run time (see packages/server/src/shipped/resources.ts).
+ * CLI, server, core and formats, a launcher that checks the Node version, the engine
+ * client (`trayful/engine`) with its type declarations, and the resources the server
+ * reads at run time (see packages/server/src/shipped/resources.ts).
  * Run it through `pnpm package`, which builds the browser app first.
  */
 import { execFileSync } from 'node:child_process';
@@ -11,9 +12,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RESOURCE_SOURCES } from '@trayful/server';
 import { build, type Metafile } from 'esbuild';
+import ts from 'typescript';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const cli = path.join(root, 'packages/cli');
+const engineClient = path.join(root, 'packages/engine-client/src/index.ts');
 const out = path.join(cli, 'dist');
 
 /** The oldest Node.js the bundle runs on: `engines.node` in the root package.json. */
@@ -35,6 +38,8 @@ if (!existsSync(path.join(appDir, 'index.html'))) {
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 const metafile = await bundle();
+await bundleEngineClient();
+declareEngineClient();
 await writeLauncher();
 for (const [name, from] of Object.entries(RESOURCE_SOURCES)) {
   await cp(path.join(root, from), path.join(out, 'resources', name), { recursive: true });
@@ -64,6 +69,47 @@ async function bundle(): Promise<Metafile> {
     logLevel: 'warning',
   });
   return result.metafile;
+}
+
+/** The engine client, on its own: engines import it, not the CLI. It needs nothing else. */
+async function bundleEngineClient(): Promise<void> {
+  await build({
+    entryPoints: [engineClient],
+    outfile: path.join(out, 'engine.mjs'),
+    bundle: true,
+    platform: 'node',
+    format: 'esm',
+    target: `node${NODE.major}`,
+    legalComments: 'none',
+    logLevel: 'warning',
+  });
+}
+
+/** Type declarations for the engine client, so engines written in TypeScript are checked. */
+function declareEngineClient(): void {
+  const program = ts.createProgram([engineClient], {
+    declaration: true,
+    emitDeclarationOnly: true,
+    outDir: path.join(out, 'engine'),
+    rootDir: path.dirname(engineClient),
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    target: ts.ScriptTarget.ES2023,
+    lib: ['lib.es2023.d.ts'],
+    types: ['node'],
+    strict: true,
+    skipLibCheck: true,
+  });
+  const { diagnostics } = program.emit();
+  const problems = [...ts.getPreEmitDiagnostics(program), ...diagnostics];
+  if (problems.length) {
+    const host = {
+      getCanonicalFileName: (f: string) => f,
+      getCurrentDirectory: () => root,
+      getNewLine: () => '\n',
+    };
+    throw new Error(ts.formatDiagnostics(problems, host));
+  }
 }
 
 /**
@@ -98,6 +144,10 @@ function manifest(version: string): Record<string, unknown> {
     license: 'FSL-1.1-MIT',
     type: 'module',
     bin: { trayful: 'trayful.js' },
+    exports: {
+      './engine': { types: './engine/index.d.ts', default: './engine.mjs' },
+      './package.json': './package.json',
+    },
     engines: { node: `>=${NODE.major}.${NODE.minor}` },
     repository: { type: 'git', url: 'git+https://github.com/cverdoes/trayful.git' },
     homepage: 'https://github.com/cverdoes/trayful#readme',
