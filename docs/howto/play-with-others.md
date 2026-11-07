@@ -42,3 +42,7 @@ Face-down cards are hidden from everyone: no one can find out which card it is f
 ## With an agent
 
 An agent connected over MCP plays as **Claude**, with its own hand. Ask it to "deal three cards to each of us, Bob and you included", and it deals into `hand:bob` and `hand:claude`; it can play from its hand, but never sees yours.
+
+## With an engine
+
+A program can run the game too: it knocks, you let it in from a prompt, and it asks players questions and moves pieces. See [Run your game with an engine](game-engine.md).

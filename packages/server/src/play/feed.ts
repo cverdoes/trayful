@@ -1,34 +1,4 @@
-import type { PromptAnswer } from '@trayful/core';
-
-/** Something that happened at a table, as whatever runs the game hears about it. */
-export type TableEvent = { seq: number; at: string } & EventBody;
-
-/** What happened, before the feed numbers it. Never names a hidden piece. */
-export type EventBody =
-  | {
-      kind: 'changed';
-      /** `apply` for a move, `undo` and `redo` when someone stepped back or forward. */
-      change: 'apply' | 'undo' | 'redo';
-      player?: string;
-      name?: string;
-      /** The same few words people watching see, such as "drew 1 piece into their hand". */
-      text: string;
-      revision: number;
-      /** The pieces and stacks on the table that changed, as anyone watching sees them. */
-      objects: string[];
-    }
-  | { kind: 'answered'; prompt: string; player: string; answer: PromptAnswer }
-  | { kind: 'prompt-closed'; prompt: string; reason: 'answered' | 'cancelled' | 'expired' }
-  | { kind: 'joined' | 'left'; player: string };
-
-/** What a reader gets: the events after the one it saw last, and where to go on from. */
-export interface FeedPage {
-  events: TableEvent[];
-  /** Pass this as `since` next time. */
-  next: number;
-  /** True when older events were dropped before this reader caught up. */
-  missed?: boolean;
-}
+import type { EventBody, FeedPage, TableEvent } from '@trayful/core';
 
 /** How many events a table remembers. A reader further behind is told it missed some. */
 const KEEP = 500;
@@ -41,11 +11,20 @@ export class EventFeed {
   private events: TableEvent[] = [];
   private seq = 0;
   private waiting = new Set<() => void>();
+  private listeners = new Set<(event: TableEvent) => void>();
 
   push(body: EventBody): void {
-    this.events.push({ ...body, seq: ++this.seq, at: new Date().toISOString() });
+    const event: TableEvent = { ...body, seq: ++this.seq, at: new Date().toISOString() };
+    this.events.push(event);
     if (this.events.length > KEEP) this.events.splice(0, this.events.length - KEEP);
     for (const wake of [...this.waiting]) wake();
+    for (const listener of [...this.listeners]) listener(event);
+  }
+
+  /** Hands every event to a listener as it happens, until the returned function is called. */
+  listen(listener: (event: TableEvent) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
   /** The events after `since`; with no `since`, none, and where the feed stands now. */
@@ -74,6 +53,7 @@ export class EventFeed {
 
   /** Lets every waiting reader go, such as when the table closes. */
   close(): void {
+    this.listeners.clear();
     for (const wake of [...this.waiting]) wake();
   }
 }

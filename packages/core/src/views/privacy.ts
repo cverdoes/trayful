@@ -206,6 +206,14 @@ export class AliasBook implements Aliases {
 }
 
 /**
+ * The whole table, every hand, bag and face-down card included, for an engine the host
+ * let see everything. Only the random generator's state is left out.
+ */
+export function fullView(state: TableState): TableView {
+  return { ...state, seed: 0, rng: 0, ...counts(state, (id) => id) };
+}
+
+/**
  * The whole table with other players' hands and the bags' contents taken out (only
  * their counts kept), for a viewer allowed to peek at face-down cards, such as an
  * agent asked to reveal.

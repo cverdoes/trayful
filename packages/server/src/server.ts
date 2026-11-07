@@ -7,6 +7,7 @@ import { routeContext, type TableQuery } from './routes/context.js';
 import { registerAssetRoutes } from './routes/assets.js';
 import { registerAuthoringRoutes } from './routes/authoring.js';
 import { registerTrayRoutes } from './routes/tray.js';
+import { registerEngineRoutes } from './routes/engines.js';
 import { registerFileRoutes } from './routes/files.js';
 import { registerGuards } from './routes/guards.js';
 import { registerMcp } from './routes/mcp.js';
@@ -97,6 +98,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   const ctx = routeContext(app, workspace);
   registerGuards(ctx);
   registerPlayerRoutes(ctx);
+  registerEngineRoutes(ctx);
   registerTableRoutes(ctx);
   registerAuthoringRoutes(ctx);
   registerTrayRoutes(ctx);

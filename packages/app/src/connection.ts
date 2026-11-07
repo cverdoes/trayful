@@ -39,6 +39,17 @@ export async function join(name: string): Promise<void> {
   await start();
 }
 
+/** Sends an engine away from the table for good (host only). Its connection closes. */
+export async function dismissEngine(id: string): Promise<void> {
+  const response = await fetch(`/api/engines/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!response.ok) {
+    const result = (await response.json()) as { error?: string };
+    useStore.setState({
+      error: { message: result.error ?? response.statusText, at: Date.now() },
+    });
+  }
+}
+
 /** Connects to the Trayful server, loading the project and keeping the table in sync. Reconnects on loss. */
 export function connect(): void {
   void loadView();

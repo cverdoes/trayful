@@ -1,7 +1,8 @@
 import type { Assets, ComponentType } from '@trayful/formats/browser';
 import type { Command } from '../commands/index.js';
 import type { TableView } from './privacy.js';
-import type { PlayerPrompt, PromptAnswer } from './prompts.js';
+import type { TableEvent } from './events.js';
+import type { PlayerPrompt, PromptAnswer, PromptRequest } from './prompts.js';
 
 /**
  * Messages between a Trayful server and its clients (the browser table today,
@@ -19,7 +20,28 @@ export type ClientMessage =
   /** Answer to a `snapshot-request`: the whole table as a base64 PNG, or why it failed. */
   | { type: 'snapshot'; id: string; png?: string; error?: string }
   /** A player's answer to a prompt they were shown. */
-  | { type: 'answer'; prompt: string; answer: PromptAnswer };
+  | { type: 'answer'; prompt: string; answer: PromptAnswer }
+  /**
+   * An engine asks players something: player ids, or `everyone` (every person at the
+   * table). Answered with `asked`, or an `error` with the same `requestId`.
+   */
+  | {
+      type: 'ask';
+      to: string[] | 'everyone';
+      prompt: PromptRequest;
+      /** `all` (default) waits for everyone it is for; `first` closes on the first answer. */
+      until?: 'all' | 'first';
+      /** Seconds until it closes by itself. */
+      expires?: number;
+      requestId?: string;
+    }
+  /** An engine withdraws a prompt it asked. */
+  | { type: 'cancel-prompt'; prompt: string }
+  /**
+   * An engine follows what happens at the table: the events after `since` (none
+   * before now when left out), then each new one as an `events` message.
+   */
+  | { type: 'follow'; since?: number };
 
 export type ServerMessage =
   | {
@@ -51,7 +73,14 @@ export type ServerMessage =
    * The prompts this player has still to answer, oldest first. Sent on connect and
    * whenever one is asked, answered or withdrawn; an empty list clears them.
    */
-  | { type: 'prompts'; prompts: PlayerPrompt[] };
+  | { type: 'prompts'; prompts: PlayerPrompt[] }
+  /** An engine's prompt was asked, as the players it is for are shown it. */
+  | { type: 'asked'; prompt: PlayerPrompt; to: string[]; requestId?: string }
+  /**
+   * For an engine following the table: what happened, and the `next` to pass as `since`
+   * when it reconnects. `missed` says older events were dropped before it caught up.
+   */
+  | { type: 'events'; events: TableEvent[]; next: number; missed?: boolean };
 
 /** What to draw for `render-request`: a type, with field values for its `{{field}}` placeholders. */
 export interface RenderRequest {
@@ -89,7 +118,8 @@ export interface PlayerInfo {
   name: string;
   color: string;
   kind: 'person' | 'agent';
-  role: 'host' | 'guest' | 'agent';
+  /** Engines are programs the host let in to run the game. */
+  role: 'host' | 'guest' | 'agent' | 'engine';
   /** Whether they have this table open right now. */
   online: boolean;
 }

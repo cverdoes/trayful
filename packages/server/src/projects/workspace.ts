@@ -266,6 +266,12 @@ export class Workspace {
     return player;
   }
 
+  /** Sends an engine away from every table it was let into. */
+  async dismissEngine(id: string): Promise<void> {
+    await this.players.dismiss(id);
+    for (const session of this.sessions.values()) session.broadcastPlayers();
+  }
+
   /** Called after every reload, with the project's new state. */
   onReload(listener: (entry: ProjectEntry) => void): () => void {
     this.listeners.add(listener);

@@ -1,6 +1,6 @@
 import { handOf, type Piece } from '@trayful/core';
 import { useState, type KeyboardEvent, type PointerEvent, type SubmitEvent } from 'react';
-import { connect, join } from './connection';
+import { connect, dismissEngine, join } from './connection';
 import { Mark } from './Mark';
 import { Thumbnail } from './render/Thumbnail';
 import { HAND_DRAG, toggleHandTray } from './table/hand';
@@ -97,7 +97,18 @@ export function PlayerList() {
           <span className="dot" style={{ background: p.color }} />
           {p.name}
           {p.id === me?.player?.id && <span className="muted"> (you)</span>}
+          {p.role === 'engine' && <span className="muted"> (engine)</span>}
           {hands?.[p.id] ? <span className="count">{hands[p.id]}</span> : null}
+          {p.role === 'engine' && me?.host && (
+            <button
+              className="dismiss"
+              aria-label={`Send ${p.name} away`}
+              title="Send this engine away: it is cut off and must knock again to come back."
+              onClick={() => void dismissEngine(p.id)}
+            >
+              ×
+            </button>
+          )}
         </li>
       ))}
     </ul>

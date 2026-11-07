@@ -30,6 +30,32 @@ export interface RouteContext {
   hostOnly: (request: FastifyRequest, reply: FastifyReply) => boolean;
   /** The links to an invite, one per address others reach this server at. */
   linksFor: (invite: Invite) => string[];
+  /** The live connections of each player, so one sent away can be cut off. */
+  connections: Connections;
+}
+
+/** Something a player is connected by, such as a WebSocket. */
+interface Closable {
+  close(code?: number, reason?: string): void;
+}
+
+/** The live connections of each player. */
+class Connections {
+  private byPlayer = new Map<string, Set<Closable>>();
+
+  /** Keeps a player's connection; the returned function forgets it again. */
+  add(player: string, connection: Closable): () => void {
+    const open = this.byPlayer.get(player) ?? new Set();
+    open.add(connection);
+    this.byPlayer.set(player, open);
+    return () => open.delete(connection);
+  }
+
+  /** Closes every connection of a player, saying why. */
+  closeAll(player: string, reason: string): void {
+    for (const connection of this.byPlayer.get(player) ?? []) connection.close(1008, reason);
+    this.byPlayer.delete(player);
+  }
 }
 
 export function routeContext(app: FastifyInstance, workspace: Workspace): RouteContext {
@@ -61,5 +87,6 @@ export function routeContext(app: FastifyInstance, workspace: Workspace): RouteC
       return true;
     },
     linksFor: (invite) => shareBases.map((base) => `${base}/join/${invite.token}`),
+    connections: new Connections(),
   };
 }

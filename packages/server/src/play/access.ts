@@ -1,7 +1,7 @@
 import type { FastifyRequest } from 'fastify';
 import { tableKey, type Player, type Players } from './players.js';
 
-/** Proves which player a browser is: `<id>:<secret>`. */
+/** Proves which player a browser is: `<id>:<secret>`. Engines send it as a bearer token. */
 export const PLAYER_COOKIE = 'trayful_player';
 /** Set by visiting invite links: their tokens, separated by dots. Lets a browser join as a guest. */
 export const INVITE_COOKIE = 'trayful_invite';
@@ -36,7 +36,7 @@ export interface Caller {
 export function caller(request: FastifyRequest, players: Players): Caller {
   const cookies = parseCookies(request.headers.cookie);
   const local = isLocalRequest(request);
-  const [id, secret] = splitOnce(cookies[PLAYER_COOKIE] ?? '', ':');
+  const [id, secret] = splitOnce(cookies[PLAYER_COOKIE] ?? bearer(request), ':');
   const player = id ? players.authenticate(id, secret) : undefined;
   const tokens = inviteTokens(request).filter((t) => players.byToken(t));
   const tables = new Set([
@@ -57,6 +57,15 @@ export function allowed(who: Caller, project: string, table: string): boolean {
 /** Whether a caller may see anything of a project, such as its images. */
 export function allowedProject(who: Caller, project: string): boolean {
   return who.local || [...who.tables].some((key) => key.startsWith(`${project}/`));
+}
+
+/**
+ * The credential an engine sends instead of a cookie: `Authorization: Bearer <id>:<secret>`,
+ * with the id and secret it got when the host let it in.
+ */
+function bearer(request: FastifyRequest): string {
+  const header = request.headers.authorization ?? '';
+  return header.startsWith('Bearer ') ? header.slice('Bearer '.length) : '';
 }
 
 /** The invite tokens in a request's cookie. */

@@ -5,8 +5,8 @@ import { PlayerError } from '../play/players.js';
 import { ProjectLoadError } from '../play/session.js';
 import { NOT_INVITED, type RouteContext, type TableQuery } from './context.js';
 
-/** API routes anyone may call, invited or not. */
-const OPEN = new Set(['/api/me', '/api/join', '/api/health']);
+/** API routes anyone may call, invited or not. Knocking asks the host, who decides. */
+const OPEN = new Set(['/api/me', '/api/join', '/api/health', '/api/knock']);
 
 /**
  * Error replies, and who may reach which route, checked before any route runs. A table,
