@@ -97,7 +97,7 @@ async function coverageSection(): Promise<string> {
     ...coverageByPackage(summary).map(([n, c]) => row(n, c, floors.get(n))),
     row('**All**', summary.total ?? emptyCoverage()),
     '',
-    'The app is mostly covered by the e2e suite, which this does not count.',
+    "The app's React components (.tsx) are left out: the e2e suite covers them, and it is not counted here.",
   ].join('\n');
 }
 

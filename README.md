@@ -279,7 +279,7 @@ The walkthroughs and concepts are Markdown in [`architecture/`](architecture/REA
 
 #### Code quality
 
-CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below each package's floor in `vitest.config.ts`; the app's components are covered by the e2e suite instead.
+CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below each package's floor in `vitest.config.ts`. The app's React components (`.tsx`) are left out of the coverage report, because the e2e suite covers them; the app's floor guards its plain modules.
 
 Every file meets these limits, so a violation fails the build; fix the code rather than switching a rule off. When your tests raise a package's coverage, `pnpm test:coverage` raises its floor in `vitest.config.ts` to 2 points under the new number; commit that change with your tests.
 
