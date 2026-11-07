@@ -37,6 +37,8 @@ const prompt = await table.ask('everyone', {
 const { answers } = await table.answers(prompt.id);
 ```
 
+For a whole engine, see [the Harvest Moon referee](https://github.com/cverdoes/trayful/tree/main/examples/referee): it seats two players, asks who goes first, and runs a buying game turn by turn.
+
 `knock` throws a `KnockRefused` when you deny the engine or do not answer in time; its `reason` says which. Keep the credentials it returns (such as in a file the engine reads at start): they work from then on without knocking again, until you send the engine away.
 
 `table.state` is always the table as the engine last saw it, and `table.players` who is there. Listen with `table.on('state' | 'event' | 'players' | 'error' | 'close', …)`. A command or prompt the server refuses rejects with its reason. `table.next` is the last event heard: pass it as `since` to `TableConnection.open` after a restart to hear what the engine missed.
