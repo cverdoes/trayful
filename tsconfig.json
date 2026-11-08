@@ -1,6 +1,12 @@
 {
   "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // The example engines import the client as `trayful/engine`, as they would from npm.
+    "paths": { "trayful/engine": ["./packages/engine-client/src/index.ts"] }
+  },
   "include": [
+    "examples/*/*.ts",
+    "examples/*/test",
     "packages/*/src",
     "packages/*/test",
     "scripts",

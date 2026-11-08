@@ -1,0 +1,15 @@
+{
+  "name": "harvest-moon-referee",
+  "private": true,
+  "description": "An example engine: a referee that runs a buying game at a Harvest Moon table.",
+  "type": "module",
+  "scripts": {
+    "start": "node referee.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "trayful": "^0.3.0"
+  }
+}

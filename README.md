@@ -239,6 +239,7 @@ Each package keeps its code in `src/` and its unit tests in `test/`, in the same
 | [`examples/starter`](examples/starter)                     | The template `trayful new` copies; validated in CI                                                                |
 | [`examples/piecepack`](examples/piecepack)                 | The public-domain piecepack with Backgammon and Tablut, built to find what Trayful cannot do yet; validated in CI |
 | [`examples/roll-and-write`](examples/roll-and-write)       | Six Rows, a small roll-and-write game on score sheets with stamp and text boxes; validated in CI                  |
+| [`examples/referee`](examples/referee)                     | An example engine: a referee that runs a buying game at a Harvest Moon table, tested against a real table         |
 | [`docs`](docs)                                             | HOWTO guides and the format reference (partly generated)                                                          |
 | [`architecture`](architecture)                             | Hand-written pages of the architecture overview: interaction walkthroughs and concepts                            |
 | [`skills/trayful`](skills/trayful)                         | The agent skill `trayful skill` installs: how to design and play over MCP; a test keeps it true to the tools      |
