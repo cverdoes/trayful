@@ -1,10 +1,10 @@
 /**
  * Pages about the ways into Trayful (table commands, the wire protocol, MCP tools, HTTP
- * routes, the CLI and the file formats) and the hand-written concept pages.
+ * routes, the CLI, the file formats and the libraries) and the hand-written concept pages.
  */
 import { esc, inline, link, markdown, paragraphs, type Page } from './html.js';
-import { linksIn, pagePath, routeAnchor, type Registry } from './links.js';
-import type { Concept, Decl, Model } from './model.js';
+import { libraryAnchor, linksIn, pagePath, routeAnchor, type Registry } from './links.js';
+import type { Concept, Decl, Library, Model } from './model.js';
 import { memberTable, sourceUrl } from './pages-code.js';
 
 const P = '../';
@@ -98,6 +98,42 @@ ${sections.join('\n')}`;
   return { path: pagePath.surface('cli'), title: 'CLI commands', body };
 }
 
+function libraryRow(library: Library, model: Model): string {
+  const owners = library.usedBy
+    .map((u) => (u.dev ? `${esc(u.owner)} <span class="quiet">(dev)</span>` : esc(u.owner)))
+    .join(', ');
+  const shown = library.importedBy
+    .slice(0, 3)
+    .map((id) => link(P, pagePath.module(id), `<code>${esc(id)}</code>`));
+  const more = library.importedBy.length - shown.length;
+  const imported =
+    [...shown, ...(more > 0 ? [`and ${more} more`] : [])].join(', ') ||
+    '<span class="quiet">no source module</span>';
+  const why = model.concepts
+    .filter((c) => linksIn(c.markdown).includes(`npm:${library.name}`))
+    .map((c) => link(P, pagePath.concept(c.slug), esc(c.title)))
+    .join(', ');
+  const npm = `<a href="https://www.npmjs.com/package/${esc(library.name)}"><code>${esc(library.name)}</code></a>`;
+  return `<tr id="${libraryAnchor(library.name)}"><td>${npm}</td><td><code>${esc(library.version)}</code></td><td>${owners}</td><td>${imported}</td><td>${why}</td></tr>`;
+}
+
+function libraryTable(libraries: Library[], model: Model): string {
+  const rows = libraries.map((library) => libraryRow(library, model)).join('');
+  return `<table><thead><tr><th>Library</th><th>Version</th><th>Declared by</th><th>Imported by</th><th>Explained in</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+export function librariesPage(model: Model): Page {
+  const runtime = model.libraries.filter((l) => l.usedBy.some((u) => !u.dev));
+  const tooling = model.libraries.filter((l) => l.usedBy.every((u) => u.dev));
+  const body = `<h1>Libraries</h1>
+<p>Every library in the repository's <code>package.json</code> files, besides type declarations. ${link(P, pagePath.concept('technology'), 'The technology page')} says why each one is there; <code>pnpm docs:overview --check</code> fails on a library no page explains.</p>
+<h2>In the running product</h2>
+${libraryTable(runtime, model)}
+<h2>For building, testing and checking</h2>
+${libraryTable(tooling, model)}`;
+  return { path: pagePath.surface('libraries'), title: 'Libraries', body };
+}
+
 /** Links between reference pages stay in the site; links elsewhere go to GitHub. */
 function referenceHref(model: Model, href: string): string {
   if (/^[a-z-]+\.md(#.*)?$/.test(href)) return href.replace('.md', '.html');
@@ -139,7 +175,9 @@ function explains(concept: Concept, model: Model, registry: Registry): string {
 }
 
 export function conceptPage(concept: Concept, model: Model, registry: Registry): Page {
-  const kind = concept.kind === 'interaction' ? 'Interaction' : 'Concept';
+  const kind = { onboarding: 'Start here', interaction: 'Interaction', concept: 'Concept' }[
+    concept.kind
+  ];
   const body = `<p class="crumbs">${kind}</p>
 <h1>${esc(concept.title)}</h1>
 <p class="lead">${inline(concept.summary)}</p>

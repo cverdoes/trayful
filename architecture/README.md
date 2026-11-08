@@ -11,13 +11,13 @@ Each page starts with a front matter block:
 ```yaml
 ---
 title: A player drags a card onto a row
-kind: interaction # or concept
+kind: interaction # or onboarding, or concept
 order: 2 # place in the navigation
 summary: One sentence for the home page and the top of the page.
 ---
 ```
 
-An **interaction** follows one thing a person or agent does from start to end, one numbered step per part, and says what that part's role is. A **concept** explains an idea that several interactions share. `index.md` is the introduction on the home page.
+An **onboarding** page is for an engineer new to the project: its scope, how it runs, the technology, the decisions behind it and how we work; they come first, in `order`. An **interaction** follows one thing a person or agent does from start to end, one numbered step per part, and says what that part's role is. A **concept** explains an idea that several interactions share. `index.md` is the introduction on the home page.
 
 ## Symbol links
 
@@ -35,6 +35,7 @@ Name code with double brackets instead of paths, so the overview can link it and
 | `[[trayful:play]]`                 | a CLI command                            |
 | `[[format:library]]`               | a format reference page                  |
 | `[[concept:glossary]]`             | another page here                        |
+| `[[npm:zod]]`                      | a library, on the Libraries page         |
 | `[[core:TableEngine\|the engine]]` | any of these, with its own words         |
 
-`pnpm docs:overview --check` (part of `pnpm check`) fails when a link names something that no longer exists, and every module page lists the pages that link to it under "Takes part in".
+`pnpm docs:overview --check` (part of `pnpm check`) fails when a link names something that no longer exists, and every module page lists the pages that link to it under "Takes part in". It also fails when a library in any `package.json` is linked from no page: when you add a dependency, say why on [technology.md](technology.md).

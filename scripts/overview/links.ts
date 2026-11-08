@@ -23,7 +23,7 @@ export const pagePath = {
   // `index.md` is the home page's introduction.
   concept: (slug: string) => (slug === 'index' ? 'index.html' : `concepts/${slug}.html`),
   reference: (slug: string) => `formats/${slug}.html`,
-  surface: (name: 'commands' | 'protocol' | 'mcp' | 'routes' | 'cli' | 'formats') =>
+  surface: (name: 'commands' | 'protocol' | 'mcp' | 'routes' | 'cli' | 'formats' | 'libraries') =>
     `surfaces/${name}.html`,
 };
 
@@ -102,6 +102,12 @@ function addSurfaces(registry: Registry, model: Model): void {
   for (const page of model.reference) {
     registry.set(`format:${page.slug}`, { href: pagePath.reference(page.slug), label: page.title });
   }
+  for (const library of model.libraries) {
+    registry.set(`npm:${library.name}`, {
+      href: `${pagePath.surface('libraries')}#${libraryAnchor(library.name)}`,
+      label: library.name,
+    });
+  }
   for (const concept of model.concepts) {
     registry.set(`concept:${concept.slug}`, {
       href: pagePath.concept(concept.slug),
@@ -112,6 +118,11 @@ function addSurfaces(registry: Registry, model: Model): void {
 
 export function routeAnchor(method: string, path: string): string {
   return `${method}-${path}`.replace(/[^\w-]+/g, '-').toLowerCase();
+}
+
+/** `@fastify/static` → `npm-fastify-static`. */
+export function libraryAnchor(name: string): string {
+  return `npm-${name.replace(/[^\w-]+/g, '-').replace(/^-/, '')}`;
 }
 
 /** Every name a concept page may link to. */

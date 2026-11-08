@@ -7,6 +7,7 @@ import path from 'node:path';
 import { SITE_CSS, SITE_JS } from './assets.js';
 import { currentCommit, lastChanged, readConcepts } from './concepts.js';
 import { KEY_TYPES, ROOT } from './config.js';
+import { readLibraries } from './dependencies.js';
 import { frame, type Page } from './html.js';
 import { buildRegistry, linksIn, pagePath, type Registry } from './links.js';
 import type { Model } from './model.js';
@@ -17,6 +18,7 @@ import {
   commandsPage,
   conceptPage,
   formatsPage,
+  librariesPage,
   mcpPage,
   protocolPage,
   referencePages,
@@ -27,12 +29,13 @@ import { readCli, readReference, readRoutes, readTools } from './surfaces.js';
 /** Reads the source, the running MCP server and CLI, and the pages in `architecture/`. */
 export async function buildModel(): Promise<Model> {
   const modules = await readModules();
-  const [packages, tools, routes, cli, reference, concepts] = await Promise.all([
+  const [packages, tools, routes, cli, reference, libraries, concepts] = await Promise.all([
     readPackages(modules),
     readTools(),
     readRoutes(modules),
     readCli(),
     readReference(),
+    readLibraries(modules),
     readConcepts(),
   ]);
   const model: Model = {
@@ -45,6 +48,7 @@ export async function buildModel(): Promise<Model> {
     routes,
     cli,
     reference,
+    libraries,
     concepts,
     changed: {},
   };
@@ -84,6 +88,17 @@ function brokenLinks(model: Model, registry: Registry): string[] {
   return [...broken, ...gone];
 }
 
+/** Libraries that no page in `architecture/` gives a reason for. */
+function unexplainedLibraries(model: Model): string[] {
+  const named = new Set(model.concepts.flatMap((c) => linksIn(c.markdown)));
+  return model.libraries
+    .filter((library) => !named.has(`npm:${library.name}`))
+    .map(
+      (library) =>
+        `architecture/: no page says why Trayful uses ${library.name}; link it as [[npm:${library.name}]].`,
+    );
+}
+
 /** Source files that do not say what they are for, and packages no page explains. */
 function gaps(model: Model, registry: Registry): string[] {
   const usage = usageOf(model, registry);
@@ -102,7 +117,11 @@ function gaps(model: Model, registry: Registry): string[] {
 /** Everything that makes the overview wrong or incomplete; empty when it is fine. */
 export function checkModel(model: Model): string[] {
   const registry = buildRegistry(model);
-  return [...brokenLinks(model, registry), ...gaps(model, registry)];
+  return [
+    ...brokenLinks(model, registry),
+    ...gaps(model, registry),
+    ...unexplainedLibraries(model),
+  ];
 }
 
 async function pages(model: Model, registry: Registry): Promise<Page[]> {
@@ -123,6 +142,7 @@ async function pages(model: Model, registry: Registry): Promise<Page[]> {
     routesPage(model),
     cliPage(model),
     formatsPage(model),
+    librariesPage(model),
     ...referencePages(model),
     ...model.concepts.filter((c) => c.slug !== 'index').map((c) => conceptPage(c, model, registry)),
   ];
@@ -151,7 +171,7 @@ function searchIndex(model: Model, list: Page[], registry: Registry): SearchEntr
   }
   for (const [name, target] of registry) {
     const [kind] = name.split(':');
-    if (['mcp', 'command', 'message', 'route', 'trayful'].includes(kind!)) {
+    if (['mcp', 'command', 'message', 'route', 'trayful', 'npm'].includes(kind!)) {
       entries.push({ t: target.label, u: target.href, k: `${kind}`, s: '' });
     }
   }

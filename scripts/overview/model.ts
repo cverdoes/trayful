@@ -99,11 +99,27 @@ export interface ReferencePage {
   markdown: string;
 }
 
+/** A library from npm that a package, or the repository's tooling, depends on. */
+export interface Library {
+  name: string;
+  /** The version range of its first declaration. */
+  version: string;
+  /** `repository` or a package name, and whether it is only needed to develop. */
+  usedBy: { owner: string; dev: boolean }[];
+  /** Source modules that import it. */
+  importedBy: string[];
+}
+
+/**
+ * Onboarding pages say what Trayful is and why it is built this way; interactions walk
+ * through one thing someone does; concepts explain an idea several interactions share.
+ */
+export type ConceptKind = 'onboarding' | 'interaction' | 'concept';
+
 export interface Concept {
   slug: string;
   title: string;
-  /** Interaction walkthroughs come first in the navigation. */
-  kind: 'interaction' | 'concept';
+  kind: ConceptKind;
   order: number;
   summary: string;
   markdown: string;
@@ -121,6 +137,7 @@ export interface Model {
   routes: Route[];
   cli: CliCommand[];
   reference: ReferencePage[];
+  libraries: Library[];
   concepts: Concept[];
   /** Last commit date of each repository file the concept pages explain. */
   changed: Record<string, string>;

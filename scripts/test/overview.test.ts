@@ -3,6 +3,7 @@ import { frontMatter } from '../overview/concepts.js';
 import { resolveLinks } from '../overview/html.js';
 import { linksIn, type Registry } from '../overview/links.js';
 import { packagePage } from '../overview/pages-code.js';
+import { librariesPage } from '../overview/pages-surfaces.js';
 import { buildModel, checkModel } from '../overview/site.js';
 import { cleanComment, firstSentence, readSource } from '../overview/source.js';
 
@@ -117,6 +118,21 @@ describe('the architecture overview', () => {
     expect(checkModel(broken)).toContain(
       `${model.concepts[0]!.path}: [[core:Gone]] names nothing in the code.`,
     );
+
+    const zod = model.libraries.find((l) => l.name === 'zod')!;
+    expect(zod.usedBy).toContainEqual({ owner: 'formats', dev: false });
+    expect(zod.importedBy).toContain('formats/schemas/common.ts');
+    expect(model.libraries.some((l) => l.name.startsWith('@types/'))).toBe(false);
+    const unexplained = {
+      ...model,
+      libraries: [...model.libraries, { ...zod, name: 'left-pad' }],
+    };
+    expect(checkModel(unexplained)).toContain(
+      'architecture/: no page says why Trayful uses left-pad; link it as [[npm:left-pad]].',
+    );
+    const libraries = librariesPage(model).body;
+    expect(libraries).toContain('<tr id="npm-fastify-static">');
+    expect(libraries.indexOf('>zustand<')).toBeLessThan(libraries.indexOf('>vitest<'));
 
     const formats = packagePage(model, 'formats', new Map()).body;
     expect(formats).toMatch(/Entry point <a [^>]*><code>formats\/index\.ts<\/code>/);
