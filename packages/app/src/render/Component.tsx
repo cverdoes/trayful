@@ -13,6 +13,7 @@ import { createContext, useContext } from 'react';
 import { Circle, Ellipse, Group, Image, Path, Rect, RegularPolygon, Text } from 'react-konva';
 import { fontStyle, imageBox, layerSize, textBox, tileRect } from './face';
 import { sizeOf } from './geometry';
+import { sheenOf } from './sheen';
 import { useProjectImage } from './images';
 
 /** 1 typographic point in millimetres. */
@@ -88,10 +89,14 @@ export function Component({ piece, type, assets, highlight }: Readonly<Props>) {
     // every piece into a window-sized buffer first, which costs more the more is shown.
     shadowForStrokeEnabled: false,
   };
+  const sheen = sheenOf(drawing, h, flat);
 
   return (
     <Group>
       <Outline shape={outline} w={w} h={h} corner={corner} {...outlineProps} />
+      {sheen && (
+        <Outline shape={outline} w={w} h={h} corner={corner} listening={false} {...sheen} />
+      )}
       <Group
         x={-w / 2}
         y={-h / 2}
