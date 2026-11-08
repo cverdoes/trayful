@@ -116,21 +116,6 @@
     <text x="92" y="298.5" font-size="10" font-weight="bold" fill="#f6eedb">FIELDS</text>
     <text x="192" y="299" font-size="9" font-style="italic" fill="#6e4629">place a worker to plant</text>
   </g>
-  <!-- barn -->
-  <g transform="translate(322 196)">
-    <ellipse cx="45" cy="78" rx="52" ry="6" fill="#8b5e3c" opacity=".18"/>
-    <path d="M10 34L45 8L80 34V78H10Z" fill="#c5523a"/>
-    <path d="M45 8L80 34V78H45Z" fill="#a8432f"/>
-    <path d="M4 38L45 4L86 38" fill="none" stroke="#f6eedb" stroke-width="4" stroke-linejoin="round"/>
-    <rect x="32" y="48" width="26" height="30" fill="#6e2f22"/>
-    <path d="M32 48L58 78M58 48L32 78" stroke="#f6eedb" stroke-width="2"/>
-    <rect x="32" y="48" width="26" height="30" fill="none" stroke="#f6eedb" stroke-width="2"/>
-    <rect x="39" y="22" width="12" height="12" fill="#e0a933" stroke="#f6eedb" stroke-width="1.5"/>
-    <g fill="#5b7f5f">
-      <circle cx="-6" cy="66" r="10"/>
-      <circle cx="4" cy="70" r="8"/>
-    </g>
-  </g>
   <!-- supply crate -->
   <rect x="440" y="180" width="140" height="140" rx="6" fill="url(#planks)"/>
   <rect x="446" y="186" width="128" height="128" rx="4" fill="#f1e5c7" opacity=".9"/>
