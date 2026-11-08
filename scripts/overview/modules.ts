@@ -24,7 +24,9 @@ async function cruiseSources(): Promise<IModule[]> {
     {
       validate: false,
       doNotFollow: { path: 'node_modules' },
-      exclude: { path: '(^|/)(dist|coverage|schema|node_modules|test)/' },
+      // Only the packages' own build output and tests: libraries in node_modules are not
+      // followed, but stay in each module's imports.
+      exclude: { path: '^packages/[^/]+/(dist|coverage|schema|test)/' },
       tsPreCompilationDeps: true,
       combinedDependencies: true,
       enhancedResolveOptions: {

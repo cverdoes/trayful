@@ -14,6 +14,9 @@ export type Usage = Map<string, Concept[]>;
 
 const P = '../';
 
+/** Walkthroughs show a module at work, so they come first under "Takes part in". */
+const KIND_RANK = { interaction: 0, concept: 100, onboarding: 200 };
+
 export function sourceUrl(model: Model, file: string, line?: number): string {
   return `${REPO_URL}/blob/${model.commit}/${file}${line ? `#L${line}` : ''}`;
 }
@@ -24,7 +27,7 @@ function moduleLink(id: string, prefix = P): string {
 
 function takesPartIn(concepts: Concept[] | undefined, prefix = P): string {
   if (!concepts?.length) return '';
-  const rank = (c: Concept) => (c.kind === 'interaction' ? 0 : 100) + c.order;
+  const rank = (c: Concept) => KIND_RANK[c.kind] + c.order;
   const items = concepts
     .toSorted((a, b) => rank(a) - rank(b))
     .map((c) => `<li>${link(prefix, pagePath.concept(c.slug), esc(c.title))}</li>`);
@@ -42,22 +45,30 @@ export function memberTable(members: Member[], first = 'Field'): string {
 
 export function homePage(model: Model, registry: Registry): Page {
   const intro = model.concepts.find((c) => c.slug === 'index');
-  const interactions = model.concepts.filter((c) => c.kind === 'interaction');
+  const listOf = (kind: Concept['kind']) =>
+    model.concepts
+      .filter((c) => c.kind === kind && c.slug !== 'index')
+      .map(
+        (c) => `<li>${link('', pagePath.concept(c.slug), esc(c.title))}: ${inline(c.summary)}</li>`,
+      )
+      .join('');
   const rows = model.packages.map(
     (p) =>
       `<tr><td>${link('', pagePath.pkg(p.name), `<code>${esc(p.npmName)}</code>`)}</td><td>${p.layer}</td><td>${p.modules.length}</td><td>${inline(p.summary)}</td></tr>`,
   );
-  const walks = interactions.map(
-    (c) => `<li>${link('', pagePath.concept(c.slug), esc(c.title))}: ${inline(c.summary)}</li>`,
-  );
   const body = `<h1>Trayful architecture</h1>
 ${intro ? markdown(intro.markdown, { prefix: '', registry }) : ''}
+<h2>Start here</h2>
+<ol>${listOf('onboarding')}</ol>
 <h2>The layers</h2>
 <p>Each package may import only from the layers below it; <code>pnpm lint:deps</code> enforces this. Arrows point at what a package imports, with the number of imports.</p>
 ${layerSvg(model.packages)}
 <table><thead><tr><th>Package</th><th>Layer</th><th>Modules</th><th>What it is</th></tr></thead><tbody>${rows.join('')}</tbody></table>
-<h2>Follow an interaction</h2>
-<ul>${walks.join('')}</ul>`;
+<h2>Deep dive: follow an interaction</h2>
+<p>Each walkthrough follows one thing a person or agent does through every part it touches.</p>
+<ul>${listOf('interaction')}</ul>
+<h2>Concepts</h2>
+<ul>${listOf('concept')}</ul>`;
   return { path: pagePath.index(), title: 'Overview', body };
 }
 

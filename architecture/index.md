@@ -14,4 +14,4 @@ Four ideas carry most of the code:
 - **The server holds the table.** A [[server:TableSession]] owns one table's [[core:TableEngine]], saves it to disk, and sends each watcher a [[core:TableView]]: the table as their player may see it.
 - **The browser only draws and asks.** [[app]] renders what the server sends and turns gestures into commands; it never changes the table itself.
 
-The quickest way in is to follow an interaction from the list below, then open the modules it names.
+New to the code? Read the five pages under **Start here** in order: what Trayful is and where its edges are, how it runs, the technology, the decisions behind its shape, and how we work. Then take a **deep dive**: follow an interaction from start to end and open the modules it names.

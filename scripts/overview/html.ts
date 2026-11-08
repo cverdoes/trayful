@@ -5,7 +5,7 @@
  */
 import { Marked, type Tokens } from 'marked';
 import { LINK, pagePath, parseLink, type Registry } from './links.js';
-import type { Model } from './model.js';
+import type { Concept, Model } from './model.js';
 
 export function esc(text: string): string {
   return text
@@ -84,21 +84,21 @@ function navSection(title: string, items: string[]): string {
 
 function nav(model: Model, prefix: string): string {
   const to = (href: string, label: string) => link(prefix, href, esc(label));
-  const interactions = model.concepts.filter((c) => c.kind === 'interaction');
   // `index.md` is the home page's introduction, not a page of its own.
-  const concepts = model.concepts.filter((c) => c.kind === 'concept' && c.slug !== 'index');
+  const pagesOf = (kind: Concept['kind']) =>
+    model.concepts
+      .filter((c) => c.kind === kind && c.slug !== 'index')
+      .map((c) => to(pagePath.concept(c.slug), c.title));
   return [
     `<p class="brand">${to(pagePath.index(), 'Trayful architecture')}</p>`,
     '<input id="search" type="search" placeholder="Search pages and symbols" aria-label="Search">',
     '<ol id="results" hidden></ol>',
-    navSection(
-      'Interactions',
-      interactions.map((c) => to(pagePath.concept(c.slug), c.title)),
-    ),
-    navSection(
-      'Concepts',
-      concepts.map((c) => to(pagePath.concept(c.slug), c.title)),
-    ),
+    navSection('Start here', [
+      ...pagesOf('onboarding'),
+      to(pagePath.surface('libraries'), 'Libraries'),
+    ]),
+    navSection('Deep dive: interactions', pagesOf('interaction')),
+    navSection('Concepts', pagesOf('concept')),
     navSection(
       'Packages',
       model.packages.map((p) => to(pagePath.pkg(p.name), p.npmName)),

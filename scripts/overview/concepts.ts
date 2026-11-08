@@ -1,12 +1,13 @@
 /**
- * The hand-written pages in `architecture/`: interaction walkthroughs and concepts.
+ * The hand-written pages in `architecture/`: onboarding, interaction walkthroughs and
+ * concepts.
  * Each starts with a small front matter block (title, kind, order, summary).
  */
 import { execFileSync } from 'node:child_process';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { CONCEPTS_DIR, ROOT } from './config.js';
-import type { Concept } from './model.js';
+import type { Concept, ConceptKind } from './model.js';
 
 /** Splits `---\nkey: value\n---\nbody` into its fields and body. */
 export function frontMatter(text: string): { fields: Record<string, string>; body: string } {
@@ -20,7 +21,13 @@ export function frontMatter(text: string): { fields: Record<string, string>; bod
   return { fields, body: text.slice(match[0].length) };
 }
 
-/** Reads every page in `architecture/`, interactions first, then by `order`. */
+const KINDS: ConceptKind[] = ['onboarding', 'interaction', 'concept'];
+
+function kindOf(field: string | undefined): ConceptKind {
+  return KINDS.find((kind) => kind === field) ?? 'concept';
+}
+
+/** Reads every page in `architecture/`, onboarding first, then interactions, each by `order`. */
 export async function readConcepts(): Promise<Concept[]> {
   const concepts: Concept[] = [];
   for (const file of (await readdir(CONCEPTS_DIR)).filter((f) => f.endsWith('.md'))) {
@@ -30,14 +37,14 @@ export async function readConcepts(): Promise<Concept[]> {
     concepts.push({
       slug: file.replace(/\.md$/, ''),
       title: fields.title ?? file,
-      kind: fields.kind === 'interaction' ? 'interaction' : 'concept',
+      kind: kindOf(fields.kind),
       order: Number(fields.order ?? 99),
       summary: fields.summary ?? '',
       markdown: body,
       path: `architecture/${file}`,
     });
   }
-  const rank = (c: Concept) => (c.kind === 'interaction' ? 0 : 1);
+  const rank = (c: Concept) => KINDS.indexOf(c.kind);
   return concepts.sort((a, b) => rank(a) - rank(b) || a.order - b.order);
 }
 
