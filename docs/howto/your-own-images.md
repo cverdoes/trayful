@@ -26,7 +26,7 @@ A face's `image` covers the whole face. A card back is the same for every card, 
 ```yaml
 flippable:
   back:
-    fill: ink
+    fill: forest
     image: card-back
 ```
 

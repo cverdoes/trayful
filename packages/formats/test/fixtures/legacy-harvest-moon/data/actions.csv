@@ -1,4 +1,4 @@
-name,cost,suit,text,count
-Plough,1,green,Prepare a field for planting.,2
-Market Day,2,green,Sell up to 3 grain for 1 coin each.,2
-Storm,3,red,Every player discards 1 grain.,1
+name,cost,suit,text,art,count
+Plough,1,green,Prepare a field for planting.,assets/art/plough.svg,2
+Market Day,2,green,Sell up to 3 grain for 1 coin each.,assets/art/market-day.svg,2
+Storm,3,red,Every player discards 1 grain.,assets/art/storm.svg,1

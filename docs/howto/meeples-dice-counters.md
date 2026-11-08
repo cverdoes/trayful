@@ -80,11 +80,15 @@ or `range: [1, 20]` for a twenty-sided die. Double-click a die or press **R** to
 
 ```yaml
 - id: coins
-  size: [30, 20]
+  size: 22
   is: counter
+  face:
+    shape: disc
+    fill: gold
+    stroke: walnut
 ```
 
-A counter shows a number, from 0 to 99 unless its `values` say otherwise (`values: { range: [0, 20] }`). Select it and press **+** or **−** to change it. Use one for each player's coins, a round marker or a timer.
+A counter shows a number, from 0 to 99 unless its `values` say otherwise (`values: { range: [0, 20] }`). Select it and press **+** or **−** to change it. Like any piece it can take a `face`; Harvest Moon's is a gold coin. Use one for each player's coins, a round marker or a timer.
 
 Dice and counters differ only in how their value changes: dice `roll` and counters `step`. `values: { controls: [roll, step] }` gives one both, such as a die you may also turn to a chosen side.
 

@@ -49,7 +49,12 @@ components:
         text: Gain 2 grain.
         art: assets/art/harvest.svg
         count: 3
-      - { name: Raid, cost: 2, suit: red, text: Steal 1 grain from a neighbour., count: 2 }
+      - name: Raid
+        cost: 2
+        suit: red
+        text: Steal 1 grain from a neighbour.
+        art: assets/art/raid.svg
+        count: 2
   - component: action-card
     deck: actions
     from: data/actions.csv
