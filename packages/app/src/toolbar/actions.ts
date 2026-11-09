@@ -1,4 +1,4 @@
-import type { Command, TableObject, TableState } from '@trayful/core';
+import { surfaceOf, type Command, type TableObject, type TableState } from '@trayful/core';
 import {
   rotationStep,
   sidesOf,
@@ -8,6 +8,7 @@ import {
   type Control,
 } from '@trayful/formats/browser';
 import { selectedBagDraw } from '../table/bags';
+import { landing } from '../table/drops';
 import { objectSize, typeOf, type Types } from '../render/geometry';
 import { useStore } from '../store';
 
@@ -110,10 +111,11 @@ export function actionsFor(
   };
 }
 
-/** Deals the top card of a pile just to the right of it. */
+/** Deals the top card of a pile just to the right of it, on the pile's surface. */
 function drawBeside(table: TableState, types: Types, stack: TableObject): Command {
   const [w] = objectSize(table, types, stack);
-  return { type: 'draw', from: stack.id, to: [stack.pos[0] + w + 4, stack.pos[1]] };
+  const beside: [number, number] = [stack.pos[0] + w + 4, stack.pos[1]];
+  return { type: 'draw', from: stack.id, ...landing(beside, surfaceOf(stack)) };
 }
 
 /** Whether a die or counter has a control. */

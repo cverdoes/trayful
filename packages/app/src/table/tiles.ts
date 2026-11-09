@@ -22,6 +22,22 @@ export function toggleSurface(surface: string): void {
   choose(toggled(table, surfaceChoice ?? defaultChoice(table, player), player, surface));
 }
 
+/**
+ * The surface a point on the page is over: its tile, with where that is on the
+ * page, or its chip in the row.
+ */
+export function surfaceUnder(
+  clientX: number,
+  clientY: number,
+): { surface: string; tile?: DOMRect } | undefined {
+  const under = document.elementFromPoint(clientX, clientY);
+  const chip = under?.closest<HTMLElement>('[data-chip]')?.dataset.chip;
+  if (chip) return { surface: chip };
+  const tile = under?.closest<HTMLElement>('[data-surface]');
+  const surface = tile?.dataset.surface;
+  return tile && surface ? { surface, tile: tile.getBoundingClientRect() } : undefined;
+}
+
 /** Enlarges a surface to the whole canvas, or goes back to the tiles when it already is. */
 export function toggleFocus(surface: string): void {
   useStore.setState((s) => ({ focus: s.focus === surface ? undefined : surface }));

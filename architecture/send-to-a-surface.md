@@ -23,4 +23,5 @@ A table can have surfaces besides the Centre, such as one per player. Each is it
 - [[core/commands/surfaces.ts]] adds, changes and removes surfaces and seats players.
 - [[core/placement/snap.ts]] offers drop areas per surface, so a drop never snaps to a board on another surface.
 - [[app/table/surfaces.ts]] decides which surfaces a viewer shows and lays out their tiles; [[app/table/Table.tsx]] gives each tile a canvas of its own, so the board arrives on the `red` tile, drawn at that surface's own pan and zoom.
+- [[app/table/drag.ts]] sees a drag end over another tile or over a chip and has [[app/table/drops.ts]] send the same [[command:move]]: with a position and `surface` for a tile, or `surface:red` for a chip.
 - [[app/store.ts]] makes the `red` chip pulse when its tile is off and someone else changed what lies there.

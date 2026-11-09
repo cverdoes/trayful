@@ -62,16 +62,37 @@ function pull(drag: TableDrag, id: string, by: [number, number]) {
 function pointerOverHand() {
   useStore.setState({ me: { player: { id: 'alice' } } as never });
   vi.stubGlobal('document', {
+    elementFromPoint: () => null,
     querySelector: () => ({
       getBoundingClientRect: () => ({ left: 0, right: 100, top: 0, bottom: 100 }),
     }),
   });
+  pointerAt(10, 10);
+}
+
+/** Puts the pointer of every drag at a point of the page, the canvas starting at its corner. */
+function pointerAt(x: number, y: number) {
   const stage = {
     batchDraw: () => undefined,
-    getPointerPosition: () => ({ x: 10, y: 10 }),
+    getPointerPosition: () => ({ x, y }),
     container: () => ({ getBoundingClientRect: () => ({ left: 0, top: 0 }) }),
   };
   vi.spyOn(Konva.Group.prototype, 'getStage').mockReturnValue(stage as never);
+}
+
+/**
+ * Makes the pointer of every drag lie over another surface: at [300, 200] of the
+ * page on its tile, which starts at [100, 100], or on its chip.
+ */
+function pointerOverSurface(surface: string, part: 'tile' | 'chip') {
+  const element = {
+    dataset: part === 'tile' ? { surface } : { chip: surface },
+    getBoundingClientRect: () => ({ left: 100, top: 100 }),
+  };
+  const wanted = part === 'tile' ? 'surface' : 'chip';
+  const closest = (selector: string) => (selector.includes(wanted) ? element : null);
+  vi.stubGlobal('document', { elementFromPoint: () => ({ closest }), querySelector: () => null });
+  pointerAt(300, 200);
 }
 
 describe('dragging objects', () => {
@@ -197,5 +218,60 @@ describe('drawing cards off a stack', () => {
     expect(useStore.getState().overHand).toBe(true);
     drag.drawEnd(deck(), top(), card(0, 300), home);
     expect(sent).toEqual([{ type: 'draw', from: 'deck:actions', to: 'hand:alice' }]);
+  });
+});
+
+describe('dragging to another surface', () => {
+  let split: TableState;
+  beforeEach(() => {
+    split = after(project, table, { type: 'addSurface', id: 'side' });
+    show(split);
+    useStore.setState({ viewports: { side: { x: 20, y: 10, scale: 2 } } });
+  });
+
+  it('lights up the other tile and lands the piece under the pointer there', () => {
+    pointerOverSurface('side', 'tile');
+    const drag = dragOn(split, 'worker.red.1');
+    drag.start('worker.red.1');
+    pull(drag, 'worker.red.1', [500, 0]);
+    expect(useStore.getState().dropSurface).toBe('side');
+    drag.end('worker.red.1', node(drag, 'worker.red.1'));
+    // [300, 200] on the page is [200, 100] in the tile, and [90, 45] on its surface.
+    expect(sent).toEqual([{ type: 'move', ids: ['worker.red.1'], to: [90, 45], surface: 'side' }]);
+    expect(useStore.getState().dropSurface).toBeUndefined();
+  });
+
+  it('sends pieces dropped on a chip to free room on its surface', () => {
+    pointerOverSurface('side', 'chip');
+    useStore.getState().select(['worker.red.1', 'worker.red.2']);
+    const drag = dragOn(split, 'worker.red.1', 'worker.red.2');
+    drag.start('worker.red.1');
+    pull(drag, 'worker.red.1', [0, -300]);
+    drag.end('worker.red.1', node(drag, 'worker.red.1'));
+    expect(sent).toEqual([
+      { type: 'move', ids: ['worker.red.1', 'worker.red.2'], to: 'surface:side' },
+    ]);
+  });
+
+  it('moves a piece as ever over its own tile', () => {
+    pointerOverSurface('centre', 'tile');
+    const drag = dragOn(split, 'worker.red.1');
+    drag.start('worker.red.1');
+    pull(drag, 'worker.red.1', [0, 100]);
+    expect(useStore.getState().dropSurface).toBeUndefined();
+    drag.end('worker.red.1', node(drag, 'worker.red.1'));
+    expect(sent).toEqual([{ type: 'move', ids: ['worker.red.1'], by: [0, 100] }]);
+  });
+
+  it('takes a card off a pile to the other tile', () => {
+    pointerOverSurface('side', 'tile');
+    const stack = split.objects['deck:actions'] as Stack;
+    const drag = dragOn(split);
+    const card = new Konva.Group({ x: 0, y: 150 });
+    drag.drawStart(stack);
+    drag.drawMove(stack, card);
+    expect(useStore.getState().dropSurface).toBe('side');
+    drag.drawEnd(stack, stack.items.at(-1)!, card, [0, 0]);
+    expect(sent).toEqual([{ type: 'draw', from: 'deck:actions', to: [90, 45], surface: 'side' }]);
   });
 });

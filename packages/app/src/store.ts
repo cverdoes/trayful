@@ -66,6 +66,8 @@ interface TrayfulStore {
   picked: string[];
   /** While a piece is dragged over the hand tray. */
   overHand: boolean;
+  /** The other surface a piece is dragged over now, on its tile or its chip. */
+  dropSurface?: string;
   /** Height of the hand tray in pixels; people can drag its top edge. */
   handHeight: number;
   /** Whether the hand tray is shrunk to a bubble in the corner; H toggles it. */

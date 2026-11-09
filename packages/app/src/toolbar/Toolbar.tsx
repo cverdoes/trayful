@@ -5,6 +5,7 @@ import { MoreMenu } from './MoreMenu';
 import { useStore } from '../store';
 import { TableMenu } from './TableMenu';
 import { moreItems, selectionButtons, type ButtonProps } from './toolbarItems';
+import { sendTargets, toSurface } from '../table/surfaces';
 import { fitWindow } from '../table/viewport';
 
 const STATUS_ICON = { online: '●', connecting: '◌', offline: '○' } as const;
@@ -89,7 +90,34 @@ function SelectionButtons() {
       ) : (
         <span className="muted hint">Select a piece to see what you can do with it</span>
       )}
+      <SendTo />
     </div>
+  );
+}
+
+/** On a table with surfaces: sends the selected pieces to free room on another surface. */
+function SendTo() {
+  const table = useStore((s) => s.table);
+  const selection = useStore((s) => s.selection);
+  const command = useStore((s) => s.command);
+  const { ids, to } = table ? sendTargets(table, selection) : { ids: [], to: [] };
+  if (to.length === 0) return null;
+  return (
+    <select
+      aria-label="Send to"
+      title="Send the selected pieces to another surface"
+      value=""
+      onChange={(e) => command({ type: 'move', ids, to: toSurface(e.target.value) })}
+    >
+      <option value="" disabled hidden>
+        Send to…
+      </option>
+      {to.map((surface) => (
+        <option key={surface.id} value={surface.id}>
+          {surface.name}
+        </option>
+      ))}
+    </select>
   );
 }
 
