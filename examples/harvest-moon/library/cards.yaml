@@ -7,7 +7,7 @@ components:
     is: piece
     flippable:
       back:
-        fill: ink
+        fill: forest
         image: card-back
     rotates: true
     stackable: true
@@ -21,9 +21,24 @@ components:
       corner: 3
       fill: '{{suit}}'
       layers:
+        - { image: assets/card-frame.svg }
         - { image: '{{art}}', at: [5, 15], when: '{{art}}', size: [53, 40] }
-        - { shape: circle, at: [55, 8], r: 5, fill: gold }
+        - { shape: circle, at: [55, 8], r: 4.5, fill: gold, stroke: walnut, strokeWidth: 0.6 }
       labels:
-        - { field: name, at: [5, 5], font: { size: 14, weight: bold }, color: white }
-        - { field: text, at: [5, 60], width: 53, font: { size: 9 }, color: white }
-        - { field: cost, at: [55, 8], align: center, valign: middle, font: { weight: bold } }
+        - field: name
+          at: [5, 8]
+          valign: middle
+          font: { size: 15, weight: bold, family: 'Georgia, serif' }
+          color: parchment
+        - field: text
+          at: [6.5, 64]
+          width: 50
+          align: center
+          font: { size: 12, style: italic, family: 'Georgia, serif' }
+          color: ink
+        - field: cost
+          at: [55, 8]
+          align: center
+          valign: middle
+          font: { size: 12, weight: bold, family: 'Georgia, serif' }
+          color: ink

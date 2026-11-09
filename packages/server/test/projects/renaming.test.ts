@@ -120,8 +120,8 @@ describe('renaming a field', () => {
       cards
         .replace('      cost:', '      # Paid in coins when the card is taken.\n      cost:')
         .replace(
-          '        - { field: cost,',
-          "        - { text: 'Costs {{ cost }}', at: [5, 80] }\n        - { field: cost,",
+          '        - field: cost\n',
+          "        - { text: 'Costs {{ cost }}', at: [5, 80] }\n        - field: cost\n",
         ),
     );
     // A quoted header and Windows line endings, which must come through untouched.
@@ -142,11 +142,11 @@ describe('renaming a field', () => {
     const library = await read('library/cards.yaml');
     expect(library).toContain('# Paid in coins when the card is taken.\n      price: {');
     expect(library).toContain("text: 'Costs {{ price }}'");
-    expect(library).toContain('{ field: price,');
+    expect(library).toContain('- field: price\n');
     expect(library).not.toContain('cost');
     const inventory = await read('inventory.yaml');
     expect(inventory).toContain('        price: 1\n');
-    expect(inventory).toContain('{ name: Raid, price: 2, suit: red');
+    expect(inventory).toContain('- name: Raid\n        price: 2\n');
     expect(await read('data/actions.csv')).toBe(csv.replace('"cost"', '"price"'));
     for (const card of componentsOf('action-card')) {
       expect(card.data).toHaveProperty('price');

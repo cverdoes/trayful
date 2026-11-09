@@ -15,7 +15,7 @@ Add the component to a file in `library/`. This is the Harvest Moon action card:
   is: piece
   flippable:
     back:
-      fill: ink
+      fill: forest
       image: card-back
   rotates: true
   stackable: true
@@ -29,18 +29,33 @@ Add the component to a file in `library/`. This is the Harvest Moon action card:
     corner: 3
     fill: '{{suit}}'
     layers:
+      - { image: assets/card-frame.svg }
       - { image: '{{art}}', at: [5, 15], when: '{{art}}', size: [53, 40] }
-      - { shape: circle, at: [55, 8], r: 5, fill: gold }
+      - { shape: circle, at: [55, 8], r: 4.5, fill: gold, stroke: walnut, strokeWidth: 0.6 }
     labels:
-      - { field: name, at: [5, 5], font: { size: 14, weight: bold }, color: white }
-      - { field: text, at: [5, 60], width: 53, font: { size: 9 }, color: white }
-      - { field: cost, at: [55, 8], align: center, valign: middle, font: { weight: bold } }
+      - field: name
+        at: [5, 8]
+        valign: middle
+        font: { size: 15, weight: bold, family: 'Georgia, serif' }
+        color: parchment
+      - field: text
+        at: [6.5, 64]
+        width: 50
+        align: center
+        font: { size: 12, style: italic, family: 'Georgia, serif' }
+        color: ink
+      - field: cost
+        at: [55, 8]
+        align: center
+        valign: middle
+        font: { size: 12, weight: bold, family: 'Georgia, serif' }
+        color: ink
 ```
 
 - `is: piece` says it is something you pick up and move. What makes it a card is the behaviours it switches on: `flippable` gives it a back, `rotates` lets it turn, and `stackable` lets cards pile up into a deck that can be shuffled and dealt. Each behaviour is off unless you write it.
 - `size` is in millimetres. 63 × 88 is a standard poker card.
 - `fields` are the things that differ from card to card. `string?` means the field may be left out; `default` fills it in when a card leaves it out; `enum` limits it to a few values.
-- `face` is the front: its `corner` radius, a `fill` colour, and `labels`, each showing a field's value at a position in millimetres from the card's top-left corner. `layers` draw anything else, here the card's picture and the circle behind the cost. `'{{suit}}'` is replaced by each card's suit, and `ink`, `gold`, `red` and `green` are colours named in the project's [`assets.yaml`](../../examples/harvest-moon/assets.yaml), as is the `card-back` image.
+- `face` is the front: its `corner` radius, a `fill` colour, and `labels`, each showing a field's value at a position in millimetres from the card's top-left corner. `layers` draw anything else, here a frame drawn over the suit colour (so the colour shows as the border and title bar), the card's picture and the coin behind the cost. `family` picks a font installed on the player's computer. `'{{suit}}'` is replaced by each card's suit, and `forest`, `ink`, `parchment`, `walnut`, `gold`, `red` and `green` are colours named in the project's [`assets.yaml`](../../examples/harvest-moon/assets.yaml), as is the `card-back` image.
 - `back` under `flippable` is how the face-down side looks. Leave it out (`flippable: true`) for a plain back. A back may use the card's fields, such as `fill: '{{deck}}'`; those fields are then shown to everyone while the card lies face down, and the others stay hidden.
 
 The [library reference](../reference/library.md) lists every key, and [Faces and templates](../reference/faces-and-templates.md) explains how drawing works.
@@ -61,7 +76,12 @@ In the designer's **Tray**, add **Designs in rows** and fill in a row per card, 
       text: Gain 2 grain.
       art: assets/art/harvest.svg
       count: 3
-    - { name: Raid, cost: 2, suit: red, text: Steal 1 grain from a neighbour., count: 2 }
+    - name: Raid
+      cost: 2
+      suit: red
+      text: Steal 1 grain from a neighbour.
+      art: assets/art/raid.svg
+      count: 2
 ```
 
 `count` makes copies of one design. Several entries can share a deck name: Harvest Moon adds more action cards to the same `actions` deck from a spreadsheet (see [Load cards from a spreadsheet](cards-from-a-spreadsheet.md)). Only stackable components can be in a deck.

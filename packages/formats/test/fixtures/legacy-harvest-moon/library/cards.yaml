@@ -1,10 +1,13 @@
 # yaml-language-server: $schema=../../../packages/formats/schema/library.schema.json
 kind: library
 palette:
-  red: '#d94b3d'
-  green: '#4a9b5f'
-  gold: '#e2b33c'
-  ink: '#222233'
+  red: '#c5523a'
+  green: '#5b7f5f'
+  gold: '#e0a933'
+  ink: '#3b2f2a'
+  forest: '#134034'
+  walnut: '#8b5e3c'
+  parchment: '#f6eedb'
 
 types:
   - id: action-card
@@ -27,6 +30,6 @@ types:
         - { shape: circle, at: [55, 8], r: 5, fill: gold }
         - { text: '{{cost}}', at: [55, 8], align: center, valign: middle, font: { weight: bold } }
     back:
-      fill: ink
+      fill: forest
       layers:
         - { image: assets/card-back.svg }

@@ -37,8 +37,11 @@ images:
   board: assets/board.svg
   dice: { file: assets/dice.svg, rows: 2, cols: 3 }
 colors:
-  red: '#d94b3d'
-  green: '#4a9b5f'
-  gold: '#e2b33c'
-  ink: '#222233'
+  red: '#c5523a'
+  green: '#5b7f5f'
+  gold: '#e0a933'
+  ink: '#3b2f2a'
+  forest: '#134034'
+  walnut: '#8b5e3c'
+  parchment: '#f6eedb'
 ```

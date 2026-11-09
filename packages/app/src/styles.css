@@ -1,5 +1,7 @@
 :root {
   --felt: #2f5d50;
+  /* Fine grain over the felt so the table reads as cloth, not a flat colour. */
+  --felt-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='.3'/%3E%3C/svg%3E");
   --bar: #1f2328;
   --bar-text: #e6edf3;
   --muted: #8b949e;
@@ -22,7 +24,9 @@ body,
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--felt);
+  background:
+    var(--felt-grain),
+    radial-gradient(ellipse at 50% 45%, #376b5c 0%, var(--felt) 55%, #22473d 100%) fixed;
   color: var(--bar-text);
 }
 

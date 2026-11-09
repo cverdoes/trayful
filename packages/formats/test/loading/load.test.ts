@@ -99,6 +99,7 @@ describe('loadProject', () => {
       name: 'Storm',
       suit: 'red',
       text: 'Every player discards 1 grain.',
+      art: 'assets/art/storm.svg',
     });
   });
 

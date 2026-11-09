@@ -44,9 +44,13 @@ describe('loading a project in the first format', () => {
     const old = (await loadProject(legacy)).project!;
     const current = (await loadProject(example)).project!;
     expect(Object.keys(old.types).sort()).toEqual(Object.keys(current.types).sort());
-    for (const id of ['worker', 'score-marker', 'coins']) {
+    for (const id of ['worker', 'score-marker']) {
       expect(written(old.types[id]!), id).toEqual(written(current.types[id]!));
     }
+    // By hand, the example's coin counter became a gold disc.
+    const coins = written(current.types.coins!);
+    expect(coins.face).toMatchObject({ shape: 'disc', fill: 'gold' });
+    expect(written(old.types.coins!)).toEqual({ ...coins, size: [30, 20], face: undefined });
     // By hand, the example's score track became a group, which the first format did not have.
     const board = written(current.types['main-board']!);
     const container = board.container!.map(({ mode, ...target }) =>

@@ -49,7 +49,7 @@ describe('server', () => {
     expect(Object.keys(view.types)).toContain('action-card');
     expect(view.types['action-card']).not.toHaveProperty('source');
     expect(view.legacy).toBe(false);
-    expect(view.assets.colors.gold).toBe('#e2b33c');
+    expect(view.assets.colors.gold).toBe('#e0a933');
     expect(view.assets.images.dice).toMatchObject({ file: 'assets/dice.svg', rows: 2, cols: 3 });
     const table = (await (await fetch(`${server.url}/api/table`)).json()) as TableView;
     expect(table.table).toBe('table-1');

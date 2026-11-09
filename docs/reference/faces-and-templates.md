@@ -24,9 +24,23 @@ A label is a piece of text. Give it a `field` to show each component's own value
 
 ```yaml
 labels:
-  - { field: name, at: [5, 5], font: { size: 14, weight: bold }, color: white }
-  - { field: text, at: [5, 60], width: 53, font: { size: 9 }, color: white }
-  - { field: cost, at: [55, 8], align: center, valign: middle, font: { weight: bold } }
+  - field: name
+    at: [5, 8]
+    valign: middle
+    font: { size: 15, weight: bold, family: 'Georgia, serif' }
+    color: parchment
+  - field: text
+    at: [6.5, 64]
+    width: 50
+    align: center
+    font: { size: 12, style: italic, family: 'Georgia, serif' }
+    color: ink
+  - field: cost
+    at: [55, 8]
+    align: center
+    valign: middle
+    font: { size: 12, weight: bold, family: 'Georgia, serif' }
+    color: ink
 ```
 
 `at` places the label, `width` wraps it, `align` and `valign` say which corner or edge `at` is, and `font` and `color` style it. A label's `field` need not be declared under `fields`: it then becomes an optional text field.
@@ -77,16 +91,19 @@ Use a `bool` field for on/off details (`when: '{{starter}}'`), or an optional fi
 
 ## Colours
 
-A colour is any CSS colour (`'#d94b3d'`, `white`, `rgb(20 40 60)`), a name from the assets file's `colors`, or a template that becomes one. The colours are shared by the whole project:
+A colour is any CSS colour (`'#c5523a'`, `white`, `rgb(20 40 60)`), a name from the assets file's `colors`, or a template that becomes one. The colours are shared by the whole project:
 
 <!-- example: examples/harvest-moon/assets.yaml -->
 
 ```yaml
 colors:
-  red: '#d94b3d'
-  green: '#4a9b5f'
-  gold: '#e2b33c'
-  ink: '#222233'
+  red: '#c5523a'
+  green: '#5b7f5f'
+  gold: '#e0a933'
+  ink: '#3b2f2a'
+  forest: '#134034'
+  walnut: '#8b5e3c'
+  parchment: '#f6eedb'
 ```
 
 Named colours win over CSS names, so `red` above means this red, not the browser's.
