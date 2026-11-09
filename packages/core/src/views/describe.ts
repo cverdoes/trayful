@@ -14,6 +14,8 @@ import {
   type TableObject,
   type TableState,
 } from '../table/state.js';
+import { surfaceOf } from '../table/surfaces.js';
+import { overviewLines, surfaceLines } from './overview.js';
 
 /**
  * Readable views of a table for agents. Face-down cards keep their secrets:
@@ -50,6 +52,8 @@ export interface ObjectSummary {
   parent?: string;
   /** The snap spot or area the object sits in, such as `main-board/market/2`. */
   snap?: string;
+  /** The surface it lies on, when not the Centre. */
+  surface?: string;
   /** Stacks laid out as a `fan` or `spread`, where every piece shows. */
   layout?: 'fan' | 'spread';
   /** Pieces with stamp or text spots: what is on them, by `area/index`; hidden face down unless revealed. */
@@ -67,6 +71,8 @@ export interface ObjectQuery {
   region?: [number, number, number, number];
   /** List the pieces inside this stack instead of the objects on the table. */
   inside?: string;
+  /** Only objects lying on this surface. */
+  surface?: string;
   /** Show face-down data and the order of cards in piles. */
   reveal?: boolean;
   /** The player asking; `inside: "hand:<viewer>"` lists their own hand. */
@@ -121,6 +127,7 @@ export function summarize(
       : {}),
     ...(object.kind === 'piece' && object.parent ? { parent: object.parent } : {}),
     ...(object.snap ? { snap: object.snap } : {}),
+    ...(object.surface ? { surface: object.surface } : {}),
     ...(layout && layout !== 'pile' ? { layout } : {}),
     // Marks are written on the face, so a face-down sheet keeps them to itself.
     ...(object.kind === 'piece' && object.marks && (reveal || object.face !== 'down')
@@ -151,7 +158,9 @@ export function queryObjects(
     if (stack?.kind !== 'stack') throw new Error(`"${query.inside}" is not a stack.`);
     objects = stack.items.map((id) => state.objects[id]!);
   } else {
-    objects = tableObjects(state);
+    objects = tableObjects(state).filter(
+      (o) => query.surface === undefined || surfaceOf(o) === query.surface,
+    );
   }
   return objects
     .map((o) => summarize(state, catalog, o, query.reveal === true || hand !== undefined))
@@ -175,15 +184,23 @@ export function queryObjects(
 export function describeTable(
   state: TableState,
   catalog: Catalog,
-  options: { reveal?: boolean; viewer?: string } = {},
+  options: { reveal?: boolean; viewer?: string; surface?: string } = {},
 ): string {
-  const summaries = tableObjects(state).map((o) => summarize(state, catalog, o, options.reveal));
+  const { surface } = options;
+  const shown = (o: TableObject) => surface === undefined || surfaceOf(o) === surface;
+  const summaries = tableObjects(state)
+    .filter(shown)
+    .map((o) => summarize(state, catalog, o, options.reveal));
   const hands = handLines(state, catalog, options.viewer);
+  const surfaces = surfaceLines(state, surface);
   if (summaries.length === 0) {
-    return [`Table "${state.table}" is empty.`, ...(hands.length ? ['', ...hands] : [])].join('\n');
+    const empty =
+      surface === undefined ? `Table "${state.table}" is empty.` : `Surface "${surface}" is empty.`;
+    return [empty, ...surfaces, ...(hands.length ? ['', ...hands] : [])].join('\n');
   }
   const lines = [
-    ...overviewLines(state.table, summaries),
+    ...(surfaces.length ? [...surfaces, ''] : []),
+    ...overviewLines(state, catalog, summaries, surface),
     ...stackLines(
       summaries.filter((s) => s.kind === 'stack'),
       catalog,
@@ -194,7 +211,7 @@ export function describeTable(
     ),
   ];
   if (hands.length) lines.push(...hands, '');
-  const spots = allSpots(state, catalog);
+  const spots = allSpots(state, catalog, surface);
   const targets = snapTargets(
     state,
     spots.filter((s) => !takesMarks(s.mode)),
@@ -218,23 +235,6 @@ export function describeTable(
     lines.push(...sheets);
   }
   return lines.join('\n').trimEnd();
-}
-
-/** How many objects there are, the area they cover, and where there is room. */
-function overviewLines(table: string, summaries: ObjectSummary[]): string[] {
-  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
-  for (const s of summaries) {
-    x0 = Math.min(x0, s.pos[0] - s.size[0] / 2);
-    y0 = Math.min(y0, s.pos[1] - s.size[1] / 2);
-    x1 = Math.max(x1, s.pos[0] + s.size[0] / 2);
-    y1 = Math.max(y1, s.pos[1] + s.size[1] / 2);
-  }
-  return [
-    `Table "${table}": ${summaries.length} objects, covering x ${num(x0)} to ${num(x1)} ` +
-      `and y ${num(y0)} to ${num(y1)} mm. Positions are centres in mm; y grows downwards.`,
-    `Free space: anywhere below y ${num(y1)} or right of x ${num(x1)}.`,
-    '',
-  ];
 }
 
 /** Each stack with its top piece, and its pieces bottom to top when they are known. */
@@ -403,7 +403,7 @@ function dataText(data: Record<string, unknown> | undefined): string {
 }
 
 function where(s: ObjectSummary): string {
-  const extras = [`at [${num(s.pos[0])}, ${num(s.pos[1])}]`];
+  const extras = [`at [${num(s.pos[0])}, ${num(s.pos[1])}]${s.surface ? ` on ${s.surface}` : ''}`];
   if (s.snap) extras.push(`in ${s.snap}`);
   if (s.layout) extras.push(`${s.layout === 'fan' ? 'fanned' : 'spread'} out`);
   if (s.rot) extras.push(`rotated ${s.rot}°`);

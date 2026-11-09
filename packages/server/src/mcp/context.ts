@@ -4,6 +4,7 @@ import {
   applyCommand,
   onTable,
   summarize,
+  surfacesOf,
   type Catalog,
   type Command,
   type TableEngine,
@@ -40,7 +41,11 @@ export function toolContext(workspace: Workspace): ToolContext {
       )
       .map((o) => summarize(after, types(), o));
     const removed = Object.keys(before.objects).filter((id) => !after.objects[id]);
-    return JSON.stringify({ changed, ...(removed.length ? { removed } : {}) });
+    return JSON.stringify({
+      changed,
+      ...(removed.length ? { removed } : {}),
+      ...(before.surfaces === after.surfaces ? {} : { surfaces: surfacesOf(after) }),
+    });
   };
 
   const play = (activity: string, commands: Command[]): CallToolResult => {
@@ -99,12 +104,16 @@ export const Target = z
     z
       .string()
       .describe(
-        "A drop area from describe_table: `board/target/index` for one spot, or `board/target` for its free spots in order (or its free area); or `hand:<player>` for a player's private hand.",
+        "A drop area from describe_table: `board/target/index` for one spot, or `board/target` for its free spots in order (or its free area); `hand:<player>` for a player's private hand; or `surface:<id>` for free room on a surface.",
       ),
   ])
   .describe(
-    'A position `[x, y]` in mm, a drop area such as `main-board/market/2`, or a hand such as `hand:claude`.',
+    'A position `[x, y]` in mm, a drop area such as `main-board/market/2`, a hand such as `hand:claude`, or a surface such as `surface:red`.',
   );
+export const OnSurface = z
+  .string()
+  .optional()
+  .describe('With a position: the surface it is on, from describe_table. Default: the Centre.');
 export const tableName = z
   .string()
   .regex(/^[a-z0-9][a-z0-9-]*$/)

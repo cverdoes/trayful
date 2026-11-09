@@ -6,6 +6,7 @@ import {
   PromptError,
   resolveSpots,
   SnapError,
+  surfacesOf,
   type Aliases,
   type Catalog,
   type PlayerPrompt,
@@ -56,6 +57,32 @@ function checkReference(
   if (owner !== undefined && players && !players.get(owner)) {
     throw new CommandError(`There is no player "${owner}".`);
   }
+}
+
+/**
+ * Throws when a `sit` command seats or unseats someone it may not: the host and
+ * agents seat anyone, while others only sit down or stand up themselves.
+ */
+export function checkSeating(
+  state: TableState,
+  players: PlayerDirectory | undefined,
+  value: unknown,
+  player: string | undefined,
+): void {
+  if (!isSit(value)) return;
+  const command = value;
+  if (command.player !== undefined && players && !players.get(command.player))
+    throw new CommandError(`There is no player "${command.player}".`);
+  const role = player === undefined ? 'host' : players?.get(player)?.role;
+  if (role === 'host' || role === 'agent') return;
+  const seated = surfacesOf(state).find((s) => s.id === command.surface)?.player;
+  // Standing up an empty seat touches nobody, so it counts as the player's own.
+  const self = command.player ?? seated ?? player;
+  if (self !== player) throw new CommandError('Only the host can seat or unseat someone else.');
+}
+
+function isSit(value: unknown): value is { type: 'sit'; surface: string; player?: string } {
+  return !!value && typeof value === 'object' && (value as { type?: unknown }).type === 'sit';
 }
 
 /** Every piece or place a prompt names: what may be picked, what it points at, what glows. */

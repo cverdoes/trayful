@@ -3,6 +3,7 @@ import type { Vec2 } from '@trayful/formats/browser';
 import { boundsOf, type Bounds } from '../table/layout.js';
 import { occupants, toTable, type SnapSpot } from './snap.js';
 import type { Catalog, TableState } from '../table/state.js';
+import { objectsOn } from '../table/surfaces.js';
 
 /** Space kept between things placed side by side in an area, in millimetres. */
 const GAP = 2;
@@ -39,6 +40,25 @@ export function roomIn(
     }
   }
   return area.pos;
+}
+
+/** Space left between what lies on a surface and something put there without a position. */
+const SURFACE_GAP = 10;
+
+/**
+ * Where something of `size` can go on a surface without covering what lies there:
+ * the surface's origin when nothing does, else just below everything, at the left.
+ */
+export function roomOn(
+  state: TableState,
+  catalog: Catalog,
+  surface: string,
+  { size, ignore }: Newcomer,
+): Vec2 {
+  const there = objectsOn(state, surface).filter((o) => !ignore.has(o.id));
+  if (there.length === 0) return [0, 0];
+  const box = boundsOf(state, catalog, there);
+  return roundPos([box.x0 + size[0] / 2, box.y1 + SURFACE_GAP + size[1] / 2]);
 }
 
 function boxAround([x, y]: Vec2, [w, h]: Vec2): Bounds {

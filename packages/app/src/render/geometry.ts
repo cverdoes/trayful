@@ -1,7 +1,9 @@
 import {
   allSpots,
+  CENTRE,
   objectSize as coreObjectSize,
   onTable,
+  surfaceOf,
   type Piece,
   type TableObject,
   type TableState,
@@ -39,10 +41,13 @@ export function bounds(table: TableState, types: Types, object: TableObject) {
   return { x: object.pos[0] - w / 2, y: object.pos[1] - h / 2, w, h };
 }
 
-/** Objects lying directly on the table, bottom to top. */
+/**
+ * Objects lying directly on the table, bottom to top. Only the Centre is drawn for
+ * now; the other surfaces get tiles of their own later.
+ */
 export function topLevel(table: TableState): TableObject[] {
   return Object.values(table.objects)
-    .filter(onTable)
+    .filter((o) => onTable(o) && surfaceOf(o) === CENTRE)
     .sort((a, b) => a.z - b.z || (a.id < b.id ? -1 : 1));
 }
 

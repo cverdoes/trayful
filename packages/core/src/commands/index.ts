@@ -5,6 +5,7 @@ import { move } from './move.js';
 import { flip, roll, rotate, setValue } from './pieces.js';
 import { deal, draw, layout, shuffle, stack, take } from './piles.js';
 import { settle } from './settle.js';
+import { addSurface, editSurface, removeSurface, sit } from './surfaces.js';
 import type { Catalog, TableState } from '../table/state.js';
 import { CommandError, Transaction, unique, type Target } from './transaction.js';
 
@@ -21,7 +22,9 @@ export type Command =
    * target each object takes the next free spot. `into` records that the moved
    * objects now sit in a snap spot or area, without changing where they land.
    * Pieces snapped onto a moved object ride along with it. Pieces played from a
-   * hand land side by side at `to`, turned to `face` (default up).
+   * hand land side by side at `to`, turned to `face` (default up). With a position,
+   * `surface` names the surface it is on (default: where each object already lies);
+   * `surface:<id>` as `to` sends the objects to free room on that surface.
    */
   | {
       type: 'move';
@@ -30,6 +33,7 @@ export type Command =
       to?: Target;
       into?: string;
       face?: 'up' | 'down';
+      surface?: string;
     }
   /** Turn objects over. Flipping a stack turns the whole pile over, reversing its order. */
   | { type: 'flip'; ids: string[] }
@@ -41,15 +45,29 @@ export type Command =
    * Take cards off the top of a stack to a target, or pieces at random out of a
    * bag, named `owner/target`. Several land as a new stack.
    */
-  | { type: 'draw'; from: string; count?: number; to: Target; face?: 'up' | 'down' }
+  | {
+      type: 'draw';
+      from: string;
+      count?: number;
+      to: Target;
+      face?: 'up' | 'down';
+      surface?: string;
+    }
   /**
    * Deal cards from the top of a stack, one at a time to each target in turn, for
    * `count` rounds. A whole snap target such as `main-board/market` counts as each
    * of its spots. Cards dealt to the same place form a pile.
    */
-  | { type: 'deal'; from: string; to: Target | Target[]; count?: number; face?: 'up' | 'down' }
+  | {
+      type: 'deal';
+      from: string;
+      to: Target | Target[];
+      count?: number;
+      face?: 'up' | 'down';
+      surface?: string;
+    }
   /** Take one particular piece out of a stack, wherever it is in the pile. */
-  | { type: 'take'; id: string; to: Target; face?: 'up' | 'down' }
+  | { type: 'take'; id: string; to: Target; face?: 'up' | 'down'; surface?: string }
   /** Change how a stack's pieces lie: in a pile, a fan, or spread out side by side. */
   | { type: 'layout'; id: string; layout: StackLayout }
   | { type: 'shuffle'; id: string }
@@ -63,7 +81,18 @@ export type Command =
    */
   | { type: 'mark'; at: string; stamp?: string; text?: string }
   /** Take the stamp or text off one spot. */
-  | { type: 'erase'; at: string };
+  | { type: 'erase'; at: string }
+  /**
+   * Add a surface: a separate play space with its own positions. Its tile goes after
+   * `after` (`centre` for first), or last. A `seat` is somewhere a player can sit.
+   */
+  | { type: 'addSurface'; id: string; name?: string; seat?: boolean; after?: string }
+  /** Rename a surface, make it a seat or not, or move its tile after another. */
+  | { type: 'editSurface'; id: string; name?: string; seat?: boolean; after?: string }
+  /** Remove a surface; what lies on it goes to the surface `to`. Never the Centre. */
+  | { type: 'removeSurface'; id: string; to?: string }
+  /** Sit a player at a seat, or stand whoever sits there up when `player` is left out. */
+  | { type: 'sit'; surface: string; player?: string };
 
 export type CommandType = Command['type'];
 
@@ -90,7 +119,7 @@ export function applyCommand(state: TableState, command: Command, catalog: Catal
       deal(tx, command);
       break;
     case 'take':
-      take(tx, command.id, command.to, command.face);
+      take(tx, command);
       break;
     case 'layout':
       layout(tx, command.id, command.layout);
@@ -113,6 +142,18 @@ export function applyCommand(state: TableState, command: Command, catalog: Catal
       break;
     case 'erase':
       erase(tx, command.at);
+      break;
+    case 'addSurface':
+      addSurface(tx, command.id, command);
+      break;
+    case 'editSurface':
+      editSurface(tx, command.id, command);
+      break;
+    case 'removeSurface':
+      removeSurface(tx, command.id, command.to);
+      break;
+    case 'sit':
+      sit(tx, command.surface, command.player);
       break;
     default:
       throw new CommandError(`Unknown command "${(command as { type: string }).type}".`);

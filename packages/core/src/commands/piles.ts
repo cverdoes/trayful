@@ -62,6 +62,7 @@ function asStack(tx: Transaction, object: TableObject): Stack {
     items: [object.id],
   };
   if (object.snap) stack.snap = object.snap;
+  if (object.surface) stack.surface = object.surface;
   tx.add(stack);
   tx.update(object, { parent: stack.id, snap: undefined });
   return stack;
@@ -73,6 +74,7 @@ interface DrawOptions {
   count?: number;
   to: Target;
   face?: Face;
+  surface?: string;
 }
 
 /**
@@ -80,7 +82,7 @@ interface DrawOptions {
  * (`owner/target`). Several land as a new stack.
  */
 export function draw(tx: Transaction, options: DrawOptions): void {
-  const { from, count = 1, to, face } = options;
+  const { from, count = 1, to, face, surface } = options;
   requireCount(count);
   if (from.includes('/')) {
     drawFromBag(tx, { ...options, count });
@@ -96,6 +98,7 @@ export function draw(tx: Transaction, options: DrawOptions): void {
   const place = tx.place(
     to,
     drawn.map((id) => tx.stackItem(id)),
+    surface,
   );
   takeOff(tx, source, [{ ids: drawn, place }], face);
 }
@@ -103,7 +106,13 @@ export function draw(tx: Transaction, options: DrawOptions): void {
 /** Draws pieces at random out of a bag. */
 function drawFromBag(
   tx: Transaction,
-  { from, count, to, face }: Required<Omit<DrawOptions, 'face'>> & { face?: Face },
+  {
+    from,
+    count,
+    to,
+    face,
+    surface,
+  }: Required<Pick<DrawOptions, 'from' | 'count' | 'to'>> & Pick<DrawOptions, 'face' | 'surface'>,
 ): void {
   const [bag] = tx.spots(from, [], new Set());
   if (bag?.mode !== 'bag') throw new CommandError(`"${from}" is not a bag.`);
@@ -115,7 +124,7 @@ function drawFromBag(
     .random((rng) => shuffled(inside, rng))
     .slice(0, count)
     .map((piece) => tx.update(piece, { bag: undefined }));
-  land(tx, 0, [{ ids: drawn.map((p) => p.id), place: tx.place(to, drawn) }], face);
+  land(tx, 0, [{ ids: drawn.map((p) => p.id), place: tx.place(to, drawn, surface) }], face);
 }
 
 /**
@@ -129,14 +138,17 @@ export function deal(
     to,
     count = 1,
     face,
-  }: { from: string; to: Target | Target[]; count?: number; face?: Face },
+    surface,
+  }: { from: string; to: Target | Target[]; count?: number; face?: Face; surface?: string },
 ): void {
   requireCount(count);
   const source = tx.stackObject(from);
   const targets = targetList(to);
   if (targets.length === 0) throw new CommandError('Give at least one place to deal to.');
   const cards = tx.piecesOf(source);
-  const places = targets.flatMap((t) => tx.places(t, cards));
+  const places = targets.flatMap((t) =>
+    tx.places(t, cards, typeof t === 'string' ? undefined : surface),
+  );
   const total = count * places.length;
   if (total > source.items.length) {
     throw new CommandError(
@@ -157,12 +169,15 @@ export function deal(
 }
 
 /** Takes one particular piece out of a stack, wherever it is in the pile. */
-export function take(tx: Transaction, id: string, to: Target, face?: Face): void {
+export function take(
+  tx: Transaction,
+  { id, to, face, surface }: { id: string; to: Target; face?: Face; surface?: string },
+): void {
   const piece = tx.get(id);
   if (piece.kind !== 'piece') throw new CommandError(`"${id}" is a stack; use draw or move.`);
   if (!piece.parent) throw new CommandError(`"${id}" is not in a stack; use move.`);
   const source = tx.stackObject(piece.parent);
-  const place = tx.place(to, [piece]);
+  const place = tx.place(to, [piece], surface);
   takeOff(tx, source, [{ ids: [id], place }], face);
 }
 
@@ -220,7 +235,7 @@ function layDown(
   place: Place & { rot: number },
   face?: Face,
 ): void {
-  const { pos, rot, snap } = place;
+  const { pos, rot, snap, surface } = place;
   let z = tx.topZ();
   for (const id of ids) {
     const piece = tx.stackItem(id);
@@ -231,11 +246,13 @@ function layDown(
       z: z++,
       face: face ?? piece.face,
       snap: ids.length === 1 ? snap : undefined,
+      surface,
     });
   }
   if (ids.length > 1) {
     const stack: Stack = { kind: 'stack', id: tx.newStackId(), pos, rot, z, items: ids };
     if (snap) stack.snap = snap;
+    stack.surface = surface;
     tx.add(stack);
     for (const id of ids) tx.update(tx.stackItem(id), { parent: stack.id, z: 0 });
   }
@@ -256,6 +273,7 @@ function setStackItems(tx: Transaction, stack: Stack, items: string[]): void {
       rot: stack.rot,
       z: stack.z,
       snap: stack.snap,
+      surface: stack.surface,
     });
   }
 }

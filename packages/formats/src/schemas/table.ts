@@ -1,6 +1,6 @@
 // Table state, which Trayful writes and reads back.
 import { z } from 'zod';
-import { TABLE_FORMAT, Vec2, Scalar, FaceSide } from './common.js';
+import { TABLE_FORMAT, Vec2, Scalar, FaceSide, Slug } from './common.js';
 
 // ---------------------------------------------------------------------------
 // Table state (written by Trayful)
@@ -19,11 +19,17 @@ export const PieceObject = z
     id: z.string().describe('Stable component id from the inventory.'),
     type: z.string().describe('Id of the component in the library.'),
     data: z.record(z.string(), Scalar).optional().describe('Field values of this component.'),
-    pos: Vec2.describe('Centre position on the table, in millimetres.'),
+    pos: Vec2.describe('Centre position on its surface, in millimetres.'),
     rot: z.number().describe('Rotation in degrees.'),
     face: FaceSide.describe('Which side is up.'),
     z: z.int().describe('Draw order; higher is on top.'),
     locked: z.boolean().optional().describe('Locked pieces ignore moves from the UI.'),
+    surface: z
+      .string()
+      .optional()
+      .describe(
+        'Id of the surface it lies on, for a piece or stack directly on the table. Default: the Centre.',
+      ),
     value: z
       .union([z.number(), z.string()])
       .optional()
@@ -63,11 +69,17 @@ export const StackObject = z
         '`deck:<name>` for decks from the inventory, `stack:<n>` for stacks made on the table.',
       ),
     name: z.string().optional().describe('Deck name, when the stack came from one.'),
-    pos: Vec2.describe('Centre position on the table, in millimetres.'),
+    pos: Vec2.describe('Centre position on its surface, in millimetres.'),
     rot: z.number().describe('Rotation in degrees.'),
     z: z.int().describe('Draw order; higher is on top.'),
     items: z.array(z.string()).describe('Piece ids from bottom to top.'),
     locked: z.boolean().optional().describe('Locked stacks ignore moves from the UI.'),
+    surface: z
+      .string()
+      .optional()
+      .describe(
+        'Id of the surface it lies on, for a piece or stack directly on the table. Default: the Centre.',
+      ),
     snap: z.string().optional().describe('Snap spot the stack sits in, as `pieceId/target/index`.'),
     layout: z
       .enum(['pile', 'fan', 'spread'])
@@ -78,12 +90,34 @@ export const StackObject = z
   })
   .meta({ id: 'StackObject', description: 'An ordered pile of pieces, such as a deck.' });
 
+/** The id of the surface every table has, where pieces lie unless they are put elsewhere. */
+export const CENTRE = 'centre';
+
+export const Surface = z
+  .strictObject({
+    id: Slug.describe(`Surface id. \`${CENTRE}\` is the Centre, which every table has.`),
+    name: z.string().min(1).describe('Name shown on its tile, such as `Red player`.'),
+    seat: z.boolean().optional().describe('Whether a player can sit here.'),
+    player: Slug.optional().describe('Id of the player sitting here, on a seat.'),
+  })
+  .meta({
+    id: 'Surface',
+    description:
+      'A separate play space on the table, with its own positions. Everyone sees every surface.',
+  });
+
 export const TableFile = z
   .strictObject({
     format: z.literal(TABLE_FORMAT).describe(`File format version, \`${TABLE_FORMAT}\`.`),
     table: z.string().describe('Table name.'),
     seed: z.int().describe('Seed the table was created with.'),
     rng: z.int().describe('Current random generator state, so shuffles and rolls replay exactly.'),
+    surfaces: z
+      .array(Surface)
+      .optional()
+      .describe(
+        `Surfaces in the order their tiles show. The Centre (\`${CENTRE}\`) comes first and is there even when not listed; list it only to rename it.`,
+      ),
     objects: z
       .array(z.union([PieceObject, StackObject]))
       .describe('Every piece and stack, sorted by id.'),
@@ -95,6 +129,7 @@ export const TableFile = z
   });
 
 export type Mark = z.infer<typeof Mark>;
+export type Surface = z.infer<typeof Surface>;
 export type PieceObject = z.infer<typeof PieceObject>;
 export type StackObject = z.infer<typeof StackObject>;
 export type TableFile = z.infer<typeof TableFile>;

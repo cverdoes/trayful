@@ -7,6 +7,8 @@ import {
   type ComponentType,
   type PieceObject,
   type StackObject,
+  CENTRE,
+  type Surface,
   type Vec2,
 } from '@trayful/formats/browser';
 
@@ -20,6 +22,8 @@ export interface TableState {
   table: string;
   seed: number;
   rng: number;
+  /** The surfaces besides the Centre, and the Centre when renamed; see `surfacesOf`. */
+  surfaces?: readonly Surface[];
   objects: Readonly<Record<string, TableObject>>;
 }
 
@@ -85,6 +89,7 @@ export function toTableFile(state: TableState): TableFile {
     table: state.table,
     seed: state.seed,
     rng: state.rng,
+    ...(state.surfaces?.length ? { surfaces: [...state.surfaces] } : {}),
     objects: Object.values(state.objects).sort((a, b) => byCodeUnit(a.id, b.id)),
   };
 }
@@ -105,7 +110,8 @@ export function fromTableFile(data: unknown): TableState {
     if (objects[object.id]) throw new TableFileError(`Duplicate object id "${object.id}".`);
     objects[object.id] = object;
   }
-  const state: TableState = { ...result.data, objects };
+  const { surfaces, ...rest } = result.data;
+  const state: TableState = { ...rest, ...(surfaces?.length ? { surfaces } : {}), objects };
   const problems = checkIntegrity(state);
   if (problems.length > 0)
     throw new TableFileError(`Inconsistent table file:\n  ${problems.join('\n  ')}`);
@@ -124,6 +130,7 @@ export function checkIntegrity(state: TableState): string[] {
       if (problem) problems.push(problem);
     }
   }
+  problems.push(...surfaceProblems(state));
   return problems;
 }
 
@@ -154,6 +161,44 @@ function pieceProblem(state: TableState, piece: Piece): string | undefined {
   const parent = state.objects[piece.parent];
   if (parent?.kind === 'stack' && parent.items.includes(piece.id)) return undefined;
   return `Piece "${piece.id}" names "${piece.parent}" as its stack, but that stack does not hold it.`;
+}
+
+/** Problems with a table's surfaces and with what lies on them. */
+function surfaceProblems(state: TableState): string[] {
+  const problems: string[] = [];
+  const ids = new Set<string>([CENTRE]);
+  (state.surfaces ?? []).forEach((surface, i) => {
+    if (i > 0 && ids.has(surface.id)) problems.push(`Surface "${surface.id}" is listed twice.`);
+    if (surface.id === CENTRE && i > 0) problems.push('The Centre must come first.');
+    if (surface.id === CENTRE && (surface.seat || surface.player))
+      problems.push('The Centre cannot be a seat.');
+    if (surface.player && !surface.seat)
+      problems.push(`"${surface.player}" sits at "${surface.id}", which is not a seat.`);
+    ids.add(surface.id);
+  });
+  for (const object of Object.values(state.objects)) {
+    const problem = objectSurfaceProblem(state, object, ids);
+    if (problem) problems.push(problem);
+  }
+  return problems;
+}
+
+/** An object lies on a known surface only while on the table, and on the surface of what it sits on. */
+function objectSurfaceProblem(
+  state: TableState,
+  object: TableObject,
+  surfaces: ReadonlySet<string>,
+): string | undefined {
+  const lying = onTable(object);
+  const host = object.snap && lying ? state.objects[object.snap.split('/')[0]!] : undefined;
+  if (host && (host.surface ?? CENTRE) !== (object.surface ?? CENTRE))
+    return `"${object.id}" sits on "${host.id}" but lies on another surface.`;
+  if (object.surface === undefined) return undefined;
+  if (!lying) return `"${object.id}" is not on the table, so it lies on no surface.`;
+  if (object.surface === CENTRE) return `"${object.id}" names the Centre; leave "surface" out.`;
+  if (!surfaces.has(object.surface))
+    return `"${object.id}" lies on unknown surface "${object.surface}".`;
+  return undefined;
 }
 
 /**

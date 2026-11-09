@@ -2,6 +2,14 @@
 
 What changed in each version of the `trayful` npm package. The Release workflow uses the section for a version as the notes of its GitHub release.
 
+## Unreleased
+
+### Surfaces
+
+- A table can have surfaces besides the Centre: separate play spaces with their own positions, such as one per player. Everyone sees every surface. Tables that never use them work as before.
+- Commands and MCP tools: `move`, `draw`, `deal` and `take` take a `surface`, and `surface:<id>` as a target finds free room there; `add_surface`, `edit_surface`, `remove_surface` and `sit` manage them. `describe_table` and `query_objects` can look at one surface.
+- The browser still shows only the Centre; tiles for the other surfaces come next. A table that uses surfaces does not open in older versions.
+
 ## 0.2.0
 
 Projects and tables saved with 0.1.0 open unchanged in 0.2.0; everything new is added on top.

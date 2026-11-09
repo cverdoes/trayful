@@ -1,8 +1,24 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { describeTable, handTarget, resolveSpots, type Command } from '@trayful/core';
+import {
+  describeTable,
+  handTarget,
+  resolveSpots,
+  surfaceTarget,
+  type Command,
+} from '@trayful/core';
 import { z } from 'zod';
 import { AGENT_PLAYER } from '../play/players.js';
-import { count, Face, failure, Ids, Pos, Target, text, type ToolContext } from './context.js';
+import {
+  count,
+  Face,
+  failure,
+  Ids,
+  OnSurface,
+  Pos,
+  Target,
+  text,
+  type ToolContext,
+} from './context.js';
 
 /** Tools for playing: every command, the agent's undo and redo, and starting over. */
 export function registerPlayTools(server: McpServer, ctx: ToolContext): void {
@@ -23,7 +39,7 @@ function registerMoves(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Move',
       description:
-        'Move objects. `to` a position puts the first object there and keeps the others in place relative to it; `to` a drop area puts each object in a free spot; `by` shifts them all.',
+        'Move objects. `to` a position puts the first object there and keeps the others in place relative to it; `to` a drop area puts each object in a free spot; `to` `surface:<id>` moves them to free room on that surface; `by` shifts them all.',
       inputSchema: {
         ids: Ids,
         to: Target.optional(),
@@ -32,11 +48,17 @@ function registerMoves(server: McpServer, ctx: ToolContext): void {
           .string()
           .optional()
           .describe('With `by`: also mark the objects as sitting in this drop spot or area.'),
+        surface: z
+          .string()
+          .optional()
+          .describe(
+            'With `to` a position: the surface it is on. Default: where each object lies now.',
+          ),
       },
     },
-    ({ ids, to, by, into }) =>
+    ({ ids, to, by, into, surface }) =>
       play(`moved ${count(ids.length, 'object')}${typeof to === 'string' ? ` to ${to}` : ''}`, [
-        { type: 'move', ids, to, by, into },
+        { type: 'move', ids, to, by, into, surface },
       ]),
   );
 
@@ -61,10 +83,12 @@ function registerMoves(server: McpServer, ctx: ToolContext): void {
       inputSchema: {
         id: z.string().describe('The card id, from query_objects with `inside`.'),
         to: Target,
+        surface: OnSurface,
         face: Face.optional().describe('Turn it up or down. Default: as it was.'),
       },
     },
-    ({ id, to, face }) => play('took a card from a pile', [{ type: 'take', id, to, face }]),
+    ({ id, to, face, surface }) =>
+      play('took a card from a pile', [{ type: 'take', id, to, face, surface }]),
   );
 }
 
@@ -85,12 +109,13 @@ function registerDrawAndDeal(server: McpServer, ctx: ToolContext): void {
           ),
         count: z.int().positive().optional().describe('Default 1.'),
         to: Target,
+        surface: OnSurface,
         face: Face.optional().describe('Turn the drawn cards up or down. Default: as they were.'),
       },
     },
-    ({ from, count: n, to, face }) =>
+    ({ from, count: n, to, face, surface }) =>
       play(`drew ${count(n ?? 1, from.includes('/') ? 'piece' : 'card')}`, [
-        { type: 'draw', from, count: n, to, face },
+        { type: 'draw', from, count: n, to, face, surface },
       ]),
   );
 
@@ -106,17 +131,21 @@ function registerDrawAndDeal(server: McpServer, ctx: ToolContext): void {
           .union([Target, z.array(Target).min(1)])
           .describe('Where the piles go: a list of positions or spots, or one drop area.'),
         count: z.int().positive().optional().describe('Cards per place. Default 1.'),
+        surface: z
+          .string()
+          .optional()
+          .describe('The surface the positions in `to` are on. Default: the Centre.'),
         face: Face.optional().describe('Deal face up or down. Default: as they were.'),
       },
     },
-    ({ from, to, count: n, face }) => {
-      const command: Command = { type: 'deal', from, to, count: n, face };
+    ({ from, to, count: n, face, surface }) => {
+      const command: Command = { type: 'deal', from, to, count: n, face, surface };
       const targets = typeof to === 'string' || typeof to[0] === 'number' ? [to] : to;
       let places = 0;
       try {
         for (const t of targets as (string | [number, number])[]) {
           places +=
-            typeof t === 'string' && handTarget(t) === undefined
+            typeof t === 'string' && handTarget(t) === undefined && surfaceTarget(t) === undefined
               ? resolveSpots(engine().state, types(), t).length
               : 1;
         }

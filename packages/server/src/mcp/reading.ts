@@ -18,17 +18,28 @@ function registerDescribe(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Describe the table',
       description:
-        'A short text overview of everything on the table: piles, pieces, positions and visible card text, your own hand, and how many pieces the other players hold.',
-      inputSchema: { reveal: z.boolean().optional().describe('Also show face-down cards.') },
+        'A short text overview of everything on the table: its surfaces, piles, pieces, positions and visible card text, your own hand, and how many pieces the other players hold.',
+      inputSchema: {
+        reveal: z.boolean().optional().describe('Also show face-down cards.'),
+        surface: z
+          .string()
+          .optional()
+          .describe('Describe only what lies on this surface, such as `centre`.'),
+      },
       annotations: { readOnlyHint: true },
     },
-    ({ reveal }) =>
-      text(
-        [
-          describeTable(engine().state, types(), { reveal, viewer: AGENT_PLAYER }),
-          playerLines(session().roster()),
-        ].join('\n\n'),
-      ),
+    ({ reveal, surface }) => {
+      try {
+        return text(
+          [
+            describeTable(engine().state, types(), { reveal, viewer: AGENT_PLAYER, surface }),
+            playerLines(session().roster()),
+          ].join('\n\n'),
+        );
+      } catch (err) {
+        return failure(err);
+      }
+    },
   );
 
   server.registerTool(
@@ -54,6 +65,7 @@ function registerDescribe(server: McpServer, ctx: ToolContext): void {
           .describe(
             `A stack id: list its pieces, bottom to top. \`hand:${AGENT_PLAYER}\` lists your hand.`,
           ),
+        surface: z.string().optional().describe('Only objects lying on this surface.'),
         reveal: z.boolean().optional().describe('Also show face-down cards.'),
       },
       annotations: { readOnlyHint: true },

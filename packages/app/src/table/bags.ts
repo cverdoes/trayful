@@ -1,5 +1,5 @@
 // Bags on the table: what they hold, as far as anyone may know, and drawing out of them.
-import { allSpots, type Command, type SnapSpot, type TableState } from '@trayful/core';
+import { allSpots, CENTRE, type Command, type SnapSpot, type TableState } from '@trayful/core';
 import type { Types } from '../render/geometry';
 
 /** A bag on the table and how many pieces it holds. */
@@ -10,7 +10,7 @@ export interface Bag {
 
 /** Every bag on the table. Its pieces are never sent to anyone; only how many there are. */
 export function bagsOn(table: TableState & { bags?: Record<string, number> }, types: Types): Bag[] {
-  return allSpots(table, types)
+  return allSpots(table, types, CENTRE)
     .filter((spot) => spot.mode === 'bag')
     .map((spot) => ({ spot, count: table.bags?.[spot.ref] ?? 0 }));
 }

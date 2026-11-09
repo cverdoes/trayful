@@ -6,6 +6,7 @@ import { registerPromptTools } from './prompts.js';
 import { registerReadingTools } from './reading.js';
 import { registerResources } from './resources.js';
 import { registerStarters } from './starters.js';
+import { registerSurfaceTools } from './surfaces.js';
 import { registerTableTools } from './tables.js';
 import { AGENT_PLAYER } from '../play/players.js';
 import { packagedVersion } from '../shipped/resources.js';
@@ -44,6 +45,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
   const ctx = toolContext(workspace);
   registerReadingTools(server, ctx);
   registerPlayTools(server, ctx);
+  registerSurfaceTools(server, ctx);
   registerTableTools(server, ctx);
   registerPromptTools(server, ctx);
   registerAuthoringTools(server, ctx);

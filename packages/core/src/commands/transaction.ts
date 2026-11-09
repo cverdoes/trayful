@@ -1,5 +1,5 @@
-import { holdsMany, takesMarks, type Vec2 } from '@trayful/formats/browser';
-import { roomIn } from '../placement/room.js';
+import { holdsMany, takesMarks, type Surface, type Vec2 } from '@trayful/formats/browser';
+import { roomIn, roomOn } from '../placement/room.js';
 import {
   accepts,
   occupants,
@@ -24,11 +24,13 @@ import {
   type TableState,
   withChanges,
 } from '../table/state.js';
+import { CENTRE, hasSurface, surfaceOf, surfaceTarget } from '../table/surfaces.js';
 
 /**
  * Where something goes: an `[x, y]` position in millimetres, a snap target such
  * as `main-board/market/2` (one spot) or `main-board/market` (the target's spots,
- * filled in order, or its free area), or a player's private hand as `hand:<player>`.
+ * filled in order, or its free area), a player's private hand as `hand:<player>`, or
+ * somewhere free on a surface as `surface:<id>`.
  */
 export type Target = Vec2 | string;
 
@@ -37,6 +39,8 @@ export class CommandError extends Error {}
 /** Where pieces land: a table position (with a spot's rotation and reference), or a hand. */
 export interface Place {
   pos: Vec2;
+  /** The surface `pos` is on. */
+  surface: string;
   rot?: number;
   snap?: string;
   hand?: string;
@@ -52,6 +56,7 @@ export interface Place {
 export class Transaction {
   private readonly objects: Record<string, TableObject>;
   private rng: number;
+  private surfaceList: readonly Surface[] | undefined;
 
   constructor(
     private readonly state: TableState,
@@ -59,6 +64,7 @@ export class Transaction {
   ) {
     this.objects = { ...state.objects };
     this.rng = state.rng;
+    this.surfaceList = state.surfaces;
   }
 
   commit(): TableState {
@@ -69,7 +75,33 @@ export class Transaction {
       if (!onTable(object) || owner?.kind !== 'piece' || owner.parent || owner.hand)
         this.update(object, { snap: undefined });
     }
-    return { ...this.state, rng: this.rng, objects: this.objects };
+    this.settleSurfaces();
+    const next: TableState = {
+      ...this.state,
+      rng: this.rng,
+      surfaces: this.surfaceList,
+      objects: this.objects,
+    };
+    if (!next.surfaces?.length) delete next.surfaces;
+    return next;
+  }
+
+  /**
+   * Only objects lying on the table are on a surface, and something snapped onto a
+   * piece lies on that piece's surface. The Centre is never named.
+   */
+  private settleSurfaces(): void {
+    const on = (object: TableObject, seen = new Set<string>()): string | undefined => {
+      if (!onTable(object)) return undefined;
+      const owner = object.snap && this.objects[snapOwner(object.snap)];
+      if (!owner || seen.has(owner.id)) return object.surface;
+      return on(owner, seen.add(object.id));
+    };
+    for (const object of Object.values(this.objects)) {
+      const surface = on(object);
+      const wanted = surface === CENTRE ? undefined : surface;
+      if (wanted !== object.surface) this.update(object, { surface: wanted });
+    }
   }
 
   /** Every object the command added, removed or changed so far, as it was and as it is. */
@@ -82,7 +114,22 @@ export class Transaction {
 
   /** The table as it stands in this transaction. */
   current(): TableState {
-    return { ...this.state, objects: this.objects };
+    return { ...this.state, surfaces: this.surfaceList, objects: this.objects };
+  }
+
+  /** The surfaces besides the Centre, as the table lists them now. */
+  get surfaces(): readonly Surface[] {
+    return this.surfaceList ?? [];
+  }
+
+  set surfaces(list: readonly Surface[]) {
+    this.surfaceList = list;
+  }
+
+  /** A surface id the table has, or a command error. */
+  surface(id: string): string {
+    if (!hasSurface(this.current(), id)) throw new CommandError(`There is no surface "${id}".`);
+    return id;
   }
 
   /** Runs a random draw, such as a shuffle or a roll, and keeps the generator's new state. */
@@ -195,8 +242,13 @@ export class Transaction {
    * Puts an object at a new position and rotation on top of everything, carrying
    * the pieces that ride on it so they keep their place relative to it.
    */
-  relocate(object: TableObject, pos: Vec2, rot: number, snap: string | undefined): void {
-    this.carry(object, { pos, rot, snap, z: this.topZ() });
+  relocate(
+    object: TableObject,
+    pos: Vec2,
+    rot: number,
+    { snap, surface = surfaceOf(object) }: { snap: string | undefined; surface?: string },
+  ): void {
+    this.carry(object, { pos, rot, snap, z: this.topZ(), surface });
   }
 
   /**
@@ -204,12 +256,12 @@ export class Transaction {
    * when it closes up, carrying its riders.
    */
   shift(object: TableObject, pos: Vec2, rot: number): void {
-    this.carry(object, { pos, rot, snap: object.snap, z: object.z });
+    this.carry(object, { pos, rot, snap: object.snap, z: object.z, surface: surfaceOf(object) });
   }
 
   private carry(
     object: TableObject,
-    to: { pos: Vec2; rot: number; snap: string | undefined; z: number },
+    to: { pos: Vec2; rot: number; snap: string | undefined; z: number; surface: string },
   ): void {
     const riders = this.riders([object.id])
       .map((id) => this.get(id))
@@ -217,13 +269,22 @@ export class Transaction {
     const { pos, rot } = to;
     const delta = rot - object.rot;
     let z = to.z;
-    this.update(object, { pos, rot: normalize(rot), z: z++, snap: to.snap, hand: undefined });
+    const surface = to.surface;
+    this.update(object, {
+      pos,
+      rot: normalize(rot),
+      z: z++,
+      snap: to.snap,
+      hand: undefined,
+      surface,
+    });
     for (const rider of riders) {
       const local = toLocal(object, [0, 0], rider.pos);
       this.update(rider, {
         pos: toTable({ pos, rot }, [0, 0], local),
         rot: normalize(rider.rot + delta),
         z: z++,
+        surface,
       });
     }
   }
@@ -293,15 +354,33 @@ export class Transaction {
    * The places a target names, for pieces about to land there: a position, one
    * spot, or every spot of a snap target (its centre, for a free area).
    */
-  places(target: Target, pieces: Piece[]): Place[] {
+  places(target: Target, pieces: Piece[], surface?: string): Place[] {
     if (typeof target !== 'string') {
       if (!isVec2(target)) throw new CommandError('A position must be an [x, y] pair.');
-      return [{ pos: target }];
+      return [{ pos: target, surface: this.surface(surface ?? CENTRE) }];
+    }
+    if (surface !== undefined) {
+      throw new CommandError(
+        `"${target}" already says where things go; give "surface" only with a position.`,
+      );
     }
     const player = handTarget(target);
-    if (player !== undefined) return [{ pos: [0, 0], hand: checkPlayer(player) }];
+    if (player !== undefined) return [{ pos: [0, 0], surface: CENTRE, hand: checkPlayer(player) }];
+    const onSurface = surfaceTarget(target);
+    if (onSurface !== undefined) {
+      return [
+        {
+          pos: roomOn(this.current(), this.catalog, this.surface(onSurface), {
+            size: this.sizeOf(pieces),
+            ignore: new Set(pieces.map((p) => p.id)),
+          }),
+          surface: onSurface,
+        },
+      ];
+    }
     return this.spots(target, pieces, new Set()).map((s) => ({
       pos: this.landing(s, pieces),
+      surface: surfaceOf(this.get(s.owner)),
       rot: s.area ? undefined : s.rot,
       snap: s.ref,
       shared: holdsMany(s.mode),
@@ -312,20 +391,24 @@ export class Transaction {
   private landing(spot: SnapSpot, pieces: Piece[]): Vec2 {
     if (spot.mode === 'row') return rowEnd(spot);
     if (spot.mode !== 'free') return spot.pos;
-    const sizes = pieces.map((p) => sizeOf(this.typeOf(p)));
-    const size: Vec2 = [Math.max(...sizes.map((s) => s[0])), Math.max(...sizes.map((s) => s[1]))];
     return roomIn(this.current(), this.catalog, spot, {
-      size,
+      size: this.sizeOf(pieces),
       ignore: new Set(pieces.map((p) => p.id)),
     });
+  }
+
+  /** The room the largest of some pieces needs. */
+  private sizeOf(pieces: Piece[]): Vec2 {
+    const sizes = pieces.map((p) => sizeOf(this.typeOf(p)));
+    return [Math.max(0, ...sizes.map((s) => s[0])), Math.max(0, ...sizes.map((s) => s[1]))];
   }
 
   /**
    * One place for pieces that land together: a position, a spot, or a snap
    * target's first free spot (or its first pile or group, when every spot is taken).
    */
-  place(target: Target, pieces: Piece[]): Place {
-    const places = this.places(target, pieces);
+  place(target: Target, pieces: Piece[], surface?: string): Place {
+    const places = this.places(target, pieces, surface);
     if (places.length === 1) return places[0]!;
     const free = places.find((p) => p.snap && (this.isFree(p.snap) || p.shared));
     if (!free) throw new CommandError(`Every spot of "${target as string}" is taken.`);

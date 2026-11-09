@@ -1,6 +1,7 @@
 import {
   accepts,
   allSpots,
+  CENTRE,
   snapFor,
   type Command,
   type SnapSpot,
@@ -36,7 +37,9 @@ export function snapHint(
 ): SnapHint | undefined {
   const piece = facePiece(table, object);
   const type = piece && types[piece.type];
-  const spots = allSpots(table, types).filter((s) => !ignore.has(s.owner) && accepts(s, type));
+  const spots = allSpots(table, types, CENTRE).filter(
+    (s) => !ignore.has(s.owner) && accepts(s, type),
+  );
   return spots.length ? { spots, size: pieceSize(table, types, object) } : undefined;
 }
 
@@ -53,6 +56,7 @@ export function snapAt(
     point: drop.point,
     radius,
     ignore: drop.ignore,
+    surface: CENTRE,
   });
   return spot && (spot.area || !drop.group) ? spot : undefined;
 }

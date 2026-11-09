@@ -9,6 +9,7 @@ import {
   type Vec2,
 } from '@trayful/formats/browser';
 import { objectSize } from '../table/layout.js';
+import { surfaceOf } from '../table/surfaces.js';
 import {
   onTable,
   sizeOf,
@@ -149,11 +150,12 @@ export function spotsOf(piece: Piece, type: ComponentType): SnapSpot[] {
   return spots;
 }
 
-/** All snap spots on the table, from pieces lying directly on it. */
-export function allSpots(state: TableState, catalog: Catalog): SnapSpot[] {
+/** All snap spots on the table, or on one surface, from pieces lying directly on it. */
+export function allSpots(state: TableState, catalog: Catalog, surface?: string): SnapSpot[] {
   const spots: SnapSpot[] = [];
   for (const object of Object.values(state.objects)) {
     if (object.kind !== 'piece' || !onTable(object)) continue;
+    if (surface !== undefined && surfaceOf(object) !== surface) continue;
     const type = catalog[object.type];
     if (type?.container) spots.push(...placedSpotsOf(state, catalog, object, type));
   }
@@ -234,6 +236,8 @@ export interface Drop {
   radius: number;
   /** Objects being moved, which neither offer spots nor take them up. */
   ignore?: ReadonlySet<string>;
+  /** The surface the drop lands on; only spots there count. Default: every surface. */
+  surface?: string;
 }
 
 /**
@@ -243,9 +247,9 @@ export interface Drop {
 export function snapFor(
   state: TableState,
   catalog: Catalog,
-  { type, point, radius, ignore = new Set() }: Drop,
+  { type, point, radius, ignore = new Set(), surface }: Drop,
 ): SnapSpot | undefined {
-  const candidates = allSpots(state, catalog).filter(
+  const candidates = allSpots(state, catalog, surface).filter(
     (s) => !ignore.has(s.owner) && accepts(s, type),
   );
   let best: { spot: SnapSpot; score: number } | undefined;

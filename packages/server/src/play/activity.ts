@@ -1,6 +1,7 @@
 import {
   HAND_PREFIX,
   isHidden,
+  surfaceTarget,
   onTable,
   type TableObject,
   type TableState,
@@ -17,13 +18,15 @@ export function activityText(
 ): string {
   const n = (count: number, one: string, many = `${one}s`) =>
     `${count} ${count === 1 ? one : many}`;
-  const into = (to: unknown) =>
-    typeof to === 'string' && to.startsWith(HAND_PREFIX)
-      ? ` into ${whose(to.slice(HAND_PREFIX.length))} hand`
-      : '';
+  const into = (to: unknown) => {
+    if (typeof to !== 'string') return '';
+    if (to.startsWith(HAND_PREFIX)) return ` into ${whose(to.slice(HAND_PREFIX.length))} hand`;
+    const surface = surfaceTarget(to);
+    return surface === undefined ? '' : ` to ${surface}`;
+  };
   switch (command.type) {
     case 'move':
-      return `moved ${n(command.ids.length, 'piece')}${into(command.to)}`;
+      return `moved ${n(command.ids.length, 'piece')}${into(command.to)}${command.surface ? ` to ${command.surface}` : ''}`;
     case 'flip':
       return `flipped ${n(command.ids.length, 'piece')}`;
     case 'rotate':
@@ -50,9 +53,28 @@ export function activityText(
       return command.text === undefined ? 'stamped a box' : 'wrote in a box';
     case 'erase':
       return 'erased a box';
+    case 'addSurface':
+      return `added surface ${command.id}`;
+    case 'editSurface':
+      return `changed surface ${command.id}`;
+    case 'removeSurface':
+      return `removed surface ${command.id}`;
+    case 'sit':
+      return sitText(command, whose);
     default:
       return 'changed the table';
   }
+}
+
+/** Who sat down or stood up where. `whose` says `their` for the player who acted. */
+function sitText(
+  { surface, player }: { surface: string; player?: string },
+  whose: (player: string) => string,
+): string {
+  if (player === undefined) return `stood someone up from ${surface}`;
+  const name = whose(player);
+  if (name === 'their') return `sat down at ${surface}`;
+  return `seated ${name === 'a' ? 'a player' : name.replace(/'s$/, '')} at ${surface}`;
 }
 
 /**
