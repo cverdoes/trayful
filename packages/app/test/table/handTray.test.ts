@@ -9,16 +9,7 @@ import {
 } from '../../src/table/handTray';
 import { handTrayHeight, toggleHandTray } from '../../src/table/hand';
 import { useStore } from '../../src/store';
-
-function fakeStorage(): Storage {
-  const items = new Map<string, string>();
-  return {
-    getItem: (key) => items.get(key) ?? null,
-    setItem: (key, value) => {
-      items.set(key, value);
-    },
-  } as Storage;
-}
+import { fakeStorage } from '../helpers';
 
 afterEach(() => vi.unstubAllGlobals());
 

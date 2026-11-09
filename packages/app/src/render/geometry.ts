@@ -45,9 +45,9 @@ export function bounds(table: TableState, types: Types, object: TableObject) {
  * Objects lying directly on the table, bottom to top. Only the Centre is drawn for
  * now; the other surfaces get tiles of their own later.
  */
-export function topLevel(table: TableState): TableObject[] {
+export function topLevel(table: TableState, surface = CENTRE): TableObject[] {
   return Object.values(table.objects)
-    .filter((o) => onTable(o) && surfaceOf(o) === CENTRE)
+    .filter((o) => onTable(o) && surfaceOf(o) === surface)
     .sort((a, b) => a.z - b.z || (a.id < b.id ? -1 : 1));
 }
 
@@ -62,25 +62,25 @@ export function typeOf(
 }
 
 /**
- * The object a dragged selection would stack onto when dropped at `point`:
- * the topmost unlocked object under the point that it may share a stack with.
+ * The object a dragged selection would stack onto when dropped at `point` on a
+ * surface: the topmost unlocked object under the point that it may share a stack with.
  */
 export function dropTarget(
   table: TableState,
   types: Types,
-  dragged: string[],
-  point: [number, number],
+  drop: { dragged: string[]; point: [number, number]; surface: string },
 ): TableObject | undefined {
+  const { dragged, point, surface } = drop;
   const first = table.objects[dragged[0]!];
   const type = first && typeOf(table, types, first);
   if (!type || !isStackable(type)) return undefined;
   // Things in a row lie side by side: a drop on one takes its place in the row instead.
   const rows = new Set(
-    allSpots(table, types)
+    allSpots(table, types, surface)
       .filter((s) => s.mode === 'row')
       .map((s) => s.ref),
   );
-  const candidates = topLevel(table).filter((o) => {
+  const candidates = topLevel(table, surface).filter((o) => {
     const other = typeOf(table, types, o);
     if (dragged.includes(o.id) || o.locked || (o.snap && rows.has(o.snap))) return false;
     return other !== undefined && stacksWith(type, other);

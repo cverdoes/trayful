@@ -19,8 +19,9 @@ test('a person stamps boxes, writes in one and erases one', async ({ page }) => 
   // The table is drawn and fitted to the window once its state has arrived.
   await page.waitForFunction(() => {
     const state = window.__trayful?.store.getState() as
-      { table?: { objects: Record<string, unknown> }; viewport: { scale: number } } | undefined;
-    return state?.table?.objects['sheet.1'] !== undefined && state.viewport.scale !== 1;
+      | { table?: { objects: Record<string, unknown> }; viewports: Record<string, unknown> }
+      | undefined;
+    return state?.table?.objects['sheet.1'] !== undefined && state.viewports.centre !== undefined;
   });
 
   // The first row's second box takes a ring or a cross, so clicking it asks which.

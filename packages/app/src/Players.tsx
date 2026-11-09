@@ -7,7 +7,8 @@ import { HAND_DRAG, toggleHandTray } from './table/hand';
 import { clampHandHeight, HAND_HEIGHT, handCardHeight, saveHandHeight } from './table/handTray';
 import { clickForPrompt, promptMarks } from './table/promptTargets';
 import { useStore } from './store';
-import { windowCentre } from './table/viewport';
+import { landing } from './table/drops';
+import { viewCentre } from './table/viewport';
 
 /** How far one arrow key press moves the top edge of the hand tray, in pixels. */
 const RESIZE_STEP = 16;
@@ -235,11 +236,10 @@ function HandCard({ piece, length }: Readonly<{ piece: Piece; length: number }>)
   const marked = useStore((s) => promptMarks(s.prompts[0]).has(piece.id));
   const picked = useStore((s) => s.picked.includes(piece.id));
   const play = () => {
-    // Double-click plays the card into the middle of the view.
-    const [x, y] = windowCentre();
-    useStore
-      .getState()
-      .command({ type: 'move', ids: [piece.id], to: [Math.round(x), Math.round(y)] });
+    // Double-click plays the card into the middle of the biggest tile.
+    const { surface, at } = viewCentre();
+    const to: [number, number] = [Math.round(at[0]), Math.round(at[1])];
+    useStore.getState().command({ type: 'move', ids: [piece.id], ...landing(to, surface) });
   };
   return (
     <div

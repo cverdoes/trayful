@@ -3,6 +3,7 @@ import {
   allSpots,
   CENTRE,
   snapFor,
+  surfaceOf,
   type Command,
   type SnapSpot,
   type Stack,
@@ -19,6 +20,8 @@ export const CLICK_SLOP = 0.8;
 
 /** Where pieces are going while dragged: the spots they could snap to, sized like the piece. */
 export interface SnapHint {
+  /** The surface the pieces are dragged across, whose tile shows the spots. */
+  surface: string;
   spots: SnapSpot[];
   size: [number, number];
 }
@@ -28,7 +31,7 @@ function snapRadius(size: [number, number]): number {
   return Math.max(8, Math.min(size[0], size[1]) / 2);
 }
 
-/** The spots a dragged object could snap to, apart from those on objects being moved. */
+/** The spots on its own surface a dragged object could snap to, apart from those on objects being moved. */
 export function snapHint(
   table: TableState,
   types: Types,
@@ -37,18 +40,25 @@ export function snapHint(
 ): SnapHint | undefined {
   const piece = facePiece(table, object);
   const type = piece && types[piece.type];
-  const spots = allSpots(table, types, CENTRE).filter(
+  const surface = surfaceOf(object);
+  const spots = allSpots(table, types, surface).filter(
     (s) => !ignore.has(s.owner) && accepts(s, type),
   );
-  return spots.length ? { spots, size: pieceSize(table, types, object) } : undefined;
+  return spots.length ? { surface, spots, size: pieceSize(table, types, object) } : undefined;
+}
+
+/** What is dropped where, to find the spot it snaps to. */
+interface Drop {
+  object: TableObject;
+  /** Where on `surface` it is let go. */
+  point: Vec;
+  surface: string;
+  ignore: ReadonlySet<string>;
+  group: boolean;
 }
 
 /** The spot a drop at `point` snaps to. Groups only snap into free areas. */
-export function snapAt(
-  table: TableState,
-  types: Types,
-  drop: { object: TableObject; point: Vec; ignore: ReadonlySet<string>; group: boolean },
-): SnapSpot | undefined {
+export function snapAt(table: TableState, types: Types, drop: Drop): SnapSpot | undefined {
   const piece = facePiece(table, drop.object);
   const radius = snapRadius(pieceSize(table, types, drop.object));
   const spot = snapFor(table, types, {
@@ -56,7 +66,7 @@ export function snapAt(
     point: drop.point,
     radius,
     ignore: drop.ignore,
-    surface: CENTRE,
+    surface: drop.surface,
   });
   return spot && (spot.area || !drop.group) ? spot : undefined;
 }
@@ -83,10 +93,11 @@ export function moveCommands(table: TableState, types: Types, move: Move): Comma
   if (move.hand) return [{ type: 'move', ids: ordered, to: `hand:${move.hand}` }];
   const lead = table.objects[move.lead]!;
   const point: Vec = [lead.pos[0] + move.by[0], lead.pos[1] + move.by[1]];
-  const target = dropTarget(table, types, move.moved, point);
+  const surface = surfaceOf(lead);
+  const target = dropTarget(table, types, { dragged: move.moved, point, surface });
   if (target) return [{ type: 'stack', ids: ordered, onto: target.id }];
   const group = move.moved.length > 1;
-  const spot = snapAt(table, types, { object: lead, point, ignore: move.ignore, group });
+  const spot = snapAt(table, types, { object: lead, point, surface, ignore: move.ignore, group });
   if (spot && !spot.area) return [{ type: 'move', ids: [move.lead], to: spot.ref }];
   return [{ type: 'move', ids: ordered, by: move.by, ...(spot ? { into: spot.ref } : {}) }];
 }
@@ -101,24 +112,25 @@ export interface Draw {
 
 /**
  * What taking a card off a stack does: drawing the top card of a pile, or taking
- * any card from a fan or spread, to a hand, a pile, a snap spot or the table.
- * `select` is the card to select afterwards.
+ * any card from a fan or spread, to a hand, a pile, a snap spot or the table
+ * beside the stack, on its surface. `select` is the card to select afterwards.
  */
 export function drawCommands(
   table: TableState,
   types: Types,
   { stack, piece, local, hand }: Draw,
 ): { commands: Command[]; select?: string } {
+  const surface = surfaceOf(stack);
   const take = (to: Vec | string): Command =>
     piece === stack.items.at(-1) && !stack.layout
-      ? { type: 'draw', from: stack.id, to }
-      : { type: 'take', id: piece, to };
+      ? { type: 'draw', from: stack.id, ...landing(to, surface) }
+      : { type: 'take', id: piece, ...landing(to, surface) };
   if (hand) return { commands: [take(`hand:${hand}`)] };
   const point = fromStack(stack, local);
-  const target = dropTarget(table, types, [stack.id], point);
+  const target = dropTarget(table, types, { dragged: [stack.id], point, surface });
   if (target) return { commands: [take(point), { type: 'stack', ids: [piece], onto: target.id }] };
   const ignore = new Set([stack.id]);
-  const spot = snapAt(table, types, { object: stack, point, ignore, group: false });
+  const spot = snapAt(table, types, { object: stack, point, surface, ignore, group: false });
   return {
     commands: [take(spot && !spot.area ? spot.ref : point), ...intoArea(piece, spot)],
     select: piece,
@@ -126,22 +138,28 @@ export function drawCommands(
 }
 
 /**
- * What playing a card from the hand at `point` does: onto a pile (unless played
- * face down), into a snap spot, or onto the table where it was dropped.
+ * What playing a card from the hand at `point` on a surface does: onto a pile
+ * (unless played face down), into a snap spot, or onto the surface where it was dropped.
  */
 export function handDropCommands(
   table: TableState,
   types: Types,
-  drop: { id: string; point: Vec; faceDown: boolean },
+  drop: { id: string; point: Vec; surface: string; faceDown: boolean },
 ): Command[] {
-  const { id, point, faceDown } = drop;
+  const { id, point, surface, faceDown } = drop;
   const piece = table.objects[id];
   if (piece?.kind !== 'piece') return [];
-  const target = dropTarget(table, types, [id], point);
+  const target = dropTarget(table, types, { dragged: [id], point, surface });
   if (target && !faceDown) return [{ type: 'stack', ids: [id], onto: target.id }];
-  const spot = snapAt(table, types, { object: piece, point, ignore: new Set([id]), group: false });
+  const ignore = new Set([id]);
+  const spot = snapAt(table, types, { object: piece, point, surface, ignore, group: false });
   const to = spot && !spot.area ? spot.ref : ([round(point[0]), round(point[1])] as Vec);
-  const play: Command = { type: 'move', ids: [id], to, ...(faceDown ? { face: 'down' } : {}) };
+  const play: Command = {
+    type: 'move',
+    ids: [id],
+    ...landing(to, surface),
+    ...(faceDown ? { face: 'down' } : {}),
+  };
   return target
     ? [play, { type: 'stack', ids: [id], onto: target.id }]
     : [play, ...intoArea(id, spot)];
@@ -154,6 +172,14 @@ export function handDropCommands(
  */
 function intoArea(id: string, spot: SnapSpot | undefined): Command[] {
   return spot?.area ? [{ type: 'move', ids: [id], by: [0, 0], into: spot.ref }] : [];
+}
+
+/**
+ * Where a piece is put: a place named by a string says its own surface; a position
+ * needs the surface spelled out, unless it is the Centre.
+ */
+export function landing(to: Vec | string, surface: string): { to: Vec | string; surface?: string } {
+  return typeof to === 'string' || surface === CENTRE ? { to } : { to, surface };
 }
 
 /** Double-click rolls a die that can be rolled, and flips anything flippable. */

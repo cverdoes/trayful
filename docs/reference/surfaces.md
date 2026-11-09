@@ -2,8 +2,6 @@
 
 A table can have several **surfaces**: separate play spaces, each with its own positions, such as a main play area and an area for each player. Every table has the **Centre** (id `centre`), and anything not put elsewhere lies there, so a table that never uses surfaces works exactly as before.
 
-The browser does not draw surfaces as separate tiles yet; until it does, surfaces are made and filled by agents and engines, and the browser shows only the Centre.
-
 Surfaces are not private. Everyone sees every surface; a player's [hand](players-and-hands.md) is still the only private place.
 
 ## In the saved table
@@ -38,3 +36,15 @@ A drop area already says where things go, so `surface` cannot be given with one,
 Anyone may sit down at or stand up from a seat. Only the host and agents may seat or unseat someone else. Sitting changes nothing about who may touch what; it says whose surfaces the browser shows first.
 
 Agents get the same through the `add_surface`, `edit_surface`, `remove_surface` and `sit` MCP tools, and `describe_table` and `query_objects` take a `surface` to look at one surface only.
+
+## In the browser
+
+On a table with surfaces, each surface shows as a tile of its own, with its own pan and zoom. The Centre takes the larger tile, on the left (or on top in a tall window), and the others share the rest. A table without surfaces looks as it always did: one canvas filling the window.
+
+A row of chips under the toolbar picks what to show:
+
+- **The view menu**: *All surfaces*, *Mine + Centre* (the surfaces you sit at, and the Centre) or *Centre only*. A player sitting at a seat starts on *Mine + Centre*; anyone else starts on *All surfaces*. A view follows the table as surfaces come and go and players sit down.
+- **A chip per surface** switches its tile on or off. When someone else changes a surface whose tile is off, its chip pulses for a moment.
+- **Focus**: the button by a tile's name, a double-click on the name, or a number key (`1` for the first tile shown, `2` for the next) shows that tile on its own; the same again, or `Esc`, goes back.
+
+What each viewer shows is their own choice, kept in that browser for each table; it changes nothing for anyone else. Pieces are dragged within a tile; a card played from the hand lands on the tile it is dropped on. Moving pieces from one tile to another is coming next; until then, agents move them with `move` and a `surface:<id>` target.

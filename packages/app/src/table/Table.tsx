@@ -1,4 +1,4 @@
-import type { TableObject } from '@trayful/core';
+import { surfacesOf, type TableObject } from '@trayful/core';
 import type Konva from 'konva';
 import { useEffect, useRef, useState } from 'react';
 import { Layer, Rect, Stage } from 'react-konva';
@@ -12,47 +12,75 @@ import { PromptPlaces } from './PromptPlaces';
 import { DrawScale, type Highlight } from '../render/Component';
 import { topLevel } from '../render/geometry';
 import { setSnapshotStage } from '../snapshot';
-import { useStore } from '../store';
+import { shownNow, useStore } from '../store';
+import { ChipRow } from './ChipRow';
+import { hasSurfaces, tilesFor, type Tile } from './surfaces';
 import { BagBadges, PieceView, SnapHints, StackView } from './TableObjects';
-import { fitToTable, toWorld, zoomAt } from './viewport';
+import { toggleFocus } from './tiles';
+import { fitTile, toWorld, viewportOf, zoomAt } from './viewport';
 
-/** The table: every object on it, which can be dragged, clicked and selected. */
+/**
+ * The table: one tile for each surface shown, every object on it, which can be
+ * dragged, clicked and selected. A table without surfaces is one tile filling the page.
+ */
 export function Table() {
   const view = useStore((s) => s.view);
   const table = useStore((s) => s.table);
-  const redrawKey = useStore((s) => s.redrawKey);
-  const shiftDown = useStore((s) => s.shiftDown);
-  const viewport = useStore((s) => s.viewport);
-  const size = useWindowSize();
   const drag = useRef(new TableDrag()).current;
-  const marquee = useMarquee();
-  const pointer = useHover(drag.nodes);
-  useFitOnce();
+  const tiles = useTiles();
+  useFitOnLayout(tiles);
 
   if (!view || !table) return <div className="loading">Loading table…</div>;
+  const tiled = hasSurfaces(table);
+  return (
+    <div className={tiled ? 'table tiled' : 'table'}>
+      {tiled && <ChipRow />}
+      {tiles.map((tile) => (
+        <SurfaceTile key={tile.surface} tile={tile} drag={drag} framed={tiled} />
+      ))}
+    </div>
+  );
+}
+
+/** One surface's tile: a canvas with its own pan and zoom, and its name when framed. */
+function SurfaceTile({
+  tile,
+  drag,
+  framed,
+}: Readonly<{ tile: Tile; drag: TableDrag; framed: boolean }>) {
+  const { surface, box } = tile;
+  const view = useStore((s) => s.view)!;
+  const table = useStore((s) => s.table)!;
+  const redrawKey = useStore((s) => s.redrawKey);
+  const shiftDown = useStore((s) => s.shiftDown);
+  const viewport = useStore((s) => viewportOf(s, surface));
+  const stage = useRef<Konva.Stage | null>(null);
+  const marquee = useMarquee(surface);
+  const pointer = useHover(drag.nodes, stage);
   return (
     <div
-      className="table"
+      className={framed ? 'surface-tile framed' : 'surface-tile'}
+      data-surface={surface}
+      style={{ left: box.x, top: box.y, width: box.width, height: box.height }}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes(HAND_DRAG)) e.preventDefault();
       }}
-      onDrop={dropFromHand}
+      onDrop={(e) => dropFromHand(e, surface)}
     >
       <Stage
-        ref={setSnapshotStage}
-        width={size.width}
-        height={size.height}
+        ref={(node) => {
+          stage.current = node;
+          setSnapshotStage(surface, node);
+        }}
+        width={box.width}
+        height={box.height}
         x={viewport.x}
         y={viewport.y}
         scaleX={viewport.scale}
         scaleY={viewport.scale}
         draggable={!shiftDown && !marquee.box}
         onDragEnd={(e) => {
-          if (e.target.nodeType === 'Stage') {
-            useStore.setState((s) => ({
-              viewport: { ...s.viewport, x: e.target.x(), y: e.target.y() },
-            }));
-          }
+          if (e.target.nodeType === 'Stage') panned(surface, e.target.x(), e.target.y());
         }}
         onMouseDown={marquee.onMouseDown}
         onMouseMove={(e) => {
@@ -60,36 +88,69 @@ export function Table() {
           marquee.onMouseMove(e);
         }}
         onMouseLeave={pointer.onMouseLeave}
-        onMouseUp={() => marquee.onMouseUp(topLevel(table))}
-        onWheel={onWheel}
+        onMouseUp={() => marquee.onMouseUp(topLevel(table, surface))}
+        onWheel={(e) => onWheel(e, surface)}
       >
         <Layer key={redrawKey}>
           <DrawScale.Provider value={viewport.scale}>
-            <Objects drag={drag} />
+            <Objects drag={drag} surface={surface} />
+            <BagBadges types={view.types} surface={surface} />
+            <SnapHints surface={surface} />
+            <PromptPlaces surface={surface} />
+            {marquee.box && <Marquee box={marquee.box} scale={viewport.scale} />}
           </DrawScale.Provider>
-          <BagBadges types={view.types} />
-          <SnapHints />
-          <PromptPlaces />
-          {marquee.box && (
-            <Rect
-              x={Math.min(marquee.box.from[0], marquee.box.to[0])}
-              y={Math.min(marquee.box.from[1], marquee.box.to[1])}
-              width={Math.abs(marquee.box.to[0] - marquee.box.from[0])}
-              height={Math.abs(marquee.box.to[1] - marquee.box.from[1])}
-              fill="rgba(47,129,247,0.12)"
-              stroke="#2f81f7"
-              strokeWidth={1 / viewport.scale}
-              listening={false}
-            />
-          )}
         </Layer>
       </Stage>
+      {framed && <TileLabel surface={surface} />}
     </div>
   );
 }
 
-/** The objects lying on the table, bottom to top. */
-function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
+/** A tile's name, with a button to show it on its own or go back to all tiles. */
+function TileLabel({ surface }: Readonly<{ surface: string }>) {
+  const focused = useStore((s) => s.focus === surface);
+  const name = useStore((s) =>
+    s.table ? surfacesOf(s.table).find((x) => x.id === surface)?.name : undefined,
+  );
+  return (
+    <div className="surface-tile-label" onDoubleClick={() => toggleFocus(surface)}>
+      <span>{name ?? surface}</span>
+      <button
+        type="button"
+        title={focused ? 'Back to all tiles' : 'Show only this surface'}
+        aria-label={focused ? 'Back to all tiles' : `Show only ${name ?? surface}`}
+        onClick={() => toggleFocus(surface)}
+      >
+        {focused ? '⤡' : '⤢'}
+      </button>
+    </div>
+  );
+}
+
+/** Keeps where a surface's canvas was dragged to. */
+function panned(surface: string, x: number, y: number) {
+  useStore.setState((s) => ({
+    viewports: { ...s.viewports, [surface]: { ...viewportOf(s, surface), x, y } },
+  }));
+}
+
+function Marquee({ box, scale }: Readonly<{ box: { from: Vec; to: Vec }; scale: number }>) {
+  return (
+    <Rect
+      x={Math.min(box.from[0], box.to[0])}
+      y={Math.min(box.from[1], box.to[1])}
+      width={Math.abs(box.to[0] - box.from[0])}
+      height={Math.abs(box.to[1] - box.from[1])}
+      fill="rgba(47,129,247,0.12)"
+      stroke="#2f81f7"
+      strokeWidth={1 / scale}
+      listening={false}
+    />
+  );
+}
+
+/** The objects lying on a surface, bottom to top. */
+function Objects({ drag, surface }: Readonly<{ drag: TableDrag; surface: string }>) {
   const view = useStore((s) => s.view)!;
   const table = useStore((s) => s.table)!;
   const selection = useStore((s) => s.selection);
@@ -101,7 +162,7 @@ function Objects({ drag }: Readonly<{ drag: TableDrag }>) {
   const selected = new Set([...selection, ...picked]);
   const marked = promptMarks(prompt);
   const types = view.types;
-  return topLevel(table).map((object) => {
+  return topLevel(table, surface).map((object) => {
     const common = {
       types,
       assets: view.assets,
@@ -168,11 +229,11 @@ function doubleClick(object: TableObject) {
   if (action) command(action);
 }
 
-/** Shift-dragging on the empty table selects everything in a box; a click there clears the selection. */
-function useMarquee() {
+/** Shift-dragging on an empty surface selects everything in a box; a click there clears the selection. */
+function useMarquee(surface: string) {
   const [box, setBox] = useState<{ from: Vec; to: Vec } | undefined>();
   const pointer = (stage: Konva.Stage) =>
-    toWorld(useStore.getState().viewport, stage.getPointerPosition() ?? { x: 0, y: 0 });
+    toWorld(viewportOf(useStore.getState(), surface), stage.getPointerPosition() ?? { x: 0, y: 0 });
   return {
     box,
     onMouseDown: (e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -194,36 +255,51 @@ function useMarquee() {
   };
 }
 
-/** Fits the table to the window once, when it first arrives. */
-function useFitOnce() {
-  const view = useStore((s) => s.view);
+/** The tiles for the surfaces shown, laid out on the page as it is now. */
+function useTiles(): Tile[] {
   const table = useStore((s) => s.table);
-  const fitted = useRef(false);
-  useEffect(() => {
-    if (!fitted.current && view && table) {
-      fitted.current = true;
-      fitToTable(table, view.types, window.innerWidth, window.innerHeight);
-    }
-  }, [view, table]);
+  // Joined, so the selector only changes when the list does.
+  const shown = useStore((s) => shownNow(s).join('\n'));
+  const hand = useStore((s) => (s.handMinimized ? 0 : s.handHeight));
+  const { width, height } = useWindowSize();
+  if (!table) return [];
+  return tilesFor(table, shown.split('\n'), { width, height, hand });
 }
 
-/** A card dragged out of the hand tray: play it onto a pile, a spot or the table. */
-function dropFromHand(e: React.DragEvent<HTMLDivElement>) {
+/**
+ * Fits each tile to its surface when the table first arrives, and again whenever
+ * different surfaces are shown, since every tile changes size then.
+ */
+function useFitOnLayout(tiles: Tile[]) {
+  const view = useStore((s) => s.view);
+  const table = useStore((s) => s.table);
+  const fitted = useRef<string | undefined>(undefined);
+  const layout = tiles.map((t) => t.surface).join('\n');
+  useEffect(() => {
+    if (!view || !table || fitted.current === layout) return;
+    fitted.current = layout;
+    for (const tile of tiles) fitTile(table, view.types, tile);
+  }, [layout, view, table, tiles]);
+}
+
+/** A card dragged out of the hand tray onto a tile: play it onto a pile, a spot or the surface. */
+function dropFromHand(e: React.DragEvent<HTMLDivElement>, surface: string) {
   const id = e.dataTransfer.getData(HAND_DRAG);
-  const { table, view, viewport, command } = useStore.getState();
+  const { table, view, command } = useStore.getState();
   if (!id || !table || !view || table.objects[id]?.kind !== 'piece') return;
   e.preventDefault();
   if (overHandTray(e.clientX, e.clientY)) return;
   const box = e.currentTarget.getBoundingClientRect();
+  const viewport = viewportOf(useStore.getState(), surface);
   const point = toWorld(viewport, { x: e.clientX - box.left, y: e.clientY - box.top });
-  for (const c of handDropCommands(table, view.types, { id, point, faceDown: e.altKey }))
-    command(c);
+  const drop = { id, point, surface, faceDown: e.altKey };
+  for (const c of handDropCommands(table, view.types, drop)) command(c);
 }
 
-function onWheel(e: Konva.KonvaEventObject<WheelEvent>) {
+function onWheel(e: Konva.KonvaEventObject<WheelEvent>, surface: string) {
   e.evt.preventDefault();
   const pointer = e.target.getStage()?.getPointerPosition();
-  if (pointer) zoomAt(pointer, Math.exp(-e.evt.deltaY * 0.0015));
+  if (pointer) zoomAt(surface, pointer, Math.exp(-e.evt.deltaY * 0.0015));
 }
 
 function useWindowSize() {

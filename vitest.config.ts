@@ -37,7 +37,7 @@ export default defineConfig({
         'packages/server/src/**': { statements: 91, branches: 82, functions: 94, lines: 93 },
         'packages/cli/src/**': { statements: 92, branches: 88, functions: 85, lines: 94 },
         'packages/engine-client/src/**': { statements: 92, branches: 88, functions: 91, lines: 95 },
-        'packages/app/src/**': { statements: 79, branches: 77, functions: 78, lines: 80 },
+        'packages/app/src/**': { statements: 79, branches: 77, functions: 79, lines: 80 },
       },
     },
   },

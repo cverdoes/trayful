@@ -1358,3 +1358,128 @@ label.button:hover {
 .mark-dialog input {
   width: 180px;
 }
+
+/* The table: one tile per surface shown, each a canvas of its own. */
+.surface-tile {
+  position: absolute;
+}
+
+.table {
+  position: fixed;
+  inset: 0;
+}
+
+.table.tiled {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.surface-tile.framed {
+  overflow: hidden;
+  border-radius: 8px;
+  background:
+    var(--felt-grain),
+    radial-gradient(ellipse at 50% 45%, #376b5c 0%, var(--felt) 60%, #22473d 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.surface-tile-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 4px 0 10px;
+  border-bottom-right-radius: 8px;
+  background: rgba(13, 17, 23, 0.55);
+  font-size: 12px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.surface-tile-label button {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* The surfaces under the toolbar, each a chip that switches its tile on or off. */
+.chip-row {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 8px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.chip-row select {
+  font: inherit;
+  height: 28px;
+  border: 1px solid #30363d;
+  border-radius: 14px;
+  padding: 0 8px;
+  background: #21262d;
+  color: var(--bar-text);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 28px;
+  border-radius: 14px;
+  background: rgba(13, 17, 23, 0.55);
+  color: var(--muted);
+}
+
+.chip.on {
+  border-color: var(--accent);
+  background: rgba(47, 129, 247, 0.22);
+  color: var(--bar-text);
+}
+
+.chip.mine::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e3b341;
+}
+
+.chip .sitter {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Something changed on a hidden surface. */
+.chip.pulse {
+  animation: chip-pulse 0.8s ease-in-out 3;
+}
+
+@keyframes chip-pulse {
+  50% {
+    border-color: #e3b341;
+    box-shadow: 0 0 0 3px rgba(227, 179, 65, 0.35);
+    color: var(--bar-text);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip.pulse {
+    animation: none;
+    border-color: #e3b341;
+  }
+}

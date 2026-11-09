@@ -3,6 +3,7 @@ import { keyActions, type Actions } from './actions';
 import { toggleHandTray } from '../table/hand';
 import { closeMagnifier, spaceKey } from '../table/magnify';
 import { useStore } from '../store';
+import { focusNumber } from '../table/tiles';
 import { fitWindow, zoomWindow } from '../table/viewport';
 
 /** The toolbar actions that have a key of their own. */
@@ -60,6 +61,11 @@ export function shortcutFor(press: KeyPress): Shortcut | undefined {
   return press.altKey ? undefined : KEYS.get(key);
 }
 
+/** Number keys 1 to 9 on their own focus the tile in that place. */
+export function isFocusKey(press: KeyPress): boolean {
+  return /^[1-9]$/.test(press.key) && !press.ctrlKey && !press.metaKey && !press.altKey;
+}
+
 /**
  * The keyboard shortcuts of the table, Shift for selecting and moving whole piles,
  * and Space for magnifying the piece under the pointer.
@@ -74,6 +80,7 @@ export function useKeyboard(): void {
         return;
       }
       if (e.type !== 'keydown') return;
+      if (isFocusKey(e) && focusNumber(Number(e.key))) return e.preventDefault();
       const shortcut = shortcutFor(e);
       if (shortcut && perform(shortcut)) e.preventDefault();
     };
@@ -106,6 +113,7 @@ function perform(shortcut: Shortcut): boolean {
       else if (state.helpOpen) useStore.setState({ helpOpen: false });
       else if (state.groupPick) useStore.setState({ groupPick: undefined });
       else if (state.markPick) useStore.setState({ markPick: undefined });
+      else if (state.focus) useStore.setState({ focus: undefined });
       else state.select([]);
       return true;
     case 'help':

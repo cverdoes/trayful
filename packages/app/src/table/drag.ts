@@ -1,4 +1,11 @@
-import { ridersOf, type Command, type SnapSpot, type Stack, type TableView } from '@trayful/core';
+import {
+  ridersOf,
+  surfaceOf,
+  type Command,
+  type SnapSpot,
+  type Stack,
+  type TableView,
+} from '@trayful/core';
 import type Konva from 'konva';
 import {
   CLICK_SLOP,
@@ -29,7 +36,11 @@ export class TableDrag {
   start(id: string): void {
     const { table, types } = scene();
     const { selection, select } = useStore.getState();
-    const moving = selection.includes(id) ? selection : [id];
+    // Only what lies on the same surface goes along: a drag stays inside its tile.
+    const surface = surfaceOf(table.objects[id]!);
+    const moving = selection.includes(id)
+      ? selection.filter((o) => table.objects[o] && surfaceOf(table.objects[o]) === surface)
+      : [id];
     if (!selection.includes(id)) select([id]);
     this.starts.clear();
     this.riders.clear();
@@ -56,11 +67,11 @@ export class TableDrag {
     const { table, types } = scene();
     const point: Vec = [node.x(), node.y()];
     const moved = [...this.starts.keys()];
-    if (dropTarget(table, types, moved, point)) return highlight(undefined);
     const object = table.objects[id]!;
-    highlight(
-      snapAt(table, types, { object, point, ignore: this.dragging(), group: moved.length > 1 }),
-    );
+    const surface = surfaceOf(object);
+    if (dropTarget(table, types, { dragged: moved, point, surface })) return highlight(undefined);
+    const ignore = this.dragging();
+    highlight(snapAt(table, types, { object, point, surface, ignore, group: moved.length > 1 }));
   }
 
   end(id: string, node: Konva.Group): void {
@@ -91,10 +102,11 @@ export class TableDrag {
     if (hoverHand(node)) return highlight(undefined);
     const { table, types } = scene();
     const point = fromStack(stack, [node.x(), node.y()]);
-    if (dropTarget(table, types, [stack.id], point)) return highlight(undefined);
-    highlight(
-      snapAt(table, types, { object: stack, point, ignore: new Set([stack.id]), group: false }),
-    );
+    const surface = surfaceOf(stack);
+    if (dropTarget(table, types, { dragged: [stack.id], point, surface }))
+      return highlight(undefined);
+    const ignore = new Set([stack.id]);
+    highlight(snapAt(table, types, { object: stack, point, surface, ignore, group: false }));
   }
 
   /** A click on a card of a stack selects the stack; a drag takes the card off it. */

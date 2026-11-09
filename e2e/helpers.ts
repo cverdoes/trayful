@@ -10,7 +10,7 @@ declare global {
   interface Window {
     __trayful?: {
       store: { getState(): { status: string; selection: string[]; hovered?: string } };
-      worldToScreen(x: number, y: number): { x: number; y: number };
+      worldToScreen(x: number, y: number, surface?: string): { x: number; y: number };
       faceToScreen?(side: 'front' | 'back', x: number, y: number): { x: number; y: number };
     };
   }
@@ -38,9 +38,13 @@ export async function table(
   }
 }
 
-/** Screen position of a table point, in millimetres. */
-export async function screen(page: Page, x: number, y: number) {
-  return page.evaluate(([x, y]) => window.__trayful!.worldToScreen(x!, y!), [x, y]);
+/** Screen position of a table point, in millimetres, on the Centre or another surface. */
+export async function screen(page: Page, x: number, y: number, surface?: string) {
+  return page.evaluate(([x, y, surface]) => window.__trayful!.worldToScreen(x, y, surface), [
+    x,
+    y,
+    surface,
+  ] as const);
 }
 
 export async function drag(page: Page, from: [number, number], to: [number, number]) {
