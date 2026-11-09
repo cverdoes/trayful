@@ -1,5 +1,5 @@
 // Which of a table's surfaces this viewer shows as tiles, and where each tile goes.
-import { CENTRE, surfaceOf, surfacesOf, type TableState } from '@trayful/core';
+import { CENTRE, surfaceOf, surfacesOf, SURFACE_PREFIX, type TableState } from '@trayful/core';
 
 /** The views a viewer can pick from the chip row's menu. */
 export type Preset = 'all' | 'mine' | 'centre';
@@ -36,6 +36,29 @@ export interface Tile {
   box: Box;
   /** The part of the canvas nothing covers, which fitting fills. */
   clear: Box;
+}
+
+/** The target that sends pieces to free room on a surface. */
+export function toSurface(surface: string): string {
+  return `${SURFACE_PREFIX}${surface}`;
+}
+
+/**
+ * The surfaces the selected objects can be sent to: every surface but the one
+ * they all lie on. None on a table without surfaces, or when nothing selected
+ * may move.
+ */
+export function sendTargets(
+  table: TableState,
+  selection: readonly string[],
+): { ids: string[]; to: { id: string; name: string }[] } {
+  const movable = selection
+    .map((id) => table.objects[id])
+    .filter((o) => o !== undefined && !o.locked);
+  if (movable.length === 0 || !hasSurfaces(table)) return { ids: [], to: [] };
+  const from = new Set(movable.map((o) => surfaceOf(o!)));
+  const to = surfacesOf(table).filter((s) => from.size > 1 || !from.has(s.id));
+  return { ids: movable.map((o) => o!.id), to: to.map(({ id, name }) => ({ id, name })) };
 }
 
 /** Whether a table has surfaces besides the Centre, and so shows chips and tiles. */

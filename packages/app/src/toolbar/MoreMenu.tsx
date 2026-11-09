@@ -10,12 +10,32 @@ export interface MenuItem {
   separated?: boolean;
 }
 
+/** The button that opens a menu, when it is not the toolbar's "More". */
+export interface MenuButton {
+  /** What the button shows. */
+  text: string;
+  /** What the button and its menu are called. */
+  label: string;
+  title: string;
+  /** Opens the menu from the button's left edge instead of its right. */
+  fromLeft?: boolean;
+}
+
+const MORE: MenuButton = {
+  text: 'More ▾',
+  label: 'More',
+  title: 'More things to do with this table',
+};
+
 /**
- * A "More" button that opens a list of the less frequent choices, so they
- * stay out of the way on the toolbar. Closes on a choice, Escape or a click
+ * A button ("More" on the toolbar) that opens a list of the less frequent
+ * choices, so they stay out of the way. Closes on a choice, Escape or a click
  * anywhere else; the arrow keys move between the choices.
  */
-export function MoreMenu({ items }: Readonly<{ items: MenuItem[] }>) {
+export function MoreMenu({
+  items,
+  button = MORE,
+}: Readonly<{ items: MenuItem[]; button?: MenuButton }>) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   useCloseOnOutsideClick(open, root, setOpen);
@@ -41,16 +61,20 @@ export function MoreMenu({ items }: Readonly<{ items: MenuItem[] }>) {
       <button
         type="button"
         className="more-button"
-        aria-label="More"
-        title="More things to do with this table"
+        aria-label={button.label}
+        title={button.title}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        More ▾
+        {button.text}
       </button>
       {open && (
-        <div className="more-menu" role="menu" aria-label="More">
+        <div
+          className={button.fromLeft ? 'more-menu from-left' : 'more-menu'}
+          role="menu"
+          aria-label={button.label}
+        >
           {items.map((item) => (
             <button
               key={item.label}

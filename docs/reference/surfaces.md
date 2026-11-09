@@ -47,4 +47,12 @@ A row of chips under the toolbar picks what to show:
 - **A chip per surface** switches its tile on or off. When someone else changes a surface whose tile is off, its chip pulses for a moment.
 - **Focus**: the button by a tile's name, a double-click on the name, or a number key (`1` for the first tile shown, `2` for the next) shows that tile on its own; the same again, or `Esc`, goes back.
 
-What each viewer shows is their own choice, kept in that browser for each table; it changes nothing for anyone else. Pieces are dragged within a tile; a card played from the hand lands on the tile it is dropped on. Moving pieces from one tile to another is coming next; until then, agents move them with `move` and a `surface:<id>` target.
+What each viewer shows is their own choice, kept in that browser for each table; it changes nothing for anyone else. ### Moving pieces between surfaces
+
+- **Drag from tile to tile.** The tile under the pointer lights up, and the piece lands where it is let go, snapping into spots and joining piles there as on its own surface. The rest of a selection keeps its place around the dragged piece. A card dragged off a pile goes the same way.
+- **Drop on a chip** to send pieces to free room on that surface, whether its tile is shown or not. A card from the hand can be dropped on a chip too, or on a tile to land where it is dropped.
+- **Send to…** on the toolbar sends the selected pieces to free room on another surface.
+
+### Changing the surfaces
+
+The **+** at the end of the chip row adds a surface or a seat. The **▾** by each chip renames the surface, makes it a seat or not, and removes it, which moves what lies on it to the Centre. At a seat, *Sit here* and *Stand up* seat you. All of it can be undone.

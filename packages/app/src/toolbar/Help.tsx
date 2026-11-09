@@ -17,6 +17,7 @@ const SHORTCUTS: [string, string][] = [
   ['Drag out of your hand', 'Play a card face up; hold Alt to play it face down'],
   ['Double-click in your hand', 'Play that card into the middle of the view'],
   ['Drag the top edge of your hand', 'Make it taller or shorter; double-click the edge to reset'],
+  ['Drag onto another tile or a chip', 'On a table with surfaces: move pieces to that surface'],
   ['Point at a piece', 'It lights up, and the keys below act on it without selecting it'],
   [
     'Hold Space',

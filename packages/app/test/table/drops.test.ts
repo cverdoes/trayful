@@ -296,3 +296,78 @@ describe('landing', () => {
     expect(landing('hand:alice', 'alice')).toEqual({ to: 'hand:alice' });
   });
 });
+
+describe('drops on another surface than the drag began on', () => {
+  let split: TableState;
+  beforeAll(() => {
+    split = after(
+      project,
+      table,
+      { type: 'addSurface', id: 'side' },
+      { type: 'move', ids: ['worker.red.1', 'worker.red.2'], to: 'surface:side' },
+    );
+  });
+  const drop = (moved: string[], onto: { surface: string; point?: Vec }) =>
+    moveCommands(split, types(), {
+      moved,
+      lead: moved[0]!,
+      by: [9, 9],
+      ignore: new Set(moved),
+      onto,
+    });
+
+  it('lands the lead under the pointer, named first so the others keep their place around it', () => {
+    expect(
+      drop(['worker.red.2', 'worker.red.1'], { surface: 'centre', point: [400.04, 300] }),
+    ).toEqual([
+      {
+        type: 'move',
+        ids: ['worker.red.2', 'worker.red.1'],
+        to: [400, 300],
+        surface: 'centre',
+      },
+    ]);
+  });
+
+  it('snaps into a spot on the surface it is dropped on', () => {
+    expect(drop(['worker.red.1'], { surface: 'centre', point: [-190, 1] })).toEqual([
+      { type: 'move', ids: ['worker.red.1'], to: 'main-board/fields/0' },
+    ]);
+  });
+
+  it('goes to free room on a surface whose chip it is dropped on', () => {
+    expect(drop(['worker.red.1', 'worker.red.2'], { surface: 'centre' })).toEqual([
+      { type: 'move', ids: ['worker.red.1', 'worker.red.2'], to: 'surface:centre' },
+    ]);
+  });
+
+  it('takes a card off a stack to a chip or a tile of another surface', () => {
+    const stack = split.objects['deck:actions'] as Stack;
+    const card = { stack, piece: stack.items.at(-1)!, local: [0, 0] as Vec };
+    expect(drawCommands(split, types(), { ...card, onto: { surface: 'side' } }).commands).toEqual([
+      { type: 'draw', from: 'deck:actions', to: 'surface:side' },
+    ]);
+    const onTile = drawCommands(split, types(), {
+      ...card,
+      onto: { surface: 'side', point: [50, 60] },
+    });
+    expect(onTile.commands).toEqual([
+      { type: 'draw', from: 'deck:actions', to: [50, 60], surface: 'side' },
+    ]);
+    expect(after(project, split, ...onTile.commands).objects[onTile.select!]).toMatchObject({
+      surface: 'side',
+      pos: [50, 60],
+    });
+  });
+
+  it('gives commands the table accepts', () => {
+    const commands = drop(['worker.red.2', 'worker.red.1'], {
+      surface: 'centre',
+      point: [400, 300],
+    });
+    const moved = after(project, split, ...commands);
+    expect(moved.objects['worker.red.2']).toMatchObject({ pos: [400, 300] });
+    expect(moved.objects['worker.red.2']!.surface).toBeUndefined();
+    expect(moved.objects['worker.red.1']!.surface).toBeUndefined();
+  });
+});

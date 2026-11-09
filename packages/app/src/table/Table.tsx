@@ -54,12 +54,13 @@ function SurfaceTile({
   const redrawKey = useStore((s) => s.redrawKey);
   const shiftDown = useStore((s) => s.shiftDown);
   const viewport = useStore((s) => viewportOf(s, surface));
+  const target = useStore((s) => s.dropSurface === surface);
   const stage = useRef<Konva.Stage | null>(null);
   const marquee = useMarquee(surface);
   const pointer = useHover(drag.nodes, stage);
   return (
     <div
-      className={framed ? 'surface-tile framed' : 'surface-tile'}
+      className={`surface-tile${framed ? ' framed' : ''}${target ? ' drop-target' : ''}`}
       data-surface={surface}
       style={{ left: box.x, top: box.y, width: box.width, height: box.height }}
       onDragOver={(e) => {

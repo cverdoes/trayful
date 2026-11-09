@@ -12,6 +12,7 @@ import {
 } from '@trayful/core';
 import { sidesOf, valuesOf } from '@trayful/formats/browser';
 import { dropTarget, facePiece, pieceSize, type Types } from '../render/geometry';
+import { toSurface } from './surfaces';
 
 export type Vec = [number, number];
 
@@ -71,6 +72,15 @@ export function snapAt(table: TableState, types: Types, drop: Drop): SnapSpot | 
   return spot && (spot.area || !drop.group) ? spot : undefined;
 }
 
+/**
+ * Where a drag ended on another surface than it started on: at a point of that
+ * surface's tile, or on its chip, which leaves the place to the table.
+ */
+export interface Elsewhere {
+  surface: string;
+  point?: Vec;
+}
+
 /** Objects dragged across the table and let go. */
 export interface Move {
   /** The objects picked up, in any order. */
@@ -82,24 +92,34 @@ export interface Move {
   ignore: ReadonlySet<string>;
   /** Dropped on the hand tray of this player. */
   hand?: string;
+  /** Dropped on another surface. */
+  onto?: Elsewhere;
 }
 
 /**
- * What a drop does: into the hand, onto a pile of the same kind, into a snap spot
- * (only the lead object), or else shifted, recording a free area it lands in.
+ * What a drop does: into the hand, to free room on the surface whose chip it was
+ * dropped on, onto a pile of the same kind, into a snap spot (only the lead
+ * object), or else shifted, recording a free area it lands in. A drop on another
+ * surface's tile does the same there, the lead object landing under the pointer.
  */
 export function moveCommands(table: TableState, types: Types, move: Move): Command[] {
   const ordered = move.moved.toSorted((a, b) => table.objects[a]!.z - table.objects[b]!.z);
   if (move.hand) return [{ type: 'move', ids: ordered, to: `hand:${move.hand}` }];
+  const { onto } = move;
+  if (onto && !onto.point) return [{ type: 'move', ids: ordered, to: toSurface(onto.surface) }];
   const lead = table.objects[move.lead]!;
-  const point: Vec = [lead.pos[0] + move.by[0], lead.pos[1] + move.by[1]];
-  const surface = surfaceOf(lead);
+  const point: Vec = onto?.point ?? [lead.pos[0] + move.by[0], lead.pos[1] + move.by[1]];
+  const surface = onto?.surface ?? surfaceOf(lead);
   const target = dropTarget(table, types, { dragged: move.moved, point, surface });
   if (target) return [{ type: 'stack', ids: ordered, onto: target.id }];
   const group = move.moved.length > 1;
   const spot = snapAt(table, types, { object: lead, point, surface, ignore: move.ignore, group });
   if (spot && !spot.area) return [{ type: 'move', ids: [move.lead], to: spot.ref }];
-  return [{ type: 'move', ids: ordered, by: move.by, ...(spot ? { into: spot.ref } : {}) }];
+  const into = spot ? { into: spot.ref } : {};
+  if (!onto) return [{ type: 'move', ids: ordered, by: move.by, ...into }];
+  // The first object named goes to the position; the others keep their place around it.
+  const ids = [move.lead, ...ordered.filter((id) => id !== move.lead)];
+  return [{ type: 'move', ids, to: [round(point[0]), round(point[1])], surface, ...into }];
 }
 
 /** A card dragged off a stack and let go at `local`, its position inside the stack. */
@@ -108,25 +128,29 @@ export interface Draw {
   piece: string;
   local: Vec;
   hand?: string;
+  /** Dropped on another surface than the stack's. */
+  onto?: Elsewhere;
 }
 
 /**
  * What taking a card off a stack does: drawing the top card of a pile, or taking
  * any card from a fan or spread, to a hand, a pile, a snap spot or the table
- * beside the stack, on its surface. `select` is the card to select afterwards.
+ * where it was let go: on the stack's surface, or on another one's tile or chip.
+ * `select` is the card to select afterwards.
  */
 export function drawCommands(
   table: TableState,
   types: Types,
-  { stack, piece, local, hand }: Draw,
+  { stack, piece, local, hand, onto }: Draw,
 ): { commands: Command[]; select?: string } {
-  const surface = surfaceOf(stack);
+  const surface = onto?.surface ?? surfaceOf(stack);
   const take = (to: Vec | string): Command =>
     piece === stack.items.at(-1) && !stack.layout
       ? { type: 'draw', from: stack.id, ...landing(to, surface) }
       : { type: 'take', id: piece, ...landing(to, surface) };
   if (hand) return { commands: [take(`hand:${hand}`)] };
-  const point = fromStack(stack, local);
+  if (onto && !onto.point) return { commands: [take(toSurface(surface))] };
+  const point = onto?.point ?? fromStack(stack, local);
   const target = dropTarget(table, types, { dragged: [stack.id], point, surface });
   if (target) return { commands: [take(point), { type: 'stack', ids: [piece], onto: target.id }] };
   const ignore = new Set([stack.id]);
