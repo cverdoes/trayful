@@ -1,8 +1,9 @@
 import type { MarkBox, Piece } from '@trayful/core';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { Group, Rect } from 'react-konva';
 import { setCursor } from './cursor';
 import { clickBox, eraseBox } from './marks';
+import { DrawScale } from '../render/Component';
 import { localBoxes } from '../render/Marks';
 import type { Types } from '../render/geometry';
 import { useStore } from '../store';
@@ -14,7 +15,7 @@ import { useStore } from '../store';
  */
 export function MarkTargets({ piece, types }: Readonly<{ piece: Piece; types: Types }>) {
   const [hovered, setHovered] = useState<string>();
-  const scale = useStore((s) => s.viewport.scale);
+  const scale = useContext(DrawScale) ?? 1;
   return (
     <>
       {localBoxes(piece, types).map((box) => {

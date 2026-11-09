@@ -1,3 +1,4 @@
+import { CENTRE } from '@trayful/core';
 import { useEffect } from 'react';
 import { GroupPicker } from './table/GroupPicker';
 import { Help } from './toolbar/Help';
@@ -14,6 +15,7 @@ import { RenderJob } from './render/Preview';
 import { route } from './route';
 import { useStore } from './store';
 import { Table } from './table/Table';
+import { pageOf } from './table/viewport';
 import { Toolbar } from './toolbar/Toolbar';
 
 export function App() {
@@ -62,7 +64,8 @@ declare global {
     /** Lets end-to-end tests read state and find pieces on screen. */
     __trayful?: {
       store: typeof useStore;
-      worldToScreen: (x: number, y: number) => { x: number; y: number };
+      /** Where a point on a surface (the Centre unless named) is on the page. */
+      worldToScreen: (x: number, y: number, surface?: string) => { x: number; y: number };
       /** In design mode: where a point on a face, in millimetres, is on the page. */
       faceToScreen?: (side: 'front' | 'back', x: number, y: number) => { x: number; y: number };
     };
@@ -73,9 +76,9 @@ function useTestHook() {
   useEffect(() => {
     window.__trayful = {
       store: useStore,
-      worldToScreen: (x, y) => {
-        const { viewport: v } = useStore.getState();
-        return { x: v.x + x * v.scale, y: v.y + y * v.scale };
+      worldToScreen: (x, y, surface = CENTRE) => {
+        const [px, py] = pageOf(surface, [x, y]) ?? [Number.NaN, Number.NaN];
+        return { x: px, y: py };
       },
     };
   }, []);

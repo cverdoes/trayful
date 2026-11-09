@@ -21,7 +21,12 @@ const message = (anchor?: string): PlayerPrompt => ({
 
 /** The table as the page sees it, panned and zoomed. */
 function store() {
-  return { table, view: { types: project.types }, viewport: { x: 10, y: 20, scale: 2 } };
+  return {
+    table,
+    view: { types: project.types },
+    pageOf: (surface: string, [x, y]: readonly [number, number]): [number, number] | undefined =>
+      surface === 'centre' ? [10 + x * 2, 20 + y * 2] : undefined,
+  };
 }
 
 describe('prompt bubbles', () => {

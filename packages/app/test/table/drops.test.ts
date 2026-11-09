@@ -7,6 +7,7 @@ import {
   fromStack,
   handDropCommands,
   inBox,
+  landing,
   moveCommands,
   snapHint,
   type Vec,
@@ -121,7 +122,12 @@ describe('handDropCommands', () => {
     });
   });
   const play = (point: Vec, faceDown = false) =>
-    handDropCommands(held, types(), { id: 'action-card.raid.1', point, faceDown });
+    handDropCommands(held, types(), {
+      id: 'action-card.raid.1',
+      point,
+      surface: 'centre',
+      faceDown,
+    });
 
   it('plays a card onto the table where it is dropped, to a tenth of a millimetre', () => {
     expect(play([10.04, 300.06])).toEqual([
@@ -155,7 +161,12 @@ describe('handDropCommands', () => {
 
   it('ignores anything that is not a piece', () => {
     expect(
-      handDropCommands(held, types(), { id: 'deck:actions', point: [0, 0], faceDown: false }),
+      handDropCommands(held, types(), {
+        id: 'deck:actions',
+        point: [0, 0],
+        surface: 'centre',
+        faceDown: false,
+      }),
     ).toEqual([]);
   });
 });
@@ -228,5 +239,60 @@ describe('snapHint', () => {
     expect(
       snapHint(table, types(), table.objects['worker.red.1']!, new Set(['main-board'])),
     ).toBeUndefined();
+  });
+});
+
+describe('drops on another surface', () => {
+  let split: TableState;
+  beforeAll(() => {
+    // Alice's surface holds the deck and a worker; the board stays in the Centre.
+    split = after(
+      project,
+      table,
+      { type: 'addSurface', id: 'alice', seat: true },
+      { type: 'move', ids: ['deck:actions', 'worker.red.1'], to: 'surface:alice' },
+      { type: 'move', ids: ['action-card.raid.1'], to: 'hand:alice' },
+    );
+  });
+
+  it('keeps a dragged piece on its surface, with no spots from the Centre', () => {
+    const worker = split.objects['worker.red.1']!;
+    expect(snapHint(split, types(), worker, new Set())).toBeUndefined();
+    const moved = moveCommands(split, types(), {
+      moved: ['worker.red.1'],
+      lead: 'worker.red.1',
+      by: [-90, -120],
+      ignore: new Set(['worker.red.1']),
+    });
+    expect(moved).toEqual([{ type: 'move', ids: ['worker.red.1'], by: [-90, -120] }]);
+  });
+
+  it('puts a card taken off a stack down on the stack’s surface', () => {
+    const stack = split.objects['deck:actions'] as Stack;
+    const { commands } = drawCommands(split, types(), {
+      stack,
+      piece: stack.items.at(-1)!,
+      local: [0, 120],
+    });
+    expect(commands[0]).toMatchObject({ type: 'draw', surface: 'alice' });
+  });
+
+  it('plays a card from the hand onto the surface of the tile it was dropped on', () => {
+    const drop = { id: 'action-card.raid.1', point: [5, 5] as Vec, faceDown: false };
+    expect(handDropCommands(split, types(), { ...drop, surface: 'alice' })).toEqual([
+      { type: 'move', ids: ['action-card.raid.1'], to: [5, 5], surface: 'alice' },
+    ]);
+    // The board's spots are in the Centre, so the same drop there lands freely.
+    expect(handDropCommands(split, types(), { ...drop, surface: 'centre' })).toEqual([
+      { type: 'move', ids: ['action-card.raid.1'], to: [5, 5] },
+    ]);
+  });
+});
+
+describe('landing', () => {
+  it('names the surface only for a position off the Centre', () => {
+    expect(landing([1, 2], 'centre')).toEqual({ to: [1, 2] });
+    expect(landing([1, 2], 'alice')).toEqual({ to: [1, 2], surface: 'alice' });
+    expect(landing('hand:alice', 'alice')).toEqual({ to: 'hand:alice' });
   });
 });

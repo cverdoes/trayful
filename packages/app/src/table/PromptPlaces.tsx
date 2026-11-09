@@ -1,5 +1,7 @@
-import { allSpots, CENTRE, type SnapSpot } from '@trayful/core';
+import { allSpots, type SnapSpot } from '@trayful/core';
+import { useContext } from 'react';
 import { Group, Rect } from 'react-konva';
+import { DrawScale } from '../render/Component';
 import { useStore } from '../store';
 import { clickForPrompt, promptMarks } from './promptTargets';
 
@@ -8,19 +10,19 @@ const POINT_SPOT = 12;
 const GOLD = '#e3b341';
 
 /**
- * The drop areas and spots a prompt names, outlined in gold on the table. When the
+ * The drop areas and spots on a surface a prompt names, outlined in gold. When the
  * prompt asks for a place, they take the click that picks one.
  */
-export function PromptPlaces() {
+export function PromptPlaces({ surface }: Readonly<{ surface: string }>) {
   const prompt = useStore((s) => s.prompts[0]);
   const picked = useStore((s) => s.picked);
   const table = useStore((s) => s.table);
   const view = useStore((s) => s.view);
-  const scale = useStore((s) => s.viewport.scale);
+  const scale = useContext(DrawScale) ?? 1;
   if (!prompt || !table || !view) return null;
   const places = [...promptMarks(prompt)].filter((name) => name.includes('/'));
   if (places.length === 0) return null;
-  const spots = allSpots(table, view.types, CENTRE);
+  const spots = allSpots(table, view.types, surface);
   return (
     <Group>
       {places.flatMap((place) =>

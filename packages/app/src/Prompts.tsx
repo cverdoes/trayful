@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { Answers } from './PromptAnswers';
 import { useStore } from './store';
 import { anchorOnScreen, bubbleAt } from './table/promptBubble';
+import { pageOf } from './table/viewport';
 
 /** Room between the prompt panel and the hand tray, or the bottom of the window. */
 const GAP = 12;
@@ -17,7 +18,7 @@ const LOW = 80;
 export function Prompts() {
   const prompts = useStore((s) => s.prompts);
   const prompt = prompts[0];
-  const at = useStore((s) => (prompt ? anchorOnScreen(prompt, s) : undefined));
+  const at = useStore((s) => (prompt ? anchorOnScreen(prompt, { ...s, pageOf }) : undefined));
   const bottom = useStore((s) => (s.handMinimized ? LOW : s.handHeight + GAP));
   if (!prompt) return null;
   const answer = (value: PromptAnswer) =>

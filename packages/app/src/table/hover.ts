@@ -1,6 +1,6 @@
 import type { TableObject } from '@trayful/core';
 import type Konva from 'konva';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { facePiece } from '../render/geometry';
 import { useStore } from '../store';
 
@@ -13,17 +13,20 @@ export const STACK_CARD = 'stack-card';
  *
  * The table changing under a still pointer is checked too: a flipped card can come
  * back under a new id, as a new node, and pressing F again should turn it back.
- * Returns the stage's pointer events.
+ * Returns the pointer events of `stage`, the canvas of one tile.
  */
-export function useHover(nodes: ReadonlyMap<string, Konva.Group>) {
+export function useHover(
+  nodes: ReadonlyMap<string, Konva.Group>,
+  stage: RefObject<Konva.Stage | null>,
+) {
   const table = useStore((s) => s.table);
   const onStage = useRef(false);
   useEffect(() => {
     if (!onStage.current) return;
     // Wait for the canvas to draw the new table, so the pointer is tested against it.
-    const frame = requestAnimationFrame(() => hoverShape(nodes, shapeUnderPointer(nodes)));
+    const frame = requestAnimationFrame(() => hoverShape(nodes, shapeUnderPointer(stage.current)));
     return () => cancelAnimationFrame(frame);
-  }, [table, nodes]);
+  }, [table, nodes, stage]);
   return {
     onMouseMove: (e: Konva.KonvaEventObject<MouseEvent>) => {
       onStage.current = true;
@@ -67,8 +70,7 @@ function objectOf(nodes: ReadonlyMap<string, Konva.Group>, shape: Konva.Node): s
   return undefined;
 }
 
-function shapeUnderPointer(nodes: ReadonlyMap<string, Konva.Group>): Konva.Node | undefined {
-  const stage = nodes.values().next().value?.getStage();
+function shapeUnderPointer(stage: Konva.Stage | null): Konva.Node | undefined {
   const pointer = stage?.getPointerPosition();
   return (pointer && stage?.getIntersection(pointer)) ?? undefined;
 }

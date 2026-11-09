@@ -34,7 +34,7 @@ describe('dropTarget', () => {
     point: [number, number],
     types: Types = project.types,
     on = table,
-  ) => dropTarget(on, types, [dragged], point)?.id;
+  ) => dropTarget(on, types, { dragged: [dragged], point, surface: 'centre' })?.id;
 
   it('stacks a component onto the same component under the point', () => {
     expect(target('action-card.raid.1', DECK)).toBe('deck:actions');

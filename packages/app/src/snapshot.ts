@@ -1,24 +1,35 @@
+import { CENTRE } from '@trayful/core';
 import type Konva from 'konva';
 import { useStore } from './store';
-import { tableBounds } from './table/viewport';
+import { tableBounds, viewportOf } from './table/viewport';
 
 /** Longest side of a snapshot in pixels: enough to read card titles. */
 const SNAPSHOT_SIZE = 1600;
 const PADDING_MM = 10;
 const FELT = '#2f5d50';
 
-let stage: Konva.Stage | undefined;
+/** The canvas of each surface's tile on screen, by surface id. */
+const stages = new Map<string, Konva.Stage>();
 
-/** Called by the table so snapshots can draw it. */
-export function setSnapshotStage(next: Konva.Stage | null): void {
-  stage = next ?? undefined;
+/** Called by each tile so snapshots can draw its surface. */
+export function setSnapshotStage(surface: string, next: Konva.Stage | null): void {
+  if (next) stages.set(surface, next);
+  else stages.delete(surface);
 }
 
-/** Draws the whole table, whatever part is on screen, and returns it as base64 PNG data. */
+/**
+ * Draws the whole of a surface, whatever part is on screen, and returns it as
+ * base64 PNG data: the Centre, or the first surface shown when the Centre is not.
+ */
 export function snapshotTable(): string {
-  const { table, view, viewport: v } = useStore.getState();
+  const state = useStore.getState();
+  const { table, view } = state;
+  const [surface, stage] = stages.has(CENTRE)
+    ? [CENTRE, stages.get(CENTRE)]
+    : (stages.entries().next().value ?? [CENTRE, undefined]);
   if (!stage || !table || !view) throw new Error('The table is not on screen yet.');
-  const box = tableBounds(table, view.types) ?? [0, 0, 100, 100];
+  const v = viewportOf(state, surface);
+  const box = tableBounds(table, view.types, surface) ?? [0, 0, 100, 100];
   const [x0, y0, x1, y1] = [
     box[0] - PADDING_MM,
     box[1] - PADDING_MM,

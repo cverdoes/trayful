@@ -15,3 +15,14 @@ export async function exampleTable(): Promise<{ project: ResolvedProject; table:
 export function after(project: ResolvedProject, table: TableState, ...commands: Command[]) {
   return commands.reduce((state, command) => applyCommand(state, command, project.types), table);
 }
+
+/** A browser's local storage, kept in memory. */
+export function fakeStorage(): Storage {
+  const items = new Map<string, string>();
+  return {
+    getItem: (key) => items.get(key) ?? null,
+    setItem: (key, value) => {
+      items.set(key, value);
+    },
+  } as Storage;
+}

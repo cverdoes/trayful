@@ -1,8 +1,8 @@
 import type { ServerMessage, TableState } from '@trayful/core';
 import type { ResolvedProject } from '@trayful/formats';
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useStore, type Me } from '../src/store';
-import { after, exampleTable } from './helpers';
+import { after, exampleTable, fakeStorage } from './helpers';
 
 let project: ResolvedProject;
 let table: TableState;
@@ -103,6 +103,25 @@ describe('receive', () => {
       state(2, table, { text: 'flipped a card', by: 'person', player: 'alice', name: 'Alice' }),
     );
     expect(useStore.getState().activity?.text).toBe('drew a card');
+  });
+
+  it('makes the chip of a hidden surface pulse when someone else changes it', () => {
+    const split = after(
+      project,
+      table,
+      { type: 'addSurface', id: 'side' },
+      { type: 'move', ids: ['worker.red.1'], to: 'surface:side' },
+    );
+    const { receive } = useStore.getState();
+    vi.stubGlobal('localStorage', fakeStorage());
+    receive(state(1, split));
+    expect(useStore.getState().surfaceChoice).toBeUndefined();
+    useStore.setState({ surfaceChoice: { preset: 'centre' } });
+    const moved = after(project, split, { type: 'move', ids: ['worker.red.1'], by: [5, 0] });
+    receive(state(2, moved, { text: 'moved', by: 'agent' }));
+    expect(useStore.getState().pulses.side).toBeGreaterThan(0);
+    expect(useStore.getState().pulses.centre).toBeUndefined();
+    vi.unstubAllGlobals();
   });
 
   it('keeps the project, its problems, the players and errors', () => {

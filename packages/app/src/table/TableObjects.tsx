@@ -1,12 +1,13 @@
 import { stackOffsets, type Piece, type Stack, type TableState } from '@trayful/core';
 import type { Assets, ComponentType } from '@trayful/formats/browser';
 import type Konva from 'konva';
+import { useContext } from 'react';
 import { Circle, Group, Rect, Text } from 'react-konva';
 import { bagsOn, drawFromBag } from './bags';
 import type { Vec } from './drops';
 import { STACK_CARD } from './hover';
 import { MarkTargets } from './MarkTargets';
-import { Component, type Highlight } from '../render/Component';
+import { Component, DrawScale, type Highlight } from '../render/Component';
 import { Marks } from '../render/Marks';
 import { useMotionClock } from '../motion/motions';
 import { useRoll } from '../motion/rolls';
@@ -355,17 +356,17 @@ function CountBadge({
 }
 
 /**
- * How many pieces each bag holds, in its top-right corner. Clicking the count
+ * How many pieces each bag on a surface holds, in its top-right corner. Clicking the count
  * draws one at random into your hand.
  */
-export function BagBadges({ types }: Readonly<{ types: Types }>) {
+export function BagBadges({ types, surface }: Readonly<{ types: Types; surface: string }>) {
   const table = useStore((s) => s.table);
   const player = useStore((s) => s.me?.player?.id);
   const command = useStore((s) => s.command);
   if (!table) return null;
   return (
     <>
-      {bagsOn(table, types).map((bag) => {
+      {bagsOn(table, types, surface).map((bag) => {
         const [w, h] = bag.spot.area!;
         const draw = drawFromBag(bag, player);
         return (
@@ -390,11 +391,14 @@ export function BagBadges({ types }: Readonly<{ types: Types }>) {
   );
 }
 
-/** Outlines where the dragged piece could snap, with the spot it would snap to filled in. */
-export function SnapHints() {
+/**
+ * Outlines where the piece dragged across a surface could snap, with the spot it
+ * would snap to filled in.
+ */
+export function SnapHints({ surface }: Readonly<{ surface: string }>) {
   const hint = useStore((s) => s.snapHint);
-  const scale = useStore((s) => s.viewport.scale);
-  if (!hint) return null;
+  const scale = useContext(DrawScale) ?? 1;
+  if (hint?.surface !== surface) return null;
   const [w, h] = hint.size;
   return (
     <Group listening={false}>

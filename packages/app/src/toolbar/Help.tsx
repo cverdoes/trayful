@@ -33,7 +33,11 @@ const SHORTCUTS: [string, string][] = [
   ['L', 'Lock or unlock'],
   ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo your own last move'],
   ['0', 'Fit the table to the window'],
-  ['Esc', 'Close the magnifier, the group list or a stamp list, or clear the selection'],
+  ['1 … 9', 'On a table with surfaces: show that tile on its own, or go back'],
+  [
+    'Esc',
+    'Close the magnifier, the group list or a stamp list, leave a focused tile, or clear the selection',
+  ],
 ];
 
 /** The mouse and keyboard controls of the table. */

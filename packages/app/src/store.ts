@@ -16,6 +16,14 @@ import type { GroupPick } from './table/groups';
 import type { MarkPick } from './table/marks';
 import { loadHandHeight, loadHandMinimized } from './table/handTray';
 import { startMotion, type Moving } from './motion/motions';
+import { route } from './route';
+import {
+  changedSurfaces,
+  defaultChoice,
+  loadChoice,
+  shownSurfaces,
+  type SurfaceChoice,
+} from './table/surfaces';
 
 /** Screen position of the table origin and pixels per millimetre. */
 export interface Viewport {
@@ -91,12 +99,22 @@ interface TrayfulStore {
   shiftDown: boolean;
   helpOpen: boolean;
   /** While dragging: the snap spots the dragged piece could go to, and the one it would snap to. */
-  snapHint?: { spots: SnapSpot[]; size: [number, number]; active?: string };
+  snapHint?: { surface: string; spots: SnapSpot[]; size: [number, number]; active?: string };
   /** The pieces of a crowded group spot someone clicked, to pick one from. */
   groupPick?: GroupPick;
   /** A stamp or text box someone clicked, waiting for them to pick a stamp or write. */
   markPick?: MarkPick;
-  viewport: Viewport;
+  /** Each surface's viewport, by surface id; a tile shows one. */
+  viewports: Record<string, Viewport>;
+  /**
+   * Which surfaces this viewer chose to show, kept per table in this browser; until
+   * they choose, `defaultChoice` decides.
+   */
+  surfaceChoice?: SurfaceChoice;
+  /** A surface enlarged to the whole canvas for a while. */
+  focus?: string;
+  /** When something last changed on each surface while it was hidden, to make its chip pulse. */
+  pulses: Record<string, number>;
 
   /** Sends a message to the server; set by the connection. */
   send: (message: ClientMessage) => void;
@@ -122,7 +140,8 @@ export const useStore = create<TrayfulStore>((set, get) => ({
   redrawKey: 0,
   shiftDown: false,
   helpOpen: false,
-  viewport: { x: 0, y: 0, scale: 1 },
+  viewports: {},
+  pulses: {},
   send: dropWhileOffline,
   command: (command) => get().send({ type: 'command', command }),
   receive: (message) => {
@@ -154,6 +173,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
         ? { moving: startMotion(s.moving, activity.motion, performance.now()) }
         : {}),
       ...withoutVanished(s, objects),
+      ...surfaceNews(s, message.state, !mine),
     }));
   },
   select: (ids, mode = 'replace') =>
@@ -168,6 +188,42 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       return { selection: [...next] };
     }),
 }));
+
+/**
+ * The surface choice kept for a table when it first arrives (or another table
+ * replaces it), and pulses for hidden surfaces someone else just changed.
+ */
+function surfaceNews(
+  s: Pick<TrayfulStore, 'table' | 'surfaceChoice' | 'me' | 'pulses' | 'focus'>,
+  next: TableView,
+  byOthers: boolean,
+): Partial<TrayfulStore> {
+  if (s.table?.table !== next.table) return { surfaceChoice: loadChoice(choiceKey(next.table)) };
+  if (!byOthers) return {};
+  const player = s.me?.player?.id;
+  const choice = s.surfaceChoice ?? defaultChoice(next, player);
+  const shown = new Set(shownSurfaces(next, choice, player, s.focus));
+  const hidden = [...changedSurfaces(s.table, next)].filter((id) => !shown.has(id));
+  if (hidden.length === 0) return {};
+  const now = Date.now();
+  return { pulses: { ...s.pulses, ...Object.fromEntries(hidden.map((id) => [id, now])) } };
+}
+
+/** Where this browser keeps its surface choice for a table. */
+export function choiceKey(table: string): string {
+  // Outside a browser, as in tests, there is no address to name the project.
+  const project = typeof location === 'undefined' ? undefined : route().project;
+  return `${project ?? ''}/${table}`;
+}
+
+/** The surfaces this viewer shows now, in tile order. */
+export function shownNow(
+  s: Pick<TrayfulStore, 'table' | 'surfaceChoice' | 'me' | 'focus'>,
+): string[] {
+  if (!s.table) return [];
+  const player = s.me?.player?.id;
+  return shownSurfaces(s.table, s.surfaceChoice ?? defaultChoice(s.table, player), player, s.focus);
+}
 
 /** What a message other than a new table changes in the store. */
 function besideTheTable(
