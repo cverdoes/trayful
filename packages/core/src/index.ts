@@ -1,5 +1,6 @@
 /** The table engine's public API: state, commands, the engine, the wire protocol and their helpers. */
 export * from './table/state.js';
+export * from './table/surfaces.js';
 export * from './commands/index.js';
 export * from './engine.js';
 export * from './table/rng.js';

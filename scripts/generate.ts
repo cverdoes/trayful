@@ -104,6 +104,11 @@ const TOPICS = [
     about: 'Private hands, `hand:<player>` targets, what each player sees, invites.',
   },
   {
+    title: 'Surfaces',
+    file: 'surfaces.md',
+    about: 'Separate play spaces on one table, `surface:<id>` targets, seats.',
+  },
+  {
     title: 'Validation errors',
     file: 'validation.md',
     about: 'How problems are reported, and what the common ones mean.',

@@ -20,6 +20,7 @@ How things work across file kinds:
 | [Faces and templates](faces-and-templates.md) | Faces, labels, tiles, layers, `{{field}}` placeholders, `when` and colours. |
 | [Snapping](snapping.md) | Containers and their drop areas, spot names, `accepts`, and what happens on drop. |
 | [Players and hands](players-and-hands.md) | Private hands, `hand:<player>` targets, what each player sees, invites. |
+| [Surfaces](surfaces.md) | Separate play spaces on one table, `surface:<id>` targets, seats. |
 | [Validation errors](validation.md) | How problems are reported, and what the common ones mean. |
 | [Versioning](versioning.md) | The format version, `trayful migrate`, stable component ids, and saved tables. |
 

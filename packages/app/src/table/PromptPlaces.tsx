@@ -1,4 +1,4 @@
-import { allSpots, type SnapSpot } from '@trayful/core';
+import { allSpots, CENTRE, type SnapSpot } from '@trayful/core';
 import { Group, Rect } from 'react-konva';
 import { useStore } from '../store';
 import { clickForPrompt, promptMarks } from './promptTargets';
@@ -20,7 +20,7 @@ export function PromptPlaces() {
   if (!prompt || !table || !view) return null;
   const places = [...promptMarks(prompt)].filter((name) => name.includes('/'));
   if (places.length === 0) return null;
-  const spots = allSpots(table, view.types);
+  const spots = allSpots(table, view.types, CENTRE);
   return (
     <Group>
       {places.flatMap((place) =>

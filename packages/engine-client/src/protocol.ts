@@ -7,7 +7,10 @@
 /** An `[x, y]` position on the table, in millimetres. */
 export type Vec2 = [number, number];
 
-/** Where pieces go: a table position, a drop area or spot such as `board/market/2`, or `hand:<player>`. */
+/**
+ * Where pieces go: a position, a drop area or spot such as `board/market/2`, `hand:<player>`,
+ * or free room on a surface as `surface:<id>`.
+ */
 export type Target = Vec2 | string;
 
 /** A stamp pressed on a spot, or text written there. */
@@ -27,6 +30,8 @@ export interface Piece {
   face: 'up' | 'down';
   z: number;
   locked?: boolean;
+  /** The surface it lies on; none for the Centre, or while in a stack, hand or bag. */
+  surface?: string;
   /** A counter's number or the face a die shows. */
   value?: number | string;
   /** The stack holding it. */
@@ -50,11 +55,24 @@ export interface Stack {
   z: number;
   items: string[];
   locked?: boolean;
+  /** The surface it lies on; none for the Centre. */
+  surface?: string;
   snap?: string;
   layout?: 'pile' | 'fan' | 'spread';
 }
 
 export type TableObject = Piece | Stack;
+
+/** A separate play space on the table. Everyone sees every surface. */
+export interface Surface {
+  /** `centre` is the Centre, which every table has. */
+  id: string;
+  name: string;
+  /** Somewhere a player can sit. */
+  seat?: boolean;
+  /** Who sits here. */
+  player?: string;
+}
 
 /** The table as the engine may see it. */
 export interface TableView {
@@ -63,6 +81,8 @@ export interface TableView {
   /** Always 0: the random generator's state would predict shuffles. */
   seed: number;
   rng: number;
+  /** The surfaces besides the Centre, in tile order; the Centre is listed only when renamed. */
+  surfaces?: readonly Surface[];
   objects: Readonly<Record<string, TableObject>>;
   /** How many pieces each player holds, by player id. */
   hands: Record<string, number>;
@@ -72,20 +92,47 @@ export interface TableView {
 
 /** A change to the table: the same commands the browser sends. */
 export type Command =
-  | { type: 'move'; ids: string[]; by?: Vec2; to?: Target; into?: string; face?: 'up' | 'down' }
+  | {
+      type: 'move';
+      ids: string[];
+      by?: Vec2;
+      to?: Target;
+      into?: string;
+      face?: 'up' | 'down';
+      /** With a position in `to`: the surface it is on. */
+      surface?: string;
+    }
   | { type: 'flip'; ids: string[] }
   | { type: 'rotate'; ids: string[]; steps?: number; degrees?: number }
   | { type: 'stack'; ids: string[]; onto: string }
-  | { type: 'draw'; from: string; count?: number; to: Target; face?: 'up' | 'down' }
-  | { type: 'deal'; from: string; to: Target | Target[]; count?: number; face?: 'up' | 'down' }
-  | { type: 'take'; id: string; to: Target; face?: 'up' | 'down' }
+  | {
+      type: 'draw';
+      from: string;
+      count?: number;
+      to: Target;
+      face?: 'up' | 'down';
+      surface?: string;
+    }
+  | {
+      type: 'deal';
+      from: string;
+      to: Target | Target[];
+      count?: number;
+      face?: 'up' | 'down';
+      surface?: string;
+    }
+  | { type: 'take'; id: string; to: Target; face?: 'up' | 'down'; surface?: string }
   | { type: 'layout'; id: string; layout: 'pile' | 'fan' | 'spread' }
   | { type: 'shuffle'; id: string }
   | { type: 'roll'; id: string }
   | { type: 'setValue'; id: string; value: number | string }
   | { type: 'lock'; ids: string[]; locked: boolean }
   | { type: 'mark'; at: string; stamp?: string; text?: string }
-  | { type: 'erase'; at: string };
+  | { type: 'erase'; at: string }
+  | { type: 'addSurface'; id: string; name?: string; seat?: boolean; after?: string }
+  | { type: 'editSurface'; id: string; name?: string; seat?: boolean; after?: string }
+  | { type: 'removeSurface'; id: string; to?: string }
+  | { type: 'sit'; surface: string; player?: string };
 
 export type PromptKind = 'message' | 'confirm' | 'choice' | 'pick' | 'place' | 'number' | 'text';
 

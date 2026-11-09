@@ -21,6 +21,13 @@ describe('activityText', () => {
       [{ type: 'mark', at: 's/b/0', stamp: 'x' }, 'stamped a box'],
       [{ type: 'mark', at: 's/b/0', text: '4' }, 'wrote in a box'],
       [{ type: 'erase', at: 's/b/0' }, 'erased a box'],
+      [{ type: 'move', ids: ['a'], to: 'surface:red' }, 'moved 1 piece to red'],
+      [{ type: 'move', ids: ['a'], to: [0, 0], surface: 'red' }, 'moved 1 piece to red'],
+      [{ type: 'addSurface', id: 'red' }, 'added surface red'],
+      [{ type: 'editSurface', id: 'red', name: 'Red' }, 'changed surface red'],
+      [{ type: 'removeSurface', id: 'red', to: 'centre' }, 'removed surface red'],
+      [{ type: 'sit', surface: 'red', player: 'bo' }, 'seated a player at red'],
+      [{ type: 'sit', surface: 'red' }, 'stood someone up from red'],
       [{ type: 'other' } as unknown as Command, 'changed the table'],
     ];
     for (const [command, text] of cases) expect(activityText(command)).toBe(text);
@@ -33,6 +40,12 @@ describe('activityText', () => {
     );
     expect(activityText({ type: 'draw', from: 'deck', count: 2, to: 'hand:bo' }, whose)).toBe(
       "drew 2 pieces into bo's hand",
+    );
+    expect(activityText({ type: 'sit', surface: 'red', player: 'ann' }, whose)).toBe(
+      'sat down at red',
+    );
+    expect(activityText({ type: 'sit', surface: 'red', player: 'bo' }, whose)).toBe(
+      'seated bo at red',
     );
     expect(activityText({ type: 'take', id: 'a', to: 'hand:bo' })).toBe(
       'took a piece from a pile into a hand',

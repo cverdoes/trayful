@@ -172,6 +172,19 @@ A grid spot is a box the size of its cell; a `points` spot is as large as its la
 2. `shuffle` with `id: deck:actions`, then `deal` with `from: deck:actions`, `to: [hand:claude, hand:<player>]`, `count: 3`.
 3. Take turns by the rules, using `describe_table` or `query_objects` with `inside: hand:claude` to see your cards, and `get_history` to see what the others did.
 
+## Player areas
+
+To give each player room of their own, add a seat surface per player and put their pieces there:
+
+```
+add_surface { id: "red", name: "Red player", seat: true }
+move { ids: ["red-board"], to: "surface:red" }
+draw { from: "deck:actions", count: 5, to: [0, 80], surface: "red" }
+sit { surface: "red", player: "sam" }
+```
+
+Pieces snapped onto a board lie on the board's surface and travel with it. `describe_table { surface: "red" }` shows just that player's area.
+
 ## Running a game or a tutorial
 
 > "Teach us the game: walk us through the first round and tell us whose turn it is."

@@ -153,6 +153,7 @@ export class TableEngine {
   private unchangedSince(entry: HistoryEntry, side: 'before' | 'after'): boolean {
     if (this.current === entry[side]) return true;
     const expected = entry[side].objects;
+    if (surfacesChanged(entry) && this.current.surfaces !== entry[side].surfaces) return false;
     return changedIds(entry).every((id) => this.current.objects[id] === expected[id]);
   }
 
@@ -171,12 +172,25 @@ export class TableEngine {
       if (target[id]) objects[id] = target[id];
       else removeObject(objects, id);
     }
-    return { ...this.current, objects };
+    const state: TableState = { ...this.current, objects };
+    if (surfacesChanged(entry)) {
+      if (entry[to].surfaces) state.surfaces = entry[to].surfaces;
+      else delete state.surfaces;
+    }
+    return state;
   }
 
   private emit(kind: 'apply' | 'undo' | 'redo', command: HistoryStep, player?: string): void {
     for (const listener of this.listeners) listener(this.current, { kind, command, player });
   }
+}
+
+/**
+ * Whether a step changed the list of surfaces. The list counts as one thing: undoing
+ * a change to it is refused once anyone has changed it since.
+ */
+function surfacesChanged({ before, after }: HistoryEntry): boolean {
+  return before.surfaces !== after.surfaces;
 }
 
 /** Ids of the objects a step added, removed or changed. */

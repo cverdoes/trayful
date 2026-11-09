@@ -12,7 +12,19 @@ Tables are saved as JSON in `tables/`. Trayful writes these files; they are docu
 | `table` | text | yes | Table name. |
 | `seed` | whole number | yes | Seed the table was created with. |
 | `rng` | whole number | yes | Current random generator state, so shuffles and rolls replay exactly. |
+| `surfaces` | list of [Surface](#surface) |  | Surfaces in the order their tiles show. The Centre (`centre`) comes first and is there even when not listed; list it only to rename it. |
 | `objects` | list of [PieceObject](#pieceobject) or [StackObject](#stackobject) | yes | Every piece and stack, sorted by id. |
+
+## Surface
+
+A separate play space on the table, with its own positions. Everyone sees every surface.
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | text | yes | Surface id. `centre` is the Centre, which every table has. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
+| `name` | text | yes | Name shown on its tile, such as `Red player`. |
+| `seat` | true or false |  | Whether a player can sit here. |
+| `player` | text |  | Id of the player sitting here, on a seat. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
 
 ## PieceObject
 
@@ -24,11 +36,12 @@ One component on the table.
 | `id` | text | yes | Stable component id from the inventory. |
 | `type` | text | yes | Id of the component in the library. |
 | `data` | map of text to text or number or true or false |  | Field values of this component. |
-| `pos` | [Vec2](#vec2) | yes | Centre position on the table, in millimetres. |
+| `pos` | [Vec2](#vec2) | yes | Centre position on its surface, in millimetres. |
 | `rot` | number | yes | Rotation in degrees. |
 | `face` | `"up"`, `"down"` | yes | Which side is up. |
 | `z` | whole number | yes | Draw order; higher is on top. |
 | `locked` | true or false |  | Locked pieces ignore moves from the UI. |
+| `surface` | text |  | Id of the surface it lies on, for a piece or stack directly on the table. Default: the Centre. |
 | `value` | number or text |  | Current value of a counter or the face shown by a die. |
 | `parent` | text |  | Id of the stack holding this piece. Its `pos` is then unused. |
 | `snap` | text |  | Snap spot the piece sits in, as `pieceId/target/index`. |
@@ -69,11 +82,12 @@ An ordered pile of pieces, such as a deck.
 | `kind` | `"stack"` | yes | Marks a stack. |
 | `id` | text | yes | `deck:<name>` for decks from the inventory, `stack:<n>` for stacks made on the table. |
 | `name` | text |  | Deck name, when the stack came from one. |
-| `pos` | [Vec2](#vec2) | yes | Centre position on the table, in millimetres. |
+| `pos` | [Vec2](#vec2) | yes | Centre position on its surface, in millimetres. |
 | `rot` | number | yes | Rotation in degrees. |
 | `z` | whole number | yes | Draw order; higher is on top. |
 | `items` | list of text | yes | Piece ids from bottom to top. |
 | `locked` | true or false |  | Locked stacks ignore moves from the UI. |
+| `surface` | text |  | Id of the surface it lies on, for a piece or stack directly on the table. Default: the Centre. |
 | `snap` | text |  | Snap spot the stack sits in, as `pieceId/target/index`. |
 | `layout` | `"pile"`, `"fan"`, `"spread"` |  | How the pieces lie: `pile` (default) shows only the top, `fan` overlaps them in a row, `spread` lays them side by side. |
 

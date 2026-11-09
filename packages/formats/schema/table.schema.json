@@ -26,6 +26,13 @@
           "maximum": 9007199254740991,
           "description": "Current random generator state, so shuffles and rolls replay exactly."
         },
+        "surfaces": {
+          "description": "Surfaces in the order their tiles show. The Centre (`centre`) comes first and is there even when not listed; list it only to rename it.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Surface"
+          }
+        },
         "objects": {
           "type": "array",
           "items": {
@@ -51,6 +58,36 @@
       "additionalProperties": false,
       "title": "Trayful table state",
       "description": "A saved table. Written by Trayful; not meant to be edited by hand."
+    },
+    "Surface": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "description": "Surface id. `centre` is the Centre, which every table has."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name shown on its tile, such as `Red player`."
+        },
+        "seat": {
+          "description": "Whether a player can sit here.",
+          "type": "boolean"
+        },
+        "player": {
+          "description": "Id of the player sitting here, on a seat.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "A separate play space on the table, with its own positions. Everyone sees every surface."
     },
     "PieceObject": {
       "type": "object",
@@ -83,7 +120,7 @@
           }
         },
         "pos": {
-          "description": "Centre position on the table, in millimetres.",
+          "description": "Centre position on its surface, in millimetres.",
           "$ref": "#/$defs/Vec2"
         },
         "rot": {
@@ -107,6 +144,10 @@
         "locked": {
           "description": "Locked pieces ignore moves from the UI.",
           "type": "boolean"
+        },
+        "surface": {
+          "description": "Id of the surface it lies on, for a piece or stack directly on the table. Default: the Centre.",
+          "type": "string"
         },
         "value": {
           "description": "Current value of a counter or the face shown by a die.",
@@ -218,7 +259,7 @@
           "type": "string"
         },
         "pos": {
-          "description": "Centre position on the table, in millimetres.",
+          "description": "Centre position on its surface, in millimetres.",
           "$ref": "#/$defs/Vec2"
         },
         "rot": {
@@ -241,6 +282,10 @@
         "locked": {
           "description": "Locked stacks ignore moves from the UI.",
           "type": "boolean"
+        },
+        "surface": {
+          "description": "Id of the surface it lies on, for a piece or stack directly on the table. Default: the Centre.",
+          "type": "string"
         },
         "snap": {
           "description": "Snap spot the stack sits in, as `pieceId/target/index`.",

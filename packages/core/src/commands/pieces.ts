@@ -44,7 +44,7 @@ export function rotate(tx: Transaction, id: string, steps?: number, degrees?: nu
   if (step === undefined) throw new CommandError(`"${id}" does not rotate.`);
   const delta = degrees ?? steps! * step;
   tx.onTable(id);
-  tx.relocate(object, object.pos, object.rot + delta, object.snap);
+  tx.relocate(object, object.pos, object.rot + delta, { snap: object.snap });
 }
 
 /** Rolls a die, or any counter that can be rolled, to a random one of its values. */

@@ -2,14 +2,8 @@ import type { Vec2 } from '@trayful/formats/browser';
 import type { ResolvedProject } from '@trayful/formats';
 import { BOX_WIDTH, deckStackId, MARGIN, newDeck, newPiece, rows, type Sized } from './box.js';
 import { boundsOf } from './layout.js';
-import {
-  onTable,
-  removeObject,
-  sizeOf,
-  type Piece,
-  type TableObject,
-  type TableState,
-} from './state.js';
+import { CENTRE, objectsOn } from './surfaces.js';
+import { removeObject, sizeOf, type Piece, type TableObject, type TableState } from './state.js';
 
 /**
  * Brings a table in line with edited project files: pieces get their component's
@@ -101,7 +95,8 @@ function addNew(
 /** Lays the fresh objects out in rows below everything else on the table. */
 function placeBelow(state: TableState, project: ResolvedProject, fresh: Sized[]): TableState {
   const ids = new Set(fresh.map((f) => f.id));
-  const others = Object.values(state.objects).filter((o) => onTable(o) && !ids.has(o.id));
+  // Fresh pieces land on the Centre, so only what lies there is in the way.
+  const others = objectsOn(state, CENTRE).filter((o) => !ids.has(o.id));
   const box = boundsOf(state, project.types, others);
   const origin: Vec2 = others.length ? [box.x0, box.y1 + MARGIN] : [0, 0];
   const objects = { ...state.objects };

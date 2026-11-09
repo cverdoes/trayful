@@ -31,7 +31,7 @@ import { PictureRequests } from './pictures.js';
 import { AGENT_PLAYER, tableKey, type PlayerDirectory } from './players.js';
 import { PromptBoard } from './prompts.js';
 import { rosterOf } from './roster.js';
-import { checkPromptReach, checkReach, promptAsSeenBy } from './reach.js';
+import { checkPromptReach, checkReach, checkSeating, promptAsSeenBy } from './reach.js';
 import { promptsFile, readSavedPrompts, savePrompts, tableFile, writeJson } from './tableFiles.js';
 
 export { SnapshotError } from './pictures.js';
@@ -300,6 +300,7 @@ export class TableSession {
   /** Throws when a command names a piece out of the player's reach, or an unknown player. */
   checkReach(command: unknown, player: string | undefined): void {
     checkReach(this.engine.state, this.players, command, player);
+    checkSeating(this.engine.state, this.players, command, player);
   }
 
   /** Who is at this table: everyone watching, holding pieces, or who has acted here. */

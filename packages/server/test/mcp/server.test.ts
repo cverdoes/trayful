@@ -53,6 +53,7 @@ describe('MCP tools', () => {
     expect(tools.map((t) => t.name).sort()).toEqual(
       [
         'add_asset',
+        'add_surface',
         'cancel_prompt',
         'create_project',
         'deal',
@@ -60,6 +61,7 @@ describe('MCP tools', () => {
         'describe_table',
         'draw',
         'duplicate_table',
+        'edit_surface',
         'erase',
         'flip',
         'get_history',
@@ -74,6 +76,7 @@ describe('MCP tools', () => {
         'prompt',
         'query_objects',
         'redo',
+        'remove_surface',
         'remove_type',
         'rename_field',
         'rename_image',
@@ -86,6 +89,7 @@ describe('MCP tools', () => {
         'set_counter',
         'set_inventory',
         'shuffle',
+        'sit',
         'snapshot',
         'stack',
         'take',
