@@ -20,6 +20,10 @@ The table file lists its surfaces besides the Centre in tile order, and each pie
 - Something snapped into a [drop area](snapping.md) lies on the surface of the piece the area belongs to, and moves to another surface with it.
 - The Centre is listed only when it has been renamed, and always first.
 
+## In a setup
+
+A [setup](setup.md) lists the surfaces a new table starts with under `surfaces`, and its `place` and `deal` steps take a `surface` for a position, or `surface:<id>` as a target (see [Write a setup](../howto/write-a-setup.md#player-areas)). **Start over** keeps players in the seats they sat at, as long as the setup still has that seat.
+
 ## Commands
 
 | Command | What it does | Example |
@@ -35,7 +39,7 @@ A drop area already says where things go, so `surface` cannot be given with one,
 
 Anyone may sit down at or stand up from a seat. Only the host and agents may seat or unseat someone else. Sitting changes nothing about who may touch what; it says whose surfaces the browser shows first.
 
-Agents get the same through the `add_surface`, `edit_surface`, `remove_surface` and `sit` MCP tools, and `describe_table` and `query_objects` take a `surface` to look at one surface only.
+Agents get the same through the `add_surface`, `edit_surface`, `remove_surface` and `sit` MCP tools, and `describe_table` and `query_objects` take a `surface` to look at one surface only. `snapshot` takes a `surface` to picture one surface instead of the Centre; a browser showing that surface's tile has to be open.
 
 ## In the browser
 

@@ -331,6 +331,11 @@ describe('MCP over HTTP', () => {
     expect(snap.content[0]).toMatchObject({ type: 'image', mimeType: 'image/png' });
     expect(Buffer.from(snap.content[0]!.data!, 'base64').toString()).toBe('png!');
 
+    // A surface the table does not have cannot be pictured.
+    const missing = await call(client, 'snapshot', { surface: 'nowhere' });
+    expect(missing.isError).toBe(true);
+    expect(missing.text).toContain('no surface "nowhere"');
+
     await client.close();
     browser.close();
   });

@@ -11,7 +11,18 @@ Setups are scripted starting layouts in `setups/*.yaml`. A new table runs the se
 | `kind` | `"setup"` | yes | Marks this file as a setup. |
 | `name` | text |  | Display name. Default: the file name. |
 | `description` | text |  |  |
+| `surfaces` | list of [SetupSurface](#setupsurface) |  | Surfaces besides the Centre, such as one per player, made before the steps run. Default: only the Centre. |
 | `steps` | list of [SetupStep](#setupstep) | yes | Run in order on an empty table. |
+
+## SetupSurface
+
+A surface the table starts with besides the Centre, in tile order.
+
+| Key | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | text | yes | Surface id, used in `surface:` targets and steps' `surface`. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
+| `name` | text |  | Name shown on its tile. Default: the id. |
+| `seat` | true or false |  | Whether a player can sit here, such as a player area. |
 
 ## SetupStep
 
@@ -26,15 +37,16 @@ Put components or a deck somewhere on the table.
 | Key | Type | Required | Description |
 | --- | --- | --- | --- |
 | `place` | text or object | yes | A component id from a library (places every one of them in the inventory), the id of one of them, or `{ deck: <name> }`. |
-| `at` | [Target](#target) | yes | Where something goes: an `[x, y]` table position, or a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`). |
+| `at` | [Target](#target) | yes | Where something goes: an `[x, y]` position (on the Centre, or on the step's `surface`), a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`), or `surface:<id>` for free room on a surface. |
 | `face` | `"up"`, `"down"` |  | Turn face up or down. |
+| `surface` | text |  | Surface an `[x, y]` position in `at` or `to` is on, from the setup's `surfaces`. Default: the Centre. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
 | `rot` | number |  | Rotation in degrees. |
 | `shuffle` | true or false |  | Shuffle a deck after placing it. |
 | `lock` | true or false |  | Lock it in place, as a board usually is once it is where it belongs. |
 
 ## Target
 
-Where something goes: an `[x, y]` table position, or a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`).
+Where something goes: an `[x, y]` position (on the Centre, or on the step's `surface`), a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`), or `surface:<id>` for free room on a surface.
 
 Type: [Vec2](#vec2) or text
 
@@ -62,6 +74,7 @@ Deal cards from the top of a deck.
 | `to` | [Target](#target) | yes | A snap target fills its spots in order; a position stacks the cards. |
 | `count` | whole number > 0 | yes | Number of cards to deal. |
 | `face` | `"up"`, `"down"` |  |  |
+| `surface` | text |  | Surface an `[x, y]` position in `at` or `to` is on, from the setup's `surfaces`. Default: the Centre. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
 
 ## ShuffleStep
 

@@ -12,6 +12,8 @@ import {
   type Command,
   type PlayerInfo,
   createTable,
+  hasSurface,
+  keepSeats,
   SetupError,
   syncTable,
   type RenderRequest,
@@ -27,7 +29,7 @@ import {
 import { formatDiagnostic, loadProject, type ResolvedProject } from '@trayful/formats';
 import { activityFor, activityText, changedInSight, motionOf } from './activity.js';
 import { EventFeed } from './feed.js';
-import { PictureRequests } from './pictures.js';
+import { PictureRequests, SnapshotError } from './pictures.js';
 import { AGENT_PLAYER, tableKey, type PlayerDirectory } from './players.js';
 import { PromptBoard } from './prompts.js';
 import { rosterOf } from './roster.js';
@@ -323,9 +325,17 @@ export class TableSession {
     return this.listeners.size;
   }
 
-  /** Asks a watching browser to render the whole table, and resolves with the PNG. */
-  requestSnapshot(timeoutMs = 10_000): Promise<Buffer> {
-    return this.pictures.request((id) => ({ type: 'snapshot-request', id }), timeoutMs);
+  /**
+   * Asks the watching browsers to render the whole of a surface (the Centre unless
+   * named), and resolves with the first PNG back.
+   */
+  requestSnapshot(surface?: string, timeoutMs = 10_000): Promise<Buffer> {
+    if (surface !== undefined && !hasSurface(this.engine.state, surface))
+      return Promise.reject(new SnapshotError(`There is no surface "${surface}".`));
+    return this.pictures.request(
+      (id) => ({ type: 'snapshot-request', id, ...(surface === undefined ? {} : { surface }) }),
+      timeoutMs,
+    );
   }
 
   /** Asks a watching browser to draw one component, and resolves with the PNG. */
@@ -405,9 +415,11 @@ export class TableSession {
   /**
    * Replaces the table with a fresh one from the project files, as one undoable step.
    * Uses the project's default setup unless another (or `false`, for none) is given.
+   * Players sitting at a seat the new table also has stay seated there.
    */
   reset(seed?: number, setup?: string | false, player?: string): void {
-    this.engine.replace(createTable(this.project, { name: this.tableName, seed, setup }), player);
+    const fresh = createTable(this.project, { name: this.tableName, seed, setup });
+    this.engine.replace(keepSeats(this.engine.state, fresh), player);
   }
 
   /**

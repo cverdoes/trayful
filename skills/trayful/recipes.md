@@ -185,6 +185,8 @@ sit { surface: "red", player: "sam" }
 
 Pieces snapped onto a board lie on the board's surface and travel with it. `describe_table { surface: "red" }` shows just that player's area.
 
+To make every new table start that way, put it in the setup: list `surfaces: [{ id: red, name: Red player, seat: true }]` and give a step a `surface` (`- place: red-board`, `at: [0, 0]`, `surface: red`) or a `surface:red` target.
+
 ## Running a game or a tutorial
 
 > "Teach us the game: walk us through the first round and tell us whose turn it is."

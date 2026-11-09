@@ -237,5 +237,5 @@ export type TableMessage =
   | { type: 'events'; events: TableEvent[]; next: number; missed?: boolean }
   | { type: 'project'; view: { project: string; name: string; table: string; version: number } }
   | { type: 'problems'; problems: string[] }
-  | { type: 'snapshot-request'; id: string }
+  | { type: 'snapshot-request'; id: string; surface?: string }
   | { type: 'render-request'; id: string; component: unknown };

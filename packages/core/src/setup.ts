@@ -13,6 +13,7 @@ import { applyCommand, CommandError, type Command } from './commands/index.js';
 import { boundsOf, objectSize } from './table/layout.js';
 import { seedState } from './table/rng.js';
 import { resolveSpots, SnapError } from './placement/snap.js';
+import { CENTRE, surfaceOf, surfacesOf, surfaceTarget } from './table/surfaces.js';
 import {
   onTable,
   sizeOf,
@@ -96,6 +97,15 @@ export function applySetup(
   const setup = project.setups[name];
   if (!setup) throw new SetupError(`Unknown setup "${name}".`);
   const runner = new SetupRunner(initial, project.types);
+  for (const { id, name: shown, seat } of setup.surfaces ?? []) {
+    try {
+      runner.addSurface(id, shown, seat);
+    } catch (error) {
+      if (error instanceof CommandError)
+        throw new SetupError(`Setup "${name}", surface "${id}": ${error.message}`);
+      throw error;
+    }
+  }
   setup.steps.forEach((step, i) => {
     try {
       runner.run(step);
@@ -112,6 +122,24 @@ export function applySetup(
   return tidyLeftovers(runner.state, project, runner.used);
 }
 
+/**
+ * Seats the players who sat at seats of `before` at the seats of the same id on a
+ * fresh table, so starting over keeps everyone where they sat.
+ */
+export function keepSeats(before: TableState, fresh: TableState): TableState {
+  const sitting = new Map(
+    surfacesOf(before)
+      .filter((s) => s.player !== undefined)
+      .map((s) => [s.id, s.player!]),
+  );
+  if (sitting.size === 0 || !fresh.surfaces) return fresh;
+  const surfaces = fresh.surfaces.map((s) => {
+    const player = sitting.get(s.id);
+    return s.seat && player !== undefined ? { ...s, player } : s;
+  });
+  return { ...fresh, surfaces };
+}
+
 /** Runs setup steps one after another, keeping track of the objects they put in place. */
 class SetupRunner {
   /** Objects a step placed, or brought onto the table, such as dealt cards. */
@@ -122,6 +150,10 @@ class SetupRunner {
     private readonly catalog: Catalog,
   ) {}
 
+  addSurface(id: string, name: string | undefined, seat: boolean | undefined): void {
+    this.command({ type: 'addSurface', id, ...(name ? { name } : {}), ...(seat ? { seat } : {}) });
+  }
+
   run(step: SetupStep): void {
     const before = this.topLevel();
     if ('place' in step) this.place(step);
@@ -130,11 +162,21 @@ class SetupRunner {
     for (const id of this.topLevel()) if (!before.has(id)) this.used.add(id);
   }
 
-  private deal({ from, to, count, face }: Extract<SetupStep, { deal: unknown }>['deal']): void {
+  private deal({
+    from,
+    to,
+    count,
+    face,
+    surface,
+  }: Extract<SetupStep, { deal: unknown }>['deal']): void {
     const deck = this.deckId(from);
-    const spots = typeof to === 'string' ? resolveSpots(this.state, this.catalog, to) : [];
+    const where = on(to, surface);
+    const spots =
+      typeof to === 'string' && !surfaceTarget(to)
+        ? resolveSpots(this.state, this.catalog, to)
+        : [];
     if (spots.length <= 1) {
-      this.command({ type: 'draw', from: deck, count, to, face });
+      this.command({ type: 'draw', from: deck, count, to, face, ...where });
       return;
     }
     // Dealing to a whole snap target puts one card on each of its first spots.
@@ -162,7 +204,7 @@ class SetupRunner {
     for (const [id, pos] of rows(sized, [-first[0] / 2, -first[1] / 2], Infinity)) {
       this.edit(id, { pos, snap: undefined });
     }
-    this.command({ type: 'move', ids, to: step.at });
+    this.command({ type: 'move', ids, to: step.at, ...on(step.at, step.surface) });
 
     for (const id of ids) {
       // Set directly: a setup may lay out at an angle what players cannot turn.
@@ -232,13 +274,27 @@ class SetupRunner {
   }
 }
 
-/** Moves everything the setup did not use into rows below the setup's layout. */
+/**
+ * The surface a step names for its position, which only goes with a position: a
+ * place named by a string says its own surface.
+ */
+function on(target: [number, number] | string, surface: string | undefined): { surface?: string } {
+  if (surface === undefined) return {};
+  if (typeof target === 'string')
+    throw new SetupError(`"surface" goes with an [x, y] position, not with "${target}".`);
+  return { surface };
+}
+
+/**
+ * Moves everything the setup did not use into rows below the setup's layout on
+ * the Centre.
+ */
 function tidyLeftovers(
   state: TableState,
   project: ResolvedProject,
   used: ReadonlySet<string>,
 ): TableState {
-  const top = Object.values(state.objects).filter(onTable);
+  const top = Object.values(state.objects).filter((o) => onTable(o) && surfaceOf(o) === CENTRE);
   const placed = top.filter((o) => used.has(o.id));
   const leftover = top.filter((o) => !used.has(o.id)).sort((a, b) => a.z - b.z);
   if (placed.length === 0 || leftover.length === 0) return state;
