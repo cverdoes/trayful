@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MOTION_MS, settleIn, startMotion } from '../../src/motion/motions';
+import { MOTION_MS } from '@trayful/core';
+import { settleIn, startMotion } from '../../src/motion/motions';
 
 const roll = (at: number) => ({ kind: 'roll' as const, at });
 

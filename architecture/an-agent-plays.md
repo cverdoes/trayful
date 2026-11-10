@@ -14,8 +14,9 @@ An agent such as Claude Code connects over MCP and calls tools like [[mcp:draw]]
 3. **The tool becomes a command.** The `draw` tool turns its inputs into a [[command:draw]] command and passes it to the tool context's `play` ([[server/mcp/context.ts]]).
 4. **All or nothing.** `play` first tries every command on a copy with [[core:applyCommand]] and checks the agent's reach, so a tool call that sends several commands changes everything or nothing. A refusal comes back to the agent as a tool error with the [[core:CommandError]] text.
 5. **The same path as a person.** It then runs the commands through [[server:TableSession|TableSession.asAgent]] and [[core:TableEngine|TableEngine.dispatch]] as player `claude`, labelled "drew a card" for the people watching. From here it is the path in [[concept:drag-onto-a-row]]: the engine applies and records it, and every watcher gets their view.
-6. **People see it happen.** The [[message:state]] message carries an [[core:Activity]] marked as the agent's, which the browsers show, with the motion to animate for a roll or a shuffle ([[server:motionOf]]).
-7. **The agent gets the result.** The tool answers with the objects that changed, as the agent may see them.
+6. **People see it happen.** The [[message:state]] message carries an [[core:Activity]] marked as the agent's, which the browsers show, with the motion to animate for a roll or a shuffle ([[server:motionOf]]) and the stacks drawn cards came out of ([[server:originsOf]]). Each browser compares the table before and after ([[app:glidesFor]]): what moved slides into place, and what changed gets a ring in the agent's colour for a moment.
+7. **The agent waits its turn.** While people watch, the answer waits until the change has played out on their tables ([[server:AgentPace]]), so a quick run of agent moves shows one at a time. `--no-pace` answers straight away.
+8. **The agent gets the result.** The tool answers with the objects that changed, as the agent may see them.
 
 ## Roles
 

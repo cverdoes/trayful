@@ -17,6 +17,13 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - Harvest Moon has a `2-player-farms` setup with a coloured farm for each player.
 - A table that uses surfaces does not open in older versions.
 
+### Following other players' moves
+
+- When someone else, a person or an agent, moves a piece, it slides from where it was to where it lands instead of jumping there, a flipped piece turns over, and a card drawn from a pile slides out of it. Cards that come out of a hidden hand fade in where they land.
+- Whatever someone else changed gets a ring in their colour for a couple of seconds.
+- Agents are paced while people watch: each MCP tool that changes the table answers once its change has played out on their tables, so a quick run of agent moves shows one at a time. `trayful play --no-pace` (and `trayful mcp --no-pace`) answers straight away.
+- Reduced motion keeps the rings but skips the sliding.
+
 ## 0.2.0
 
 Projects and tables saved with 0.1.0 open unchanged in 0.2.0; everything new is added on top.

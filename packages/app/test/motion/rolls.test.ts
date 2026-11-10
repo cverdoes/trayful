@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MOTION_MS } from '../../src/motion/motions';
+import { MOTION_MS } from '@trayful/core';
 import { rollFrame } from '../../src/motion/rolls';
 
 const ROLL_MS = MOTION_MS.roll;

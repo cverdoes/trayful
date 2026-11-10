@@ -12,11 +12,14 @@ export interface PlayOptions {
   share: boolean;
   tunnel: boolean;
   container: boolean;
+  /** Hold each agent move until people watching have seen it (default); `--no-pace` lets agents rush. */
+  pace?: boolean;
 }
 
 /** Options that are on or off. */
 const SWITCHES = new Map<string, Partial<PlayOptions>>([
   ['--no-open', { open: false }],
+  ['--no-pace', { pace: false }],
   ['--share', { share: true }],
   ['--tunnel', { tunnel: true }],
   // Inside a container nothing can open a browser.
@@ -40,6 +43,7 @@ export function parsePlayArgs(args: string[]): PlayOptions {
     share: false,
     tunnel: false,
     container: false,
+    pace: true,
   };
   const dirs: string[] = [];
   for (let i = 0; i < args.length; i++) {

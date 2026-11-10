@@ -65,6 +65,7 @@ A table can also have [surfaces](docs/reference/surfaces.md): separate play spac
 | `--share`             | Let others on your network join, by invite link                   |
 | `--tunnel`            | Let others anywhere join, through a Cloudflare tunnel             |
 | `--container`         | Run inside a container; see [Run it in Docker](#run-it-in-docker) |
+| `--no-pace`           | Answer agents at once, not after people have seen each move       |
 
 ### Play with others
 

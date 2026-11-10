@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MOTION_MS } from '../../src/motion/motions';
+import { MOTION_MS } from '@trayful/core';
 import { gatherFrame, riffleFrame } from '../../src/motion/shuffles';
 
 const at = (share: number) => share * MOTION_MS.shuffle;

@@ -6,6 +6,7 @@ import {
   type TableObject,
   type TableState,
   type Activity,
+  type Aliases,
   type Command,
   type Motion,
   type TableView,
@@ -91,12 +92,51 @@ export function motionOf(commands: readonly Command[]): Motion | undefined {
   return undefined;
 }
 
-/** The activity as one viewer may see it: motion only for the pieces in their view. */
-export function activityFor(activity: Activity, view: TableView): Activity {
-  if (!activity.motion) return activity;
-  const { motion, ...rest } = activity;
-  const ids = motion.ids.filter((id) => view.objects[id]);
-  return ids.length > 0 ? { ...rest, motion: { ...motion, ids } } : rest;
+/**
+ * The activity as one viewer may see it: motion only for the pieces in their view, and
+ * where pieces came from only for those they see now, by the names they know them by.
+ */
+export function activityFor(
+  activity: Activity,
+  view: TableView,
+  name: (id: string) => string = (id) => id,
+): Activity {
+  const { motion, from, ...rest } = activity;
+  const ids = motion?.ids.filter((id) => view.objects[id]) ?? [];
+  const seen = Object.entries(from ?? {}).flatMap(([id, stack]) => {
+    const known = name(id);
+    return view.objects[known] ? [[known, stack] as const] : [];
+  });
+  return {
+    ...rest,
+    ...(motion && ids.length > 0 ? { motion: { ...motion, ids } } : {}),
+    ...(seen.length > 0 ? { from: Object.fromEntries(seen) } : {}),
+  };
+}
+
+/** The name `viewer` knows a piece by: its stand-in when it is hidden from them. */
+export function namedFor(
+  state: TableState,
+  id: string,
+  viewer: string | undefined,
+  aliases: Aliases,
+): string {
+  const piece = state.objects[id];
+  return piece?.kind === 'piece' && isHidden(piece, viewer) ? aliases.alias(id) : id;
+}
+
+/** More pieces than this coming out of stacks at once, such as a new table, go unexplained. */
+const MAX_ORIGINS = 40;
+
+/** The stacks pieces left in a change, by piece id: where a drawn or dealt card came from. */
+export function originsOf(before: TableState, after: TableState): Record<string, string> {
+  const from: Record<string, string> = {};
+  for (const object of Object.values(after.objects)) {
+    const was = before.objects[object.id];
+    if (object.kind !== 'piece' || was?.kind !== 'piece' || !was.parent) continue;
+    if (was.parent !== object.parent) from[object.id] = was.parent;
+  }
+  return Object.keys(from).length > MAX_ORIGINS ? {} : from;
 }
 
 /**

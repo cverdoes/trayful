@@ -48,6 +48,7 @@ export async function mcp(
     port,
     seed: options.seed,
     setup: options.setup,
+    agentPace: options.pace,
   });
   err(`${server.session.project.manifest.name}: watch the table at ${server.url}`);
   const stdio = new StdioServerTransport(io.stdin, io.stdout);

@@ -1,5 +1,6 @@
 import { valueAt, valueCount, valuesOf, type ComponentType } from '@trayful/formats/browser';
-import { MOTION_MS, useMotionClock } from './motions';
+import { MOTION_MS } from '@trayful/core';
+import { useMotionClock } from './motions';
 
 const ROLL_MS = MOTION_MS.roll;
 /** Whole turns a die makes while it tumbles; whole, so it ends the way it lay. */

@@ -58,6 +58,7 @@ async function startTable(options: PlayOptions, appDir: string): Promise<Running
       // Sharing on the network listens on every interface; a tunnel reaches us locally.
       host: options.share ? '0.0.0.0' : undefined,
       container: options.container ? inContainer() : undefined,
+      agentPace: options.pace,
     });
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== 'EADDRINUSE') throw e;

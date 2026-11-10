@@ -4,7 +4,6 @@ import path from 'node:path';
 import {
   AliasBook,
   fullView,
-  CommandError,
   handCounts,
   PromptError,
   resolveAliases,
@@ -27,7 +26,9 @@ import {
   type TableState,
 } from '@trayful/core';
 import { formatDiagnostic, loadProject, type ResolvedProject } from '@trayful/formats';
-import { activityFor, activityText, changedInSight, motionOf } from './activity.js';
+import { AgentPace } from './pace.js';
+import * as activities from './activity.js';
+import { errorReply } from './errors.js';
 import { EventFeed } from './feed.js';
 import { PictureRequests, SnapshotError } from './pictures.js';
 import { AGENT_PLAYER, tableKey, type PlayerDirectory } from './players.js';
@@ -50,6 +51,11 @@ export interface SessionOptions {
   seed?: number;
   setup?: string | false;
   saveDelayMs?: number;
+  /**
+   * Holds each agent change until it has played out on the tables of people watching,
+   * so a burst of agent moves shows one at a time. Default true.
+   */
+  agentPace?: boolean;
   version?: number;
   players?: PlayerDirectory;
 }
@@ -70,6 +76,8 @@ export class TableSession {
   private saveTimer: NodeJS.Timeout | undefined;
   private saving: Promise<void> = Promise.resolve();
   private activity: Activity | undefined;
+  /** Holds the agent back until people watching have seen its latest change. */
+  readonly pace: AgentPace;
   private pictures = new PictureRequests(
     (message) => this.broadcast(message),
     () => this.listeners.size,
@@ -96,6 +104,7 @@ export class TableSession {
     options: SessionOptions,
   ) {
     this.saveDelayMs = options.saveDelayMs ?? 250;
+    this.pace = new AgentPace(options.agentPace ?? true);
     this.version = options.version ?? 1;
     this.players = options.players;
     let before = engine.state;
@@ -109,6 +118,8 @@ export class TableSession {
         if (stack?.kind === 'stack') this.aliases.forget(stack.items);
       }
       this.aliases.prune(state);
+      if (this.activity)
+        this.activity = { ...this.activity, from: activities.originsOf(before, state) };
       this.events.push({
         kind: 'changed',
         change: change.kind,
@@ -117,7 +128,7 @@ export class TableSession {
           : {}),
         text: this.activity?.text ?? 'caught up with the project files',
         revision: this.revision,
-        objects: changedInSight(before, state),
+        objects: activities.changedInSight(before, state),
       });
       before = state;
       for (const [listener, viewer] of this.listeners) listener(this.stateMessage(viewer));
@@ -238,8 +249,16 @@ export class TableSession {
       // Each player undoes only their own changes.
       canUndo: this.engine.canUndoFor(viewer),
       canRedo: this.engine.canRedoFor(viewer),
-      ...(this.activity ? { activity: activityFor(this.activity, state) } : {}),
+      ...(this.activity
+        ? { activity: activities.activityFor(this.activity, state, this.namesFor(viewer)) }
+        : {}),
     };
+  }
+
+  /** The names a viewer knows pieces by: hidden ones by their stand-ins. */
+  private namesFor(viewer: string | undefined): (id: string) => string {
+    if (this.seesEverything(viewer)) return (id) => id;
+    return (id) => activities.namedFor(this.engine.state, id, viewer, this.aliases);
   }
 
   /** The table as one player may see it: other hands and face-down faces hidden. */
@@ -273,7 +292,8 @@ export class TableSession {
     const first = player !== undefined && !this.seen.has(player);
     if (player) this.seen.set(player, Date.now());
     if (first) this.broadcastPlayers();
-    const motion = motionOf(commands);
+    const motion = activities.motionOf(commands);
+    if (agent) this.pace.changed(motion, this.listeners.size);
     this.activity = {
       by: agent ? 'agent' : 'person',
       ...(player ? { player, name: this.players?.get(player)?.name ?? player } : {}),
@@ -296,7 +316,9 @@ export class TableSession {
     this.checkReach(real, player);
     const name = (id: string) =>
       id === player ? 'their' : `${this.players?.get(id)?.name ?? id}'s`;
-    this.as(player, activityText(real, name), () => this.engine.dispatch(real, player), [real]);
+    this.as(player, activities.activityText(real, name), () => this.engine.dispatch(real, player), [
+      real,
+    ]);
   }
 
   /** Throws when a command names a piece out of the player's reach, or an unknown player. */
@@ -400,15 +422,7 @@ export class TableSession {
       }
     } catch (err) {
       // Commands never change state when they throw, so any error is safe to report and move on.
-      const text =
-        err instanceof CommandError || err instanceof SetupError || err instanceof PromptError
-          ? err.message
-          : `Invalid message: ${(err as Error).message}`;
-      return {
-        type: 'error',
-        message: text,
-        requestId: message.type === 'command' ? message.requestId : undefined,
-      };
+      return errorReply(err, message.type === 'command' ? message.requestId : undefined);
     }
   }
 

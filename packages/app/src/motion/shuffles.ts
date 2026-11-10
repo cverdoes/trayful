@@ -1,4 +1,4 @@
-import { MOTION_MS } from './motions';
+import { MOTION_MS } from '@trayful/core';
 
 /** Most cards a riffle draws; a bigger pile riffles the same, just thicker. */
 export const RIFFLE_CARDS = 12;
