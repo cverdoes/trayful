@@ -59,8 +59,11 @@ export type ServerMessage =
   | { type: 'error'; message: string; requestId?: string }
   /** A command sent with a `requestId` was applied. */
   | { type: 'done'; requestId: string }
-  /** Asks a browser to render the table to a PNG and answer with a `snapshot` message. */
-  | { type: 'snapshot-request'; id: string }
+  /**
+   * Asks a browser to render a surface of the table (the Centre unless named) to a
+   * PNG and answer with a `snapshot` message.
+   */
+  | { type: 'snapshot-request'; id: string; surface?: string }
   /**
    * Asks a browser to draw one component (both sides) and answer with a `snapshot`
    * message, so an agent designing a type can see it.

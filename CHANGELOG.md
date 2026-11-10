@@ -10,6 +10,8 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - Commands and MCP tools: `move`, `draw`, `deal` and `take` take a `surface`, and `surface:<id>` as a target finds free room there; `add_surface`, `edit_surface`, `remove_surface` and `sit` manage them. `describe_table` and `query_objects` can look at one surface.
 - In the browser, each surface is a tile with its own pan and zoom, the Centre the largest. Chips under the toolbar switch tiles on and off, a view menu picks all surfaces, yours and the Centre, or the Centre only, and a tile can be focused on its own (number keys, `Esc` to go back). Each viewer's choice is kept in their browser per table, and a hidden surface's chip pulses when someone else changes it.
 - Pieces move between surfaces by dragging from tile to tile, by dropping them on a chip, or with "Send to…" on the toolbar. The chip row adds, renames and removes surfaces, makes them seats, and lets a player sit down or stand up.
+- Setups can list surfaces under `surfaces`, and `place` and `deal` steps take a `surface`, or `surface:<id>` as a target. Start over keeps players in their seats.
+- The `snapshot` MCP tool takes a `surface` to picture one surface.
 - A table that uses surfaces does not open in older versions.
 
 ## 0.2.0

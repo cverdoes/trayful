@@ -115,8 +115,23 @@ export const InventoryFile = z
 export const Target = z.union([Vec2, z.string()]).meta({
   id: 'Target',
   description:
-    'Where something goes: an `[x, y]` table position, or a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`).',
+    "Where something goes: an `[x, y]` position (on the Centre, or on the step's `surface`), a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`), or `surface:<id>` for free room on a surface.",
 });
+
+const OnSurface = Slug.describe(
+  "Surface an `[x, y]` position in `at` or `to` is on, from the setup's `surfaces`. Default: the Centre.",
+);
+
+export const SetupSurface = z
+  .strictObject({
+    id: Slug.describe("Surface id, used in `surface:` targets and steps' `surface`."),
+    name: z.string().min(1).optional().describe('Name shown on its tile. Default: the id.'),
+    seat: z.boolean().optional().describe('Whether a player can sit here, such as a player area.'),
+  })
+  .meta({
+    id: 'SetupSurface',
+    description: 'A surface the table starts with besides the Centre, in tile order.',
+  });
 
 const Ref = z
   .union([z.string(), z.strictObject({ deck: z.string() })])
@@ -129,6 +144,7 @@ export const PlaceStep = z
     place: Ref,
     at: Target,
     face: FaceSide.optional().describe('Turn face up or down.'),
+    surface: OnSurface.optional(),
     rot: z.number().optional().describe('Rotation in degrees.'),
     shuffle: z.boolean().optional().describe('Shuffle a deck after placing it.'),
     lock: z
@@ -145,6 +161,7 @@ export const DealStep = z
       to: Target.describe('A snap target fills its spots in order; a position stacks the cards.'),
       count: z.int().positive().describe('Number of cards to deal.'),
       face: FaceSide.optional(),
+      surface: OnSurface.optional(),
     }),
   })
   .meta({ id: 'DealStep', description: 'Deal cards from the top of a deck.' });
@@ -164,6 +181,12 @@ export const SetupFile = z
     kind: z.literal('setup').describe('Marks this file as a setup.'),
     name: z.string().optional().describe('Display name. Default: the file name.'),
     description: z.string().optional(),
+    surfaces: z
+      .array(SetupSurface)
+      .optional()
+      .describe(
+        'Surfaces besides the Centre, such as one per player, made before the steps run. Default: only the Centre.',
+      ),
     steps: z.array(SetupStep).describe('Run in order on an empty table.'),
   })
   .meta({
@@ -176,4 +199,5 @@ export type ManifestFile = z.infer<typeof ManifestFile>;
 export type InventoryEntry = z.infer<typeof InventoryEntry>;
 export type InventoryFile = z.infer<typeof InventoryFile>;
 export type SetupStep = z.infer<typeof SetupStep>;
+export type SetupSurface = z.infer<typeof SetupSurface>;
 export type SetupFile = z.infer<typeof SetupFile>;

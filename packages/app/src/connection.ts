@@ -66,9 +66,9 @@ async function loadView(): Promise<void> {
   useStore.setState({ view: (await response.json()) as ProjectView });
 }
 
-function sendSnapshot(socket: WebSocket, id: string): void {
+function sendSnapshot(socket: WebSocket, id: string, surface?: string): void {
   try {
-    socket.send(JSON.stringify({ type: 'snapshot', id, png: snapshotTable() }));
+    socket.send(JSON.stringify({ type: 'snapshot', id, png: snapshotTable(surface) }));
   } catch (err) {
     socket.send(JSON.stringify({ type: 'snapshot', id, error: (err as Error).message }));
   }
@@ -98,7 +98,7 @@ function open(previousAttempts: number): void {
       // An agent asked to see the table. Dice still tumbling would show it a face they
       // did not land on, so it waits for everything to come to rest.
       const wait = settleIn(useStore.getState().moving, performance.now());
-      setTimeout(() => sendSnapshot(socket, message.id), wait);
+      setTimeout(() => sendSnapshot(socket, message.id, message.surface), wait);
       return;
     }
     if (message.type === 'render-request') {

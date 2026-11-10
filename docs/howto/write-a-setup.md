@@ -43,6 +43,27 @@ steps:
 
 Nothing is locked unless a step says so. Lock the board, as above, so that dragging across it pans the table instead of moving the board and everything on it; press **L** on the table to unlock it.
 
+## Player areas
+
+A setup can give the table [surfaces](../reference/surfaces.md) besides the Centre, such as one per player, and put things there. List them under `surfaces`, then give a step's position a `surface`, or use `surface:<id>` as its target for free room there:
+
+```yaml
+surfaces:
+  - { id: red, name: Red player, seat: true }
+  - { id: blue, name: Blue player, seat: true }
+steps:
+  - place: player-board.red
+    at: [0, 0]
+    surface: red
+  - place: worker.red
+    at: player-board.red/workers
+  - deal: actions
+    to: surface:blue
+    count: 3
+```
+
+A drop area already says where it is, so `surface` goes only with an `[x, y]` position. Things the setup does not place are laid out below the Centre.
+
 ## Use it
 
 Name the setup in `trayful.yaml` to start every new table from it:
@@ -53,6 +74,6 @@ Name the setup in `trayful.yaml` to start every new table from it:
 setup: 2-player
 ```
 
-**Start over** in the table toolbar's **More** menu sets the table up again from the files (you can undo it), and **New table** in the menu starts another table. From the command line, `pnpm trayful play my-game --table test --setup 2-player` starts a new table from a setup, and `--setup none` lays everything out in rows instead.
+**Start over** in the table toolbar's **More** menu sets the table up again from the files (you can undo it), keeping players in the seats they sat at, and **New table** in the menu starts another table. From the command line, `pnpm trayful play my-game --table test --setup 2-player` starts a new table from a setup, and `--setup none` lays everything out in rows instead.
 
 Setups shuffle with the table's seed, so `--seed 7` gives the same deal every time.

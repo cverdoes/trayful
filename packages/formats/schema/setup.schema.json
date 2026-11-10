@@ -17,6 +17,13 @@
         "description": {
           "type": "string"
         },
+        "surfaces": {
+          "description": "Surfaces besides the Centre, such as one per player, made before the steps run. Default: only the Centre.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SetupSurface"
+          }
+        },
         "steps": {
           "type": "array",
           "items": {
@@ -32,6 +39,30 @@
       "additionalProperties": false,
       "title": "Trayful setup",
       "description": "A scripted starting layout that a table can be reset to."
+    },
+    "SetupSurface": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "description": "Surface id, used in `surface:` targets and steps' `surface`."
+        },
+        "name": {
+          "description": "Name shown on its tile. Default: the id.",
+          "type": "string",
+          "minLength": 1
+        },
+        "seat": {
+          "description": "Whether a player can sit here, such as a player area.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "description": "A surface the table starts with besides the Centre, in tile order."
     },
     "SetupStep": {
       "anyOf": [
@@ -81,6 +112,11 @@
             "down"
           ]
         },
+        "surface": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "description": "Surface an `[x, y]` position in `at` or `to` is on, from the setup's `surfaces`. Default: the Centre."
+        },
         "rot": {
           "description": "Rotation in degrees.",
           "type": "number"
@@ -110,7 +146,7 @@
           "type": "string"
         }
       ],
-      "description": "Where something goes: an `[x, y]` table position, or a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`)."
+      "description": "Where something goes: an `[x, y]` position (on the Centre, or on the step's `surface`), a drop area as `component/area` or `component/area/index` (e.g. `main-board/market/2`), or `surface:<id>` for free room on a surface."
     },
     "Vec2": {
       "type": "array",
@@ -153,6 +189,11 @@
                 "up",
                 "down"
               ]
+            },
+            "surface": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]*$",
+              "description": "Surface an `[x, y]` position in `at` or `to` is on, from the setup's `surfaces`. Default: the Centre."
             }
           },
           "required": [

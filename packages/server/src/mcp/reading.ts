@@ -90,12 +90,18 @@ function registerSnapshotAndHistory(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Picture of the table',
       description:
-        'A PNG image of the whole table as people see it. Needs the table open in a browser.',
+        'A PNG image of the whole of one surface of the table (the Centre unless named) as people see it. Needs the table open in a browser that shows that surface.',
+      inputSchema: {
+        surface: z
+          .string()
+          .optional()
+          .describe('Surface to picture, from describe_table. Default: the Centre.'),
+      },
       annotations: { readOnlyHint: true },
     },
-    async () => {
+    async ({ surface }) => {
       try {
-        const png = await session().requestSnapshot();
+        const png = await session().requestSnapshot(surface);
         return {
           content: [{ type: 'image', data: png.toString('base64'), mimeType: 'image/png' }],
         };

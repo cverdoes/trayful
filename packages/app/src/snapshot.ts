@@ -18,16 +18,18 @@ export function setSnapshotStage(surface: string, next: Konva.Stage | null): voi
 }
 
 /**
- * Draws the whole of a surface, whatever part is on screen, and returns it as
- * base64 PNG data: the Centre, or the first surface shown when the Centre is not.
+ * Draws the whole of a surface (the Centre unless named), whatever part of it is on
+ * screen, and returns it as base64 PNG data. Only a surface this browser shows can be drawn.
  */
-export function snapshotTable(): string {
+export function snapshotTable(surface = CENTRE): string {
   const state = useStore.getState();
   const { table, view } = state;
-  const [surface, stage] = stages.has(CENTRE)
-    ? [CENTRE, stages.get(CENTRE)]
-    : (stages.entries().next().value ?? [CENTRE, undefined]);
-  if (!stage || !table || !view) throw new Error('The table is not on screen yet.');
+  if (!table || !view) throw new Error('The table is not on screen yet.');
+  const stage = stages.get(surface);
+  if (!stage)
+    throw new Error(
+      `No browser shows the "${surface}" surface; ask someone to switch its tile on.`,
+    );
   const v = viewportOf(state, surface);
   const box = tableBounds(table, view.types, surface) ?? [0, 0, 100, 100];
   const [x0, y0, x1, y1] = [
