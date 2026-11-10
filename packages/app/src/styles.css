@@ -1501,6 +1501,15 @@ label.button:hover {
   background: #e3b341;
 }
 
+/* A surface's colour, by its name on the chip and on its tile. */
+.swatch {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
 .chip .sitter {
   font-size: 12px;
   color: var(--muted);

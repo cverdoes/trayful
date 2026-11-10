@@ -70,6 +70,8 @@ export interface Surface {
   name: string;
   /** Somewhere a player can sit. */
   seat?: boolean;
+  /** Colour of its tile frame and chip: a project colour name or a CSS colour. */
+  color?: string;
   /** Who sits here. */
   player?: string;
 }
@@ -129,8 +131,22 @@ export type Command =
   | { type: 'lock'; ids: string[]; locked: boolean }
   | { type: 'mark'; at: string; stamp?: string; text?: string }
   | { type: 'erase'; at: string }
-  | { type: 'addSurface'; id: string; name?: string; seat?: boolean; after?: string }
-  | { type: 'editSurface'; id: string; name?: string; seat?: boolean; after?: string }
+  | {
+      type: 'addSurface';
+      id: string;
+      name?: string;
+      seat?: boolean;
+      color?: string;
+      after?: string;
+    }
+  | {
+      type: 'editSurface';
+      id: string;
+      name?: string;
+      seat?: boolean;
+      color?: string;
+      after?: string;
+    }
   | { type: 'removeSurface'; id: string; to?: string }
   | { type: 'sit'; surface: string; player?: string };
 

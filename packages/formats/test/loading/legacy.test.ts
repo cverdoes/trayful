@@ -32,7 +32,8 @@ describe('loading a project in the first format', () => {
     expect(current.legacy).toBe(false);
     expect(old.components).toEqual(current.components);
     expect(old.decks).toEqual(current.decks);
-    expect(old.setups).toEqual(current.setups);
+    // The first format had only the two-player setup; later setups came after it.
+    expect(old.setups).toEqual({ '2-player': current.setups['2-player'] });
     expect(old.assets.colors).toEqual(current.assets.colors);
     expect(old.assets.images).toEqual({
       'card-back': current.assets.images['card-back'],

@@ -18,6 +18,7 @@ const known: Known = {
     { id: 'board', type: 'board', data: {} },
     { id: 'card.a', type: 'card', data: {} },
     { id: 'card.b', type: 'card', data: {} },
+    { id: 'meeple.red.1', type: 'meeple', data: {} },
   ],
   decks: { main: ['card.a', 'card.b'] },
   brokenTypes: new Set(['typo']),
@@ -32,6 +33,11 @@ describe('stepProblems', () => {
     expect(messages({ place: { deck: 'main' }, at: 'board/row/2', shuffle: true })).toEqual([]);
     expect(messages({ deal: { from: 'main', to: 'board/pool', count: 1 } })).toEqual([]);
     expect(messages({ shuffle: 'main' })).toEqual([]);
+  });
+
+  it("accepts the start of components' ids up to a dot, and nothing shorter", () => {
+    expect(messages({ place: 'meeple.red', at: [0, 0] })).toEqual([]);
+    expect(messages({ place: 'meeple.r', at: [0, 0] })).toHaveLength(1);
   });
 
   it('reports unknown pieces and decks, and shuffling a single piece', () => {

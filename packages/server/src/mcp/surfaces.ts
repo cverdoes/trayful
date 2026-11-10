@@ -5,6 +5,11 @@ import type { ToolContext } from './context.js';
 const SurfaceId = z.string().describe('Surface id, such as `red`; `centre` is the Centre.');
 const Name = z.string().min(1).describe('Name shown on its tile, such as `Red player`.');
 const Seat = z.boolean().describe('Whether a player can sit there.');
+const Color = z
+  .string()
+  .describe(
+    "Colour of its tile frame and chip: a name from the project's colours, such as `red`, or a CSS colour such as `#c5523a`.",
+  );
 const After = z
   .string()
   .describe('The surface whose tile it goes after; `centre` puts it first after the Centre.');
@@ -22,11 +27,12 @@ export function registerSurfaceTools(server: McpServer, ctx: ToolContext): void 
         id: SurfaceId,
         name: Name.optional().describe('Name shown on its tile. Default: the id.'),
         seat: Seat.optional(),
+        color: Color.optional(),
         after: After.optional(),
       },
     },
-    ({ id, name, seat, after }) =>
-      play(`added surface ${id}`, [{ type: 'addSurface', id, name, seat, after }]),
+    ({ id, name, seat, color, after }) =>
+      play(`added surface ${id}`, [{ type: 'addSurface', id, name, seat, color, after }]),
   );
 
   server.registerTool(
@@ -34,16 +40,19 @@ export function registerSurfaceTools(server: McpServer, ctx: ToolContext): void 
     {
       title: 'Change a surface',
       description:
-        'Rename a surface, make it a seat or not, or move its tile after another. The Centre can only be renamed.',
+        'Rename a surface, make it a seat or not, colour it, or move its tile after another. The Centre can only be renamed or coloured.',
       inputSchema: {
         id: SurfaceId,
         name: Name.optional(),
         seat: Seat.optional(),
+        color: Color.optional().describe(
+          "Colour of its tile frame and chip, from the project's colours or a CSS colour; an empty string takes it off.",
+        ),
         after: After.optional(),
       },
     },
-    ({ id, name, seat, after }) =>
-      play(`changed surface ${id}`, [{ type: 'editSurface', id, name, seat, after }]),
+    ({ id, name, seat, color, after }) =>
+      play(`changed surface ${id}`, [{ type: 'editSurface', id, name, seat, color, after }]),
   );
 
   server.registerTool(

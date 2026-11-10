@@ -82,7 +82,7 @@ describe('loadProject', () => {
     ]);
     expect(p.components).toHaveLength(26);
     expect(p.decks.actions).toHaveLength(10);
-    expect(Object.keys(p.setups)).toEqual(['2-player']);
+    expect(Object.keys(p.setups).sort()).toEqual(['2-player', '2-player-farms']);
   });
 
   it('expands rows, copies, CSV data and combinations into stable ids', async () => {

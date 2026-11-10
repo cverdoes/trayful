@@ -33,7 +33,12 @@ describe('renaming a type', () => {
 
     expect(result).toEqual({
       id: 'farmer',
-      files: ['library/pieces.yaml', 'inventory.yaml', 'setups/2-player.yaml'],
+      files: [
+        'library/pieces.yaml',
+        'inventory.yaml',
+        'setups/2-player-farms.yaml',
+        'setups/2-player.yaml',
+      ],
     });
     expect(await read('library/pieces.yaml')).toBe(
       pieces.replace('accepts: [worker]', 'accepts: [farmer]').replace('id: worker', 'id: farmer'),
@@ -41,6 +46,7 @@ describe('renaming a type', () => {
     expect(await read('library/cards.yaml')).toBe(cards);
     expect(await read('inventory.yaml')).toContain('  - component: farmer\n');
     expect(await read('setups/2-player.yaml')).toContain('  - place: farmer\n');
+    expect(await read('setups/2-player-farms.yaml')).toContain('  - place: farmer.red\n');
     expect(workspace.project().types.worker).toBeUndefined();
     expect(componentsOf('farmer').map((c) => c.id)).toContain('farmer.red.1');
     expect(componentsOf('worker')).toEqual([]);
@@ -66,10 +72,12 @@ describe('renaming a type', () => {
       path.join(dir, 'inventory.yaml'),
       inventory.replace('  - component: main-board', '  - component: main-board\n    count: 2'),
     );
-    const setup = (await read('setups/2-player.yaml'))
-      .replaceAll('main-board/', 'main-board.1/')
-      .replace('place: main-board\n', 'place: main-board.1\n');
-    await writeFile(path.join(dir, 'setups/2-player.yaml'), setup);
+    for (const file of ['setups/2-player.yaml', 'setups/2-player-farms.yaml']) {
+      const setup = (await read(file))
+        .replaceAll('main-board/', 'main-board.1/')
+        .replace('place: main-board\n', 'place: main-board.1\n');
+      await writeFile(path.join(dir, file), setup);
+    }
     await workspace.reload(projectId());
 
     await renameType(workspace, projectId(), 'main-board', 'farm');

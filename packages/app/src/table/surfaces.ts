@@ -1,5 +1,6 @@
 // Which of a table's surfaces this viewer shows as tiles, and where each tile goes.
 import { CENTRE, surfaceOf, surfacesOf, SURFACE_PREFIX, type TableState } from '@trayful/core';
+import type { Surface } from '@trayful/formats/browser';
 
 /** The views a viewer can pick from the chip row's menu. */
 export type Preset = 'all' | 'mine' | 'centre';
@@ -59,6 +60,18 @@ export function sendTargets(
   const from = new Set(movable.map((o) => surfaceOf(o!)));
   const to = surfacesOf(table).filter((s) => from.size > 1 || !from.has(s.id));
   return { ids: movable.map((o) => o!.id), to: to.map(({ id, name }) => ({ id, name })) };
+}
+
+/**
+ * The CSS colour a surface's tile frame and chip are tinted with: a project colour
+ * looked up by name, or the colour as given. Nothing for a surface without one.
+ */
+export function surfaceColor(
+  surface: Pick<Surface, 'color'> | undefined,
+  colors: Readonly<Record<string, string>>,
+): string | undefined {
+  const color = surface?.color;
+  return color === undefined ? undefined : (colors[color] ?? color);
 }
 
 /** Whether a table has surfaces besides the Centre, and so shows chips and tiles. */

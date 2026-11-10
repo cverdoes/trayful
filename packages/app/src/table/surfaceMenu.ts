@@ -14,6 +14,8 @@ export interface MenuContext {
   command: (command: Command) => void;
   ask: Ask;
   confirm: (question: string) => boolean;
+  /** The names of the project's colours, offered when colouring a surface. */
+  colors?: readonly string[];
 }
 
 /** A surface id made from a name, not yet taken on the table: "Red player" gives `red-player`. */
@@ -49,8 +51,9 @@ export function addItems(ctx: MenuContext): MenuItem[] {
 }
 
 /**
- * The choices for one surface: sitting down or standing up at a seat, renaming it,
- * making it a seat or not, and removing it. The Centre can only be renamed.
+ * The choices for one surface: sitting down or standing up at a seat, renaming and
+ * colouring it, making it a seat or not, and removing it. The Centre can only be
+ * renamed and coloured.
  */
 export function surfaceItems(surface: Surface, ctx: MenuContext): MenuItem[] {
   const { id, name } = surface;
@@ -61,10 +64,11 @@ export function surfaceItems(surface: Surface, ctx: MenuContext): MenuItem[] {
       if (next && next !== name) ctx.command({ type: 'editSurface', id, name: next });
     },
   };
-  if (id === CENTRE) return [rename];
+  if (id === CENTRE) return [rename, colorItem(surface, ctx)];
   return [
     ...seatItems(surface, ctx),
     { ...rename, separated: surface.seat === true && ctx.player !== undefined },
+    colorItem(surface, ctx),
     surface.seat
       ? {
           label: 'No longer a seat',
@@ -87,6 +91,24 @@ export function surfaceItems(surface: Surface, ctx: MenuContext): MenuItem[] {
       },
     },
   ];
+}
+
+/** Colouring a surface's tile frame and chip, or taking the colour off. */
+function colorItem({ id, name, color }: Surface, ctx: MenuContext): MenuItem {
+  return {
+    label: 'Colour…',
+    title: 'Tints its tile frame and chip',
+    onSelect: () => {
+      const names = ctx.colors?.length ? `a colour such as ${ctx.colors.join(', ')}, or ` : '';
+      const answer = ctx.ask(
+        `Colour for "${name}": ${names}a CSS colour such as #c5523a. Leave it empty for none.`,
+        color,
+      );
+      if (answer === undefined) return;
+      const next = answer.trim();
+      if (next !== (color ?? '')) ctx.command({ type: 'editSurface', id, color: next });
+    },
+  };
 }
 
 /** Sitting down at a seat, or standing up from it, for a viewer who has joined. */

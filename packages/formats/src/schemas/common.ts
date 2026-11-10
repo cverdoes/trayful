@@ -92,3 +92,12 @@ export const FaceSide = z.enum(['up', 'down']);
 export type Vec2 = z.infer<typeof Vec2>;
 export type Size = z.infer<typeof Size>;
 export type Scalar = z.infer<typeof Scalar>;
+
+/** A surface's colour, for its tile frame and chip. */
+export const SurfaceColor = z
+  .string()
+  .min(1)
+  .max(40)
+  .describe(
+    "Colour of its tile frame and chip: a name from the assets file's colours, such as `red`, or a CSS colour such as `#c5523a`.",
+  );

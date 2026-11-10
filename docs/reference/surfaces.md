@@ -10,7 +10,7 @@ The table file lists its surfaces besides the Centre in tile order, and each pie
 
 ```json
 {
-  "surfaces": [{ "id": "red", "name": "Red player", "seat": true, "player": "sam" }],
+  "surfaces": [{ "id": "red", "name": "Red player", "seat": true, "color": "red", "player": "sam" }],
   "objects": [{ "kind": "piece", "id": "worker.red.1", "surface": "red", "pos": [0, 0], "...": "..." }]
 }
 ```
@@ -18,11 +18,12 @@ The table file lists its surfaces besides the Centre in tile order, and each pie
 - A position belongs to its surface: `[0, 0]` on `red` is a different place from `[0, 0]` on the Centre.
 - Only things lying directly on the table have a surface. Pieces in a stack follow the stack; pieces in a hand or a bag have none until they come out.
 - Something snapped into a [drop area](snapping.md) lies on the surface of the piece the area belongs to, and moves to another surface with it.
-- The Centre is listed only when it has been renamed, and always first.
+- A `color` tints the surface's tile frame and chip: a name from the project's [colours](assets.md), or a CSS colour such as `#c5523a`.
+- The Centre is listed only when it has been renamed or coloured, and always first.
 
 ## In a setup
 
-A [setup](setup.md) lists the surfaces a new table starts with under `surfaces`, and its `place` and `deal` steps take a `surface` for a position, or `surface:<id>` as a target (see [Write a setup](../howto/write-a-setup.md#player-areas)). **Start over** keeps players in the seats they sat at, as long as the setup still has that seat.
+A [setup](setup.md) lists the surfaces a new table starts with under `surfaces` (with a `name`, `seat` and `color` each), and its `place` and `deal` steps take a `surface` for a position, or `surface:<id>` as a target (see [Write a setup](../howto/write-a-setup.md#player-areas)). **Start over** keeps players in the seats they sat at, as long as the setup still has that seat.
 
 ## Commands
 
@@ -30,8 +31,8 @@ A [setup](setup.md) lists the surfaces a new table starts with under `surfaces`,
 | --- | --- | --- |
 | `move` | `surface` with a position in `to` moves there on that surface; `to: "surface:<id>"` finds free room there | `{ "type": "move", "ids": ["worker.red.1"], "to": [0, 0], "surface": "red" }` |
 | `draw`, `deal`, `take` | `surface` says which surface positions in `to` are on (default: the Centre); `surface:<id>` works as a target | `{ "type": "draw", "from": "deck:actions", "count": 3, "to": "surface:red" }` |
-| `addSurface` | Adds a surface, last or `after` another (`centre` for first); `seat: true` lets a player sit there | `{ "type": "addSurface", "id": "red", "name": "Red player", "seat": true }` |
-| `editSurface` | Renames, makes a seat or not, or moves a tile `after` another. The Centre can only be renamed | `{ "type": "editSurface", "id": "red", "name": "Rouge" }` |
+| `addSurface` | Adds a surface, last or `after` another (`centre` for first); `seat: true` lets a player sit there, `color` tints it | `{ "type": "addSurface", "id": "red", "name": "Red player", "seat": true, "color": "red" }` |
+| `editSurface` | Renames, makes a seat or not, colours (`""` for none), or moves a tile `after` another. The Centre can only be renamed or coloured | `{ "type": "editSurface", "id": "red", "name": "Rouge" }` |
 | `removeSurface` | Removes a surface; what lies on it moves to free room on the surface `to` | `{ "type": "removeSurface", "id": "red", "to": "centre" }` |
 | `sit` | Seats a player at a seat; without `player`, stands whoever sits there up | `{ "type": "sit", "surface": "red", "player": "sam" }` |
 
@@ -59,4 +60,4 @@ What each viewer shows is their own choice, kept in that browser for each table;
 
 ### Changing the surfaces
 
-The **+** at the end of the chip row adds a surface or a seat. The **▾** by each chip renames the surface, makes it a seat or not, and removes it, which moves what lies on it to the Centre. At a seat, *Sit here* and *Stand up* seat you. All of it can be undone.
+The **+** at the end of the chip row adds a surface or a seat. The **▾** by each chip renames the surface, colours it, makes it a seat or not, and removes it, which moves what lies on it to the Centre. At a seat, *Sit here* and *Stand up* seat you. All of it can be undone.

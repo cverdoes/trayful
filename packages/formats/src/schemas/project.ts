@@ -1,6 +1,14 @@
 // The files an author writes besides libraries and assets: the manifest, the inventory and setups.
 import { z } from 'zod';
-import { FORMAT_VERSION, LEGACY_FORMAT, Slug, Vec2, Scalar, FaceSide } from './common.js';
+import {
+  FORMAT_VERSION,
+  LEGACY_FORMAT,
+  Slug,
+  Vec2,
+  Scalar,
+  FaceSide,
+  SurfaceColor,
+} from './common.js';
 
 // ---------------------------------------------------------------------------
 // Manifest
@@ -127,6 +135,7 @@ export const SetupSurface = z
     id: Slug.describe("Surface id, used in `surface:` targets and steps' `surface`."),
     name: z.string().min(1).optional().describe('Name shown on its tile. Default: the id.'),
     seat: z.boolean().optional().describe('Whether a player can sit here, such as a player area.'),
+    color: SurfaceColor.optional(),
   })
   .meta({
     id: 'SetupSurface',
@@ -136,7 +145,7 @@ export const SetupSurface = z
 const Ref = z
   .union([z.string(), z.strictObject({ deck: z.string() })])
   .describe(
-    'A component id from a library (places every one of them in the inventory), the id of one of them, or `{ deck: <name> }`.',
+    'A component id from a library (places every one of them in the inventory), the id of one of them, the start of their ids up to a dot (`worker.red` places `worker.red.1`, `worker.red.2`, …), or `{ deck: <name> }`.',
   );
 
 export const PlaceStep = z

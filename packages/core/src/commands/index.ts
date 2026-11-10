@@ -84,11 +84,29 @@ export type Command =
   | { type: 'erase'; at: string }
   /**
    * Add a surface: a separate play space with its own positions. Its tile goes after
-   * `after` (`centre` for first), or last. A `seat` is somewhere a player can sit.
+   * `after` (`centre` for first), or last. A `seat` is somewhere a player can sit;
+   * a `color` tints its tile frame and chip.
    */
-  | { type: 'addSurface'; id: string; name?: string; seat?: boolean; after?: string }
-  /** Rename a surface, make it a seat or not, or move its tile after another. */
-  | { type: 'editSurface'; id: string; name?: string; seat?: boolean; after?: string }
+  | {
+      type: 'addSurface';
+      id: string;
+      name?: string;
+      seat?: boolean;
+      color?: string;
+      after?: string;
+    }
+  /**
+   * Rename a surface, make it a seat or not, colour it (`""` for none), or move its
+   * tile after another.
+   */
+  | {
+      type: 'editSurface';
+      id: string;
+      name?: string;
+      seat?: boolean;
+      color?: string;
+      after?: string;
+    }
   /** Remove a surface; what lies on it goes to the surface `to`. Never the Centre. */
   | { type: 'removeSurface'; id: string; to?: string }
   /** Sit a player at a seat, or stand whoever sits there up when `player` is left out. */

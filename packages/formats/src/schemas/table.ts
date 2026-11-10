@@ -1,6 +1,6 @@
 // Table state, which Trayful writes and reads back.
 import { z } from 'zod';
-import { TABLE_FORMAT, Vec2, Scalar, FaceSide, Slug } from './common.js';
+import { TABLE_FORMAT, Vec2, Scalar, FaceSide, Slug, SurfaceColor } from './common.js';
 
 // ---------------------------------------------------------------------------
 // Table state (written by Trayful)
@@ -98,6 +98,7 @@ export const Surface = z
     id: Slug.describe(`Surface id. \`${CENTRE}\` is the Centre, which every table has.`),
     name: z.string().min(1).describe('Name shown on its tile, such as `Red player`.'),
     seat: z.boolean().optional().describe('Whether a player can sit here.'),
+    color: SurfaceColor.optional(),
     player: Slug.optional().describe('Id of the player sitting here, on a seat.'),
   })
   .meta({

@@ -76,6 +76,12 @@
           "description": "Whether a player can sit here.",
           "type": "boolean"
         },
+        "color": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Colour of its tile frame and chip: a name from the assets file's colours, such as `red`, or a CSS colour such as `#c5523a`."
+        },
         "player": {
           "description": "Id of the player sitting here, on a seat.",
           "type": "string",
