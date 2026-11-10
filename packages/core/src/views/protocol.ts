@@ -105,6 +105,11 @@ export interface Activity {
   text: string;
   /** Pieces every viewer should see move, such as dice that were rolled. */
   motion?: Motion;
+  /**
+   * The stacks pieces came out of, by the piece as this viewer knows it, so a card drawn
+   * from a face-down deck can be seen sliding out of it. Only pieces the viewer sees now.
+   */
+  from?: Record<string, string>;
 }
 
 /**
@@ -117,6 +122,12 @@ export interface Motion {
   /** The dice rolled, or the stacks shuffled. */
   ids: string[];
 }
+
+/** How long each kind of motion lasts on the table, in milliseconds. */
+export const MOTION_MS: Readonly<Record<Motion['kind'], number>> = { roll: 1200, shuffle: 800 };
+
+/** How long a piece someone else moved takes to slide to where it landed, in milliseconds. */
+export const GLIDE_MS = 450;
 
 /** A player as other players see them. */
 export interface PlayerInfo {

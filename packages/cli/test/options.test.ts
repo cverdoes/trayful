@@ -9,6 +9,7 @@ describe('parsePlayArgs', () => {
       share: false,
       tunnel: false,
       container: false,
+      pace: true,
     });
   });
 
@@ -29,6 +30,7 @@ describe('parsePlayArgs', () => {
         '--no-open',
         '--share',
         '--tunnel',
+        '--no-pace',
       ]),
     ).toEqual({
       dir: 'games',
@@ -41,6 +43,7 @@ describe('parsePlayArgs', () => {
       share: true,
       tunnel: true,
       container: false,
+      pace: false,
     });
   });
 

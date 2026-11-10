@@ -43,6 +43,11 @@ export interface ServerOptions {
   setup?: string | false;
   /** Reload projects when their files change. Default true. */
   watch?: boolean;
+  /**
+   * Hold each agent change until people watching have seen it play out, so a quick run
+   * of agent moves shows one at a time. Default true.
+   */
+  agentPace?: boolean;
   logger?: boolean;
 }
 
@@ -90,6 +95,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     seed: options.seed,
     setup: options.setup,
     watch: options.watch,
+    agentPace: options.agentPace,
   });
   const app = Fastify({ logger: options.logger ?? false });
   app.decorate('hostAddresses', new Set(options.container?.hostAddresses));

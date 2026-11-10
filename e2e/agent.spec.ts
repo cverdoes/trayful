@@ -98,3 +98,24 @@ test('an agent asks the person a question, who answers above their hand', async 
   expect(page2.events.find((e) => e.kind === 'answered')).toMatchObject({ answer: ['card'] });
   await claude.client.close();
 });
+
+test('an agent move slides into place, ringed, and the agent waits for it', async ({
+  page,
+  baseURL,
+}) => {
+  await openTable(page);
+  const claude = await agent(baseURL!);
+  const started = Date.now();
+  await claude.call('draw', { from: DECK, to: [400, 600], face: 'up' });
+  // The agent hears back once the card has slid out of the deck for the person watching.
+  expect(Date.now() - started).toBeGreaterThanOrEqual(400);
+  const glides = await page.evaluate(
+    () =>
+      (window.__trayful!.store.getState() as unknown as { glides: Record<string, object> }).glides,
+  );
+  const drawn = Object.entries(glides).find(([id]) => id !== DECK);
+  expect(drawn?.[1]).toMatchObject({ ring: true, from: { pos: expect.any(Array) } });
+  expect(glides[DECK]).toMatchObject({ ring: true });
+  await page.screenshot({ path: 'test-results/agent-ring.png' });
+  await claude.client.close();
+});

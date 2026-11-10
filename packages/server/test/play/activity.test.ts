@@ -1,6 +1,12 @@
-import type { Activity, Command, TableView } from '@trayful/core';
+import type { Activity, Command, TableState, TableView } from '@trayful/core';
 import { describe, expect, it } from 'vitest';
-import { activityFor, activityText, motionOf } from '../../src/play/activity.js';
+import {
+  activityFor,
+  activityText,
+  motionOf,
+  namedFor,
+  originsOf,
+} from '../../src/play/activity.js';
 
 describe('activityText', () => {
   it('says what a command did without naming any piece', () => {
@@ -79,5 +85,40 @@ describe('activityFor', () => {
     expect(activityFor(rolled as Activity, view).motion).toEqual({ kind: 'roll', ids: ['d6.1'] });
     const hidden = { ...rolled, motion: { kind: 'roll', ids: ['d6.2'] } } as Activity;
     expect(activityFor(hidden, view)).toEqual({ by: 'person', text: 'rolled' });
+  });
+});
+
+describe('where pieces came from', () => {
+  const piece = (id: string, extra: object = {}) => ({ kind: 'piece', id, ...extra });
+  const state = (...objects: { id: string }[]) =>
+    ({ objects: Object.fromEntries(objects.map((o) => [o.id, o])) }) as unknown as TableState;
+
+  it('names the stack each piece left', () => {
+    const before = state(
+      piece('a', { parent: 'deck' }),
+      piece('b', { parent: 'deck' }),
+      piece('c'),
+    );
+    const after = state(piece('a'), piece('b', { parent: 'deck' }), piece('c', { parent: 'deck' }));
+    expect(originsOf(before, after)).toEqual({ a: 'deck' });
+  });
+
+  it('tells each viewer only about pieces they see, by the names they know them by', () => {
+    const view = { objects: { 'hidden-1': {}, b: {} } } as unknown as TableView;
+    const activity = { by: 'agent', text: 'dealt', from: { a: 'deck', b: 'deck', c: 'deck' } };
+    const names = (id: string) => (id === 'a' ? 'hidden-1' : id);
+    expect(activityFor(activity as Activity, view, names).from).toEqual({
+      'hidden-1': 'deck',
+      b: 'deck',
+    });
+    const unseen = { ...activity, from: { c: 'deck' } } as Activity;
+    expect(activityFor(unseen, view, names)).toEqual({ by: 'agent', text: 'dealt' });
+  });
+
+  it('calls a piece hidden from a viewer by its stand-in', () => {
+    const table = state(piece('a', { face: 'down' }), piece('b', { face: 'up' }));
+    const aliases = { alias: (id: string) => `hidden-${id}`, resolve: () => undefined };
+    expect(namedFor(table, 'a', 'bea', aliases)).toBe('hidden-a');
+    expect(namedFor(table, 'b', 'bea', aliases)).toBe('b');
   });
 });

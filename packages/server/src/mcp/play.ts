@@ -292,7 +292,7 @@ function registerUndoRedo(server: McpServer, ctx: ToolContext): void {
       description:
         "Undo your own last change. People's changes are theirs to undo; yours cannot be undone once someone has changed the same pieces.",
     },
-    () => {
+    async () => {
       const before = engine().state;
       try {
         if (!session().asAgent('undid its last change', () => engine().undo(AGENT_PLAYER)))
@@ -300,14 +300,16 @@ function registerUndoRedo(server: McpServer, ctx: ToolContext): void {
       } catch (err) {
         return failure(err);
       }
-      return text(changes(before, engine().state));
+      const result = text(changes(before, engine().state));
+      await session().pace.playedOut();
+      return result;
     },
   );
 
   server.registerTool(
     'redo',
     { title: 'Redo', description: 'Redo the last change of yours you undid.' },
-    () => {
+    async () => {
       const before = engine().state;
       try {
         if (!session().asAgent('redid its change', () => engine().redo(AGENT_PLAYER)))
@@ -315,7 +317,9 @@ function registerUndoRedo(server: McpServer, ctx: ToolContext): void {
       } catch (err) {
         return failure(err);
       }
-      return text(changes(before, engine().state));
+      const result = text(changes(before, engine().state));
+      await session().pace.playedOut();
+      return result;
     },
   );
 }

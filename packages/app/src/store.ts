@@ -1,5 +1,6 @@
 import {
   onTable,
+  type Activity,
   type ClientMessage,
   type PlayerInfo,
   type PlayerPrompt,
@@ -15,7 +16,8 @@ import { create } from 'zustand';
 import type { GroupPick } from './table/groups';
 import type { MarkPick } from './table/marks';
 import { loadHandHeight, loadHandMinimized } from './table/handTray';
-import { startMotion, type Moving } from './motion/motions';
+import { glidesFor, type Glide } from './motion/glides';
+import { prefersReducedMotion, startMotion, type Moving } from './motion/motions';
 import { route } from './route';
 import {
   changedSurfaces,
@@ -96,6 +98,8 @@ interface TrayfulStore {
   activity?: { text: string; name: string; agent: boolean; at: number };
   /** Dice rolling and piles being shuffled now, by id. */
   moving: Record<string, Moving>;
+  /** What someone else just moved or changed, sliding into place and ringed in their colour, by id. */
+  glides: Record<string, Glide>;
   /** Bumped when the server rejects a change, so the canvas redraws from server state. */
   redrawKey: number;
   shiftDown: boolean;
@@ -139,6 +143,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
   status: 'connecting',
   selection: [],
   moving: {},
+  glides: {},
   redrawKey: 0,
   shiftDown: false,
   helpOpen: false,
@@ -174,6 +179,7 @@ export const useStore = create<TrayfulStore>((set, get) => ({
       ...(activity?.motion
         ? { moving: startMotion(s.moving, activity.motion, performance.now()) }
         : {}),
+      ...(activity && !mine ? othersMoves(s, message.state, activity) : {}),
       ...withoutVanished(s, objects),
       ...surfaceNews(s, message.state, !mine),
     }));
@@ -209,6 +215,24 @@ function surfaceNews(
   if (hidden.length === 0) return {};
   const now = Date.now();
   return { pulses: { ...s.pulses, ...Object.fromEntries(hidden.map((id) => [id, now])) } };
+}
+
+/** The ring's colour for a change by someone not in the player list. */
+const OTHERS_COLOR = '#6c757d';
+
+/**
+ * What someone else's change sets gliding: what it moved slides into place, and
+ * everything it touched gets a ring in the colour of who made it for a moment.
+ */
+function othersMoves(
+  s: Pick<TrayfulStore, 'table' | 'glides' | 'players'>,
+  next: TableView,
+  { player, from }: Activity,
+): Partial<TrayfulStore> {
+  if (s.table?.table !== next.table) return {};
+  const color = s.players.find((p) => p.id === player)?.color ?? OTHERS_COLOR;
+  const options = { now: performance.now(), color, still: prefersReducedMotion(), from };
+  return { glides: glidesFor(s.glides, s.table, next, options) };
 }
 
 /** Where this browser keeps its surface choice for a table. */

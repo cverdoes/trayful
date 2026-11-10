@@ -32,6 +32,8 @@ export interface WorkspaceOptions {
   /** Reload projects when their files change. Default true. */
   watch?: boolean;
   saveDelayMs?: number;
+  /** Hold each agent change until people watching have seen it play out. Default true. */
+  agentPace?: boolean;
   /** Where players are kept. Default: `.trayful/players.json` in the root folder. */
   playerStore?: PlayerStore;
 }
@@ -162,6 +164,7 @@ export class Workspace {
       seed: options.seed,
       setup: options.setup,
       saveDelayMs: this.options.saveDelayMs,
+      agentPace: this.options.agentPace,
       version: this.entry(projectId).version,
       players: this.players,
     });

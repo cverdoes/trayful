@@ -5,15 +5,16 @@ import { useContext } from 'react';
 import { Circle, Group, Rect, Text } from 'react-konva';
 import { bagsOn, drawFromBag } from './bags';
 import type { Vec } from './drops';
-import { STACK_CARD } from './hover';
 import { MarkTargets } from './MarkTargets';
 import { Component, DrawScale, type Highlight } from '../render/Component';
 import { Marks } from '../render/Marks';
 import { useMotionClock } from '../motion/motions';
 import { useRoll } from '../motion/rolls';
-import { gatherFrame, RIFFLE_CARDS, riffleFrame } from '../motion/shuffles';
+import { placed, ringOf, useGlide } from '../motion/useGlide';
+import { gatherFrame } from '../motion/shuffles';
 import { facePiece, sizeOf, type Types } from '../render/geometry';
 import { useStore } from '../store';
+import { Pile, StackCard, type DrawEvents } from './StackCards';
 import { setCursor } from './cursor';
 
 interface ObjectViewProps {
@@ -62,13 +63,14 @@ function TypedPieceView({
 }: ObjectViewProps & { piece: Piece; type: ComponentType }) {
   const moving = useStore((s) => s.moving[piece.id]);
   const roll = useRoll(moving?.kind === 'roll' ? moving.at : undefined, type);
+  const glide = useGlide(piece.id, piece);
   const counter = type.is === 'counter';
+  const shown = glide?.shows ?? piece;
+  const scale = (roll?.scale ?? 1) * (glide?.scale ?? 1);
   return (
     <Group
       ref={register}
-      x={piece.pos[0]}
-      y={piece.pos[1]}
-      rotation={piece.rot}
+      {...placed(piece, glide)}
       draggable={!piece.locked}
       onClick={(e) => events.onClick(e.evt)}
       onTap={(e) => events.onClick(e.evt as unknown as MouseEvent)}
@@ -93,25 +95,19 @@ function TypedPieceView({
       onMouseEnter={(e) => setCursor(e, piece.locked ? 'default' : 'grab')}
       onMouseLeave={(e) => setCursor(e, 'default')}
     >
-      <Group rotation={roll?.turn ?? 0} scaleX={roll?.scale ?? 1} scaleY={roll?.scale ?? 1}>
+      <Group rotation={roll?.turn ?? 0} scaleX={scale * (glide?.flipScale ?? 1)} scaleY={scale}>
         <Component
-          piece={roll?.value === undefined ? piece : { ...piece, value: roll.value }}
+          piece={roll?.value === undefined ? shown : { ...shown, value: roll.value }}
           type={type}
           assets={assets}
           highlight={highlight}
+          ring={ringOf(glide)}
         />
       </Group>
       <Marks piece={piece} types={types} assets={assets} />
       <MarkTargets piece={piece} types={types} />
     </Group>
   );
-}
-
-/** What a card of a stack does when dragged off it. */
-interface DrawEvents {
-  onDrawStart: () => void;
-  onDrawMove: (node: Konva.Group) => void;
-  onDrawEnd: (pieceId: string, node: Konva.Group, home: Vec) => void;
 }
 
 export function StackView({
@@ -134,6 +130,7 @@ export function StackView({
   }) {
   const moving = useStore((s) => s.moving[stack.id]);
   const shuffling = useMotionClock('shuffle', moving?.kind === 'shuffle' ? moving.at : undefined);
+  const glide = useGlide(stack.id, stack);
   const top = facePiece(table, stack);
   const type = top && types[top.type];
   if (!top || !type) return null;
@@ -144,6 +141,8 @@ export function StackView({
     highlight,
     drawable: !wholeStack && !stack.locked,
     events: { onDrawStart, onDrawMove, onDrawEnd },
+    ring: ringOf(glide),
+    stackAt: stack,
   };
   // A fan or spread shows every card, and any of them can be taken.
   const offsets = stack.layout ? stackOffsets(stack.layout, stack.items.length, [w, h]) : [];
@@ -154,9 +153,7 @@ export function StackView({
   return (
     <Group
       ref={register}
-      x={stack.pos[0]}
-      y={stack.pos[1]}
-      rotation={stack.rot}
+      {...placed(stack, glide)}
       draggable={wholeStack && !stack.locked}
       onClick={(e) => events.onClick(e.evt)}
       onDblClick={events.onDoubleClick}
@@ -193,139 +190,6 @@ export function StackView({
         />
       )}
       <CountBadge count={stack.items.length} at={badge} />
-    </Group>
-  );
-}
-
-type CardOptions = Readonly<{
-  types: Types;
-  assets: Assets;
-  highlight?: Highlight;
-  drawable: boolean;
-  events: DrawEvents;
-}>;
-
-/**
- * A pile seen from above: the top card, the edges of those underneath, and the next card.
- * While it is shuffled, `shuffling` ms in, it riffles instead.
- */
-function Pile({
-  stack,
-  table,
-  top,
-  size: [w, h],
-  cards,
-  shuffling,
-}: Readonly<{
-  stack: Stack;
-  table: TableState;
-  top: Piece;
-  size: Vec;
-  cards: CardOptions;
-  shuffling?: number;
-}>) {
-  if (shuffling !== undefined) {
-    return <Riffle stack={stack} table={table} elapsed={shuffling} width={w} cards={cards} />;
-  }
-  const depth = Math.min(stack.items.length - 1, 4);
-  const second = table.objects[stack.items.at(-2) ?? ''] as Piece | undefined;
-  const secondType = second && cards.types[second.type];
-  return (
-    <>
-      {/* Edges of the cards underneath, so a stack reads as a pile. */}
-      {Array.from({ length: depth }, (_, i) => (
-        <Rect
-          key={i}
-          x={-w / 2 + (depth - i) * 0.6}
-          y={-h / 2 + (depth - i) * 0.6}
-          width={w}
-          height={h}
-          cornerRadius={cards.types[top.type]?.face?.corner ?? 0}
-          fill="#e6e0d4"
-          stroke="#8a8072"
-          strokeWidth={0.25}
-          listening={false}
-        />
-      ))}
-      {/* While the top card is dragged away, the next one shows underneath. */}
-      {second && secondType && (
-        <Group listening={false}>
-          <Component piece={second} type={secondType} assets={cards.assets} />
-        </Group>
-      )}
-      {/* Keyed by card, so a new top card gets a fresh node rather than the one dragged away. */}
-      <StackCard key={top.id} piece={top} home={[0, 0]} {...cards} />
-    </>
-  );
-}
-
-/** A pile being shuffled: its top cards split into two halves and riffle back together. */
-function Riffle({
-  stack,
-  table,
-  elapsed,
-  width,
-  cards,
-}: Readonly<{
-  stack: Stack;
-  table: TableState;
-  elapsed: number;
-  width: number;
-  cards: CardOptions;
-}>) {
-  const ids = stack.items.slice(-RIFFLE_CARDS);
-  const placements = riffleFrame(elapsed, ids.length, width) ?? [];
-  return (
-    <Group listening={false}>
-      {ids.map((id, i) => {
-        const piece = table.objects[id];
-        const type = piece?.kind === 'piece' ? cards.types[piece.type] : undefined;
-        const place = placements[i];
-        if (piece?.kind !== 'piece' || !type || !place) return null;
-        return (
-          <Group key={id} x={place.x} y={place.y} rotation={place.rot}>
-            <Component piece={piece} type={type} assets={cards.assets} />
-          </Group>
-        );
-      })}
-    </Group>
-  );
-}
-
-/** A card that can be dragged out of the stack, starting from `home` inside the stack. */
-function StackCard({
-  piece,
-  home,
-  types,
-  assets,
-  highlight,
-  drawable,
-  events,
-}: Readonly<{ piece: Piece; home: Vec }> & CardOptions) {
-  const type = types[piece.type];
-  if (!type) return null;
-  return (
-    <Group
-      id={piece.id}
-      name={STACK_CARD}
-      x={home[0]}
-      y={home[1]}
-      draggable={drawable}
-      onDragStart={(e) => {
-        e.cancelBubble = true;
-        e.currentTarget.moveToTop();
-        events.onDrawStart();
-      }}
-      onDragMove={(e) => {
-        e.cancelBubble = true;
-        events.onDrawMove(e.currentTarget as Konva.Group);
-      }}
-      onDragEnd={(e) => {
-        e.cancelBubble = true;
-        events.onDrawEnd(piece.id, e.currentTarget as Konva.Group, home);
-      }}
-    >
-      <Component piece={piece} type={type} assets={assets} highlight={highlight} />
     </Group>
   );
 }

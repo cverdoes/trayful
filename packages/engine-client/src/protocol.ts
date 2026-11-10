@@ -217,6 +217,8 @@ export interface Activity {
   name?: string;
   text: string;
   motion?: { kind: 'roll' | 'shuffle'; ids: string[] };
+  /** The stacks pieces came out of, by the piece as this engine knows it. */
+  from?: Record<string, string>;
 }
 
 /** What an engine sends. */

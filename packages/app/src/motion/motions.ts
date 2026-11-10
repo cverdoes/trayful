@@ -1,8 +1,5 @@
-import type { Motion } from '@trayful/core';
+import { MOTION_MS, type Motion } from '@trayful/core';
 import { useEffect, useState } from 'react';
-
-/** How long each kind of motion lasts, in milliseconds. */
-export const MOTION_MS: Record<Motion['kind'], number> = { roll: 1200, shuffle: 800 };
 
 /** A piece or stack in motion now, and when it started on the `performance.now()` clock. */
 export interface Moving {
@@ -36,20 +33,28 @@ function endOf(moving: Moving): number {
  * until it is over; undefined when nothing is moving.
  */
 export function useMotionClock(kind: Motion['kind'], at: number | undefined): number | undefined {
+  return useClock(MOTION_MS[kind], at);
+}
+
+/**
+ * Milliseconds into something lasting `ms` that started at `at` on the `performance.now()`
+ * clock, redrawing every frame until it is over; undefined when it is not under way.
+ */
+export function useClock(ms: number, at: number | undefined): number | undefined {
   const [now, setNow] = useState(() => performance.now());
   useEffect(() => {
     if (at === undefined) return;
     let frame = requestAnimationFrame(function tick(time) {
       setNow(time);
-      if (time - at < MOTION_MS[kind]) frame = requestAnimationFrame(tick);
+      if (time - at < ms) frame = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(frame);
-  }, [kind, at]);
+  }, [ms, at]);
   if (at === undefined) return undefined;
   const elapsed = Math.max(0, now - at);
-  return elapsed < MOTION_MS[kind] ? elapsed : undefined;
+  return elapsed < ms ? elapsed : undefined;
 }
 
-function prefersReducedMotion(): boolean {
+export function prefersReducedMotion(): boolean {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

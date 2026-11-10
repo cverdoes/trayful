@@ -22,7 +22,11 @@ export interface ToolContext {
   engine: () => TableEngine;
   types: () => Catalog;
   /** Runs commands for the agent, all or nothing, and reports which objects changed. */
-  play: (activity: string, commands: Command[]) => CallToolResult;
+  /**
+   * Makes the agent's commands as one change, all or nothing, and answers once people
+   * watching have seen it play out.
+   */
+  play: (activity: string, commands: Command[]) => Promise<CallToolResult>;
   /** The objects that changed between two states, as a tool's JSON reply. */
   changes: (before: TableState, after: TableState) => string;
 }
@@ -48,7 +52,7 @@ export function toolContext(workspace: Workspace): ToolContext {
     });
   };
 
-  const play = (activity: string, commands: Command[]): CallToolResult => {
+  const play = async (activity: string, commands: Command[]): Promise<CallToolResult> => {
     const before = engine().state;
     try {
       // Try every command first, so a tool call changes all or nothing. Only a throw
@@ -66,7 +70,9 @@ export function toolContext(workspace: Workspace): ToolContext {
       },
       commands,
     );
-    return text(changes(before, engine().state));
+    const result = text(changes(before, engine().state));
+    await session().pace.playedOut();
+    return result;
   };
 
   return { workspace, session, engine, types, play, changes };

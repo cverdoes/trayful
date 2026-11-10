@@ -38,6 +38,13 @@ interface Props {
    * a gold one when a prompt asks about it.
    */
   highlight?: Highlight;
+  /** A ring around the outline in the colour of whoever just changed it, fading out. */
+  ring?: Ring;
+}
+
+export interface Ring {
+  color: string;
+  opacity: number;
 }
 
 export type Highlight = 'selected' | 'hovered' | 'prompted';
@@ -47,6 +54,13 @@ const HIGHLIGHT = {
   hovered: { stroke: '#7fb2fa', strokeWidth: 0.9 },
   prompted: { stroke: '#e3b341', strokeWidth: 1.2 },
 } as const;
+
+/**
+ * How far the ring of a change stands off a piece's outline, and how thick it is, in
+ * screen pixels, so it stands out however far the view is zoomed out.
+ */
+const RING_GAP_PX = 5;
+const RING_WIDTH_PX = 3;
 
 /** How soft a piece's shadow is, in millimetres. */
 const SHADOW_BLUR = 2;
@@ -64,7 +78,7 @@ export const DrawScale = createContext<number | undefined>(undefined);
  * Draws one component centred on (0, 0), in millimetres. The caller positions
  * and rotates it. How it looks is worked out by `drawingOf`; this only paints it.
  */
-export function Component({ piece, type, assets, highlight }: Readonly<Props>) {
+export function Component({ piece, type, assets, highlight, ring }: Readonly<Props>) {
   const [w, h] = sizeOf(type);
   const drawing = drawingOf(
     type,
@@ -110,7 +124,34 @@ export function Component({ piece, type, assets, highlight }: Readonly<Props>) {
           <CenteredText text={drawing.valueText} w={w} h={h} size={Math.min(w, h) * 0.55} />
         )}
       </Group>
+      {ring && <RingView ring={ring} shape={outline} size={[w, h]} corner={corner} />}
     </Group>
+  );
+}
+
+/** The ring around a piece someone else just changed, glowing in their colour. */
+function RingView({
+  ring,
+  shape,
+  size: [w, h],
+  corner,
+}: Readonly<{ ring: Ring; shape: string; size: [number, number]; corner: number }>) {
+  const mm = 1 / (useContext(DrawScale) ?? 1);
+  const gap = 2 * RING_GAP_PX * mm;
+  return (
+    <Outline
+      shape={shape}
+      w={w + gap}
+      h={h + gap}
+      corner={corner + gap / 2}
+      stroke={ring.color}
+      strokeWidth={RING_WIDTH_PX * mm}
+      opacity={ring.opacity}
+      shadowColor={ring.color}
+      shadowBlur={8 * mm}
+      shadowOpacity={0.8}
+      listening={false}
+    />
   );
 }
 
