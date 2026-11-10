@@ -8,6 +8,7 @@ import {
   loadChoice,
   saveChoice,
   shownSurfaces,
+  surfaceColor,
   tileLayout,
   tilesFor,
   toggled,
@@ -82,6 +83,16 @@ describe('which surfaces show', () => {
     expect(changedSurfaces(moved, moved)).toEqual(new Set());
     const gone = after(project, moved, { type: 'move', ids: ['worker.red.1'], to: 'hand:alice' });
     expect(changedSurfaces(moved, gone)).toContain('bob');
+  });
+});
+
+describe('surfaceColor', () => {
+  it('looks a colour name up in the project colours, or takes the colour as given', () => {
+    const colors = { red: '#c5523a' };
+    expect(surfaceColor({ color: 'red' }, colors)).toBe('#c5523a');
+    expect(surfaceColor({ color: 'teal' }, colors)).toBe('teal');
+    expect(surfaceColor({}, colors)).toBeUndefined();
+    expect(surfaceColor(undefined, colors)).toBeUndefined();
   });
 });
 

@@ -24,6 +24,7 @@ A separate play space on the table, with its own positions. Everyone sees every 
 | `id` | text | yes | Surface id. `centre` is the Centre, which every table has. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
 | `name` | text | yes | Name shown on its tile, such as `Red player`. |
 | `seat` | true or false |  | Whether a player can sit here. |
+| `color` | text |  | Colour of its tile frame and chip: a name from the assets file's colours, such as `red`, or a CSS colour such as `#c5523a`. |
 | `player` | text |  | Id of the player sitting here, on a seat. Pattern: `^[a-z0-9][a-z0-9-]*$`. |
 
 ## PieceObject

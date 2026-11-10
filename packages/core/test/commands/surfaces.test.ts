@@ -78,7 +78,20 @@ describe('adding and changing surfaces', () => {
     ]);
   });
 
+  it('colours a surface, the Centre too, and takes the colour off again', () => {
+    const coloured = run(
+      setUp,
+      { ...red, color: ' red ' },
+      { type: 'editSurface', id: 'centre', color: '#134034' },
+    );
+    expect(surfacesOf(coloured).map((s) => s.color)).toEqual(['#134034', 'red']);
+    expect(toTableFile(coloured).surfaces?.[1]).toMatchObject({ color: 'red' });
+    const plain = run(coloured, { type: 'editSurface', id: 'red', color: '' });
+    expect(surfacesOf(plain)[1]).not.toHaveProperty('color');
+  });
+
   it.each<[string, Command, string]>([
+    ['a colour too long', { type: 'addSurface', id: 'x', color: 'x'.repeat(41) }, 'not a colour'],
     ['a bad id', { type: 'addSurface', id: 'Red Player' }, 'not a surface id'],
     ['a taken id', red, 'already a surface "red"'],
     ['the Centre again', { type: 'addSurface', id: 'centre' }, 'already a surface'],

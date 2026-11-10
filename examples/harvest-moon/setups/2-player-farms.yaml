@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=../../../packages/formats/schema/setup.schema.json
+kind: setup
+name: Two players, own farms
+description: As for two players, with each player's workers on a farm of their own beside the village.
+surfaces:
+  - { id: red, name: Red farm, seat: true, color: red }
+  - { id: green, name: Green farm, seat: true, color: green }
+steps:
+  - place: main-board
+    at: [0, 0]
+    lock: true
+  - place: { deck: actions }
+    at: [350, -130]
+    shuffle: true
+    face: down
+  - deal: { from: actions, to: main-board/market, count: 5, face: up }
+  - place: worker.red
+    at: [0, 0]
+    surface: red
+  - place: worker.green
+    at: [0, 0]
+    surface: green
+  - place: score-marker.red
+    at: main-board/score-track/0
+  - place: score-marker.green
+    at: main-board/score-track/0
+  - place: coins
+    at: main-board/supply
+  - place: d6
+    at: main-board/supply

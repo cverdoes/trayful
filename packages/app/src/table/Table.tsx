@@ -14,7 +14,7 @@ import { topLevel } from '../render/geometry';
 import { setSnapshotStage } from '../snapshot';
 import { shownNow, useStore } from '../store';
 import { ChipRow } from './ChipRow';
-import { hasSurfaces, tilesFor, type Tile } from './surfaces';
+import { hasSurfaces, surfaceColor, tilesFor, type Tile } from './surfaces';
 import { BagBadges, PieceView, SnapHints, StackView } from './TableObjects';
 import { toggleFocus } from './tiles';
 import { fitTile, toWorld, viewportOf, zoomAt } from './viewport';
@@ -58,11 +58,18 @@ function SurfaceTile({
   const stage = useRef<Konva.Stage | null>(null);
   const marquee = useMarquee(surface);
   const pointer = useHover(drag.nodes, stage);
+  const color = useSurfaceColor(surface);
   return (
     <div
       className={`surface-tile${framed ? ' framed' : ''}${target ? ' drop-target' : ''}`}
       data-surface={surface}
-      style={{ left: box.x, top: box.y, width: box.width, height: box.height }}
+      style={{
+        left: box.x,
+        top: box.y,
+        width: box.width,
+        height: box.height,
+        ...(framed && color ? { boxShadow: `inset 0 0 0 3px ${color}` } : {}),
+      }}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes(HAND_DRAG)) e.preventDefault();
       }}
@@ -102,19 +109,20 @@ function SurfaceTile({
           </DrawScale.Provider>
         </Layer>
       </Stage>
-      {framed && <TileLabel surface={surface} />}
+      {framed && <TileLabel surface={surface} color={color} />}
     </div>
   );
 }
 
 /** A tile's name, with a button to show it on its own or go back to all tiles. */
-function TileLabel({ surface }: Readonly<{ surface: string }>) {
+function TileLabel({ surface, color }: Readonly<{ surface: string; color?: string }>) {
   const focused = useStore((s) => s.focus === surface);
   const name = useStore((s) =>
     s.table ? surfacesOf(s.table).find((x) => x.id === surface)?.name : undefined,
   );
   return (
     <div className="surface-tile-label" onDoubleClick={() => toggleFocus(surface)}>
+      {color && <span className="swatch" style={{ background: color }} />}
       <span>{name ?? surface}</span>
       <button
         type="button"
@@ -125,6 +133,18 @@ function TileLabel({ surface }: Readonly<{ surface: string }>) {
         {focused ? '⤡' : '⤢'}
       </button>
     </div>
+  );
+}
+
+/** The colour a surface's tile is framed with, if it has one. */
+function useSurfaceColor(surface: string): string | undefined {
+  return useStore((s) =>
+    s.table && s.view
+      ? surfaceColor(
+          surfacesOf(s.table).find((x) => x.id === surface),
+          s.view.assets.colors,
+        )
+      : undefined,
   );
 }
 

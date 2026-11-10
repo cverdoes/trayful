@@ -35,7 +35,7 @@ steps:
 
 ## The steps
 
-- **`place`** puts something somewhere. Name a component from the library (`worker` places every worker in the box, side by side), one of them by id (`score-marker.red`) or a deck (`{ deck: actions }`). Add `face`, `rot`, `lock: true` to fix it in place, or for a deck `shuffle: true`.
+- **`place`** puts something somewhere. Name a component from the library (`worker` places every worker in the box, side by side), one of them by id (`score-marker.red`), the start of their ids (`worker.red` places every red worker) or a deck (`{ deck: actions }`). Add `face`, `rot`, `lock: true` to fix it in place, or for a deck `shuffle: true`.
 - **`deal`** takes cards off the top of a deck. Dealing to a drop area such as `main-board/market` fills its free spots in order; dealing to a position makes a pile there.
 - **`shuffle`** shuffles a deck, e.g. `- shuffle: actions`.
 
@@ -49,8 +49,8 @@ A setup can give the table [surfaces](../reference/surfaces.md) besides the Cent
 
 ```yaml
 surfaces:
-  - { id: red, name: Red player, seat: true }
-  - { id: blue, name: Blue player, seat: true }
+  - { id: red, name: Red player, seat: true, color: red }
+  - { id: blue, name: Blue player, seat: true, color: '#3a6ea5' }
 steps:
   - place: player-board.red
     at: [0, 0]
@@ -62,7 +62,7 @@ steps:
     count: 3
 ```
 
-A drop area already says where it is, so `surface` goes only with an `[x, y]` position. Things the setup does not place are laid out below the Centre.
+A `color`, from the project's colours or a CSS colour, tints the surface's tile frame and chip. A drop area already says where it is, so `surface` goes only with an `[x, y]` position. Harvest Moon's `2-player-farms` setup does this. Things the setup does not place are laid out below the Centre.
 
 ## Use it
 

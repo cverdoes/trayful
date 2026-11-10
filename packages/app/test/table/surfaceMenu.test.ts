@@ -71,9 +71,9 @@ describe('adding a surface', () => {
 });
 
 describe('changing a surface', () => {
-  it('only renames the Centre', () => {
+  it('only renames and colours the Centre', () => {
     const items = surfaceItems({ id: 'centre', name: 'Centre' }, context('alice'));
-    expect(labels(items)).toEqual(['Rename…']);
+    expect(labels(items)).toEqual(['Rename…', 'Colour…']);
     answers = ['Middle'];
     pick(items, 'Rename…');
     expect(sent).toEqual([{ type: 'editSurface', id: 'centre', name: 'Middle' }]);
@@ -99,13 +99,38 @@ describe('changing a surface', () => {
   it('offers no seat to someone who has not joined, or at a surface that is no seat', () => {
     expect(labels(surfaceItems(surface('red'), context()))).toEqual([
       'Rename…',
+      'Colour…',
       'No longer a seat',
       'Remove…',
     ]);
     expect(labels(surfaceItems(surface('side'), context('bob')))).toEqual([
       'Rename…',
+      'Colour…',
       'Make it a seat',
       'Remove…',
+    ]);
+  });
+
+  it('colours a surface, naming the project colours, or takes its colour off', () => {
+    const asked: string[] = [];
+    const ctx: MenuContext = {
+      ...context(),
+      colors: ['red', 'green'],
+      ask: (question) => {
+        asked.push(question);
+        return answers.shift();
+      },
+    };
+    answers = [' red ', undefined];
+    pick(surfaceItems(surface('side'), ctx), 'Colour…');
+    pick(surfaceItems(surface('side'), ctx), 'Colour…');
+    answers = ['red', ''];
+    pick(surfaceItems({ ...surface('side'), color: 'red' }, ctx), 'Colour…');
+    pick(surfaceItems({ ...surface('side'), color: 'red' }, ctx), 'Colour…');
+    expect(asked[0]).toContain('such as red, green, or a CSS colour');
+    expect(sent).toEqual([
+      { type: 'editSurface', id: 'side', color: 'red' },
+      { type: 'editSurface', id: 'side', color: '' },
     ]);
   });
 

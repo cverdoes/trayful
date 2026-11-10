@@ -12,6 +12,9 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - Pieces move between surfaces by dragging from tile to tile, by dropping them on a chip, or with "Send to…" on the toolbar. The chip row adds, renames and removes surfaces, makes them seats, and lets a player sit down or stand up.
 - Setups can list surfaces under `surfaces`, and `place` and `deal` steps take a `surface`, or `surface:<id>` as a target. Start over keeps players in their seats.
 - The `snapshot` MCP tool takes a `surface` to picture one surface.
+- A surface can have a colour, a project colour name or a CSS colour, that tints its tile frame and chip. Set it in a setup, with `add_surface` or `edit_surface`, or from the chip's menu.
+- A setup's `place` takes the start of components' ids up to a dot, so `worker.red` places every red worker.
+- Harvest Moon has a `2-player-farms` setup with a coloured farm for each player.
 - A table that uses surfaces does not open in older versions.
 
 ## 0.2.0

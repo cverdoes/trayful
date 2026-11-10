@@ -39,7 +39,7 @@ describe('createTable', () => {
 
   it('names the known setups when asked for an unknown one', () => {
     expect(() => createTable(project, { name: 'test', setup: 'solo' })).toThrow(
-      'Unknown setup "solo". Known setups: 2-player.',
+      'Unknown setup "solo". Known setups: 2-player-farms, 2-player.',
     );
     expect(() => createTable({ ...project, setups: {} }, { name: 'test', setup: 'solo' })).toThrow(
       'The project has no setups.',
@@ -129,7 +129,7 @@ describe('applySetup', () => {
 describe('setups with surfaces', () => {
   const surfaces: SetupSurface[] = [
     { id: 'red', name: 'Red player', seat: true },
-    { id: 'blue', seat: true },
+    { id: 'blue', seat: true, color: 'lake' },
     { id: 'discard' },
   ];
 
@@ -137,7 +137,7 @@ describe('setups with surfaces', () => {
     const table = runWith(surfaces);
     expect(table.surfaces).toEqual([
       { id: 'red', name: 'Red player', seat: true },
-      { id: 'blue', name: 'blue', seat: true },
+      { id: 'blue', name: 'blue', seat: true, color: 'lake' },
       { id: 'discard', name: 'discard' },
     ]);
     expect(checkIntegrity(table)).toEqual([]);
@@ -151,6 +151,14 @@ describe('setups with surfaces', () => {
     );
     expect(piece(table, 'worker.red.1')).toMatchObject({ surface: 'red', pos: [10, 20] });
     expect(piece(table, 'worker.red.2').surface).toBe('blue');
+  });
+
+  it('places every piece whose id starts with a name, such as all red workers', () => {
+    const table = runWith(surfaces, { place: 'worker.red', at: [0, 0], surface: 'red' });
+    const red = Object.values(table.objects).filter((o) => o.id.startsWith('worker.red.'));
+    expect(red).toHaveLength(5);
+    expect(red.every((o) => o.surface === 'red')).toBe(true);
+    expect(piece(table, 'worker.green.1').surface).toBeUndefined();
   });
 
   it('deals cards onto a surface', () => {

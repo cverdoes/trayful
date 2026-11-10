@@ -5,11 +5,14 @@ import { shownNow, useStore } from '../store';
 import { MoreMenu } from '../toolbar/MoreMenu';
 import { HAND_DRAG } from './hand';
 import { addItems, surfaceItems, type MenuContext } from './surfaceMenu';
-import { defaultChoice, seatsOf, toSurface, type Preset } from './surfaces';
+import { defaultChoice, seatsOf, surfaceColor, toSurface, type Preset } from './surfaces';
 import { choosePreset, toggleSurface } from './tiles';
 
 /** How long a chip pulses after something changed on its hidden surface, in milliseconds. */
 const PULSE_MS = 2400;
+
+/** A project without colours. */
+const NO_COLORS: Readonly<Record<string, string>> = {};
 
 const PRESETS: { value: Preset; label: string }[] = [
   { value: 'all', label: 'All surfaces' },
@@ -29,8 +32,16 @@ export function ChipRow() {
   const shown = useStore((s) => shownNow({ ...s, focus: undefined }).join('\n'));
   const surfaceChoice = useStore((s) => s.surfaceChoice);
   const command = useStore((s) => s.command);
+  const palette = useStore((s) => s.view?.assets.colors) ?? NO_COLORS;
   if (!table) return null;
-  const menu: MenuContext = { table, player, command, ask, confirm: (q) => window.confirm(q) };
+  const menu: MenuContext = {
+    table,
+    player,
+    command,
+    ask,
+    confirm: (q) => window.confirm(q),
+    colors: Object.keys(palette),
+  };
   const choice = surfaceChoice ?? defaultChoice(table, player);
   const seated = seatsOf(table, player).length > 0;
   const showing = new Set(shown.split('\n'));
@@ -56,6 +67,7 @@ export function ChipRow() {
           surface={surface}
           shown={showing.has(surface.id)}
           mine={player !== undefined && surface.player === player}
+          color={surfaceColor(surface, palette)}
           menu={menu}
         />
       ))}
@@ -79,8 +91,15 @@ function Chip({
   surface,
   shown,
   mine,
+  color,
   menu,
-}: Readonly<{ surface: Surface; shown: boolean; mine: boolean; menu: MenuContext }>) {
+}: Readonly<{
+  surface: Surface;
+  shown: boolean;
+  mine: boolean;
+  color: string | undefined;
+  menu: MenuContext;
+}>) {
   const sitter = useStore((s) => s.players.find((p) => p.id === surface.player)?.name);
   const target = useStore((s) => s.dropSurface === surface.id);
   const pulsing = usePulse(surface.id);
@@ -106,6 +125,7 @@ function Chip({
         title={shown ? `Hide ${surface.name}` : `Show ${surface.name}`}
         onClick={() => toggleSurface(surface.id)}
       >
+        {color && <span className="swatch" style={{ background: color }} />}
         {surface.name}
         {sitter && <span className="sitter">{sitter}</span>}
       </button>

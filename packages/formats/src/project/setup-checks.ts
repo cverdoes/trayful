@@ -32,7 +32,7 @@ function placeProblems(step: Extract<SetupStep, { place: unknown }>, known: Know
     const exists =
       known.types[ref] !== undefined ||
       known.brokenTypes.has(ref) ||
-      known.components.some((c) => c.id === ref);
+      known.components.some((c) => c.id === ref || c.id.startsWith(`${ref}.`));
     if (!exists) {
       problems.push({
         path: ['place'],

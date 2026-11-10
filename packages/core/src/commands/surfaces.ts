@@ -1,14 +1,19 @@
-import { Slug, type Surface, type Vec2 } from '@trayful/formats/browser';
+import { Slug, SurfaceColor, type Surface, type Vec2 } from '@trayful/formats/browser';
 import { boundsOf } from '../table/layout.js';
 import { roomOn } from '../placement/room.js';
 import { ridersOf } from '../placement/snap.js';
 import { CENTRE, objectsOn, surfacesOf } from '../table/surfaces.js';
 import { CommandError, type Transaction } from './transaction.js';
 
-/** What a surface can be told: its name, whether it is a seat, and where its tile goes. */
+/**
+ * What a surface can be told: its name, whether it is a seat, its colour, and where
+ * its tile goes.
+ */
 interface SurfaceFields {
   name?: string;
   seat?: boolean;
+  /** A colour name from the project or a CSS colour; `""` takes the colour off. */
+  color?: string;
   /** The surface whose tile it follows; `centre` puts it first after the Centre. */
   after?: string;
 }
@@ -23,14 +28,16 @@ export function addSurface(tx: Transaction, id: string, fields: SurfaceFields): 
     throw new CommandError(`There is already a surface "${id}".`);
   const surface: Surface = { id, name: nameOf(fields.name ?? id) };
   if (fields.seat) surface.seat = true;
+  const color = colorOf(fields.color);
+  if (color) surface.color = color;
   tx.surfaces = placeAfter(tx.surfaces, surface, fields.after);
 }
 
-/** Renames a surface, makes it a seat or not, or moves its tile. */
+/** Renames a surface, makes it a seat or not, colours it, or moves its tile. */
 export function editSurface(tx: Transaction, id: string, fields: SurfaceFields): void {
   const old = find(tx, id);
   if (id === CENTRE && (fields.seat !== undefined || fields.after !== undefined))
-    throw new CommandError('The Centre can only be renamed.');
+    throw new CommandError('The Centre can only be renamed or coloured.');
   const next: Surface = {
     ...old,
     ...(fields.name === undefined ? {} : { name: nameOf(fields.name) }),
@@ -39,6 +46,11 @@ export function editSurface(tx: Transaction, id: string, fields: SurfaceFields):
     delete next.seat;
     delete next.player;
   } else if (fields.seat) next.seat = true;
+  if (fields.color !== undefined) {
+    const color = colorOf(fields.color);
+    if (color) next.color = color;
+    else delete next.color;
+  }
   const rest = tx.surfaces.filter((s) => s.id !== id);
   if (id === CENTRE) tx.surfaces = [next, ...rest];
   else if (fields.after === undefined)
@@ -85,6 +97,15 @@ function find(tx: Transaction, id: string): Surface {
   const surface = surfacesOf(tx.current()).find((s) => s.id === id);
   if (!surface) throw new CommandError(`There is no surface "${id}".`);
   return surface;
+}
+
+/** A colour as given, trimmed, or nothing for an empty one. */
+function colorOf(color: string | undefined): string | undefined {
+  const clean = color?.trim();
+  if (!clean) return undefined;
+  if (!SurfaceColor.safeParse(clean).success)
+    throw new CommandError(`"${clean}" is not a colour; give a colour name or a CSS colour.`);
+  return clean;
 }
 
 function nameOf(name: string): string {

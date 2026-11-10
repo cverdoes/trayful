@@ -125,7 +125,7 @@ describe('MCP play tools', () => {
   it('renames a type everywhere it is used, and explains a name that is taken', async () => {
     const renamed = await call('rename_type', { type: 'worker', to: 'farmer' });
     expect(renamed.text).toMatch(
-      /^Renamed type "worker" to "farmer" in library\/pieces\.yaml, inventory\.yaml, setups\/2-player\.yaml\./,
+      /^Renamed type "worker" to "farmer" in library\/pieces\.yaml, inventory\.yaml, setups\/2-player-farms\.yaml, setups\/2-player\.yaml\./,
     );
     expect(piece('farmer.red.1').type).toBe('farmer');
     const taken = await call('rename_type', { type: 'farmer', to: 'd6' });

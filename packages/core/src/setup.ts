@@ -1,4 +1,4 @@
-import { TABLE_FORMAT, sidesOf, type SetupStep } from '@trayful/formats/browser';
+import { TABLE_FORMAT, sidesOf, type SetupStep, type SetupSurface } from '@trayful/formats/browser';
 import type { ResolvedProject } from '@trayful/formats';
 import {
   BOX_WIDTH,
@@ -97,9 +97,9 @@ export function applySetup(
   const setup = project.setups[name];
   if (!setup) throw new SetupError(`Unknown setup "${name}".`);
   const runner = new SetupRunner(initial, project.types);
-  for (const { id, name: shown, seat } of setup.surfaces ?? []) {
+  for (const { id, ...fields } of setup.surfaces ?? []) {
     try {
-      runner.addSurface(id, shown, seat);
+      runner.addSurface(id, fields);
     } catch (error) {
       if (error instanceof CommandError)
         throw new SetupError(`Setup "${name}", surface "${id}": ${error.message}`);
@@ -150,8 +150,8 @@ class SetupRunner {
     private readonly catalog: Catalog,
   ) {}
 
-  addSurface(id: string, name: string | undefined, seat: boolean | undefined): void {
-    this.command({ type: 'addSurface', id, ...(name ? { name } : {}), ...(seat ? { seat } : {}) });
+  addSurface(id: string, fields: Omit<SetupSurface, 'id'>): void {
+    this.command({ type: 'addSurface', id, ...fields });
   }
 
   run(step: SetupStep): void {
@@ -252,12 +252,14 @@ class SetupRunner {
       }
       return [ref];
     }
-    const ofType = Object.values(this.state.objects)
-      .filter((o) => o.kind === 'piece' && o.type === ref && !o.parent)
-      .sort((a, b) => a.z - b.z)
-      .map((o) => o.id);
-    if (ofType.length === 0) throw new SetupError(`No "${ref}" left to place.`);
-    return ofType;
+    const loose = Object.values(this.state.objects)
+      .filter((o): o is Piece => o.kind === 'piece' && !o.parent)
+      .sort((a, b) => a.z - b.z);
+    // Every piece of a component, or else those whose ids start with it, such as `worker.red`.
+    let found = loose.filter((o) => o.type === ref);
+    if (found.length === 0) found = loose.filter((o) => o.id.startsWith(`${ref}.`));
+    if (found.length === 0) throw new SetupError(`No "${ref}" left to place.`);
+    return found.map((o) => o.id);
   }
 
   private setFace(object: TableObject, face: 'up' | 'down'): void {

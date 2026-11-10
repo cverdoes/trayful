@@ -24,7 +24,7 @@ describe('trayful validate', () => {
   it('validates the example project', async () => {
     const r = await capture(['validate', example]);
     expect(r.code).toBe(0);
-    expect(r.out).toContain('✓ Harvest Moon: 6 types, 26 components, 1 deck, 1 setup');
+    expect(r.out).toContain('✓ Harvest Moon: 6 types, 26 components, 1 deck, 2 setups');
   });
 
   it('prints JSON with --json', async () => {
