@@ -24,6 +24,10 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - Agents are paced while people watch: each MCP tool that changes the table answers once its change has played out on their tables, so a quick run of agent moves shows one at a time. `trayful play --no-pace` (and `trayful mcp --no-pace`) answers straight away.
 - Reduced motion keeps the rings but skips the sliding.
 
+### Fixes
+
+- In the Tray, an edit in one field followed quickly by an edit in another field no longer undoes as one step. Only typing in the same field joins into one step.
+
 ## 0.2.0
 
 Projects and tables saved with 0.1.0 open unchanged in 0.2.0; everything new is added on top.
