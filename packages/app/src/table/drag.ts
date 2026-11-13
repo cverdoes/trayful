@@ -17,6 +17,7 @@ import {
   type Elsewhere,
   type Vec,
 } from './drops';
+import { DragGhost } from './ghost';
 import { myId, overHandTray } from './hand';
 import { dropTarget, type Types } from '../render/geometry';
 import { useStore } from '../store';
@@ -36,6 +37,8 @@ export class TableDrag {
   private readonly starts = new Map<string, Vec>();
   /** Pieces snapped onto a dragged object, which follow it, and where they started. */
   private readonly riders = new Map<string, Vec>();
+  /** The copy of what is dragged shown above the tiles, outside its own tile. */
+  private readonly ghost = new DragGhost();
 
   start(id: string): void {
     const { table, types } = scene();
@@ -67,6 +70,8 @@ export class TableDrag {
     for (const [other, pos] of [...this.starts, ...this.riders]) {
       if (other !== id) this.nodes.get(other)?.position({ x: pos[0] + dx, y: pos[1] + dy });
     }
+    const others = [...this.dragging()].flatMap((o) => (o === id ? [] : (this.nodes.get(o) ?? [])));
+    this.follow([node, ...others]);
     const { table, types } = scene();
     const object = table.objects[id]!;
     const surface = surfaceOf(object);
@@ -81,6 +86,7 @@ export class TableDrag {
   }
 
   end(id: string, node: Konva.Group): void {
+    this.ghost.clear();
     const start = this.starts.get(id);
     const moved = [...this.starts.keys()];
     const ignore = this.dragging();
@@ -106,6 +112,7 @@ export class TableDrag {
   }
 
   drawMove(stack: Stack, node: Konva.Group): void {
+    this.follow([node]);
     const surface = surfaceOf(stack);
     const away = hoverElsewhere(node, surface);
     if (hoverHand(node) || away) return highlight(undefined);
@@ -119,6 +126,7 @@ export class TableDrag {
 
   /** A click on a card of a stack selects the stack; a drag takes the card off it. */
   drawEnd(stack: Stack, piece: string, node: Konva.Group, home: Vec): void {
+    this.ghost.clear();
     const hand = pointerOverHand(node) ? myId() : undefined;
     useStore.setState({ snapHint: undefined, overHand: false, dropSurface: undefined });
     const local: Vec = [node.x(), node.y()];
@@ -142,6 +150,14 @@ export class TableDrag {
       const o = table.objects[id];
       if (o) this.nodes.get(id)?.position({ x: o.pos[0], y: o.pos[1] });
     }
+  }
+
+  /** Moves the copy of the dragged nodes along with the pointer, at the zoom of the tile under it. */
+  private follow(nodes: Konva.Node[]): void {
+    const p = pagePointer(nodes[0]!);
+    const under = p && surfaceUnder(p.x, p.y);
+    const zoom = under?.tile ? viewportOf(useStore.getState(), under.surface).scale : undefined;
+    this.ghost.follow(nodes, p, zoom);
   }
 
   private dragging(): Set<string> {

@@ -70,12 +70,17 @@ function pointerOverHand() {
   pointerAt(10, 10);
 }
 
-/** Puts the pointer of every drag at a point of the page, the canvas starting at its corner. */
-function pointerAt(x: number, y: number) {
+/**
+ * Puts the pointer of every drag at a point of the page, the canvas starting at its
+ * corner and reaching as far as `size`.
+ */
+function pointerAt(x: number, y: number, size = 1000) {
+  const canvas = { left: 0, top: 0, right: size, bottom: size };
   const stage = {
     batchDraw: () => undefined,
     getPointerPosition: () => ({ x, y }),
-    container: () => ({ getBoundingClientRect: () => ({ left: 0, top: 0 }) }),
+    container: () => ({ getBoundingClientRect: () => canvas }),
+    scaleX: () => 1,
   };
   vi.spyOn(Konva.Group.prototype, 'getStage').mockReturnValue(stage as never);
 }
@@ -91,9 +96,26 @@ function pointerOverSurface(surface: string, part: 'tile' | 'chip') {
   };
   const wanted = part === 'tile' ? 'surface' : 'chip';
   const closest = (selector: string) => (selector.includes(wanted) ? element : null);
-  vi.stubGlobal('document', { elementFromPoint: () => ({ closest }), querySelector: () => null });
-  pointerAt(300, 200);
+  copies = [];
+  const createElement = () => {
+    const copy = { style: {}, getContext: () => null, removed: false };
+    copies.push(copy);
+    return Object.assign(copy, { remove: () => (copy.removed = true) });
+  };
+  vi.stubGlobal('window', { devicePixelRatio: 1 });
+  vi.stubGlobal('document', {
+    elementFromPoint: () => ({ closest }),
+    querySelector: () => null,
+    createElement,
+    body: { append: () => undefined },
+  });
+  vi.spyOn(Konva.Group.prototype, 'toCanvas').mockReturnValue({} as never);
+  // The canvas the drag starts on ends left of the other tile, or holds the pointer.
+  pointerAt(300, 200, surface === 'centre' ? 1000 : 100);
 }
+
+/** The copies of dragged pieces put on the page by the last `pointerOverSurface`. */
+let copies: { removed: boolean }[] = [];
 
 describe('dragging objects', () => {
   it('selects what is picked up and shows the spots it could snap to', () => {
@@ -235,7 +257,12 @@ describe('dragging to another surface', () => {
     drag.start('worker.red.1');
     pull(drag, 'worker.red.1', [500, 0]);
     expect(useStore.getState().dropSurface).toBe('side');
+    // Its own tile cannot draw it there, so a copy shows above the tiles instead.
+    expect(copies).toHaveLength(1);
+    expect(node(drag, 'worker.red.1').opacity()).toBe(0);
     drag.end('worker.red.1', node(drag, 'worker.red.1'));
+    expect(copies[0]!.removed).toBe(true);
+    expect(node(drag, 'worker.red.1').opacity()).toBe(1);
     // [300, 200] on the page is [200, 100] in the tile, and [90, 45] on its surface.
     expect(sent).toEqual([{ type: 'move', ids: ['worker.red.1'], to: [90, 45], surface: 'side' }]);
     expect(useStore.getState().dropSurface).toBeUndefined();
@@ -259,6 +286,7 @@ describe('dragging to another surface', () => {
     drag.start('worker.red.1');
     pull(drag, 'worker.red.1', [0, 100]);
     expect(useStore.getState().dropSurface).toBeUndefined();
+    expect(copies).toHaveLength(0);
     drag.end('worker.red.1', node(drag, 'worker.red.1'));
     expect(sent).toEqual([{ type: 'move', ids: ['worker.red.1'], by: [0, 100] }]);
   });
@@ -271,6 +299,7 @@ describe('dragging to another surface', () => {
     drag.drawStart(stack);
     drag.drawMove(stack, card);
     expect(useStore.getState().dropSurface).toBe('side');
+    expect(copies).toHaveLength(1);
     drag.drawEnd(stack, stack.items.at(-1)!, card, [0, 0]);
     expect(sent).toEqual([{ type: 'draw', from: 'deck:actions', to: [90, 45], surface: 'side' }]);
   });

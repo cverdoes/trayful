@@ -118,7 +118,10 @@ test('pieces move between surfaces by dragging and from the toolbar', async ({ p
   await page.mouse.move((from.x + to.x) / 2, (from.y + to.y) / 2, { steps: 5 });
   await page.mouse.move(to.x, to.y, { steps: 5 });
   await expect(page.locator('[data-surface=side]')).toHaveClass(/drop-target/);
+  // Its own tile clips it at the edge, so a copy follows the pointer above the tiles.
+  await expect(page.locator('.drag-ghost')).toBeVisible();
   await page.mouse.up();
+  await expect(page.locator('.drag-ghost')).toHaveCount(0);
   await expect.poll(async () => (await on('worker.red.1')).surface).toBe('side');
   const landed = await on('worker.red.1');
   expect(landed.pos[0]).toBeCloseTo(20, 0);

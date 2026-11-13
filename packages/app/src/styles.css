@@ -1364,6 +1364,16 @@ label.button:hover {
   position: absolute;
 }
 
+/* A copy of the pieces being dragged, above every tile, while outside their own tile. */
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 20;
+}
+
 .table {
   position: fixed;
   inset: 0;
