@@ -39,7 +39,7 @@
     "@trayful/core": "workspace:*",
     "@trayful/formats": "workspace:*",
     "@trayful/server": "workspace:*",
-    "@types/node": "^22.19.0",
+    "@types/node": "^25.9.9",
     "@vitest/coverage-v8": "^5.1.0",
     "dependency-cruiser": "^18.7.2",
     "esbuild": "0.28.2",
