@@ -1,6 +1,6 @@
 // Loading and saving one component's Tray: edits show at once and are saved a
 // moment after the last one, the way the designer saves a component.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchTray, importCsv, saveTray } from '../api';
 import { noSteps, redone, stepped, undone, type Steps } from '../panel/steps';
 import { projectId, UNDO_MERGE } from '../store';
@@ -60,6 +60,38 @@ export class TraySaver {
   }
 }
 
+/**
+ * Tells which edits join the one before them as a single step to undo: typing
+ * in the same field, less than UNDO_MERGE after the last keystroke. An edit in
+ * another field, or one not typed (a button, a picker), is a step of its own.
+ */
+export class EditJoiner {
+  private field: unknown;
+  private at = 0;
+
+  /** Whether an edit typed into `field` (undefined when not typed) at `now` joins the last one. */
+  joins(field: unknown, now: number): boolean {
+    const joins = field !== undefined && field === this.field && now - this.at < UNDO_MERGE;
+    this.field = field;
+    this.at = now;
+    return joins;
+  }
+
+  /** Makes the next edit a step of its own, as after an undo or a CSV file added. */
+  reset(): void {
+    this.field = undefined;
+  }
+}
+
+/** The text field being typed in, if any: edits there may join into one step. */
+function typingField(): Element | undefined {
+  const active = typeof document === 'undefined' ? null : document.activeElement;
+  const typed =
+    active instanceof HTMLTextAreaElement ||
+    (active instanceof HTMLInputElement && active.type !== 'checkbox' && active.type !== 'radio');
+  return typed ? active : undefined;
+}
+
 export interface TrayState {
   tray?: TrayData;
   status: TrayStatus;
@@ -86,8 +118,8 @@ export function useTray(type: string): TrayState {
     [type],
   );
   const [steps, setSteps] = useState(noSteps<TrayData>);
-  // Edits closer together than UNDO_MERGE are one step, so typing a word is one step.
-  const lastEdit = useRef(0);
+  // Typing a word in one field is one step to undo; see EditJoiner.
+  const [joiner] = useState(() => new EditJoiner());
 
   useEffect(() => {
     let current = true;
@@ -113,9 +145,7 @@ export function useTray(type: string): TrayState {
 
   const edit = (next: TrayData) => {
     if (!tray) return;
-    const now = Date.now();
-    setSteps(stepped(steps, tray, now - lastEdit.current < UNDO_MERGE));
-    lastEdit.current = now;
+    setSteps(stepped(steps, tray, joiner.joins(typingField(), Date.now())));
     show(next);
   };
 
@@ -123,7 +153,7 @@ export function useTray(type: string): TrayState {
     const moved = tray && to(steps, tray);
     if (!moved) return;
     setSteps(moved.steps);
-    lastEdit.current = 0;
+    joiner.reset();
     show(moved.value);
   };
 
@@ -134,7 +164,7 @@ export function useTray(type: string): TrayState {
       .then(
         (saved) => {
           if (before) setSteps((s) => stepped(s, before, false));
-          lastEdit.current = 0;
+          joiner.reset();
           setTray(saved);
           report('saved');
         },

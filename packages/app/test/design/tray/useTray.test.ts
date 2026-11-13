@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TrayData } from '../../../src/design/tray/tray';
-import { TraySaver, type TrayStatus } from '../../../src/design/tray/useTray';
+import { EditJoiner, TraySaver, type TrayStatus } from '../../../src/design/tray/useTray';
 
 const tray = (count: number): TrayData => ({ entries: [{ count }], tables: {} });
 
@@ -78,5 +78,42 @@ describe('TraySaver', () => {
     expect(result).toBe('done');
     expect(order).toEqual(['save', 'change']);
     expect(reports.at(-1)).toEqual(['saving']);
+  });
+});
+
+describe('EditJoiner', () => {
+  const cell = {};
+  const header = {};
+
+  it('joins typing in one field into one step', () => {
+    const joiner = new EditJoiner();
+    expect(joiner.joins(cell, 1000)).toBe(false);
+    expect(joiner.joins(cell, 1300)).toBe(true);
+    expect(joiner.joins(cell, 1600)).toBe(true);
+  });
+
+  it('starts a new step after a pause in the typing', () => {
+    const joiner = new EditJoiner();
+    joiner.joins(cell, 1000);
+    expect(joiner.joins(cell, 1800)).toBe(false);
+  });
+
+  it('makes an edit in another field a step of its own, however soon it comes', () => {
+    const joiner = new EditJoiner();
+    joiner.joins(cell, 1000);
+    expect(joiner.joins(header, 1100)).toBe(false);
+  });
+
+  it('never joins edits that are not typed', () => {
+    const joiner = new EditJoiner();
+    joiner.joins(undefined, 1000);
+    expect(joiner.joins(undefined, 1100)).toBe(false);
+  });
+
+  it('starts a new step after a reset', () => {
+    const joiner = new EditJoiner();
+    joiner.joins(cell, 1000);
+    joiner.reset();
+    expect(joiner.joins(cell, 1100)).toBe(false);
   });
 });

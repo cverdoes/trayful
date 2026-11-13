@@ -59,6 +59,9 @@ jobs:
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+      # A failed test's page snapshot and failing line, readable in the log without downloading the results.
+      - run: for f in test-results/*/error-context.md; do echo "::group::$f"; cat "$f"; echo "::endgroup::"; done
+        if: failure()
       # Browser test counts per spec file, on the run's summary page.
       - run: pnpm e2e:summary
         if: ${{ !cancelled() }}
