@@ -15,6 +15,7 @@ import { fontStyle, imageBox, layerSize, textBox, tileRect } from './face';
 import { sizeOf } from './geometry';
 import { sheenOf } from './sheen';
 import { useProjectImage } from './images';
+import { drawnFrom, useRepaints } from './raster';
 
 /** 1 typographic point in millimetres. */
 const PT = 0.3528;
@@ -316,10 +317,16 @@ function ImageLayerView({
   common,
 }: Readonly<{ layer: DrawImage; faceSize: [number, number]; common: Common }>) {
   const image = useProjectImage(layer.file);
+  const scale = useContext(DrawScale);
+  useRepaints();
   if (!image) return null;
   const [x, y] = layer.at;
   const [w, h] = layerSize(layer.size, faceSize);
   const natural: [number, number] = [image.naturalWidth || w, image.naturalHeight || h];
   const box = imageBox(layer.fit, [x, y, w, h], tileRect(natural, layer.tile));
-  return <Image {...common} image={image} {...box} />;
+  // Where the view zooms, a copy painted at the size shown is drawn in place of the image.
+  if (!scale) return <Image {...common} image={image} {...box} />;
+  const width = box.width * scale * window.devicePixelRatio;
+  const drawn = drawnFrom(image, box.crop, width, /\.svg$/i.test(layer.file));
+  return <Image {...common} {...box} {...drawn} />;
 }
