@@ -34,7 +34,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm docs:overview
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: .reports/overview/
 
