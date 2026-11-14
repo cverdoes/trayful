@@ -110,11 +110,10 @@ A project still in the first file format (`format: trayful/1` in its manifest) p
 The designer makes the component; the **Tray** says how many of it are in the box. Pick a component on the left, and add to the box:
 
 - **One of every tile**, for a component that picks its tile from a sheet: one design per tile, as a deck named after the component. A sheet of 24 terrain tiles becomes a deck of 24 in one click.
-- **One design**, with its field values.
-- **Designs in rows**: a table with a column per field and a row per design, each with its own number of copies. Click a `tile` cell to pick the tile from the sheet.
+- **Designs**: a grid with a column per field and a row per design, each with its own number of copies. It starts with one design; **+ Row** adds another. Click a `tile` cell to pick the tile from the sheet.
 - **Every combination**: values for each field, with commas between them, such as `red, green`; every combination is a design.
-- **From a CSV file…**: copies a spreadsheet into the project's `data` folder; its rows show as a table you can edit cell by cell. The header row names the field each column fills in; **+ Column** adds one named after the next field without a column, and **×** takes a column or row out.
+- **From a CSV file…**: copies a spreadsheet into the project's `data` folder; its rows show as a grid you can edit cell by cell. The header row names the field each column fills in; **+** adds a column named after the next field without one, and **×** takes a column or row out.
 
-Each entry has a **Deck**, which makes its designs start as one pile, and **Copies of each**. Every change is saved to `inventory.yaml` (and the CSV file) as you go, and the components appear on the table at once. A change that would break the project is not saved, and the Tray says why. **Undo** and **Redo** step through the Tray's changes, a CSV import included, the same way as in the designer.
+Each entry has a **Deck**, which makes its designs start as one pile, and **Copies of each**. Where an entry keeps its designs can change later: **Move to CSV** writes typed designs to a file of their own in the `data` folder, and **Move to inventory** types a CSV file's rows into `inventory.yaml`, leaving the file in the project. Every change is saved to `inventory.yaml` (and the CSV file) as you go, and the components appear on the table at once. A change that would break the project is not saved, and the Tray says why. **Undo** and **Redo** step through the Tray's changes, a CSV import included, the same way as in the designer.
 
 You can also edit `inventory.yaml` by hand as in [Add a deck of cards](add-a-deck.md), load cards from a spreadsheet as in [Load cards from a spreadsheet](cards-from-a-spreadsheet.md), or ask an agent as in [Let an agent build components](agent-builds-components.md).

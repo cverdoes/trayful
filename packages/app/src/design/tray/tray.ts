@@ -1,6 +1,7 @@
 // The Tray's model: one component's inventory entries, as the designer edits them.
 // Pure, so what each edit writes can be tested.
 import {
+  coerceValue,
   componentFields,
   imageRefs,
   slugify,
@@ -41,13 +42,36 @@ export function withUsedTables(tray: TrayData): TrayData {
   return { ...tray, tables: Object.fromEntries(tables) };
 }
 
-/** How an entry makes its designs: one, a row each, every combination, or a row of a CSV file each. */
-export type EntryShape = 'one' | 'rows' | 'each' | 'csv';
+/**
+ * How an entry makes its designs: typed in as rows, every combination of some
+ * values, or a row of a CSV file each.
+ */
+export type EntryShape = 'rows' | 'each' | 'csv';
 
 export function shapeOf(entry: TrayEntry): EntryShape {
-  if (entry.items) return 'rows';
   if (entry.each) return 'each';
-  return entry.from === undefined ? 'one' : 'csv';
+  return entry.from === undefined ? 'rows' : 'csv';
+}
+
+/**
+ * The designs typed into an entry, a row each. The inventory writes a single
+ * design as the entry's `data` and several as its `items`; the Tray shows both
+ * as rows.
+ */
+export function designRows(entry: TrayEntry): Values[] {
+  return entry.items ?? [entry.data ?? {}];
+}
+
+/**
+ * The entry with its typed designs changed. A single design with no copies of
+ * its own stays the entry's `data`, as a hand-written inventory has it; more
+ * rows, or a row's own copies, make them `items`.
+ */
+export function withDesignRows(entry: TrayEntry, rows: Values[]): TrayEntry {
+  if (entry.items) return { ...entry, items: rows };
+  const [only] = rows;
+  if (rows.length === 1 && only?.count === undefined) return withKey(entry, 'data', nonEmpty(only));
+  return { ...withKey(entry, 'data', undefined), items: rows };
 }
 
 /** A field the Tray fills in for each design. */
@@ -82,11 +106,9 @@ function deckName(type: ComponentType): string {
   return slugify(type.name ?? type.id) || 'deck';
 }
 
-/** A new, empty entry of a shape. */
+/** A new, empty entry of a shape: one design to fill in, or no values to combine yet. */
 export function newEntry(shape: Exclude<EntryShape, 'csv'>): TrayEntry {
-  if (shape === 'rows') return { items: [{}] };
-  if (shape === 'each') return { each: {} };
-  return {};
+  return shape === 'each' ? { each: {} } : {};
 }
 
 /** `values` with one key set, or taken out when `value` is undefined; undefined when empty. */
@@ -99,7 +121,7 @@ export function withValue(
 }
 
 /** Values, or undefined when there are none. */
-export function nonEmpty(values: Values | undefined): Values | undefined {
+function nonEmpty(values: Values | undefined): Values | undefined {
   return values && Object.keys(values).length ? values : undefined;
 }
 
@@ -151,12 +173,37 @@ export function nextColumn(table: CsvTable, columns: Column[]): string {
 export function designCount(entry: TrayEntry, tables: Record<string, CsvTable>): number {
   switch (shapeOf(entry)) {
     case 'rows':
-      return entry.items!.length;
+      return designRows(entry).length;
     case 'each':
       return Object.values(entry.each!).reduce((n, values) => n * values.length, 1);
     case 'csv':
       return tables[entry.from!]?.rows.length ?? 0;
-    default:
-      return 1;
   }
+}
+
+/** A CSV cell as a value of its field's kind; a row's `count` is a number. */
+function typedValue(name: string, text: string, field: NormalizedField | undefined): Scalar {
+  const kind: NormalizedField | undefined =
+    name === 'count' ? { type: 'int', optional: true } : field;
+  const coerced = kind ? coerceValue(kind, text, true) : { value: text };
+  return 'value' in coerced ? coerced.value : text;
+}
+
+/**
+ * A CSV entry with the file's rows brought into the inventory as typed designs.
+ * A cell becomes a value of its field's kind, a number for a whole-number field;
+ * text that does not fit stays as it is, for the project's checks to report. An
+ * empty cell gives no value, as in the file.
+ */
+export function broughtIn(entry: TrayEntry, table: CsvTable, columns: Column[]): TrayEntry {
+  const fields = new Map(columns.map(({ name, field }) => [name, field]));
+  const items = table.rows.map((row) =>
+    Object.fromEntries(
+      table.header
+        .map((name, j): [string, string] => [name, row[j] ?? ''])
+        .filter(([name, text]) => name !== '' && text !== '')
+        .map(([name, text]): [string, Scalar] => [name, typedValue(name, text, fields.get(name))]),
+    ),
+  );
+  return { ...withKey(entry, 'from', undefined), items };
 }

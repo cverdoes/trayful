@@ -114,7 +114,7 @@ export function pastedInto(table: CsvTable, at: Cell, text: string): CsvTable | 
 const WIDTH = { min: 6, max: 40 };
 
 /** Room beside a CSV column's name for its remove button, in characters. */
-const HEADER_ROOM = 3;
+const HEADER_ROOM = 5;
 
 /** Room beside a drop-down's choice for its arrow, in characters. */
 const ARROW_ROOM = 3;

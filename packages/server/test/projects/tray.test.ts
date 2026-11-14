@@ -2,7 +2,7 @@ import { cp, mkdtemp, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { importCsv, readTray, saveTray } from '../../src/projects/tray.js';
+import { designsTable, importCsv, moveToCsv, readTray, saveTray } from '../../src/projects/tray.js';
 import { Workspace } from '../../src/projects/workspace.js';
 import { examplePath } from '../paths.js';
 
@@ -80,5 +80,43 @@ describe('the Tray', () => {
       ['orange', '1'],
     ]);
     expect(count(ws, id, 'token')).toBe(6 + 3);
+  });
+
+  it('moves designs typed into an entry to a CSV file the entry then reads', async () => {
+    const { ws, id, dir } = await open();
+    const tray = await readTray(ws, id, 'card');
+    const typed = {
+      deck: 'extras',
+      count: 2,
+      data: { value: 1 },
+      items: [{ title: 'Rest, then go' }, { title: 'Feast', value: 5, count: 3 }],
+    };
+    await saveTray(ws, id, 'card', { entries: [...tray.entries, typed], tables: tray.tables });
+    const before = count(ws, id, 'card');
+
+    const moved = await moveToCsv(ws, id, 'card', 1);
+    expect(moved.entries[1]).toEqual({ deck: 'extras', count: 2, from: 'data/extras.csv' });
+    const text = await readFile(path.join(dir, 'data/extras.csv'), 'utf8');
+    expect(text.split('\n')[0]).toMatch(/^title,.*value.*,count$/);
+    expect(text).toContain('"Rest, then go"');
+    // The same designs and copies are in the box as before.
+    expect(count(ws, id, 'card')).toBe(before);
+  });
+
+  it('moves only designs typed into the Tray to a CSV file', async () => {
+    const { ws, id } = await open();
+    await expect(moveToCsv(ws, id, 'card', 0)).rejects.toThrow(/Only designs typed/);
+    await expect(moveToCsv(ws, id, 'token', 0)).rejects.toThrow(/Only designs typed/);
+    await expect(moveToCsv(ws, id, 'token', 7)).rejects.toThrow(/Only designs typed/);
+  });
+
+  it('writes designs as a table with a column per field, then per other value', () => {
+    expect(designsTable(['name', 'cost'], [{ cost: 2, count: 3 }, { name: 'Raid' }])).toEqual({
+      header: ['name', 'cost', 'count'],
+      rows: [
+        ['', '2', '3'],
+        ['Raid', '', ''],
+      ],
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { importCsv, readTray, saveTray, type Tray } from '../projects/tray.js';
+import { importCsv, moveToCsv, readTray, saveTray, type Tray } from '../projects/tray.js';
 import { projectOf, type ProjectQuery } from './authoring.js';
 import type { RouteContext } from './context.js';
 
@@ -42,5 +42,18 @@ export function registerTrayRoutes(ctx: RouteContext): void {
     }
     const projectId = projectOf(ctx, request.query);
     return importCsv(workspace, projectId, request.params.id, { name, text });
+  });
+
+  app.post<{
+    Params: { id: string };
+    Querystring: ProjectQuery;
+    Body: { entry?: unknown } | undefined;
+  }>('/api/tray/:id/to-csv', async (request, reply) => {
+    if (hostOnly(request, reply)) return;
+    const { entry } = request.body ?? {};
+    if (typeof entry !== 'number' || !Number.isInteger(entry)) {
+      return reply.code(400).send({ error: 'Send the place of the entry as "entry".' });
+    }
+    return moveToCsv(workspace, projectOf(ctx, request.query), request.params.id, entry);
   });
 }

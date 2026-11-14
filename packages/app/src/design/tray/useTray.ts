@@ -1,7 +1,7 @@
 // Loading and saving one component's Tray: edits show at once and are saved a
 // moment after the last one, the way the designer saves a component.
 import { useEffect, useMemo, useState } from 'react';
-import { fetchTray, importCsv, saveTray } from '../api';
+import { fetchTray, importCsv, moveToCsv, saveTray } from '../api';
 import { noSteps, redone, stepped, undone, type Steps } from '../panel/steps';
 import { projectId, UNDO_MERGE } from '../store';
 import { withUsedTables, type TrayData } from './tray';
@@ -103,6 +103,8 @@ export interface TrayState {
   edit: (tray: TrayData, alone?: boolean) => void;
   /** Adds a CSV file, as a new entry reading it. */
   addCsv: (csv: { name: string; text: string }) => void;
+  /** Moves the designs typed into an entry, by its place, to a CSV file of their own. */
+  toCsv: (entry: number) => void;
   steps: Steps<TrayData>;
   undo: () => void;
   redo: () => void;
@@ -161,22 +163,35 @@ export function useTray(type: string): TrayState {
     show(moved.value);
   };
 
-  const addCsv = (csv: { name: string; text: string }) => {
+  /** A change the server makes to the files itself, after saving what is waiting; one step to undo. */
+  const change = (request: () => Promise<TrayData>) => {
     const before = tray;
-    saver
-      .then(() => importCsv(projectId(), type, csv))
-      .then(
-        (saved) => {
-          if (before) setSteps((s) => stepped(s, before, false));
-          joiner.reset();
-          setTray(saved);
-          report('saved');
-        },
-        (err: unknown) => report('failed', errorText(err)),
-      );
+    saver.then(request).then(
+      (saved) => {
+        if (before) setSteps((s) => stepped(s, before, false));
+        joiner.reset();
+        setTray(saved);
+        report('saved');
+      },
+      (err: unknown) => report('failed', errorText(err)),
+    );
   };
 
-  return { tray, status, message, edit, addCsv, steps, undo: move(undone), redo: move(redone) };
+  const addCsv = (csv: { name: string; text: string }) =>
+    change(() => importCsv(projectId(), type, csv));
+  const toCsv = (entry: number) => change(() => moveToCsv(projectId(), type, entry));
+
+  return {
+    tray,
+    status,
+    message,
+    edit,
+    addCsv,
+    toCsv,
+    steps,
+    undo: move(undone),
+    redo: move(redone),
+  };
 }
 
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));

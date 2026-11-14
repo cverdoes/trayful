@@ -5,10 +5,12 @@ import { CsvGrid } from './CsvGrid';
 import { DesignGrid } from './DesignGrid';
 import { ListInput } from './TrayCells';
 import {
+  broughtIn,
   designCount,
+  designRows,
+  withDesignRows,
   shapeOf,
   withKey,
-  nonEmpty,
   withEntry,
   type Column,
   type CsvTable,
@@ -17,8 +19,7 @@ import {
 } from './tray';
 
 const SHAPE_TEXT: Record<EntryShape, string> = {
-  one: 'One design',
-  rows: 'A design per row',
+  rows: 'Designs',
   each: 'Every combination',
   csv: 'A design per row of',
 };
@@ -31,6 +32,11 @@ export interface EntryContext {
   tables: Record<string, CsvTable>;
   /** A CSV file changed; `alone` makes the change a step of its own to undo. */
   onTable: (file: string, table: CsvTable, alone?: boolean) => void;
+  /**
+   * Moves the designs typed into an entry, by its place, to a CSV file of their
+   * own. Undefined while a change is not saved: the server moves what it has saved.
+   */
+  onToCsv?: (entry: number) => void;
 }
 
 /** An entry, with its deck and copies, and the designs it makes. */
@@ -75,12 +81,60 @@ export function TrayEntryCard({
           {designs} {designs === 1 ? 'design' : 'designs'}
           {copies > 1 && `, ${copies} of each`}
         </span>
+        <StorageButton entry={entry} index={index} context={context} onChange={onChange} />
         <button type="button" onClick={() => onChange(undefined)}>
           Remove
         </button>
       </header>
       <EntryBody entry={entry} context={context} onChange={onChange} />
     </section>
+  );
+}
+
+/**
+ * Where an entry's designs are kept is a choice that can change: typed designs
+ * move to a CSV file of their own, and a CSV file's rows come into the inventory.
+ */
+function StorageButton({
+  entry,
+  index,
+  context,
+  onChange,
+}: Readonly<{
+  entry: TrayEntry;
+  index: number;
+  context: EntryContext;
+  onChange: (entry: TrayEntry) => void;
+}>) {
+  const shape = shapeOf(entry);
+  if (shape === 'csv') {
+    const table = context.tables[entry.from!];
+    return (
+      <button
+        type="button"
+        title="Keeps these designs in the inventory instead. The CSV file stays in the project."
+        disabled={!table}
+        onClick={() => table && onChange(broughtIn(entry, table, context.columns))}
+      >
+        Move to inventory
+      </button>
+    );
+  }
+  // A component with no fields has nothing to put in a file's columns.
+  if (shape === 'each' || context.columns.length === 0) return null;
+  return (
+    <button
+      type="button"
+      title={
+        context.onToCsv
+          ? "Keeps these designs in a CSV file of their own, in the project's data folder."
+          : 'Fix what is not saved first.'
+      }
+      disabled={!context.onToCsv}
+      onClick={() => context.onToCsv?.(index)}
+    >
+      Move to CSV
+    </button>
   );
 }
 
@@ -95,13 +149,14 @@ function EntryBody({
 }>) {
   switch (shapeOf(entry)) {
     case 'rows':
-      return (
+      // A component with no fields has one design, and nothing to fill in for it.
+      return context.columns.length === 0 ? null : (
         <DesignGrid
-          rows={entry.items!}
+          rows={designRows(entry)}
           columns={context.columns}
           image={context.image}
-          withCount
-          onRows={(items) => onChange(withKey(entry, 'items', items))}
+          copies={entry.count ?? 1}
+          onRows={(rows) => onChange(withDesignRows(entry, rows))}
         />
       );
     case 'each':
@@ -112,15 +167,6 @@ function EntryBody({
           table={context.tables[entry.from!] ?? { header: [], rows: [] }}
           columns={context.columns}
           onChange={(table, alone) => context.onTable(entry.from!, table, alone)}
-        />
-      );
-    default:
-      return (
-        <DesignGrid
-          rows={[entry.data ?? {}]}
-          columns={context.columns}
-          image={context.image}
-          onRows={([data]) => onChange(withKey(entry, 'data', nonEmpty(data)))}
         />
       );
   }

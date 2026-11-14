@@ -43,7 +43,7 @@ const STATUS_TEXT: Record<TrayStatus, string> = {
 };
 
 function TrayEditor({ type }: Readonly<{ type: ComponentType }>) {
-  const { tray, status, message, edit, addCsv, steps, undo, redo } = useTray(type.id);
+  const { tray, status, message, edit, addCsv, toCsv, steps, undo, redo } = useTray(type.id);
   const images = useStore((s) => s.view?.assets.images ?? {});
   const inBox = useDesign((s) => s.components.filter((c) => c.type === type.id).length);
   const image = tiledImage(type, images);
@@ -56,6 +56,7 @@ function TrayEditor({ type }: Readonly<{ type: ComponentType }>) {
     tables: tray?.tables ?? {},
     onTable: (file: string, table: CsvTable, alone?: boolean) =>
       tray && edit({ ...tray, tables: { ...tray.tables, [file]: table } }, alone),
+    onToCsv: status === 'failed' ? undefined : toCsv,
   };
   return (
     <main className="tray-page" aria-label="Tray">
@@ -112,11 +113,8 @@ function AddButtons({
           One of every tile
         </button>
       )}
-      <button type="button" onClick={() => onAdd(newEntry('one'))}>
-        One design
-      </button>
       <button type="button" onClick={() => onAdd(newEntry('rows'))}>
-        Designs in rows
+        Designs
       </button>
       <button type="button" onClick={() => onAdd(newEntry('each'))}>
         Every combination

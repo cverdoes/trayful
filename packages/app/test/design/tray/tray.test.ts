@@ -1,7 +1,10 @@
 import type { ComponentType } from '@trayful/formats/browser';
 import { describe, expect, it } from 'vitest';
 import {
+  broughtIn,
   columnsOf,
+  designRows,
+  withDesignRows,
   designCount,
   everyTile,
   newEntry,
@@ -42,7 +45,8 @@ describe('the Tray', () => {
 
   it('counts the designs of each shape of entry', () => {
     const tables = { 'data/t.csv': { header: ['name'], rows: [['a'], ['b'], ['c']] } };
-    expect(designCount(newEntry('one'), tables)).toBe(1);
+    expect(designCount(newEntry('rows'), tables)).toBe(1);
+    expect(designCount({ data: { name: 'Forest' } }, tables)).toBe(1);
     expect(designCount({ items: [{}, {}] }, tables)).toBe(2);
     expect(designCount({ each: { a: [1, 2], b: ['x', 'y', 'z'] } }, tables)).toBe(6);
     expect(designCount({ from: 'data/t.csv' }, tables)).toBe(3);
@@ -55,6 +59,65 @@ describe('the Tray', () => {
     expect(withKey({ deck: 'terrain', count: 2 }, 'deck', undefined)).toEqual({ count: 2 });
     expect(replaced(['a', 'b', 'c'], 1, undefined)).toEqual(['a', 'c']);
     expect(replaced(['a', 'b'], 0, 'z')).toEqual(['z', 'b']);
+  });
+});
+
+describe('designs typed into an entry', () => {
+  it('are rows, whether the inventory has one design or several', () => {
+    expect(designRows({})).toEqual([{}]);
+    expect(designRows({ data: { name: 'Forest' } })).toEqual([{ name: 'Forest' }]);
+    expect(designRows({ items: [{ tile: 1 }, { tile: 2 }] })).toEqual([{ tile: 1 }, { tile: 2 }]);
+  });
+
+  it('stay one design in the inventory until there is more to say', () => {
+    expect(withDesignRows({ deck: 'land' }, [{ name: 'Forest' }])).toEqual({
+      deck: 'land',
+      data: { name: 'Forest' },
+    });
+    expect(withDesignRows({ data: { name: 'Forest' } }, [{}])).toEqual({});
+  });
+
+  it('become items with a second row, or with copies of their own', () => {
+    const forest = { count: 2, data: { name: 'Forest' } };
+    expect(withDesignRows(forest, [{ name: 'Forest' }, {}])).toEqual({
+      count: 2,
+      items: [{ name: 'Forest' }, {}],
+    });
+    expect(withDesignRows(forest, [{ name: 'Forest', count: 3 }])).toEqual({
+      count: 2,
+      items: [{ name: 'Forest', count: 3 }],
+    });
+  });
+
+  it('stay items once they are, and keep the values the entry shares', () => {
+    const entry = { data: { suit: 'red' }, items: [{ name: 'Raid' }, { name: 'Storm' }] };
+    expect(withDesignRows(entry, [{ name: 'Raid' }])).toEqual({
+      data: { suit: 'red' },
+      items: [{ name: 'Raid' }],
+    });
+  });
+
+  it("come in from a CSV file as values of their fields' kinds", () => {
+    const columns = columnsOf({
+      ...terrain,
+      fields: { name: 'string', cost: 'int', wild: 'bool?', suit: { enum: ['red', 2] } },
+    });
+    const table = {
+      header: ['name', 'cost', 'wild', 'suit', 'count', 'note', ''],
+      rows: [
+        ['Forest', '2', 'yes', '2', '3', 'x', 'y'],
+        ['7', 'many', '', 'red', '', '', ''],
+      ],
+    };
+    expect(broughtIn({ deck: 'land', count: 2, from: 'data/land.csv' }, table, columns)).toEqual({
+      deck: 'land',
+      count: 2,
+      items: [
+        { name: 'Forest', cost: 2, wild: true, suit: 2, count: 3, note: 'x' },
+        // Text that is no number stays, for the project's checks to report.
+        { name: '7', cost: 'many', suit: 'red' },
+      ],
+    });
   });
 });
 

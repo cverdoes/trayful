@@ -28,6 +28,7 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 
 - The Tray's editors are spreadsheets: a CSV file, one design and designs in rows are each one ruled grid with numbered rows and columns as wide as their text. The arrow keys, `Enter` and `Shift+Enter` move between cells. A field with choices is a drop-down in its cell, in a CSV file too. Buttons to remove a row or column show when it is hovered or focused.
 - Cells copied from a spreadsheet paste across several cells of a CSV file, adding rows as needed.
+- The Tray adds typed designs with one **Designs** button, in place of "One design" and "Designs in rows": an entry starts with one design and takes more rows. **Move to CSV** and **Move to inventory** change where an entry keeps its designs.
 
 ### Fixes
 

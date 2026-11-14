@@ -3,7 +3,14 @@
 // other authoring change.
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { csvTable, csvText, slugify, type CsvTable } from '@trayful/formats';
+import {
+  componentFields,
+  csvTable,
+  csvText,
+  slugify,
+  type CsvTable,
+  type Scalar,
+} from '@trayful/formats';
 import { isMap, isSeq } from 'yaml';
 import {
   AuthoringError,
@@ -113,3 +120,55 @@ async function addCsv(
 
 /** Copies a CSV file into the project's `data` folder and adds an entry that reads it. */
 export const importCsv = oneAtATime(addCsv);
+
+/** The designs an entry has typed in: its rows, each over the values the entry shares. */
+function typedDesigns(entry: Record<string, unknown>): Record<string, Scalar>[] {
+  const shared = (entry.data ?? {}) as Record<string, Scalar>;
+  const items = (entry.items ?? [{}]) as Record<string, Scalar>[];
+  return items.map((item) => ({ ...shared, ...item }));
+}
+
+/**
+ * Designs as a CSV table: a column per field of the component, then one per
+ * other value the designs give, such as `count`. A value not given is an empty cell.
+ */
+export function designsTable(fields: string[], designs: Record<string, Scalar>[]): CsvTable {
+  const header = [...new Set([...fields, ...designs.flatMap((design) => Object.keys(design))])];
+  const cell = (value: Scalar | undefined) => (value === undefined ? '' : String(value));
+  return { header, rows: designs.map((design) => header.map((name) => cell(design[name]))) };
+}
+
+async function entryToCsv(
+  workspace: Workspace,
+  projectId: string,
+  type: string,
+  index: number,
+): Promise<Tray> {
+  const project = workspace.project(projectId);
+  const current = await readTray(workspace, projectId, type);
+  const entry = current.entries[index];
+  if (!entry || entry.from !== undefined || entry.each !== undefined) {
+    throw new AuthoringError('Only designs typed into the Tray can be moved to a CSV file.');
+  }
+  const table = designsTable(
+    Object.keys(componentFields(project.types[type]!)),
+    typedDesigns(entry),
+  );
+  const stem = slugify(typeof entry.deck === 'string' ? entry.deck : type) || 'designs';
+  const file = unusedPath(project.dir, `data/${stem}.csv`);
+  // The entry keeps its deck and copies; its designs are in the file from here on.
+  const kept = Object.entries(entry).filter(([key]) => key !== 'data' && key !== 'items');
+  const moved = { ...Object.fromEntries(kept), from: file };
+  const entries = current.entries.map((e, i) => (i === index ? moved : e));
+  await commit(workspace, projectId, [
+    { file, content: csvText(table) },
+    await inventoryChange(project, type, entries),
+  ]);
+  return readTray(workspace, projectId, type);
+}
+
+/**
+ * Moves the designs typed into one entry to a new CSV file in the project's
+ * `data` folder, which the entry then reads. Its deck and copies stay.
+ */
+export const moveToCsv = oneAtATime(entryToCsv);
