@@ -56,7 +56,7 @@ What each viewer shows is their own choice, kept in that browser for each table;
 
 - **Drag from tile to tile.** The tile under the pointer lights up, and the piece lands where it is let go, snapping into spots and joining piles there as on its own surface. The rest of a selection keeps its place around the dragged piece. A card dragged off a pile goes the same way.
 - **Drop on a chip** to send pieces to free room on that surface, whether its tile is shown or not. A card from the hand can be dropped on a chip too, or on a tile to land where it is dropped.
-- **Send to…** on the toolbar sends the selected pieces to free room on another surface.
+- **Send to** on the toolbar sends the selected pieces to free room on another surface.
 
 ### Changing the surfaces
 

@@ -351,6 +351,7 @@
   color: var(--tf-danger);
 }
 
+.ui-menu-item.separated:not(:first-child),
 .ui-menu-item.danger:not(:first-child) {
   margin-top: var(--tf-space-1);
   border-top: 1px solid var(--tf-outline);

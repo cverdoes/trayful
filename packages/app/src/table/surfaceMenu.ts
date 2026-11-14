@@ -1,7 +1,7 @@
 // What a viewer can change about the table's surfaces from the chip row.
 import { CENTRE, surfacesOf, type Command, type TableState } from '@trayful/core';
 import type { Surface } from '@trayful/formats/browser';
-import type { MenuItem } from '../toolbar/MoreMenu';
+import type { MenuItem } from '../ui/Menu';
 import type { Confirmation, Question } from '../ui/dialogs';
 
 /** What a menu on the chip row needs: the table, who is looking, and how to act. */
@@ -49,12 +49,12 @@ export function addItems(ctx: MenuContext): MenuItem[] {
   return [
     {
       label: 'Add a surface…',
-      title: 'A separate play space everyone shares',
+      hint: 'A separate play space everyone shares',
       onSelect: () => void add(false)(),
     },
     {
       label: 'Add a seat…',
-      title: 'A play space for one player to sit at',
+      hint: 'A play space for one player to sit at',
       onSelect: () => void add(true)(),
     },
   ];
@@ -84,17 +84,19 @@ export function surfaceItems(surface: Surface, ctx: MenuContext): MenuItem[] {
     surface.seat
       ? {
           label: 'No longer a seat',
-          title: 'Anyone sitting here stands up',
+          hint: 'Anyone sitting here stands up',
           onSelect: () => ctx.command({ type: 'editSurface', id, seat: false }),
         }
       : {
           label: 'Make it a seat',
-          title: 'A player can sit here; it is then theirs in "Mine + Centre"',
+          hint: 'A player can sit here; it is then theirs in "Mine + Centre"',
           onSelect: () => ctx.command({ type: 'editSurface', id, seat: true }),
         },
     {
       label: 'Remove…',
-      title: 'What lies on it moves to the Centre',
+      icon: 'trash',
+      danger: true,
+      hint: 'What lies on it moves to the Centre',
       onSelect: () =>
         void ctx
           .confirm({
@@ -114,7 +116,7 @@ export function surfaceItems(surface: Surface, ctx: MenuContext): MenuItem[] {
 function colorItem({ id, name, color }: Surface, ctx: MenuContext): MenuItem {
   return {
     label: 'Colour…',
-    title: 'Tints its tile frame and chip',
+    hint: 'Tints its tile frame and chip',
     onSelect: () => {
       const names = ctx.colors?.length ? `a colour such as ${ctx.colors.join(', ')}, or ` : '';
       void ctx

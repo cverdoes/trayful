@@ -15,12 +15,21 @@ export interface MenuItem {
   disabled?: boolean;
   /** Shown on hover, such as why the action cannot be picked now. */
   hint?: string;
+  /** Draws a line above the action, to set it apart from the ones before. */
+  separated?: boolean;
   onSelect: () => void;
 }
 
-/** What the menu's button looks like: the main action with words, or only an icon. */
+/** What the menu's button looks like: the main action or an ordinary one with words, or only an icon. */
 type MenuButton =
-  { kind: 'primary'; icon?: IconName; text: string } | { kind: 'icon'; icon: IconName };
+  | { kind: 'primary' | 'secondary'; icon?: IconName; text: string }
+  | { kind: 'icon'; icon: IconName };
+
+const TRIGGER_CLASS = {
+  primary: 'ui-button ui-button-primary',
+  secondary: 'ui-button ui-button-secondary',
+  icon: 'ui-icon-button',
+} as const;
 
 /** A button that opens a list of actions. The label names the button and the list. */
 export function Menu({
@@ -28,12 +37,15 @@ export function Menu({
   button,
   items,
   align = 'end',
+  className,
 }: Readonly<{
   label: string;
   button: MenuButton;
   items: MenuItem[];
   /** Which edge of the button the list lines up with. */
   align?: 'start' | 'end';
+  /** A class for the menu, so a view can size its button to fit in. */
+  className?: string;
 }>) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -48,6 +60,8 @@ export function Menu({
     trigger.current?.focus();
   };
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    // Keys pressed in the menu are its own, not shortcuts of the page around it.
+    e.stopPropagation();
     if (e.key === 'Escape') return close();
     const buttons = [...(list.current?.querySelectorAll('button') ?? [])];
     const next = itemAfterKey(e.key, buttons.indexOf(e.target as HTMLButtonElement), enabled);
@@ -57,20 +71,25 @@ export function Menu({
   };
   return (
     <div
-      className="ui-menu"
+      className={className ? `ui-menu ${className}` : 'ui-menu'}
       // The focus leaving the menu, by Tab or a click elsewhere, closes it.
       onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setOpen(false)}
     >
       <button
         ref={trigger}
         type="button"
-        className={button.kind === 'primary' ? 'ui-button ui-button-primary' : 'ui-icon-button'}
+        className={TRIGGER_CLASS[button.kind]}
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
         title={button.kind === 'icon' ? label : undefined}
         onClick={() => setOpen(!open)}
-        onKeyDown={(e) => e.key === 'ArrowDown' && setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key !== 'ArrowDown') return;
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(true);
+        }}
       >
         <TriggerContent button={button} />
       </button>
@@ -116,7 +135,9 @@ function MenuRow({ item, onSelect }: Readonly<{ item: MenuItem; onSelect: () => 
     <button
       type="button"
       role="menuitem"
-      className={item.danger ? 'ui-menu-item danger' : 'ui-menu-item'}
+      className={['ui-menu-item', item.danger && 'danger', item.separated && 'separated']
+        .filter(Boolean)
+        .join(' ')}
       disabled={item.disabled}
       title={item.hint}
       onClick={onSelect}

@@ -83,10 +83,13 @@
   --tf-shadow-overlay: 0 8px 24px rgb(0 0 0 / 45%);
 }
 
-/* What is drawn in the brand: the designer, the components page, and every dialog. */
+/* What is drawn in the brand: the designer, the components page, every dialog,
+   and the table's toolbar and surface chips. */
 .designer,
 .ui-page,
-.ui-dialog {
+.ui-dialog,
+.table-toolbar,
+.chip-row {
   --tf-surface: #0f1d19;
   --tf-surface-raised: #162923;
   --tf-surface-sunken: #0a1512;
