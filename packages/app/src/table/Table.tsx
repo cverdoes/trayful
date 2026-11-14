@@ -18,6 +18,7 @@ import { hasSurfaces, surfaceColor, tilesFor, type Tile } from './surfaces';
 import { BagBadges, PieceView, SnapHints, StackView } from './TableObjects';
 import { toggleFocus } from './tiles';
 import { fitTile, toWorld, viewportOf, zoomAt } from './viewport';
+import { Icon } from '../ui/Icon';
 
 /**
  * The table: one tile for each surface shown, every object on it, which can be
@@ -130,7 +131,7 @@ function TileLabel({ surface, color }: Readonly<{ surface: string; color?: strin
         aria-label={focused ? 'Back to all tiles' : `Show only ${name ?? surface}`}
         onClick={() => toggleFocus(surface)}
       >
-        {focused ? '⤡' : '⤢'}
+        <Icon name={focused ? 'shrink' : 'expand'} />
       </button>
     </div>
   );

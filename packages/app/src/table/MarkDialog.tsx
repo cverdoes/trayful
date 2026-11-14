@@ -4,6 +4,7 @@ import { pickerCorner } from './groups';
 import { textCommand, type MarkPick } from './marks';
 import { Thumbnail } from '../render/Thumbnail';
 import { useStore } from '../store';
+import { Button } from '../ui/Button';
 
 /** Length of the longer side of each stamp in the picker, in pixels. */
 const THUMB = 40;
@@ -87,7 +88,9 @@ function TextForm({ pick }: Readonly<{ pick: MarkPick }>) {
         onFocus={(e) => e.currentTarget.select()}
         onChange={(e) => setText(e.target.value)}
       />
-      <button type="submit">OK</button>
+      <Button variant="primary" submit>
+        OK
+      </Button>
     </form>
   );
 }

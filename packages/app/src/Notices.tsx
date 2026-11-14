@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useStore } from './store';
 import { keepTableInView } from './table/viewport';
+import { Notice } from './ui/Notice';
 
 /** Shown while the project files have errors; the table keeps the last good version. */
 export function Problems() {
   const problems = useStore((s) => s.problems);
   if (!problems?.length) return null;
   return (
-    <div className="problems" role="alert">
+    <Notice tone="warning" className="problems">
       <strong>The project files have errors.</strong> The table shows the last version that loaded;
       fix the files and save to update it.
       <pre>{problems.join('\n')}</pre>
-    </div>
+    </Notice>
   );
 }
 
@@ -28,9 +29,9 @@ export function Activity() {
   }, [activity]);
   if (!activity || !visible) return null;
   return (
-    <div className="activity" role="status">
+    <Notice tone="info" className="activity">
       <strong>{activity.name}</strong> {activity.text}
-    </div>
+    </Notice>
   );
 }
 
@@ -46,8 +47,8 @@ export function ErrorToast() {
   }, [error]);
   if (!error || !visible) return null;
   return (
-    <div className="toast" role="alert">
+    <Notice tone="error" className="toast">
       {error.message}
-    </div>
+    </Notice>
   );
 }

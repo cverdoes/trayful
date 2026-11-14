@@ -445,6 +445,42 @@
   height: var(--tf-control-md);
 }
 
+/* A notice: an icon and a few lines, with a stripe in the colour of how it reads. */
+.ui-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tf-space-3);
+  padding: var(--tf-space-3) var(--tf-space-4);
+  border: 1px solid var(--tf-outline);
+  border-left: 4px solid var(--notice-colour);
+  border-radius: var(--tf-radius-md);
+  background: var(--tf-surface-overlay);
+  color: var(--tf-text);
+  font-size: var(--tf-text-md);
+  box-shadow: var(--tf-shadow-overlay);
+}
+
+.ui-notice > .ui-icon {
+  color: var(--notice-colour);
+}
+
+.ui-notice-body {
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.ui-notice-info {
+  --notice-colour: var(--tf-focus);
+}
+
+.ui-notice-warning {
+  --notice-colour: var(--tf-warning);
+}
+
+.ui-notice-error {
+  --notice-colour: var(--tf-danger);
+}
+
 /* A choice of one among a few in a dialog: radio buttons under a legend, in one column or two. */
 .ui-choices {
   display: grid;
@@ -564,6 +600,7 @@
 }
 
 .ui-page-row > .ui-header,
+.ui-page-row > .ui-notice,
 .ui-page-row > .ui-card,
 .ui-page-row > .ui-empty {
   flex: 1 1 100%;
