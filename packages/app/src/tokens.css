@@ -83,8 +83,8 @@
   --tf-shadow-overlay: 0 8px 24px rgb(0 0 0 / 45%);
 }
 
-/* The views drawn in the brand. */
-.designer.tray,
+/* The views drawn in the brand: the designer and the components page. */
+.designer,
 .ui-page {
   --tf-surface: #0f1d19;
   --tf-surface-raised: #162923;

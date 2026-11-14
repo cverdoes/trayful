@@ -3,6 +3,9 @@ import { go, route, showDesignPage, showTypeInAddress, type DesignPage } from '.
 import { useStore } from '../store';
 import { migrateProject } from './api';
 import { Mark } from '../Mark';
+import { Button } from '../ui/Button';
+import { PageHeader } from '../ui/PageHeader';
+import { Status, type StatusTone } from '../ui/Status';
 import { AssetsPage } from './assets/AssetsPage';
 import { DesignCanvas } from './canvas/DesignCanvas';
 import { Inspector } from './panel/Inspector';
@@ -67,8 +70,6 @@ export function Designer() {
           {tab('Tray', page === 'tray', () => show('tray'))}
           {tab('Assets', page === 'assets', () => show('assets'))}
         </nav>
-        {page === 'components' && <UndoButtons />}
-        {page === 'components' && <SaveState />}
       </header>
       {page === 'assets' && <AssetsPage />}
       {page === 'tray' && (
@@ -81,7 +82,7 @@ export function Designer() {
         <>
           <TypeList />
           <main className="design-main">
-            <SamplePicker />
+            <ComponentHeader />
             <DesignCanvas />
             <YamlPane />
           </main>
@@ -110,38 +111,53 @@ function useFollowProject() {
   }, [version]);
 }
 
-const STATUS_TEXT: Record<SaveStatus, string> = {
-  saved: 'Saved',
-  unsaved: 'Saving soon…',
-  saving: 'Saving…',
-  invalid: 'Not saved: fix the problems on the right',
-  conflict: 'Not saved',
-  failed: 'Not saved',
+/** What the save status shows: how it reads, and a few words. */
+const STATUS: Record<SaveStatus, { tone: StatusTone; text: string }> = {
+  saved: { tone: 'ok', text: 'Saved' },
+  unsaved: { tone: 'quiet', text: 'Saving soon…' },
+  saving: { tone: 'busy', text: 'Saving…' },
+  invalid: { tone: 'bad', text: 'Not saved: fix the problems on the right' },
+  conflict: { tone: 'bad', text: 'Not saved' },
+  failed: { tone: 'bad', text: 'Not saved' },
 };
 
+/**
+ * The head of the Components page: the component shown and the file that holds it,
+ * with the design that fills its faces, whether it is saved, and undo and redo.
+ */
+function ComponentHeader() {
+  const draft = useDesign((s) => s.draft);
+  const file = useDesign((s) => (s.draft ? s.library?.types[s.draft.id] : undefined));
+  if (!draft) return null;
+  return (
+    <PageHeader title={draft.name ?? draft.id} subtitle={file && `in ${file}`}>
+      <SamplePicker />
+      <SaveState file={file} />
+      <UndoButtons />
+    </PageHeader>
+  );
+}
+
 /** Whether the type is saved, and what to do when it could not be. */
-function SaveState() {
+function SaveState({ file }: Readonly<{ file: string | undefined }>) {
   const status = useDesign((s) => s.status);
   const message = useDesign((s) => s.message);
-  const file = useDesign((s) => (s.draft ? s.library?.types[s.draft.id] : undefined));
   return (
-    <div className="design-status" role="status">
-      <span className={`save-${status}`}>
-        {STATUS_TEXT[status]}
-        {status === 'saved' && file && ` to ${file}`}
-      </span>
-      {message && <span className="error"> {message}</span>}
+    <>
+      <Status
+        tone={STATUS[status].tone}
+        title={status === 'saved' && file ? `Saved to ${file}` : undefined}
+      >
+        {STATUS[status].text}
+        {message && <span className="error">{message}</span>}
+      </Status>
       {status === 'conflict' && (
         <>
-          <button type="button" onClick={() => void reloadType()}>
-            Reload
-          </button>
-          <button type="button" onClick={() => void keepMine()}>
-            Keep mine
-          </button>
+          <Button onClick={() => void reloadType()}>Reload</Button>
+          <Button onClick={() => void keepMine()}>Keep mine</Button>
         </>
       )}
-    </div>
+    </>
   );
 }
 

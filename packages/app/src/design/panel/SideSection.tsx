@@ -1,3 +1,4 @@
+import { Icon } from '../../ui/Icon';
 import { SHAPES, type ComponentType } from '@trayful/formats/browser';
 import {
   addItem,
@@ -187,7 +188,7 @@ function ItemButtons({
         onClick={() => onMove(-1)}
         disabled={!movable(-1)}
       >
-        ↓
+        <Icon name="arrowDown" />
       </button>
       <button
         type="button"
@@ -196,10 +197,10 @@ function ItemButtons({
         onClick={() => onMove(1)}
         disabled={!movable(1)}
       >
-        ↑
+        <Icon name="arrowUp" />
       </button>
       <button type="button" aria-label="Remove" title="Remove" onClick={onRemove}>
-        ×
+        <Icon name="x" />
       </button>
     </>
   );

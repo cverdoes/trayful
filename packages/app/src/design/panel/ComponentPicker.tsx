@@ -1,4 +1,5 @@
 import type { ComponentType, Representation } from '@trayful/formats/browser';
+import { Icon } from '../../ui/Icon';
 import { useId, useState, type KeyboardEvent } from 'react';
 
 /** Something a picker offers: the id it stores and what a person reads. */
@@ -55,7 +56,7 @@ export function ComponentPicker({
             aria-label={`Remove ${labelOf(v)}`}
             onClick={() => set(value.filter((x) => x !== v))}
           >
-            ×
+            <Icon name="x" />
           </button>
         </span>
       ))}

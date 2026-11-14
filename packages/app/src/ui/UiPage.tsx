@@ -8,6 +8,8 @@ import { EmptyState } from './EmptyState';
 import { Field } from './Field';
 import { Icon, ICON_NAMES } from './Icon';
 import { Menu, type MenuItem } from './Menu';
+import { PageHeader } from './PageHeader';
+import { Status } from './Status';
 
 const VARIANTS: ButtonVariant[] = ['primary', 'secondary', 'quiet', 'danger'];
 
@@ -41,6 +43,7 @@ export function UiPage() {
   return (
     <main className="ui-page">
       <h1>Trayful components</h1>
+      <HeaderSection />
       <Section title="Buttons">
         {VARIANTS.map((variant) => (
           <Button key={variant} variant={variant} icon="plus">
@@ -108,6 +111,19 @@ export function UiPage() {
         </EmptyState>
       </Section>
     </main>
+  );
+}
+
+function HeaderSection() {
+  return (
+    <Section title="Page header and status">
+      <PageHeader title="Action card" subtitle="10 in the box">
+        <Status tone="ok">Saved</Status>
+        <Status tone="busy">Saving…</Status>
+        <Status tone="quiet">Saving soon…</Status>
+        <Status tone="bad">Not saved</Status>
+      </PageHeader>
+    </Section>
   );
 }
 

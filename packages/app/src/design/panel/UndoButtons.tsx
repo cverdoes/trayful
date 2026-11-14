@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { IconButton } from '../../ui/Button';
 import { redo, undo, useDesign } from '../store';
 
 /** What a key press asks of the designer's history, if anything. */
@@ -44,13 +45,21 @@ function HistoryButtons({
 }: Readonly<{ canUndo: boolean; canRedo: boolean; onUndo: () => void; onRedo: () => void }>) {
   useHistoryKeys(onUndo, onRedo);
   return (
-    <div className="design-history">
-      <button type="button" disabled={!canUndo} onClick={onUndo} title="Undo (Ctrl+Z)">
-        Undo
-      </button>
-      <button type="button" disabled={!canRedo} onClick={onRedo} title="Redo (Ctrl+Shift+Z)">
-        Redo
-      </button>
-    </div>
+    <>
+      <IconButton
+        icon="undo"
+        label="Undo"
+        title="Undo (Ctrl+Z)"
+        disabled={!canUndo}
+        onClick={onUndo}
+      />
+      <IconButton
+        icon="redo"
+        label="Redo"
+        title="Redo (Ctrl+Shift+Z)"
+        disabled={!canRedo}
+        onClick={onRedo}
+      />
+    </>
   );
 }

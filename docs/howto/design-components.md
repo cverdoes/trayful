@@ -34,7 +34,7 @@ Dice and counters have **Values** instead: a **Range** of whole numbers or a lis
 
 ## Fields: what changes from card to card
 
-A field is a value each card (or other copy of the component) has its own of, such as a title or a cost. Open **Data fields** at the bottom of the panel; **+ Add field** adds one; give it a name, then pick its kind:
+A field is a value each card (or other copy of the component) has its own of, such as a title or a cost. Open **Data fields** at the bottom of the panel; **Add field** adds one; give it a name, then pick its kind:
 
 - `string`, `int`, `number` or `bool` for text, whole numbers, numbers and yes/no.
 - `color` or `image` for a colour or a picture per card.
@@ -73,7 +73,7 @@ Under **Colours**, give a colour a name with **Add colour**, change one with its
 
 ## Drop areas for boards
 
-Pieces and zones have a **Drop areas** section: where other pieces land when they are dropped on it. **+ Add drop area** and pick a grid (a field of action spaces, a row of card slots), points (a score track), an area (a supply), a stack (a discard pile), a group (a score track space several markers share), a row (a tableau that lines cards up) or a bag (pieces drawn blind). A component with drop areas is a container, so what lies in them moves with it. Spots are drawn on the face with their numbers, the way setups and agents name them, such as `main-board/fields/3`.
+Pieces and zones have a **Drop areas** section: where other pieces land when they are dropped on it. **Add drop area** and pick a grid (a field of action spaces, a row of card slots), points (a score track), an area (a supply), a stack (a discard pile), a group (a score track space several markers share), a row (a tableau that lines cards up) or a bag (pieces drawn blind). A component with drop areas is a container, so what lies in them moves with it. Spots are drawn on the face with their numbers, the way setups and agents name them, such as `main-board/fields/3`.
 
 Select a drop area in the list or by clicking one of its spots, then drag on the board:
 
@@ -87,7 +87,7 @@ Select a drop area in the list or by clicking one of its spots, then drag on the
 
 ## Undo
 
-**Undo** and **Redo** at the top step back and forth through your changes to the component, one drag or one edit at a time (typing in a box is one step). Ctrl+Z and Ctrl+Shift+Z do the same when you are not typing in a box. Undoing a change saves the component as it was.
+**Undo** and **Redo**, the two arrows above the canvas, step back and forth through your changes to the component, one drag or one edit at a time (typing in a box is one step). Ctrl+Z and Ctrl+Shift+Z do the same when you are not typing in a box. Undoing a change saves the component as it was.
 
 ## See it with real data
 
@@ -95,7 +95,7 @@ When the component has fields, **Sample design** above the preview chooses whose
 
 ## Saving
 
-There is no save button. A change is saved a moment after you make it, as long as the component is valid; the status at the top says **Saved to library/cards.yaml** when it is done. While something is wrong, such as a negative corner or a field name with a space in it, the status says so, the problem is listed at the top of the inspector and next to the value that causes it, and nothing is written until it is fixed.
+There is no save button. A change is saved a moment after you make it, as long as the component is valid; the status above the canvas says **Saved** when it is done, next to the name of the file the component is in. While something is wrong, such as a negative corner or a field name with a space in it, the status says so, the problem is listed at the top of the inspector and next to the value that causes it, and nothing is written until it is fixed.
 
 Only the keys you change are rewritten, so comments, blank lines and the order of everything else in the file stay as they were. **Show YAML** shows the component as the file holds it, to check or copy.
 

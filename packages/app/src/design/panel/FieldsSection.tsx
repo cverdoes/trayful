@@ -1,4 +1,5 @@
 import { FIELD_TYPES, type ComponentType, type Field } from '@trayful/formats/browser';
+import { Button } from '../../ui/Button';
 import { useState } from 'react';
 import {
   fieldFromSpec,
@@ -27,12 +28,12 @@ export function FieldsSection({ type }: Readonly<{ type: ComponentType }>) {
       {fields.map(([name, field]) => (
         <FieldEditor key={name} name={name} field={field} />
       ))}
-      <button
-        type="button"
+      <Button
+        icon="plus"
         onClick={() => editDraft((t) => setIn(t, ['fields', freeFieldName(t)], 'string'))}
       >
-        + Add field
-      </button>
+        Add field
+      </Button>
     </Section>
   );
 }
