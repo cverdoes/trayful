@@ -138,9 +138,9 @@ describe('pasting into a CSV grid', () => {
 
 describe('the columns of a grid', () => {
   it('are as wide as their longest cell, within limits', () => {
-    expect(columnWidths(cards)).toEqual([10, 30, 10]);
+    expect(columnWidths(cards)).toEqual([12, 30, 12]);
     expect(columnWidths({ header: ['a'], rows: [['x'.repeat(100)]] })).toEqual([40]);
-    expect(columnWidths({ header: [''], rows: [[]] })).toEqual([6]);
+    expect(columnWidths({ header: [''], rows: [[]] })).toEqual([7]);
   });
 
   it('fit the name, values and choices of a field, for designs in rows', () => {

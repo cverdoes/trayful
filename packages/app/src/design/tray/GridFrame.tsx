@@ -17,7 +17,6 @@ const FOCUSABLE = 'input, select, summary';
 export function GridFrame({
   widths,
   size,
-  gutter = true,
   trailing = false,
   onPaste,
   children,
@@ -25,8 +24,6 @@ export function GridFrame({
   /** How wide each column is, in characters. */
   widths: number[];
   size: GridSize;
-  /** Whether the rows are numbered down the side. */
-  gutter?: boolean;
   /** Whether a narrow column follows the last, for a button to add a column. */
   trailing?: boolean;
   /** Takes text pasted into a cell; true when the grid used it, so the cell's box should not. */
@@ -53,7 +50,7 @@ export function GridFrame({
     <div className="tray-grid" onKeyDown={onKeyDown} onPaste={paste}>
       <table>
         <colgroup>
-          {gutter && <col className="grid-gutter" />}
+          <col className="grid-gutter" />
           {widths.map((width, j) => (
             <col key={j} style={{ width: `${width}ch` }} />
           ))}

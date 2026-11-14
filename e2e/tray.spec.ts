@@ -26,7 +26,7 @@ test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page
     .toContain('  - component: terrain\n    deck: terrain\n');
 
   // Two more of one tile, picked from the sheet.
-  await tray.getByRole('button', { name: 'Designs in rows' }).click();
+  await tray.getByRole('button', { name: 'Designs', exact: true }).click();
   const rows = tray.getByRole('region', { name: 'Entry 2' });
   await rows.getByLabel('tile, row 1', { exact: true }).click();
   await rows.getByRole('button', { name: 'Tile 5' }).click();
@@ -161,4 +161,38 @@ test('designs in rows share the grid, and a field with choices is a drop-down', 
   await tray.getByRole('button', { name: 'Undo' }).click();
   await waitSaved(page);
   await expect(suit).toHaveValue('green');
+});
+
+test('designs move between the inventory and a CSV file', async ({ page }) => {
+  await page.goto(`/?project=${PROJECT}&design&tray`);
+  await page.getByRole('button', { name: /^Token/ }).click();
+  const tray = page.getByRole('main', { name: 'Tray' });
+  await expect(tray.getByRole('heading', { name: 'Token in the box' })).toBeVisible();
+  const inBox = await tray.getByText('in the box now').textContent();
+
+  // A new entry is one design; a second row keeps both in the inventory.
+  await tray.getByRole('button', { name: 'Designs', exact: true }).click();
+  const entry = tray.getByRole('region').last();
+  await entry.getByLabel('color, row 1', { exact: true }).selectOption('blue');
+  await waitSaved(page);
+  await expect.poll(() => libraryFile(page, PROJECT, 'inventory.yaml')).toContain('color: blue');
+  await entry.getByRole('button', { name: '+ Row' }).click();
+  await entry.getByLabel('color, row 2', { exact: true }).selectOption('orange');
+  await entry.getByLabel('copies, row 2', { exact: true }).fill('2');
+  await waitSaved(page);
+  await expect(tray.getByText('in the box now')).not.toHaveText(inBox!);
+  const typed = await tray.getByText('in the box now').textContent();
+
+  // The designs move to a file of their own, and back, with the same pieces in the box.
+  await entry.getByRole('button', { name: 'Move to CSV' }).click();
+  await expect(entry).toContainText('.csv');
+  await waitSaved(page);
+  const [file] = /data\/[\w-]+\.csv/.exec((await entry.textContent()) ?? '') ?? [];
+  expect(await libraryFile(page, PROJECT, file!)).toBe('color,count\nblue,\norange,2\n');
+  await expect(tray.getByText('in the box now')).toHaveText(typed!);
+  await entry.getByRole('button', { name: 'Move to inventory' }).click();
+  await waitSaved(page);
+  await expect(entry.getByLabel('copies, row 2', { exact: true })).toHaveValue('2');
+  await expect.poll(() => libraryFile(page, PROJECT, 'inventory.yaml')).toContain('count: 2');
+  await expect(tray.getByText('in the box now')).toHaveText(typed!);
 });

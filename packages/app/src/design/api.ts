@@ -164,3 +164,8 @@ export async function importCsv(
 ): Promise<TrayData> {
   return post<TrayData>(trayUrl(project, id, '/csv'), csv);
 }
+
+/** Moves the designs typed into one entry, by its place, to a new CSV file the entry then reads. */
+export async function moveToCsv(project: string, id: string, entry: number): Promise<TrayData> {
+  return post<TrayData>(trayUrl(project, id, '/to-csv'), { entry });
+}
