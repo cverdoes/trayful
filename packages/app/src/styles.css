@@ -367,12 +367,12 @@ button.primary {
   margin-top: 0;
 }
 
-.help table {
+.help-keys {
   border-collapse: collapse;
   width: 100%;
 }
 
-.help th {
+.help-keys th {
   text-align: left;
   white-space: nowrap;
   padding: 4px 16px 4px 0;
@@ -380,7 +380,7 @@ button.primary {
   vertical-align: top;
 }
 
-.help td {
+.help-keys td {
   padding: 4px 0;
 }
 
@@ -669,34 +669,29 @@ body.printing #root {
   color: var(--tf-danger);
 }
 
-.invite .links {
+.invite-links {
+  display: grid;
+  gap: var(--tf-space-2);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.invite .links li {
+.invite-links li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--tf-space-2);
 }
 
-.invite code {
+.invite-links code {
+  flex: 1;
+  min-width: 0;
+  padding: var(--tf-space-2);
+  border-radius: var(--tf-radius-sm);
+  background: var(--tf-surface-sunken);
+  font-family: var(--tf-font-mono);
+  font-size: var(--tf-text-sm);
   overflow-wrap: anywhere;
-}
-
-.invite label.row {
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.invite select {
-  font: inherit;
-  height: 32px;
-  border: 1px solid #30363d;
-  border-radius: 6px;
-  background: #21262d;
-  color: var(--bar-text);
 }
 
 /* Design mode: type list, canvas and inspector side by side under the toolbar. */
@@ -1039,20 +1034,6 @@ body.printing #root {
   border-top: 1px solid var(--tf-outline);
 }
 
-.new-type fieldset {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  margin: 12px 0;
-  border: 1px solid var(--tf-outline);
-  border-radius: 6px;
-}
-
-.new-type input:not([type='radio']) {
-  font: inherit;
-  padding: 4px 6px;
-}
-
 /* The assets page takes the whole width under the toolbar. */
 .designer.assets {
   grid-template-columns: 1fr;
@@ -1274,17 +1255,6 @@ body.printing #root {
 
 .design-color .swatch.transparent {
   background: repeating-conic-gradient(#888 0 25%, #fff 0 50%) 0 0 / 8px 8px;
-}
-
-.design-kind-choice {
-  display: block;
-  grid-column: 1 / -1;
-}
-
-.design-new-size {
-  display: flex;
-  gap: 8px;
-  align-items: center;
 }
 
 /* Components picked in a list, as chips, with a box to add more. */
@@ -1623,19 +1593,6 @@ body.printing #root {
 /* The piece picture is drawn on a canvas; let the button itself take the click. */
 .group-picker .konvajs-content {
   pointer-events: none;
-}
-
-.drop-area-dialog ul {
-  display: grid;
-  gap: 4px;
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
-}
-
-.drop-area-dialog li button {
-  width: 100%;
-  text-align: left;
 }
 
 .mark-dialog ul {

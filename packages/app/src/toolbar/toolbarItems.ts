@@ -3,6 +3,7 @@ import type { Actions } from './actions';
 import type { MenuItem } from './MoreMenu';
 import { go } from '../route';
 import { useStore } from '../store';
+import { confirm } from '../ui/dialogs';
 
 /** A toolbar button: what it says, what its tooltip adds, its key, and what it does. */
 export interface ButtonProps {
@@ -61,16 +62,19 @@ export function moreItems(view: ProjectView | undefined, host: boolean): MenuIte
   items.push({
     label: 'Start over…',
     title: 'Start this table over',
-    onSelect: startOver,
+    onSelect: () => void startOver(),
     separated: items.length > 0,
   });
   return items;
 }
 
-function startOver() {
+async function startOver(): Promise<void> {
   const setup = useStore.getState().view?.setup;
-  const from = setup ? ` set up as "${setup}"` : '';
-  if (window.confirm(`Start this table over from the project files${from}? You can undo this.`)) {
-    useStore.getState().send({ type: 'reset' });
-  }
+  const from = setup ? `, set up as "${setup}"` : '';
+  const yes = await confirm({
+    title: 'Start this table over?',
+    text: `The table starts again from the project files${from}. You can undo this.`,
+    action: 'Start over',
+  });
+  if (yes) useStore.getState().send({ type: 'reset' });
 }

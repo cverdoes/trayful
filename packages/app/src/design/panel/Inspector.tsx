@@ -7,6 +7,7 @@ import {
   type Control,
 } from '@trayful/formats/browser';
 import { useStore } from '../../store';
+import { ask } from '../../ui/dialogs';
 import { ComponentPicker, componentOptions, NO_TYPES } from './ComponentPicker';
 import { parseValues, setIn, withRepresentation, type Path } from '../edit';
 import { Checkbox, NumberInput, PairInput, Row, SizeInput, TextInput } from './controls';
@@ -66,12 +67,15 @@ function Problems() {
 }
 
 /** Asks for a new id; the inventory and setups that use the old one change with it. */
-function askRename(id: string) {
-  const to = window.prompt(
-    `New id for "${id}". The inventory and setups that use it are changed too.`,
-    id,
-  );
-  if (to) void renameDraftType(to.trim());
+async function askRename(id: string): Promise<void> {
+  const to = await ask({
+    title: `Rename "${id}"`,
+    text: 'The inventory and setups that use the id are changed too.',
+    label: 'New id',
+    value: id,
+    action: 'Rename',
+  });
+  if (to) await renameDraftType(to);
 }
 
 /** Its name and size. */
@@ -92,7 +96,7 @@ function BasicsSection({ type }: Readonly<{ type: ComponentType }>) {
         {(id) => (
           <div className="design-pair">
             <TextInput id={id} value={type.id} onChange={() => undefined} readOnly />
-            <button type="button" onClick={() => askRename(type.id)}>
+            <button type="button" onClick={() => void askRename(type.id)}>
               Rename…
             </button>
           </div>

@@ -172,7 +172,21 @@ export async function waitSaved(page: Page) {
   await expect(page.getByRole('status')).toContainText('Saved');
 }
 
-/** Makes a component in the designer: its name, what to start like, and what it is. */
+/** Types the answer to a question asked in a dialog, and gives it with the button named. */
+export async function answer(page: Page, text: string, action: string) {
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('textbox').fill(text);
+  await dialog.getByRole('button', { name: action, exact: true }).click();
+  await expect(dialog).toBeHidden();
+}
+
+/** Says yes to a question asked in a dialog, with the button named. */
+export async function agree(page: Page, action: string) {
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: action, exact: true }).click();
+  await expect(dialog).toBeHidden();
+}
+
 /** Adds a drop area of a kind (Grid, Points, Bag…) to the component being designed. */
 export async function addDropArea(page: Page, kind: string) {
   await page
@@ -185,6 +199,7 @@ export async function addDropArea(page: Page, kind: string) {
     .click();
 }
 
+/** Makes a component in the designer: its name, what to start like, and what it is. */
 export async function newComponent(page: Page, name: string, startLike: string) {
   await page.getByRole('button', { name: 'New component' }).click();
   const dialog = page.getByRole('dialog', { name: 'New component' });

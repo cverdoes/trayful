@@ -358,6 +358,179 @@
   padding-top: calc(var(--tf-space-2) + var(--tf-space-1));
 }
 
+/* A dialog: a box in the middle of the page, over a dimmed page. */
+.ui-dialog {
+  width: min(480px, calc(100vw - 2 * var(--tf-space-4)));
+  max-width: none;
+  max-height: calc(100vh - 2 * var(--tf-space-4));
+  padding: 0;
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-lg);
+  background: var(--tf-surface-raised);
+  color: var(--tf-text);
+  box-shadow: var(--tf-shadow-overlay);
+}
+
+.ui-dialog[open] {
+  display: flex;
+}
+
+.ui-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.ui-dialog-sm {
+  width: min(400px, calc(100vw - 2 * var(--tf-space-4)));
+}
+
+.ui-dialog-lg {
+  width: min(640px, calc(100vw - 2 * var(--tf-space-4)));
+}
+
+/* The box fills the dialog; only its body scrolls. */
+.ui-dialog-box {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ui-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-3);
+  padding: var(--tf-space-3) var(--tf-space-3) 0 var(--tf-space-5);
+}
+
+.ui-dialog-header h2 {
+  flex: 1;
+  margin: 0;
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-xl);
+  font-weight: 700;
+}
+
+.ui-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tf-space-4);
+  min-height: 0;
+  padding: var(--tf-space-3) var(--tf-space-5) var(--tf-space-5);
+  overflow: auto;
+  font-size: var(--tf-text-md);
+}
+
+.ui-dialog-body:empty {
+  padding-bottom: var(--tf-space-2);
+}
+
+.ui-dialog-body p {
+  margin: 0;
+  color: var(--tf-text-muted);
+  line-height: 1.5;
+}
+
+.ui-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tf-space-2);
+  padding: var(--tf-space-3) var(--tf-space-5);
+  border-top: 1px solid var(--tf-outline);
+}
+
+/* Side by side, the main action is as tall as the others. */
+.ui-dialog-actions .ui-button {
+  height: var(--tf-control-md);
+}
+
+/* A choice of one among a few in a dialog: radio buttons under a legend, in one column or two. */
+.ui-choices {
+  display: grid;
+  gap: var(--tf-space-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  accent-color: var(--tf-primary);
+}
+
+.ui-choices-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.ui-choices legend {
+  margin-bottom: var(--tf-space-1);
+  padding: 0;
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-xs);
+}
+
+.ui-choices label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--tf-space-2);
+  padding: var(--tf-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--tf-radius-sm);
+  cursor: pointer;
+}
+
+.ui-choices label:hover {
+  background: var(--tf-hover);
+}
+
+.ui-choices label:has(input:checked) {
+  border-color: var(--tf-outline);
+  background: var(--tf-selected);
+}
+
+.ui-choices input {
+  flex: none;
+  margin: 3px 0 0;
+}
+
+/* A list in a dialog where a click on a line picks it. */
+.ui-picks {
+  display: grid;
+  gap: var(--tf-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-picks button {
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: var(--tf-space-2) var(--tf-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--tf-radius-sm);
+  background: transparent;
+  color: var(--tf-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-picks button:hover,
+.ui-picks button:focus-visible {
+  border-color: var(--tf-outline);
+  background: var(--tf-hover);
+}
+
+.ui-picks button:focus-visible {
+  outline: 2px solid var(--tf-focus);
+  outline-offset: -1px;
+}
+
+.ui-choices small,
+.ui-picks small {
+  display: block;
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-xs);
+}
+
 /* The page at `?ui` that shows every component. */
 .ui-page {
   height: 100%;

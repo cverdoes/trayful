@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { SizeInput } from './controls';
 import { KIND_TEXT } from '../kinds';
 import { createType, useDesign } from '../store';
+import { Button } from '../../ui/Button';
+import { Dialog } from '../../ui/Dialog';
+import { Field } from '../../ui/Field';
 
 type Start = Omit<ComponentType, 'id'>;
 
@@ -25,34 +28,27 @@ export function NewTypeDialog() {
   const create = () =>
     void createType(startFrom(TYPE_PRESETS[preset]!.type, size, is), name.trim());
   return (
-    <div className="overlay" onClick={close}>
-      <form
-        className="help new-type"
-        role="dialog"
-        aria-label="New component"
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (step === 1) setStep(2);
-          else create();
-        }}
-      >
-        <h2>New component</h2>
-        {step === 1 ? (
-          <NameStep {...{ name, setName, preset, pick, size, setSize }} />
-        ) : (
-          <KindStep is={is} setIs={setIs} />
-        )}
-        <div className="row">
-          <button type="button" onClick={step === 1 ? close : () => setStep(1)}>
+    <Dialog
+      title="New component"
+      onClose={close}
+      onSubmit={step === 1 ? () => setStep(2) : create}
+      actions={
+        <>
+          <Button onClick={step === 1 ? close : () => setStep(1)}>
             {step === 1 ? 'Cancel' : 'Back'}
-          </button>
-          <button type="submit" disabled={!name.trim()}>
+          </Button>
+          <Button variant="primary" submit disabled={!name.trim()}>
             {step === 1 ? 'Next' : 'Create'}
-          </button>
-        </div>
-      </form>
-    </div>
+          </Button>
+        </>
+      }
+    >
+      {step === 1 ? (
+        <NameStep {...{ name, setName, preset, pick, size, setSize }} />
+      ) : (
+        <KindStep is={is} setIs={setIs} />
+      )}
+    </Dialog>
   );
 }
 
@@ -81,41 +77,48 @@ function NameStep({
 }>) {
   return (
     <>
-      <label>
-        Name{' '}
+      <Field label="Name">
         <input
-          autoFocus
+          type="text"
           value={name}
           placeholder="Event card"
           onChange={(e) => setName(e.target.value)}
         />
-      </label>
-      <fieldset>
+      </Field>
+      <fieldset className="ui-choices ui-choices-2">
         <legend>Start like</legend>
         {TYPE_PRESETS.map((p, i) => (
-          <label key={p.name} className="design-preset">
-            <input type="radio" name="preset" checked={i === preset} onChange={() => pick(i)} />{' '}
+          <label key={p.name}>
+            <input type="radio" name="preset" checked={i === preset} onChange={() => pick(i)} />
             {p.name}
           </label>
         ))}
       </fieldset>
-      <label className="design-new-size">
-        Size (mm){' '}
+      <div className="ui-field">
+        <span className="ui-field-label">Size (mm)</span>
         <SizeInput value={size} onChange={(next) => next !== undefined && setSize(next)} />
-      </label>
+      </div>
     </>
   );
 }
 
 function KindStep({ is, setIs }: Readonly<{ is: Start['is']; setIs: (is: Start['is']) => void }>) {
   return (
-    <fieldset>
+    <fieldset className="ui-choices">
       <legend>What is it?</legend>
       {REPRESENTATIONS.map((kind) => (
-        <label key={kind} className="design-kind-choice">
-          <input type="radio" name="is" checked={kind === is} onChange={() => setIs(kind)} />{' '}
-          <strong>{KIND_TEXT[kind].name}</strong>{' '}
-          <span className="muted">{KIND_TEXT[kind].about}</span>
+        <label key={kind}>
+          <input
+            type="radio"
+            name="is"
+            checked={kind === is}
+            data-focus={kind === is ? '' : undefined}
+            onChange={() => setIs(kind)}
+          />
+          <span>
+            <strong>{KIND_TEXT[kind].name}</strong>
+            <small>{KIND_TEXT[kind].about}</small>
+          </span>
         </label>
       ))}
     </fieldset>

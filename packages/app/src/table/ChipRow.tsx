@@ -3,6 +3,7 @@ import type { Surface } from '@trayful/formats/browser';
 import { useEffect, useState } from 'react';
 import { shownNow, useStore } from '../store';
 import { MoreMenu } from '../toolbar/MoreMenu';
+import { ask, confirm } from '../ui/dialogs';
 import { HAND_DRAG } from './hand';
 import { addItems, surfaceItems, type MenuContext } from './surfaceMenu';
 import { defaultChoice, seatsOf, surfaceColor, toSurface, type Preset } from './surfaces';
@@ -39,7 +40,7 @@ export function ChipRow() {
     player,
     command,
     ask,
-    confirm: (q) => window.confirm(q),
+    confirm,
     colors: Object.keys(palette),
   };
   const choice = surfaceChoice ?? defaultChoice(table, player);
@@ -77,10 +78,6 @@ export function ChipRow() {
       />
     </nav>
   );
-}
-
-function ask(question: string, suggestion?: string): string | undefined {
-  return window.prompt(question, suggestion) ?? undefined;
 }
 
 /**
