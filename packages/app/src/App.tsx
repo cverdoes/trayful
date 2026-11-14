@@ -8,7 +8,7 @@ import { MarkDialog } from './table/MarkDialog';
 import { Activity, ErrorToast, Problems } from './Notices';
 import { InviteDialog } from './toolbar/Invite';
 import { Designer } from './design/Designer';
-import { ClosedScreen, HandTray, JoinScreen } from './Players';
+import { ClosedScreen, ExpiredInviteScreen, HandTray, JoinScreen } from './Players';
 import { Print } from './Print';
 import { Prompts } from './Prompts';
 import { RenderJob } from './render/Preview';
@@ -25,6 +25,8 @@ export function App() {
   const gate = useStore((s) => s.gate);
   // The components page needs no table, so it shows whatever the connection says.
   if (route().ui) return <UiPage />;
+  // Where the server sends an invite link it does not know.
+  if (route().expiredInvite) return <ExpiredInviteScreen />;
   if (fatal) return <div className="loading">{fatal}</div>;
   if (gate === 'closed') return <ClosedScreen />;
   if (gate === 'join') return <JoinScreen />;
