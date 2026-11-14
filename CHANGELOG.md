@@ -36,6 +36,7 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - The table's toolbar and surface chips are in Trayful's colours and typeface. Undo, redo, fit, help and **More** are icon buttons; the actions on the selected pieces have icons, with rotating and the counter's − and + as icons alone. **More**, **Send to** and each chip's menu are the same menus as in the designer, and the connection shows as a coloured dot.
 - Everything over the table is in the same colours: the hand and its bubble, prompts and their buttons, the stamp and group pickers, the names on surface tiles, and the join and closed screens. What another player or an agent did, an error, and errors in the project files show as notices with an icon and a coloured stripe.
 - In the component list, the number in the box is a badge, **New component** is at the top, and **Duplicate** and **Delete** are in a **⋯** menu on the selected component.
+- The print-and-play page has the same header as the designer pages, with **Print** as its main action. With it, every part of the interface is in Trayful's colours; the grey look is gone.
 
 ### Fixes
 

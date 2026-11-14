@@ -1,11 +1,4 @@
 :root {
-  --felt: #2f5d50;
-  /* Fine grain over the felt so the table reads as cloth, not a flat colour. */
-  --felt-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='.3'/%3E%3C/svg%3E");
-  --bar: #1f2328;
-  --bar-text: #e6edf3;
-  --muted: #8b949e;
-  --accent: #2f81f7;
   font-family:
     system-ui,
     -apple-system,
@@ -25,16 +18,22 @@ body,
   height: 100%;
   overflow: hidden;
   background:
-    var(--felt-grain),
-    radial-gradient(ellipse at 50% 45%, #376b5c 0%, var(--felt) 55%, #22473d 100%) fixed;
-  color: var(--bar-text);
+    var(--tf-felt-grain),
+    radial-gradient(
+        ellipse at 50% 45%,
+        var(--tf-felt-light) 0%,
+        var(--tf-felt) 55%,
+        var(--tf-felt-dark) 100%
+      )
+      fixed;
+  color: var(--tf-text);
 }
 
 .loading {
   display: grid;
   place-items: center;
   height: 100%;
-  color: var(--bar-text);
+  color: var(--tf-text);
 }
 
 .toolbar {
@@ -45,7 +44,7 @@ body,
   align-items: center;
   gap: 16px;
   padding: 0 12px;
-  background: var(--bar);
+  background: var(--tf-surface-sunken);
   border-bottom: 1px solid var(--tf-outline);
   overflow-x: auto;
   z-index: 10;
@@ -145,7 +144,7 @@ body,
 }
 
 .muted {
-  color: var(--muted);
+  color: var(--tf-text-muted);
 }
 
 /* The connection: a dot, and a word when it is not online. */
@@ -184,7 +183,7 @@ button {
   border: 1px solid var(--tf-outline);
   border-radius: 6px;
   background: var(--tf-control);
-  color: var(--bar-text);
+  color: var(--tf-text);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -308,7 +307,7 @@ button:disabled {
 .magnifier {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--tf-scrim-strong);
   pointer-events: none;
   z-index: 25;
 }
@@ -319,7 +318,7 @@ button:disabled {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--tf-scrim);
   z-index: 30;
 }
 
@@ -430,7 +429,7 @@ button:disabled {
 body.printing,
 body.printing #root {
   overflow: auto;
-  background: #525659;
+  background: var(--tf-print-desk);
 }
 
 .print-bar {
@@ -439,10 +438,28 @@ body.printing #root {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: var(--bar);
+  gap: var(--tf-space-3);
+  padding: var(--tf-space-3) var(--tf-space-4);
+  background: var(--tf-surface-sunken);
+  border-bottom: 1px solid var(--tf-outline);
   z-index: 1;
+}
+
+.print-bar-text {
+  flex: 1;
+  min-width: 240px;
+}
+
+.print-bar h1 {
+  margin: 0;
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-lg);
+  font-weight: 700;
+}
+
+.print-bar p {
+  margin: var(--tf-space-1) 0 0;
+  font-size: var(--tf-text-sm);
 }
 
 .sheet {
@@ -450,15 +467,15 @@ body.printing #root {
   width: 210mm;
   height: 297mm;
   margin: 16px auto;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  background: var(--tf-paper);
+  box-shadow: 0 2px 8px var(--tf-shade);
   overflow: hidden;
   break-after: page;
 }
 
 .sheet-item {
   position: absolute;
-  outline: 0.1mm dashed #bbb;
+  outline: 0.1mm dashed var(--tf-cut-line);
 }
 
 @page {
@@ -469,7 +486,7 @@ body.printing #root {
 @media print {
   body.printing,
   body.printing #root {
-    background: white;
+    background: var(--tf-paper);
   }
   .print-bar {
     display: none;
@@ -687,7 +704,7 @@ body.printing #root {
   border: 1px solid var(--tf-outline);
   border-radius: 6px;
   background: var(--tf-surface-sunken);
-  color: var(--bar-text);
+  color: var(--tf-text);
 }
 
 .designer h3,
@@ -748,7 +765,7 @@ body.printing #root {
 .design-inspector {
   overflow-y: auto;
   padding: 0 12px 24px;
-  background: var(--bar);
+  background: var(--tf-surface-sunken);
 }
 
 /* The component list: a button to make one, then the components by kind. The one
@@ -875,7 +892,7 @@ body.printing #root {
 
 .design-row > label {
   padding-top: 5px;
-  color: var(--muted);
+  color: var(--tf-text-muted);
   font-size: 13px;
 }
 
@@ -953,7 +970,7 @@ body.printing #root {
 }
 
 .design-color .swatch.chosen {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--tf-focus);
 }
 
 .design-field {
@@ -1143,15 +1160,15 @@ body.printing #root {
 .tile-grid .tile {
   min-width: 0;
   padding: 0;
-  border: 1px solid rgb(255 255 255 / 0.5);
+  border: 1px solid var(--tf-line-on-image);
   border-radius: 0;
   background: transparent;
 }
 
 .tile-grid .tile.chosen {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--tf-focus);
   outline-offset: -3px;
-  background: rgb(88 166 255 / 0.25);
+  background: color-mix(in srgb, var(--tf-focus) 25%, transparent);
 }
 
 .design-kinds {
@@ -1198,11 +1215,11 @@ body.printing #root {
 }
 
 .design-section > details > summary:hover h3 {
-  color: var(--bar-text);
+  color: var(--tf-text);
 }
 
 .design-section > details > summary:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--tf-focus);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -1217,11 +1234,12 @@ body.printing #root {
 
 .design-advanced summary {
   cursor: pointer;
-  color: var(--muted);
+  color: var(--tf-text-muted);
 }
 
 .design-color .swatch.transparent {
-  background: repeating-conic-gradient(#888 0 25%, #fff 0 50%) 0 0 / 8px 8px;
+  background: repeating-conic-gradient(var(--tf-checker-dark) 0 25%, var(--tf-checker-light) 0 50%)
+    0 0 / 8px 8px;
 }
 
 /* Components picked in a list, as chips, with a box to add more. */
@@ -1259,7 +1277,7 @@ body.printing #root {
   padding: 0 2px;
   border: none;
   background: transparent;
-  color: var(--muted);
+  color: var(--tf-text-muted);
   cursor: pointer;
 }
 
@@ -1398,7 +1416,7 @@ body.printing #root {
 
 .designer .tray-grid input[type='text']:focus,
 .designer .tray-grid select:focus {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--tf-focus);
   outline-offset: -2px;
   background: var(--tf-surface);
 }
@@ -1425,7 +1443,7 @@ body.printing #root {
 .grid-row-head {
   position: relative;
   background: var(--grid-head);
-  color: var(--muted);
+  color: var(--tf-text-muted);
   font-weight: normal;
   font-variant-numeric: tabular-nums;
 }
@@ -1449,7 +1467,7 @@ body.printing #root {
 
 .tray-grid tbody tr:focus-within .grid-row-head {
   background: var(--tf-selected);
-  color: var(--bar-text);
+  color: var(--tf-text);
 }
 
 .tray-grid .grid-remove,
@@ -1458,7 +1476,7 @@ body.printing #root {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: var(--muted);
+  color: var(--tf-text-muted);
 }
 
 .tray-grid .grid-remove,
@@ -1609,16 +1627,21 @@ body.printing #root {
 }
 
 .table.tiled {
-  background: rgba(0, 0, 0, 0.28);
+  background: var(--tf-shade);
 }
 
 .surface-tile.framed {
   overflow: hidden;
   border-radius: 8px;
   background:
-    var(--felt-grain),
-    radial-gradient(ellipse at 50% 45%, #376b5c 0%, var(--felt) 60%, #22473d 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    var(--tf-felt-grain),
+    radial-gradient(
+      ellipse at 50% 45%,
+      var(--tf-felt-light) 0%,
+      var(--tf-felt) 60%,
+      var(--tf-felt-dark) 100%
+    );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tf-text) 12%, transparent);
 }
 
 .surface-tile-label {
@@ -1768,7 +1791,7 @@ body.printing #root {
   height: 10px;
   flex-shrink: 0;
   border-radius: 50%;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 35%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tf-text) 35%, transparent);
 }
 
 .chip .sitter {

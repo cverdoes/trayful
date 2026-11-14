@@ -23,6 +23,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - run: pnpm check:generated
+      # Every colour of the interface comes from packages/app/src/tokens.css.
+      - run: pnpm check:colours
       - run: pnpm validate:examples
       # The architecture overview: fails when architecture/ no longer matches the code.
       - run: pnpm docs:overview

@@ -7,6 +7,7 @@ import { sizeOf } from './render/geometry';
 import { previewPiece } from './render/Preview';
 import { go, route } from './route';
 import { useStore } from './store';
+import { Button } from './ui/Button';
 
 /** A4 portrait, in millimetres. */
 const PAGE: [number, number] = [210, 297];
@@ -95,18 +96,20 @@ export function Print() {
   return (
     <div className="print">
       <header className="print-bar">
-        <strong>{view.name}: print and play</strong>
-        <span className="muted">
-          {fronts.length} {fronts.length === 1 ? 'page' : 'pages'} of fronts
-          {backs.length ? `, then ${backs.length} of backs for printing on both sides` : ''}. Print
-          at 100% scale on A4; choose “Save as PDF” to get a file.
-        </span>
-        <button type="button" onClick={() => window.print()}>
-          Print
-        </button>
-        <button type="button" onClick={() => go({ project: view.project, table: view.table })}>
+        <div className="print-bar-text">
+          <h1>{view.name}: print and play</h1>
+          <p className="muted">
+            {fronts.length} {fronts.length === 1 ? 'page' : 'pages'} of fronts
+            {backs.length ? `, then ${backs.length} of backs for printing on both sides` : ''}.
+            Print at 100% scale on A4; choose “Save as PDF” to get a file.
+          </p>
+        </div>
+        <Button onClick={() => go({ project: view.project, table: view.table })}>
           Back to the table
-        </button>
+        </Button>
+        <Button variant="primary" icon="printer" onClick={() => window.print()}>
+          Print
+        </Button>
       </header>
       {fronts.map((page, i) => (
         <Sheet key={`f${i}`} items={page} face="up" assets={view.assets} />
