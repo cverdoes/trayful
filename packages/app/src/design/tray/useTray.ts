@@ -96,8 +96,11 @@ export interface TrayState {
   tray?: TrayData;
   status: TrayStatus;
   message?: string;
-  /** Shows an edit at once and saves it soon. */
-  edit: (tray: TrayData) => void;
+  /**
+   * Shows an edit at once and saves it soon. Typing joins the step before it to
+   * undo, unless the edit is `alone`, as pasting several cells is.
+   */
+  edit: (tray: TrayData, alone?: boolean) => void;
   /** Adds a CSV file, as a new entry reading it. */
   addCsv: (csv: { name: string; text: string }) => void;
   steps: Steps<TrayData>;
@@ -143,9 +146,10 @@ export function useTray(type: string): TrayState {
     saver.edit(next);
   };
 
-  const edit = (next: TrayData) => {
+  const edit = (next: TrayData, alone = false) => {
     if (!tray) return;
-    setSteps(stepped(steps, tray, joiner.joins(typingField(), Date.now())));
+    const field = alone ? undefined : typingField();
+    setSteps(stepped(steps, tray, joiner.joins(field, Date.now())));
     show(next);
   };
 

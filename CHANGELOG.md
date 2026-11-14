@@ -24,6 +24,11 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - Agents are paced while people watch: each MCP tool that changes the table answers once its change has played out on their tables, so a quick run of agent moves shows one at a time. `trayful play --no-pace` (and `trayful mcp --no-pace`) answers straight away.
 - Reduced motion keeps the rings but skips the sliding.
 
+### Designer
+
+- The Tray's editors are spreadsheets: a CSV file, one design and designs in rows are each one ruled grid with numbered rows and columns as wide as their text. The arrow keys, `Enter` and `Shift+Enter` move between cells. A field with choices is a drop-down in its cell, in a CSV file too. Buttons to remove a row or column show when it is hovered or focused.
+- Cells copied from a spreadsheet paste across several cells of a CSV file, adding rows as needed.
+
 ### Fixes
 
 - In the Tray, an edit in one field followed quickly by an edit in another field no longer undoes as one step. Only typing in the same field joins into one step.
