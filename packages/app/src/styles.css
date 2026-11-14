@@ -64,11 +64,6 @@ body,
   align-self: center;
 }
 
-.help .mark {
-  display: block;
-  margin-bottom: 8px;
-}
-
 .toolbar .title strong {
   font-family: var(--tf-font-heading);
   font-size: var(--tf-text-lg);
@@ -210,11 +205,12 @@ button:disabled {
   left: 50%;
   transform: translateX(-50%);
   width: min(480px, calc(100% - 32px));
-  padding: 12px 16px;
-  border-radius: 8px;
-  background: var(--bar);
-  border: 1px solid var(--accent);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  padding: var(--tf-space-3) var(--tf-space-4);
+  border: 1px solid var(--tf-outline);
+  border-top: 3px solid var(--tf-primary);
+  border-radius: var(--tf-radius-md);
+  background: var(--tf-surface-raised);
+  box-shadow: var(--tf-shadow-overlay);
   z-index: 15;
 }
 
@@ -229,8 +225,9 @@ button:disabled {
 }
 
 .prompt-from {
-  color: var(--accent);
-  font-weight: 600;
+  color: var(--tf-primary);
+  font-family: var(--tf-font-heading);
+  font-weight: 700;
 }
 
 .prompt p {
@@ -245,6 +242,7 @@ button:disabled {
 }
 
 .prompt-options label {
+  accent-color: var(--tf-primary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -269,12 +267,12 @@ button:disabled {
 
 .prompt-actions input {
   font: inherit;
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid #30363d;
-  border-radius: 6px;
-  background: #0d1117;
-  color: var(--bar-text);
+  height: var(--tf-control-md);
+  padding: 0 var(--tf-space-2);
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-sm);
+  background: var(--tf-surface-sunken);
+  color: var(--tf-text);
   min-width: 0;
   flex: 1;
 }
@@ -288,31 +286,22 @@ button:disabled {
 }
 
 .hand-card.prompted {
-  outline: 3px solid #e3b341;
+  outline: 3px solid var(--tf-primary);
   outline-offset: 2px;
 }
 
 .hand-card.picked {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--tf-focus);
   outline-offset: 2px;
 }
 
-button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
+/* Where the notices sit: an error above the middle of the hand, news by its left end. */
 .toast {
   position: fixed;
   left: 50%;
   bottom: 144px;
   transform: translateX(-50%);
   max-width: min(560px, calc(100% - 32px));
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #5a1d1d;
-  border: 1px solid #f85149;
   z-index: 20;
 }
 
@@ -334,18 +323,41 @@ button.primary {
   z-index: 30;
 }
 
-.help {
-  max-width: 560px;
+/* The join and closed screens: a card in the middle of the page. */
+.gate-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tf-space-4);
+  width: min(400px, 100%);
   max-height: 100%;
   overflow: auto;
-  padding: 20px 24px;
-  border-radius: 10px;
-  background: var(--bar);
-  border: 1px solid #30363d;
+  padding: var(--tf-space-5);
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-lg);
+  background: var(--tf-surface-raised);
+  box-shadow: var(--tf-shadow-overlay);
 }
 
-.help h2 {
-  margin-top: 0;
+.gate-card h2 {
+  margin: 0;
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-2xl);
+}
+
+.gate-card p {
+  margin: 0;
+  color: var(--tf-text-muted);
+  line-height: 1.5;
+}
+
+.gate-card .mark {
+  align-self: center;
+}
+
+.gate-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tf-space-2);
 }
 
 .help-keys {
@@ -370,16 +382,18 @@ button.primary {
   left: 16px;
   bottom: 136px;
   max-width: calc(100% - 32px);
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--bar);
-  border: 1px solid var(--accent);
   z-index: 20;
 }
 
+/* News and errors pass the pointer through, so a piece under one can still be dragged. */
+.activity,
+.toast {
+  pointer-events: none;
+}
+
 .activity strong {
-  color: var(--accent);
-  margin-right: 6px;
+  margin-right: var(--tf-space-1);
+  color: var(--tf-primary);
 }
 
 .problems {
@@ -390,17 +404,14 @@ button.primary {
   max-width: min(720px, calc(100% - 32px));
   max-height: 40vh;
   overflow: auto;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #3d2a12;
-  border: 1px solid #d29922;
   z-index: 20;
 }
 
 .problems pre {
-  margin: 6px 0 0;
+  margin: var(--tf-space-2) 0 0;
   white-space: pre-wrap;
-  font-size: 12px;
+  font-family: var(--tf-font-mono);
+  font-size: var(--tf-text-xs);
 }
 
 .toolbar select {
@@ -470,10 +481,13 @@ body.printing #root {
 }
 
 .hand-tray {
+  /* The hand lets a little of the felt through. */
+  --hand-fill: color-mix(in srgb, var(--tf-surface-sunken) 90%, transparent);
+
   position: fixed;
   inset: auto 0 0 0;
-  background: rgba(31, 35, 40, 0.88);
-  border-top: 1px solid #000;
+  background: var(--hand-fill);
+  border-top: 1px solid var(--tf-outline);
   z-index: 10;
 }
 
@@ -505,14 +519,14 @@ body.printing #root {
   height: 4px;
   margin-left: -20px;
   border-radius: 2px;
-  background: var(--muted);
+  background: var(--tf-text-muted);
   opacity: 0.6;
 }
 
 .hand-resize:hover::after,
 .hand-resize:focus-visible::after,
 .hand-resize.dragging::after {
-  background: var(--accent);
+  background: var(--tf-focus);
   opacity: 1;
 }
 
@@ -530,17 +544,18 @@ body.printing #root {
 .hand-bubble {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: var(--tf-space-2);
+  height: auto;
+  padding: var(--tf-space-2) var(--tf-space-4);
   border-radius: 999px;
-  border: 1px solid #000;
-  background: rgba(31, 35, 40, 0.88);
-  font-size: 18px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--tf-outline);
+  background: var(--hand-fill);
+  color: var(--tf-text);
+  box-shadow: var(--tf-shadow-overlay);
 }
 
 .hand-bubble .count {
-  font-size: 14px;
+  font-size: var(--tf-text-md);
   font-weight: 600;
 }
 
@@ -551,16 +566,14 @@ body.printing #root {
 
 .hand-minimize {
   position: absolute;
-  top: 6px;
-  right: 8px;
+  top: var(--tf-space-1);
+  right: var(--tf-space-2);
   z-index: 2;
-  padding: 0 8px;
-  line-height: 20px;
 }
 
 .hand-tray.over {
-  background: rgba(47, 129, 247, 0.35);
-  outline: 2px dashed var(--accent);
+  background: color-mix(in srgb, var(--tf-focus) 30%, var(--hand-fill));
+  outline: 2px dashed var(--tf-focus);
   outline-offset: -4px;
 }
 
@@ -602,17 +615,10 @@ body.printing #root {
   opacity: 0.5;
 }
 
-.players .dismiss {
-  padding: 0 4px;
-  border: none;
-  background: none;
-  color: inherit;
-  line-height: 1;
-  opacity: 0.6;
-}
-
-.players .dismiss:hover {
-  opacity: 1;
+.players .dismiss .ui-icon-button {
+  width: 20px;
+  min-width: 0;
+  height: 20px;
 }
 
 .players .dot {
@@ -628,18 +634,6 @@ body.printing #root {
   background: var(--tf-control);
   text-align: center;
   font-size: var(--tf-text-xs);
-}
-
-.join input {
-  font: inherit;
-  width: 100%;
-  height: 36px;
-  padding: 0 10px;
-  margin-bottom: 12px;
-  border: 1px solid #30363d;
-  border-radius: 6px;
-  background: #0d1117;
-  color: var(--bar-text);
 }
 
 .row {
@@ -1535,10 +1529,11 @@ body.printing #root {
   margin: 0;
   padding: 8px;
   list-style: none;
-  border-radius: 8px;
-  background: var(--bar);
-  border: 1px solid #30363d;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  border-radius: var(--tf-radius-md);
+  background: var(--tf-surface-overlay);
+  border: 1px solid var(--tf-outline);
+  box-shadow: var(--tf-shadow-overlay);
+  color: var(--tf-text);
   transform: translate(8px, 8px);
 }
 
@@ -1549,18 +1544,18 @@ body.printing #root {
   gap: 2px;
   height: auto;
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--tf-radius-sm);
   background: transparent;
   border: 1px solid transparent;
   color: inherit;
-  font-size: 11px;
+  font-size: var(--tf-text-xs);
   cursor: pointer;
 }
 
 .group-picker button:hover:not(:disabled),
 .group-picker button:focus-visible {
-  background: transparent;
-  border-color: var(--accent);
+  background: var(--tf-hover);
+  border-color: var(--tf-focus);
 }
 
 /* The piece picture is drawn on a canvas; let the button itself take the click. */
@@ -1584,6 +1579,13 @@ body.printing #root {
 
 .mark-dialog input {
   width: 180px;
+  height: var(--tf-control-md);
+  padding: 0 var(--tf-space-2);
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-sm);
+  background: var(--tf-surface-sunken);
+  color: var(--tf-text);
+  font: inherit;
 }
 
 /* The table: one tile per surface shown, each a canvas of its own. */
@@ -1628,21 +1630,28 @@ body.printing #root {
   gap: 4px;
   height: 24px;
   padding: 0 4px 0 10px;
-  border-bottom-right-radius: 8px;
-  background: rgba(13, 17, 23, 0.55);
-  font-size: 12px;
+  border-bottom-right-radius: var(--tf-radius-md);
+  background: color-mix(in srgb, var(--tf-surface-sunken) 75%, transparent);
+  color: var(--tf-text);
+  font-size: var(--tf-text-xs);
   font-weight: 600;
   user-select: none;
 }
 
 .surface-tile-label button {
+  display: inline-grid;
+  place-items: center;
   min-width: 20px;
   height: 20px;
-  padding: 0 4px;
+  padding: 0;
   border: none;
   background: transparent;
-  font-size: 13px;
-  line-height: 1;
+  color: var(--tf-text-muted);
+}
+
+.surface-tile-label button:hover:not(:disabled) {
+  background: var(--tf-hover);
+  color: var(--tf-text);
 }
 
 /* The surfaces under the toolbar, each a chip that switches its tile on or off. */

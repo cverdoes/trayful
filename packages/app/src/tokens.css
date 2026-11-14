@@ -84,12 +84,19 @@
 }
 
 /* What is drawn in the brand: the designer, the components page, every dialog,
-   and the table's toolbar and surface chips. */
+   and everything over the table: its toolbar, surface chips and tile names, the
+   hand, prompts, notices, pickers, and the join and closed screens. */
 .designer,
 .ui-page,
 .ui-dialog,
 .table-toolbar,
-.chip-row {
+.chip-row,
+.surface-tile-label,
+.hand-tray,
+.prompt,
+.ui-notice,
+.group-picker,
+.gate {
   --tf-surface: #0f1d19;
   --tf-surface-raised: #162923;
   --tf-surface-sunken: #0a1512;

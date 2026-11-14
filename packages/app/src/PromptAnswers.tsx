@@ -1,6 +1,7 @@
 import { picks, rangeText, type PlayerPrompt, type PromptAnswer } from '@trayful/core';
 import { useState, type SubmitEvent } from 'react';
 import { useStore } from './store';
+import { Button } from './ui/Button';
 
 export interface AnswersProps {
   prompt: PlayerPrompt;
@@ -13,20 +14,18 @@ export function Answers({ prompt, answer }: Readonly<AnswersProps>) {
     case 'message':
       return (
         <div className="prompt-actions">
-          <button type="button" className="primary" onClick={() => answer(true)}>
+          <Button variant="primary" onClick={() => answer(true)}>
             OK
-          </button>
+          </Button>
         </div>
       );
     case 'confirm':
       return (
         <div className="prompt-actions">
-          <button type="button" onClick={() => answer(false)}>
-            No
-          </button>
-          <button type="button" className="primary" onClick={() => answer(true)}>
+          <Button onClick={() => answer(false)}>No</Button>
+          <Button variant="primary" onClick={() => answer(true)}>
             Yes
-          </button>
+          </Button>
         </div>
       );
     case 'choice': {
@@ -51,9 +50,9 @@ function PickOne({ prompt, answer }: Readonly<AnswersProps>) {
   return (
     <div className="prompt-actions">
       {prompt.options?.map((option) => (
-        <button key={option.id} type="button" onClick={() => answer([option.id])}>
+        <Button key={option.id} onClick={() => answer([option.id])}>
           {option.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -109,14 +108,13 @@ function Done({ prompt, picked, answer }: Readonly<AnswersProps & { picked: stri
       <span className="muted">
         {min === max ? `Pick ${min}` : `Pick ${min} to ${max}`} ({picked.length} picked)
       </span>
-      <button
-        type="button"
-        className="primary"
+      <Button
+        variant="primary"
         disabled={picked.length < min || picked.length > max}
         onClick={() => answer(picked)}
       >
         Done
-      </button>
+      </Button>
     </div>
   );
 }
@@ -144,9 +142,9 @@ function TypeIn({ prompt, answer }: Readonly<AnswersProps>) {
         autoFocus
         onChange={(e) => setValue(e.target.value)}
       />
-      <button type="submit" className="primary" disabled={!valid}>
+      <Button variant="primary" submit disabled={!valid}>
         OK
-      </button>
+      </Button>
     </form>
   );
 }

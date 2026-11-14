@@ -9,6 +9,9 @@ import { clickForPrompt, promptMarks } from './table/promptTargets';
 import { useStore } from './store';
 import { landing } from './table/drops';
 import { viewCentre } from './table/viewport';
+import { Button, IconButton } from './ui/Button';
+import { Field } from './ui/Field';
+import { Icon } from './ui/Icon';
 
 /** How far one arrow key press moves the top edge of the hand tray, in pixels. */
 const RESIZE_STEP = 16;
@@ -30,35 +33,36 @@ export function JoinScreen() {
     }
   };
   return (
-    <div className="overlay">
-      <form className="help join" onSubmit={(e) => void submit(e)}>
+    <div className="overlay gate">
+      <form className="gate-card" onSubmit={(e) => void submit(e)}>
         <Mark size={96} />
         <h2>Join the table</h2>
         <p>Pick a name the other players will see. Cards in your hand stay hidden from them.</p>
-        <input
-          aria-label="Your name"
-          autoFocus
-          maxLength={40}
-          placeholder="Your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+        <Field label="Your name">
+          <input
+            type="text"
+            autoFocus
+            maxLength={40}
+            placeholder="Your name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </Field>
         {error && <p className="error">{error}</p>}
-        <div className="row">
-          <button type="submit" disabled={busy || !name.trim()}>
-            Join
-          </button>
+        <div className="gate-actions">
           {me?.player && (
-            <button
-              type="button"
+            <Button
               onClick={() => {
                 useStore.setState({ gate: undefined });
                 connect();
               }}
             >
               Play as {me.player.name}
-            </button>
+            </Button>
           )}
+          <Button variant="primary" submit disabled={busy || !name.trim()}>
+            Join
+          </Button>
         </div>
       </form>
     </div>
@@ -68,8 +72,8 @@ export function JoinScreen() {
 /** For someone who reached the server without an invite link. */
 export function ClosedScreen() {
   return (
-    <div className="loading">
-      <div className="help">
+    <div className="loading gate">
+      <div className="gate-card">
         <Mark size={96} />
         <h2>This table is private</h2>
         <p>Ask the host for an invite link, and open it in this browser to join.</p>
@@ -101,14 +105,14 @@ export function PlayerList() {
           {p.role === 'engine' && <span className="muted"> (engine)</span>}
           {hands?.[p.id] ? <span className="count">{hands[p.id]}</span> : null}
           {p.role === 'engine' && me?.host && (
-            <button
-              className="dismiss"
-              aria-label={`Send ${p.name} away`}
-              title="Send this engine away: it is cut off and must knock again to come back."
-              onClick={() => void dismissEngine(p.id)}
-            >
-              ×
-            </button>
+            <span className="dismiss">
+              <IconButton
+                icon="x"
+                label={`Send ${p.name} away`}
+                title="Send this engine away: it is cut off and must knock again to come back."
+                onClick={() => void dismissEngine(p.id)}
+              />
+            </span>
           )}
         </li>
       ))}
@@ -147,15 +151,14 @@ export function HandTray() {
       style={{ height }}
     >
       <ResizeHandle height={height} />
-      <button
-        type="button"
-        className="hand-minimize"
-        title="Shrink your hand to a bubble (H)"
-        aria-label="Shrink your hand"
-        onClick={toggleHandTray}
-      >
-        –
-      </button>
+      <span className="hand-minimize">
+        <IconButton
+          icon="minus"
+          label="Shrink your hand"
+          title="Shrink your hand to a bubble (H)"
+          onClick={toggleHandTray}
+        />
+      </span>
       <div className="hand-cards">
         {hand.length === 0 ? (
           <p className="muted">
@@ -182,7 +185,7 @@ function HandBubble({ count }: Readonly<{ count: number }>) {
       aria-label={`Open your hand, ${cards}`}
       onClick={toggleHandTray}
     >
-      <span aria-hidden="true">✋</span>
+      <Icon name="hand" size={20} />
       <span className="count">{count}</span>
     </button>
   );

@@ -9,6 +9,7 @@ import { EmptyState } from './EmptyState';
 import { Field } from './Field';
 import { Icon, ICON_NAMES } from './Icon';
 import { Menu, type MenuItem } from './Menu';
+import { Notice } from './Notice';
 import { PageHeader } from './PageHeader';
 import { Status } from './Status';
 
@@ -106,6 +107,7 @@ export function UiPage() {
           <p className="ui-page-body">The card's body: fields, then a grid flush with its edges.</p>
         </Card>
       </Section>
+      <NoticeSection />
       <DialogSection />
       <Section title="Empty state">
         <EmptyState icon="box" title="Nothing in the box yet">
@@ -113,6 +115,19 @@ export function UiPage() {
         </EmptyState>
       </Section>
     </main>
+  );
+}
+
+/** A notice in each tone. */
+function NoticeSection() {
+  return (
+    <Section title="Notices">
+      <Notice tone="info">
+        <strong>Claude</strong> drew 2 cards.
+      </Notice>
+      <Notice tone="warning">The project files have errors.</Notice>
+      <Notice tone="error">That spot is taken.</Notice>
+    </Section>
   );
 }
 
