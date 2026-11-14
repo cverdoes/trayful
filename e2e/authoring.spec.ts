@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { agent } from './helpers.js';
+import { agent, agree, answer } from './helpers.js';
 
 const PROJECT = 'workshop';
 
@@ -124,14 +124,14 @@ test('the table menu switches projects and makes new tables', async ({ page }) =
   const menu = page.getByRole('combobox', { name: 'Table' });
   await expect(menu.locator('optgroup[label="Harvest Moon"] option')).not.toHaveCount(0);
 
-  page.once('dialog', (dialog) => void dialog.accept('second'));
   await menu.selectOption({ label: 'New table…' });
+  await answer(page, 'second', 'Create');
   await page.waitForURL(/table=second/);
   await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
   await expect(menu).toHaveValue(`${PROJECT}/second`);
 
-  page.once('dialog', (dialog) => void dialog.accept());
   await menu.selectOption({ label: 'Delete this table…' });
+  await agree(page, 'Delete');
   await page.waitForURL((url) => !url.search.includes('second'));
   await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
   await expect(menu.locator(`option[value="${PROJECT}/second"]`)).toHaveCount(0);

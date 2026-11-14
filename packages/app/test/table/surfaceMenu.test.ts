@@ -33,12 +33,16 @@ const context = (player?: string, confirm = true): MenuContext => ({
   table: seated,
   player,
   command: (command) => sent.push(command),
-  ask: () => answers.shift(),
-  confirm: () => confirm,
+  // As the dialog does, the answer comes back trimmed.
+  ask: () => Promise.resolve(answers.shift()?.trim()),
+  confirm: () => Promise.resolve(confirm),
 });
 const surface = (id: string) => seated.surfaces!.find((s) => s.id === id)!;
-const pick = (items: { label: string; onSelect: () => void }[], label: string) =>
+/** Picks a menu item, and waits for the answer to a question it asks. */
+const pick = async (items: { label: string; onSelect: () => void }[], label: string) => {
   items.find((item) => item.label === label)!.onSelect();
+  await new Promise((resolve) => setTimeout(resolve));
+};
 const labels = (items: { label: string }[]) => items.map((item) => item.label);
 
 describe('surfaceId', () => {
@@ -52,44 +56,44 @@ describe('surfaceId', () => {
 });
 
 describe('adding a surface', () => {
-  it('adds a shared surface or a seat under the name given', () => {
+  it('adds a shared surface or a seat under the name given', async () => {
     answers = [' Discard ', 'Blue'];
-    pick(addItems(context()), 'Add a surface…');
-    pick(addItems(context()), 'Add a seat…');
+    await pick(addItems(context()), 'Add a surface…');
+    await pick(addItems(context()), 'Add a seat…');
     expect(sent).toEqual([
       { type: 'addSurface', id: 'discard', name: 'Discard' },
       { type: 'addSurface', id: 'blue', name: 'Blue', seat: true },
     ]);
   });
 
-  it('adds nothing without a name', () => {
+  it('adds nothing without a name', async () => {
     answers = [undefined, '  '];
-    pick(addItems(context()), 'Add a surface…');
-    pick(addItems(context()), 'Add a seat…');
+    await pick(addItems(context()), 'Add a surface…');
+    await pick(addItems(context()), 'Add a seat…');
     expect(sent).toEqual([]);
   });
 });
 
 describe('changing a surface', () => {
-  it('only renames and colours the Centre', () => {
+  it('only renames and colours the Centre', async () => {
     const items = surfaceItems({ id: 'centre', name: 'Centre' }, context('alice'));
     expect(labels(items)).toEqual(['Rename…', 'Colour…']);
     answers = ['Middle'];
-    pick(items, 'Rename…');
+    await pick(items, 'Rename…');
     expect(sent).toEqual([{ type: 'editSurface', id: 'centre', name: 'Middle' }]);
   });
 
-  it('keeps the name when the answer is the same or none', () => {
+  it('keeps the name when the answer is the same or none', async () => {
     answers = ['Red', undefined];
-    pick(surfaceItems(surface('red'), context()), 'Rename…');
-    pick(surfaceItems(surface('red'), context()), 'Rename…');
+    await pick(surfaceItems(surface('red'), context()), 'Rename…');
+    await pick(surfaceItems(surface('red'), context()), 'Rename…');
     expect(sent).toEqual([]);
   });
 
-  it('lets a player sit down at a seat or stand up from their own', () => {
+  it('lets a player sit down at a seat or stand up from their own', async () => {
     expect(labels(surfaceItems(surface('red'), context('alice')))).toContain('Stand up');
-    pick(surfaceItems(surface('red'), context('alice')), 'Stand up');
-    pick(surfaceItems(surface('red'), context('bob')), 'Sit here');
+    await pick(surfaceItems(surface('red'), context('alice')), 'Stand up');
+    await pick(surfaceItems(surface('red'), context('bob')), 'Sit here');
     expect(sent).toEqual([
       { type: 'sit', surface: 'red' },
       { type: 'sit', surface: 'red', player: 'bob' },
@@ -111,22 +115,22 @@ describe('changing a surface', () => {
     ]);
   });
 
-  it('colours a surface, naming the project colours, or takes its colour off', () => {
+  it('colours a surface, naming the project colours, or takes its colour off', async () => {
     const asked: string[] = [];
     const ctx: MenuContext = {
       ...context(),
       colors: ['red', 'green'],
       ask: (question) => {
-        asked.push(question);
-        return answers.shift();
+        asked.push(question.text ?? '');
+        return Promise.resolve(answers.shift()?.trim());
       },
     };
     answers = [' red ', undefined];
-    pick(surfaceItems(surface('side'), ctx), 'Colour…');
-    pick(surfaceItems(surface('side'), ctx), 'Colour…');
+    await pick(surfaceItems(surface('side'), ctx), 'Colour…');
+    await pick(surfaceItems(surface('side'), ctx), 'Colour…');
     answers = ['red', ''];
-    pick(surfaceItems({ ...surface('side'), color: 'red' }, ctx), 'Colour…');
-    pick(surfaceItems({ ...surface('side'), color: 'red' }, ctx), 'Colour…');
+    await pick(surfaceItems({ ...surface('side'), color: 'red' }, ctx), 'Colour…');
+    await pick(surfaceItems({ ...surface('side'), color: 'red' }, ctx), 'Colour…');
     expect(asked[0]).toContain('such as red, green, or a CSS colour');
     expect(sent).toEqual([
       { type: 'editSurface', id: 'side', color: 'red' },
@@ -134,19 +138,19 @@ describe('changing a surface', () => {
     ]);
   });
 
-  it('makes a surface a seat or not', () => {
-    pick(surfaceItems(surface('side'), context()), 'Make it a seat');
-    pick(surfaceItems(surface('red'), context()), 'No longer a seat');
+  it('makes a surface a seat or not', async () => {
+    await pick(surfaceItems(surface('side'), context()), 'Make it a seat');
+    await pick(surfaceItems(surface('red'), context()), 'No longer a seat');
     expect(sent).toEqual([
       { type: 'editSurface', id: 'side', seat: true },
       { type: 'editSurface', id: 'red', seat: false },
     ]);
   });
 
-  it('removes a surface once confirmed, sending what lies on it to the Centre', () => {
-    pick(surfaceItems(surface('side'), context(undefined, false)), 'Remove…');
+  it('removes a surface once confirmed, sending what lies on it to the Centre', async () => {
+    await pick(surfaceItems(surface('side'), context(undefined, false)), 'Remove…');
     expect(sent).toEqual([]);
-    pick(surfaceItems(surface('side'), context()), 'Remove…');
+    await pick(surfaceItems(surface('side'), context()), 'Remove…');
     expect(sent).toEqual([{ type: 'removeSurface', id: 'side', to: 'centre' }]);
     expect(after(project, seated, ...sent).objects['worker.red.1']!.surface).toBeUndefined();
   });

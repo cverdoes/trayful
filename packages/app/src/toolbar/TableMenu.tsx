@@ -3,6 +3,7 @@ import type { ProjectView } from '@trayful/core';
 import { go } from '../route';
 import { useStore } from '../store';
 import { suggestName, tableChoices } from '../tables';
+import { ask, confirm } from '../ui/dialogs';
 
 interface ProjectSummary {
   id: string;
@@ -78,10 +79,12 @@ async function choose(value: string, view: ProjectView, tables: string[]): Promi
 }
 
 async function createTable(view: ProjectView, tables: string[], copy: boolean): Promise<void> {
-  const name = window.prompt(
-    copy ? `Name for the copy of ${view.table}:` : 'Name for the new table:',
-    suggestName(tables),
-  );
+  const name = await ask({
+    title: copy ? `Duplicate ${view.table}` : 'New table',
+    label: copy ? 'Name for the copy' : 'Name',
+    value: suggestName(tables),
+    action: copy ? 'Duplicate' : 'Create',
+  });
   if (!name) return;
   await api('POST', '/api/tables', {
     project: view.project,
@@ -92,7 +95,13 @@ async function createTable(view: ProjectView, tables: string[], copy: boolean): 
 }
 
 async function deleteTable(view: ProjectView, tables: string[]): Promise<void> {
-  if (!window.confirm(`Delete table "${view.table}" for good? This cannot be undone.`)) return;
+  const yes = await confirm({
+    title: `Delete table "${view.table}"?`,
+    text: 'The table is deleted for good. This cannot be undone.',
+    action: 'Delete',
+    danger: true,
+  });
+  if (!yes) return;
   const query = new URLSearchParams({ project: view.project, name: view.table });
   await api('DELETE', `/api/tables?${query}`);
   go({ project: view.project, table: tables.find((t) => t !== view.table) });

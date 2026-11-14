@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { useStore } from '../../store';
 import { Chip } from '../../ui/Badge';
 import { Button, IconButton } from '../../ui/Button';
+import { ask, confirm } from '../../ui/dialogs';
 import { EmptyState } from '../../ui/EmptyState';
 import { Field } from '../../ui/Field';
 import { Menu } from '../../ui/Menu';
@@ -115,17 +116,27 @@ function AddImages({ run }: Readonly<{ run: Run }>) {
 function ImageCard({ name, image, run }: Readonly<{ name: string; image: Asset; run: Run }>) {
   const setTiles = (rows: number, cols: number) =>
     run(() => setImageAsset(projectId(), name, { file: image.file, rows, cols }));
-  const rename = () => {
-    const to = window
-      .prompt(`New name for "${name}". Components that show it are changed too.`, name)
-      ?.trim();
-    if (to && to !== name) run(() => renameImage(name, to));
-  };
-  const remove = () => {
-    if (window.confirm(`Take the name "${name}" off ${image.file}? The file stays.`)) {
-      run(() => removeImageAsset(projectId(), name));
-    }
-  };
+  const rename = () =>
+    run(async () => {
+      const to = await ask({
+        title: `Rename "${name}"`,
+        text: 'Components that show the image are changed too.',
+        label: 'New name',
+        value: name,
+        action: 'Rename',
+      });
+      if (to && to !== name) await renameImage(name, to);
+    });
+  const remove = () =>
+    run(async () => {
+      const yes = await confirm({
+        title: `Remove "${name}"?`,
+        text: `This takes the name off ${image.file}. The file stays in the project.`,
+        action: 'Remove',
+        danger: true,
+      });
+      if (yes) await removeImageAsset(projectId(), name);
+    });
   return (
     <li className="asset-image" aria-label={name}>
       <TilePicker image={image} label={`Tiles of ${name}`} />

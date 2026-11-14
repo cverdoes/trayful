@@ -83,9 +83,10 @@
   --tf-shadow-overlay: 0 8px 24px rgb(0 0 0 / 45%);
 }
 
-/* The views drawn in the brand: the designer and the components page. */
+/* What is drawn in the brand: the designer, the components page, and every dialog. */
 .designer,
-.ui-page {
+.ui-page,
+.ui-dialog {
   --tf-surface: #0f1d19;
   --tf-surface-raised: #162923;
   --tf-surface-sunken: #0a1512;

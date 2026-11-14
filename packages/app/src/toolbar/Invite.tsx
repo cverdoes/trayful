@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store';
+import { Button } from '../ui/Button';
+import { Dialog } from '../ui/Dialog';
+import { confirm } from '../ui/dialogs';
+import { Field } from '../ui/Field';
 
 interface ProjectTables {
   project: string;
@@ -19,38 +23,30 @@ export function InviteDialog() {
   const close = () => useStore.setState({ inviteOpen: false });
 
   return (
-    <div className="overlay" onClick={close}>
-      <div
-        className="help invite"
-        role="dialog"
-        aria-label="Invite players"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2>Invite players</h2>
-        <TablePicker chosen={chosen} onChoose={setChosen} />
-        {invite.error && <p className="error">{invite.error}</p>}
-        {invite.links?.length === 0 && (
-          <p>
-            This table is only reachable from your computer. To play with others, restart with{' '}
-            <code>trayful play --share</code> (same network) or <code>trayful play --tunnel</code>{' '}
-            (anywhere, through Cloudflare).
-          </p>
-        )}
-        {!!invite.links?.length && (
-          <InviteLinks table={table} links={invite.links} renewed={invite.renewed} />
-        )}
-        <div className="row">
-          {!!invite.links?.length && (
-            <button type="button" onClick={invite.renew} title="Stop the current link working">
-              New link
-            </button>
-          )}
-          <button type="button" onClick={close}>
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    <Dialog
+      title="Invite players"
+      onClose={close}
+      actions={
+        !!invite.links?.length && (
+          <Button onClick={invite.renew} title="Stop the current link working">
+            New link
+          </Button>
+        )
+      }
+    >
+      <TablePicker chosen={chosen} onChoose={setChosen} />
+      {invite.error && <p className="error">{invite.error}</p>}
+      {invite.links?.length === 0 && (
+        <p>
+          This table is only reachable from your computer. To play with others, restart with{' '}
+          <code>trayful play --share</code> (same network) or <code>trayful play --tunnel</code>{' '}
+          (anywhere, through Cloudflare).
+        </p>
+      )}
+      {!!invite.links?.length && (
+        <InviteLinks table={table} links={invite.links} renewed={invite.renewed} />
+      )}
+    </Dialog>
   );
 }
 
@@ -69,10 +65,14 @@ function useInvite(project: string, table: string) {
   }, [project, table]);
 
   const renew = () => {
-    const question = `Make a new link to ${table}? The old link stops working. Players who already joined keep their seat.`;
-    if (!window.confirm(question)) return;
-    fetchInvite(project, table, true)
+    confirm({
+      title: `Make a new link to ${table}?`,
+      text: 'The old link stops working. Players who already joined keep their seat.',
+      action: 'New link',
+    })
+      .then((yes) => (yes ? fetchInvite(project, table, true) : undefined))
       .then((l) => {
+        if (!l) return;
         setLinks(l);
         setRenewed(true);
       })
@@ -100,8 +100,7 @@ function TablePicker({
   const [project, table] = chosen.split('/') as [string, string];
   const shown = projects.length ? projects : [{ project, name: project, tables: [table] }];
   return (
-    <label className="row">
-      <span>Table</span>
+    <Field label="Table">
       <select
         aria-label="Table to invite to"
         value={chosen}
@@ -117,7 +116,7 @@ function TablePicker({
           </optgroup>
         ))}
       </select>
-    </label>
+    </Field>
   );
 }
 
@@ -137,13 +136,13 @@ function InviteLinks({
         table, so share it only with your playtesters.
         {renewed && ' This is a new link; the old one no longer works.'}
       </p>
-      <ul className="links">
+      <ul className="invite-links">
         {links.map((link) => (
           <li key={link}>
             <code>{link}</code>
-            <button type="button" onClick={() => copy(link)}>
+            <Button icon={copied === link ? 'check' : 'copy'} onClick={() => copy(link)}>
               {copied === link ? 'Copied' : 'Copy'}
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

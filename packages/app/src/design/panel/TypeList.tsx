@@ -1,6 +1,7 @@
 import { REPRESENTATIONS, type ComponentType } from '@trayful/formats/browser';
 import { useStore } from '../../store';
 import { Badge } from '../../ui/Badge';
+import { confirm } from '../../ui/dialogs';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { duplicateType, openType, removeDraftType, settle, useDesign } from '../store';
@@ -70,7 +71,7 @@ function TypeRow({
           button={{ kind: 'icon', icon: 'more' }}
           items={[
             { label: 'Duplicate', icon: 'copy', onSelect: () => void duplicateType() },
-            { label: 'Delete', icon: 'trash', danger: true, onSelect: confirmRemove },
+            { label: 'Delete', icon: 'trash', danger: true, onSelect: () => void confirmRemove() },
           ]}
         />
       )}
@@ -83,15 +84,25 @@ async function switchTo(type: ComponentType): Promise<void> {
   const { draft } = useDesign.getState();
   if (type.id === draft?.id) return;
   const kept = await settle();
-  if (!kept && !window.confirm(`The changes to "${draft?.id}" are not saved. Drop them?`)) {
-    return;
-  }
-  openType(type);
+  const drop =
+    kept ||
+    (await confirm({
+      title: 'Drop the changes?',
+      text: `The changes to "${draft?.id}" are not saved.`,
+      action: 'Drop changes',
+      danger: true,
+    }));
+  if (drop) openType(type);
 }
 
-function confirmRemove() {
+async function confirmRemove(): Promise<void> {
   const { draft } = useDesign.getState();
-  if (draft && window.confirm(`Delete "${draft.id}" from the library?`)) {
-    void removeDraftType();
-  }
+  if (!draft) return;
+  const yes = await confirm({
+    title: `Delete "${draft.id}"?`,
+    text: 'The component is taken out of the library.',
+    action: 'Delete',
+    danger: true,
+  });
+  if (yes) await removeDraftType();
 }

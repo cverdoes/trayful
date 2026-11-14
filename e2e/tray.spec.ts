@@ -1,6 +1,15 @@
 import { expect, test, type Locator } from '@playwright/test';
 import type { Stack } from '@trayful/core';
-import { addImage, agent, libraryFile, newComponent, table, waitSaved } from './helpers.js';
+import {
+  addImage,
+  agent,
+  agree,
+  answer,
+  libraryFile,
+  newComponent,
+  table,
+  waitSaved,
+} from './helpers.js';
 
 const PROJECT = 'workshop';
 
@@ -51,10 +60,10 @@ test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page
 
   // Renaming the sheet changes the component that shows it.
   await page.getByRole('button', { name: 'Assets' }).click();
-  page.once('dialog', (dialog) => void dialog.accept('landscape'));
   const terrain = page.getByRole('listitem', { name: 'terrain' });
   await terrain.getByRole('button', { name: 'Actions for terrain' }).click();
   await terrain.getByRole('menuitem', { name: 'Rename' }).click();
+  await answer(page, 'landscape', 'Rename');
   await expect(page.getByRole('listitem', { name: 'landscape' })).toBeVisible();
   await page.getByRole('button', { name: 'Components' }).click();
   await expect(face.getByLabel('Image')).toHaveValue('landscape');
@@ -235,4 +244,16 @@ test('the components page shows every shared component', async ({ page }) => {
   await expect(page.getByRole('menuitem', { name: /^Not now/ })).toBeDisabled();
   await page.getByRole('menuitem', { name: /^Designs/ }).click();
   await expect(page.getByRole('menu')).toBeHidden();
+
+  // A dialog holds the focus, starts in its text box, and closes on Escape or an answer.
+  await page.getByRole('button', { name: 'Ask for a name' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Rename "terrain"' });
+  await expect(dialog.getByRole('textbox', { name: 'New name' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('status', { name: 'Answer' })).toHaveText('Backed out');
+  await page.getByRole('button', { name: 'Ask to remove' }).click();
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await agree(page, 'Remove');
+  await expect(page.getByRole('status', { name: 'Answer' })).toHaveText('Yes');
 });

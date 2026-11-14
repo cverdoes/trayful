@@ -110,7 +110,6 @@ function perform(shortcut: Shortcut): boolean {
       return true;
     case 'escape':
       if (state.magnifier) closeMagnifier();
-      else if (state.helpOpen) useStore.setState({ helpOpen: false });
       else if (state.groupPick) useStore.setState({ groupPick: undefined });
       else if (state.markPick) useStore.setState({ markPick: undefined });
       else if (state.focus) useStore.setState({ focus: undefined });

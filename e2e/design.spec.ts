@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   addDropArea,
   agent,
+  answer,
   clickOnFront,
   dragOnFront,
   libraryFile,
@@ -133,8 +134,8 @@ test('renaming a type or a field changes every file that uses it', async ({ page
   await page.goto(`/?project=${PROJECT}&design&type=token`);
   const inspector = page.getByRole('complementary', { name: 'Inspector' });
   await expect(inspector.getByLabel('Id')).toHaveValue('token');
-  page.once('dialog', (dialog) => void dialog.accept('coin'));
   await inspector.getByRole('button', { name: 'Rename…' }).click();
+  await answer(page, 'coin', 'Rename');
   await expect(inspector.getByLabel('Id')).toHaveValue('coin');
   expect(await libraryFile(page, PROJECT, 'library/pieces.yaml')).toContain('- id: coin');
   expect(await libraryFile(page, PROJECT, 'inventory.yaml')).toContain('- component: coin');

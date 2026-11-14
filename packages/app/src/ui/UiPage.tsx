@@ -1,9 +1,10 @@
 // The page at `?ui`: every shared component in every state on one screen, for
 // judging how they look apart from the views that use them. Nothing links to it.
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Badge, Chip } from './Badge';
 import { Button, IconButton, type ButtonVariant } from './Button';
 import { Card } from './Card';
+import { ask, confirm } from './dialogs';
 import { EmptyState } from './EmptyState';
 import { Field } from './Field';
 import { Icon, ICON_NAMES } from './Icon';
@@ -105,12 +106,60 @@ export function UiPage() {
           <p className="ui-page-body">The card's body: fields, then a grid flush with its edges.</p>
         </Card>
       </Section>
+      <DialogSection />
       <Section title="Empty state">
         <EmptyState icon="box" title="Nothing in the box yet">
           An empty page says what is missing and what to do about it.
         </EmptyState>
       </Section>
     </main>
+  );
+}
+
+/** Buttons that ask each kind of question, and what was answered last. */
+function DialogSection() {
+  const [answer, setAnswer] = useState('Nothing asked yet');
+  const yesNo = (yes: boolean) => setAnswer(yes ? 'Yes' : 'No');
+  return (
+    <Section title="Dialogs">
+      <Button
+        onClick={() =>
+          void confirm({
+            title: 'Start this table over?',
+            text: 'The table starts again from the project files. You can undo this.',
+            action: 'Start over',
+          }).then(yesNo)
+        }
+      >
+        Ask yes or no
+      </Button>
+      <Button
+        onClick={() =>
+          void confirm({
+            title: 'Remove "terrain"?',
+            text: 'This takes the name off the image. The file stays in the project.',
+            action: 'Remove',
+            danger: true,
+          }).then(yesNo)
+        }
+      >
+        Ask to remove
+      </Button>
+      <Button
+        onClick={() =>
+          void ask({
+            title: 'Rename "terrain"',
+            text: 'Components that show the image are changed too.',
+            label: 'New name',
+            value: 'terrain',
+            action: 'Rename',
+          }).then((text) => setAnswer(text ?? 'Backed out'))
+        }
+      >
+        Ask for a name
+      </Button>
+      <output aria-label="Answer">{answer}</output>
+    </Section>
   );
 }
 

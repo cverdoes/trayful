@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Stack } from '@trayful/core';
-import { agent, DECK, freshTable, openTable, screen, table } from './helpers.js';
+import { agent, agree, answer, DECK, freshTable, openTable, screen, table } from './helpers.js';
 
 test.beforeEach(async ({ baseURL }) => freshTable(baseURL!));
 
@@ -151,12 +151,11 @@ test('the chip row adds, changes and removes surfaces', async ({ page }) => {
   const { call, client } = await agent(new URL(page.url()).origin);
   await call('add_surface', { id: 'side', name: 'Side table' });
   const chips = page.getByRole('navigation', { name: 'Surfaces' });
-  const answer = (text: string) => page.once('dialog', (dialog) => void dialog.accept(text));
   const surfaces = async () => (await table(page)).surfaces ?? [];
 
-  answer('Red player');
   await chips.getByRole('button', { name: 'Add a surface' }).click();
   await page.getByRole('menuitem', { name: 'Add a seat…' }).click();
+  await answer(page, 'Red player', 'Add');
   await expect(chips.getByRole('button', { name: 'Red player', exact: true })).toBeVisible();
   expect(await surfaces()).toContainEqual({ id: 'red-player', name: 'Red player', seat: true });
 
@@ -166,16 +165,16 @@ test('the chip row adds, changes and removes surfaces', async ({ page }) => {
   await expect(chips.locator('.chip.mine')).toContainText('Red player');
   await page.screenshot({ path: 'test-results/surfaces-chips.png' });
 
-  answer('Rouge');
   await chips.getByRole('button', { name: 'Change Red player' }).click();
   await page.getByRole('menuitem', { name: 'Rename…' }).click();
+  await answer(page, 'Rouge', 'Rename');
   await expect(chips.getByRole('button', { name: /^Rouge/ }).first()).toBeVisible();
 
   // Removing a surface sends what lies on it to the Centre.
   await call('move', { ids: ['worker.red.1'], to: 'surface:side' });
-  page.once('dialog', (dialog) => void dialog.accept());
   await chips.getByRole('button', { name: 'Change Side table' }).click();
   await page.getByRole('menuitem', { name: 'Remove…' }).click();
+  await agree(page, 'Remove');
   await expect(page.locator('[data-surface=side]')).toHaveCount(0);
   expect((await table(page)).objects['worker.red.1']!.surface).toBeUndefined();
   await client.close();

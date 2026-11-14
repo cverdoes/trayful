@@ -1,4 +1,6 @@
+// The dialog that asks which kind of drop area to add to a component.
 import type { NewTargetKind } from '../canvas/snaps';
+import { Dialog } from '../../ui/Dialog';
 
 /** The kinds of drop area to add, in the order offered, each with what it is for. */
 export const DROP_AREA_KINDS: readonly { kind: NewTargetKind; name: string; about: string }[] = [
@@ -25,38 +27,23 @@ export const DROP_AREA_KINDS: readonly { kind: NewTargetKind; name: string; abou
   { kind: 'text', name: 'Text box', about: 'A box players write in, like a score.' },
 ];
 
-/** Picks the kind of drop area to add; closes on a pick, Cancel, Escape or a click outside. */
+/** Picks the kind of drop area to add; closes on a pick, the cross, Escape or a click outside. */
 export function DropAreaDialog({
   onPick,
   onClose,
 }: Readonly<{ onPick: (kind: NewTargetKind) => void; onClose: () => void }>) {
   return (
-    <div className="overlay" onClick={onClose}>
-      <div
-        className="help drop-area-dialog"
-        role="dialog"
-        aria-label="Add a drop area"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onClose();
-        }}
-      >
-        <h2>Add a drop area</h2>
-        <ul>
-          {DROP_AREA_KINDS.map(({ kind, name, about }, i) => (
-            <li key={kind}>
-              <button type="button" autoFocus={i === 0} onClick={() => onPick(kind)}>
-                <strong>{name}</strong> <span className="muted">{about}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <div className="row">
-          <button type="button" onClick={onClose}>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+    <Dialog title="Add a drop area" onClose={onClose}>
+      <ul className="ui-picks">
+        {DROP_AREA_KINDS.map(({ kind, name, about }) => (
+          <li key={kind}>
+            <button type="button" onClick={() => onPick(kind)}>
+              <strong>{name}</strong>
+              <small>{about}</small>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </Dialog>
   );
 }

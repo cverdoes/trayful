@@ -2,9 +2,7 @@
 import { CENTRE, surfacesOf, type Command, type TableState } from '@trayful/core';
 import type { Surface } from '@trayful/formats/browser';
 import type { MenuItem } from '../toolbar/MoreMenu';
-
-/** Asks a question and gives the answer, or nothing when the person backs out. */
-type Ask = (question: string, suggestion?: string) => string | undefined;
+import type { Confirmation, Question } from '../ui/dialogs';
 
 /** What a menu on the chip row needs: the table, who is looking, and how to act. */
 export interface MenuContext {
@@ -12,8 +10,9 @@ export interface MenuContext {
   /** The viewer's player id, when they have joined. */
   player?: string;
   command: (command: Command) => void;
-  ask: Ask;
-  confirm: (question: string) => boolean;
+  /** Asks for a line of text, and gives it trimmed, or nothing when the person backs out. */
+  ask: (question: Question) => Promise<string | undefined>;
+  confirm: (question: Confirmation) => Promise<boolean>;
   /** The names of the project's colours, offered when colouring a surface. */
   colors?: readonly string[];
 }
@@ -34,8 +33,15 @@ export function surfaceId(name: string, table: Pick<TableState, 'surfaces'>): st
 
 /** The choices for adding a surface: a shared one, or a seat a player sits at. */
 export function addItems(ctx: MenuContext): MenuItem[] {
-  const add = (seat: boolean) => () => {
-    const name = ctx.ask(seat ? 'Name of the new seat:' : 'Name of the new surface:')?.trim();
+  const add = (seat: boolean) => async () => {
+    const name = await ctx.ask({
+      title: seat ? 'Add a seat' : 'Add a surface',
+      text: seat
+        ? 'A play space for one player to sit at.'
+        : 'A separate play space everyone shares.',
+      label: 'Name',
+      action: 'Add',
+    });
     if (!name) return;
     const id = surfaceId(name, ctx.table);
     ctx.command({ type: 'addSurface', id, name, ...(seat ? { seat: true } : {}) });
@@ -44,9 +50,13 @@ export function addItems(ctx: MenuContext): MenuItem[] {
     {
       label: 'Add a surface…',
       title: 'A separate play space everyone shares',
-      onSelect: add(false),
+      onSelect: () => void add(false)(),
     },
-    { label: 'Add a seat…', title: 'A play space for one player to sit at', onSelect: add(true) },
+    {
+      label: 'Add a seat…',
+      title: 'A play space for one player to sit at',
+      onSelect: () => void add(true)(),
+    },
   ];
 }
 
@@ -59,10 +69,12 @@ export function surfaceItems(surface: Surface, ctx: MenuContext): MenuItem[] {
   const { id, name } = surface;
   const rename: MenuItem = {
     label: 'Rename…',
-    onSelect: () => {
-      const next = ctx.ask(`New name for "${name}":`, name)?.trim();
-      if (next && next !== name) ctx.command({ type: 'editSurface', id, name: next });
-    },
+    onSelect: () =>
+      void ctx
+        .ask({ title: `Rename "${name}"`, label: 'New name', value: name, action: 'Rename' })
+        .then((next) => {
+          if (next && next !== name) ctx.command({ type: 'editSurface', id, name: next });
+        }),
   };
   if (id === CENTRE) return [rename, colorItem(surface, ctx)];
   return [
@@ -83,12 +95,17 @@ export function surfaceItems(surface: Surface, ctx: MenuContext): MenuItem[] {
     {
       label: 'Remove…',
       title: 'What lies on it moves to the Centre',
-      onSelect: () => {
-        if (
-          ctx.confirm(`Remove "${name}"? What lies on it moves to the Centre. You can undo this.`)
-        )
-          ctx.command({ type: 'removeSurface', id, to: CENTRE });
-      },
+      onSelect: () =>
+        void ctx
+          .confirm({
+            title: `Remove "${name}"?`,
+            text: 'What lies on it moves to the Centre. You can undo this.',
+            action: 'Remove',
+            danger: true,
+          })
+          .then((yes) => {
+            if (yes) ctx.command({ type: 'removeSurface', id, to: CENTRE });
+          }),
     },
   ];
 }
@@ -100,13 +117,20 @@ function colorItem({ id, name, color }: Surface, ctx: MenuContext): MenuItem {
     title: 'Tints its tile frame and chip',
     onSelect: () => {
       const names = ctx.colors?.length ? `a colour such as ${ctx.colors.join(', ')}, or ` : '';
-      const answer = ctx.ask(
-        `Colour for "${name}": ${names}a CSS colour such as #c5523a. Leave it empty for none.`,
-        color,
-      );
-      if (answer === undefined) return;
-      const next = answer.trim();
-      if (next !== (color ?? '')) ctx.command({ type: 'editSurface', id, color: next });
+      void ctx
+        .ask({
+          title: `Colour for "${name}"`,
+          text: `Type ${names}a CSS colour such as #c5523a. Leave it empty for none.`,
+          label: 'Colour',
+          value: color,
+          action: 'Set colour',
+          allowEmpty: true,
+        })
+        .then((next) => {
+          if (next !== undefined && next !== (color ?? '')) {
+            ctx.command({ type: 'editSurface', id, color: next });
+          }
+        });
     },
   };
 }

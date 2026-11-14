@@ -1,4 +1,5 @@
 import { useStore } from '../store';
+import { Dialog } from '../ui/Dialog';
 
 const SHORTCUTS: [string, string][] = [
   ['Drag', 'Move a piece, or take the top card off a pile'],
@@ -45,26 +46,20 @@ const SHORTCUTS: [string, string][] = [
 export function Help() {
   const close = () => useStore.setState({ helpOpen: false });
   return (
-    <div className="overlay" onClick={close}>
-      <div className="help" role="dialog" aria-label="Help" onClick={(e) => e.stopPropagation()}>
-        <h2>Playing on the table</h2>
-        <table>
-          <tbody>
-            {SHORTCUTS.map(([keys, what]) => (
-              <tr key={keys}>
-                <th>{keys}</th>
-                <td>{what}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="muted">
-          Every change is saved to the project&apos;s <code>tables/</code> folder as you play.
-        </p>
-        <button type="button" onClick={close}>
-          Close
-        </button>
-      </div>
-    </div>
+    <Dialog title="Playing on the table" size="lg" onClose={close}>
+      <table className="help-keys">
+        <tbody>
+          {SHORTCUTS.map(([keys, what]) => (
+            <tr key={keys}>
+              <th>{keys}</th>
+              <td>{what}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p>
+        Every change is saved to the project&apos;s <code>tables/</code> folder as you play.
+      </p>
+    </Dialog>
   );
 }
