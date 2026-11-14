@@ -7,15 +7,28 @@ export type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'danger';
 
 type NativeProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type' | 'className'>;
 
+type ButtonProps = NativeProps & {
+  variant?: ButtonVariant;
+  icon?: IconName;
+  /** Whether a click sends the form the button is in. */
+  submit?: boolean;
+  children: ReactNode;
+};
+
 /** A button with words, and an icon before them if it has one. */
 export function Button({
   variant = 'secondary',
   icon,
+  submit = false,
   children,
   ...rest
-}: Readonly<NativeProps & { variant?: ButtonVariant; icon?: IconName; children: ReactNode }>) {
+}: Readonly<ButtonProps>) {
   return (
-    <button type="button" className={`ui-button ui-button-${variant}`} {...rest}>
+    <button
+      type={submit ? 'submit' : 'button'}
+      className={`ui-button ui-button-${variant}`}
+      {...rest}
+    >
       {icon && <Icon name={icon} />}
       {children}
     </button>

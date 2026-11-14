@@ -1,6 +1,12 @@
 import { slugify, type Asset } from '@trayful/formats/browser';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '../../store';
+import { Chip } from '../../ui/Badge';
+import { Button, IconButton } from '../../ui/Button';
+import { EmptyState } from '../../ui/EmptyState';
+import { Field } from '../../ui/Field';
+import { Menu } from '../../ui/Menu';
+import { PageHeader } from '../../ui/PageHeader';
 import {
   addImageAsset,
   removeColorAsset,
@@ -29,63 +35,80 @@ export function AssetsPage() {
     change().catch((err: unknown) => setMessage(err instanceof Error ? err.message : String(err)));
   };
   return (
-    <main className="assets-page" aria-label="Assets">
-      {message && (
-        <p className="error" role="alert">
-          {message}
-        </p>
-      )}
+    <main
+      className="assets-page"
+      aria-label="Assets"
+      // A picture dropped anywhere on the page is added.
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        addImages(e.dataTransfer.files, run);
+      }}
+    >
+      <PageHeader
+        title="Assets"
+        subtitle="Images and colours, named once and used by any component."
+      >
+        {message && (
+          <span className="error" role="alert">
+            {message}
+          </span>
+        )}
+        <AddImages run={run} />
+      </PageHeader>
       <section aria-label="Images">
         <h3>Images</h3>
-        <p className="muted">
-          Name an image once to use it on any component. A sheet of cards or a strip of die faces is
-          cut into tiles by its rows and columns.
-        </p>
-        <AddImage run={run} />
-        <ul className="asset-images">
-          {Object.entries(images).map(([name, image]) => (
-            <ImageCard key={name} name={name} image={image} run={run} />
-          ))}
-        </ul>
+        {Object.keys(images).length === 0 ? (
+          <EmptyState icon="image" title="No images yet">
+            Drop picture files here, or use Add images. A sheet of cards or a strip of die faces is
+            cut into tiles by its rows and columns.
+          </EmptyState>
+        ) : (
+          <ul className="asset-images">
+            {Object.entries(images).map(([name, image]) => (
+              <ImageCard key={name} name={name} image={image} run={run} />
+            ))}
+          </ul>
+        )}
       </section>
       <ColorsSection run={run} />
     </main>
   );
 }
 
-/** Adds pictures, picked or dropped, each named after its file. */
-function AddImage({ run }: Readonly<{ run: Run }>) {
-  const add = (files: FileList | null) => {
-    for (const file of Array.from(files ?? [])) {
-      run(async () => {
-        const image = await readImage(file).catch(() => {
-          throw new Error(`"${file.name}" is not a picture; add a PNG, JPEG, GIF, WebP or SVG.`);
-        });
-        await addImageAsset(projectId(), assetPath(image.name), image.base64);
+/** Saves pictures into the project, each named after its file. */
+function addImages(files: FileList | null, run: Run): void {
+  for (const file of Array.from(files ?? [])) {
+    run(async () => {
+      const image = await readImage(file).catch(() => {
+        throw new Error(`"${file.name}" is not a picture; add a PNG, JPEG, GIF, WebP or SVG.`);
       });
-    }
-  };
+      await addImageAsset(projectId(), assetPath(image.name), image.base64);
+    });
+  }
+}
+
+/** The page's main action: picks pictures to add. They can be dropped on the page too. */
+function AddImages({ run }: Readonly<{ run: Run }>) {
+  const picker = useRef<HTMLInputElement>(null);
   return (
-    <label
-      className="asset-drop"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault();
-        add(e.dataTransfer.files);
-      }}
-    >
-      Add images: drop them here, or{' '}
+    <>
+      <Button variant="primary" icon="plus" onClick={() => picker.current?.click()}>
+        Add images
+      </Button>
       <input
+        ref={picker}
         type="file"
         accept="image/*"
         multiple
+        hidden
         aria-label="Add images"
         onChange={(e) => {
-          add(e.target.files);
+          addImages(e.target.files, run);
           e.target.value = '';
         }}
       />
-    </label>
+    </>
   );
 }
 
@@ -106,8 +129,30 @@ function ImageCard({ name, image, run }: Readonly<{ name: string; image: Asset; 
   return (
     <li className="asset-image" aria-label={name}>
       <TilePicker image={image} label={`Tiles of ${name}`} />
-      <div className="asset-name">
-        <strong>{name}</strong> <span className="muted">{image.file}</span>
+      <div className="asset-heading">
+        <div className="asset-name">
+          <strong>{name}</strong>
+          <span>{image.file}</span>
+        </div>
+        <Menu
+          label={`Actions for ${name}`}
+          button={{ kind: 'icon', icon: 'more' }}
+          items={[
+            {
+              label: 'Rename',
+              icon: 'edit',
+              hint: 'Components that show the image are changed too.',
+              onSelect: rename,
+            },
+            {
+              label: 'Remove',
+              icon: 'trash',
+              danger: true,
+              hint: 'Takes the name off the image. The file stays.',
+              onSelect: remove,
+            },
+          ]}
+        />
       </div>
       <div className="asset-tiles">
         <WholeNumber
@@ -120,12 +165,6 @@ function ImageCard({ name, image, run }: Readonly<{ name: string; image: Asset; 
           value={image.cols}
           onChange={(cols) => setTiles(image.rows, cols)}
         />
-        <button type="button" onClick={rename}>
-          Rename
-        </button>
-        <button type="button" onClick={remove}>
-          Remove
-        </button>
       </div>
     </li>
   );
@@ -145,8 +184,7 @@ function WholeNumber({
     setTyped(String(value));
   }
   return (
-    <label>
-      {label}{' '}
+    <Field label={label}>
       <input
         type="number"
         min={1}
@@ -158,7 +196,7 @@ function WholeNumber({
           }
         }}
       />
-    </label>
+    </Field>
   );
 }
 
@@ -183,11 +221,14 @@ function ColorsSection({ run }: Readonly<{ run: Run }>) {
               label={`Colour ${key}`}
               value={value}
               onPicked={(picked) => run(() => setColorAsset(projectId(), key, picked))}
-            />{' '}
-            {key} <span className="muted">{value}</span>{' '}
-            <button type="button" onClick={() => run(() => removeColorAsset(projectId(), key))}>
-              Remove
-            </button>
+            />
+            <strong>{key}</strong>
+            <Chip>{value}</Chip>
+            <IconButton
+              icon="trash"
+              label={`Remove colour ${key}`}
+              onClick={() => run(() => removeColorAsset(projectId(), key))}
+            />
           </li>
         ))}
       </ul>
@@ -198,21 +239,23 @@ function ColorsSection({ run }: Readonly<{ run: Run }>) {
           add();
         }}
       >
-        <input
-          aria-label="New colour name"
-          placeholder="sea"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+        <Field label="New colour">
+          <input
+            aria-label="New colour name"
+            placeholder="sea"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </Field>
         <input
           type="color"
           aria-label="New colour"
           value={color}
           onChange={(e) => setColor(e.target.value)}
         />
-        <button type="submit" disabled={!name.trim()}>
+        <Button submit disabled={!name.trim()}>
           Add colour
-        </button>
+        </Button>
       </form>
     </section>
   );
