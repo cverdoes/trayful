@@ -35,7 +35,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@modelcontextprotocol/sdk": "1.32.2",
-    "@playwright/test": "1.64.1",
+    "@playwright/test": "1.65.0",
     "@trayful/core": "workspace:*",
     "@trayful/formats": "workspace:*",
     "@trayful/server": "workspace:*",
@@ -45,14 +45,14 @@
     "esbuild": "0.28.2",
     "eslint": "^10.14.0",
     "eslint-plugin-sonarjs": "4.2.2",
-    "jscpd": "^5.4.2",
-    "knip": "^6.44.1",
+    "jscpd": "^5.4.3",
+    "knip": "^6.45.1",
     "marked": "^16.4.2",
     "prettier": "^3.9.10",
     "trayful": "workspace:*",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.72.1",
+    "typescript-eslint": "^8.72.2",
     "vitest": "^5.1.0"
   }
 }
