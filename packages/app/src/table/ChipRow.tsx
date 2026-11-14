@@ -2,8 +2,8 @@ import { surfacesOf } from '@trayful/core';
 import type { Surface } from '@trayful/formats/browser';
 import { useEffect, useState } from 'react';
 import { shownNow, useStore } from '../store';
-import { MoreMenu } from '../toolbar/MoreMenu';
 import { ask, confirm } from '../ui/dialogs';
+import { Menu } from '../ui/Menu';
 import { HAND_DRAG } from './hand';
 import { addItems, surfaceItems, type MenuContext } from './surfaceMenu';
 import { defaultChoice, seatsOf, surfaceColor, toSurface, type Preset } from './surfaces';
@@ -72,9 +72,12 @@ export function ChipRow() {
           menu={menu}
         />
       ))}
-      <MoreMenu
+      <Menu
+        label="Add a surface"
+        button={{ kind: 'icon', icon: 'plus' }}
         items={addItems(menu)}
-        button={{ text: '+', label: 'Add a surface', title: 'Add a surface', fromLeft: true }}
+        align="start"
+        className="chip-add"
       />
     </nav>
   );
@@ -126,14 +129,12 @@ function Chip({
         {surface.name}
         {sitter && <span className="sitter">{sitter}</span>}
       </button>
-      <MoreMenu
+      <Menu
+        label={`Change ${surface.name}`}
+        button={{ kind: 'icon', icon: 'down' }}
         items={surfaceItems(surface, menu)}
-        button={{
-          text: '▾',
-          label: `Change ${surface.name}`,
-          title: `Change ${surface.name}`,
-          fromLeft: true,
-        }}
+        align="start"
+        className="chip-menu"
       />
     </span>
   );

@@ -1,15 +1,19 @@
 import type { ProjectView } from '@trayful/core';
 import type { Actions } from './actions';
-import type { MenuItem } from './MoreMenu';
 import { go } from '../route';
 import { useStore } from '../store';
 import { confirm } from '../ui/dialogs';
+import type { IconName } from '../ui/Icon';
+import type { MenuItem } from '../ui/Menu';
 
-/** A toolbar button: what it says, what its tooltip adds, its key, and what it does. */
+/** A toolbar button: what it says, what its tooltip adds, its key, its icon, and what it does. */
 export interface ButtonProps {
   label: string;
   title?: string;
   keys?: string;
+  icon?: IconName;
+  /** Whether the button shows only its icon; the label then names it to a screen reader. */
+  iconOnly?: boolean;
   /** Without one the button is disabled. */
   onClick?: () => void;
 }
@@ -17,21 +21,39 @@ export interface ButtonProps {
 /** The buttons for the actions that apply to the selection, in a fixed order. */
 export function selectionButtons(actions: Actions): ButtonProps[] {
   const all: ButtonProps[] = [
-    { label: 'Flip', keys: 'F', onClick: actions.flip },
-    { label: '⟲', title: 'Rotate left', keys: 'Q', onClick: actions.rotateLeft },
-    { label: '⟳', title: 'Rotate right', keys: 'E', onClick: actions.rotateRight },
-    { label: 'Draw', keys: 'D', onClick: actions.draw },
-    { label: 'Shuffle', keys: 'S', onClick: actions.shuffle },
+    { label: 'Flip', keys: 'F', icon: 'flip', onClick: actions.flip },
+    {
+      label: 'Rotate left',
+      keys: 'Q',
+      icon: 'rotateLeft',
+      iconOnly: true,
+      onClick: actions.rotateLeft,
+    },
+    {
+      label: 'Rotate right',
+      keys: 'E',
+      icon: 'rotateRight',
+      iconOnly: true,
+      onClick: actions.rotateRight,
+    },
+    { label: 'Draw', keys: 'D', icon: 'draw', onClick: actions.draw },
+    { label: 'Shuffle', keys: 'S', icon: 'shuffle', onClick: actions.shuffle },
     {
       label: actions.layoutLabel,
       title: `${actions.layoutLabel} the pile`,
       keys: 'V',
+      icon: actions.layoutLabel === 'Pile' ? 'layers' : 'fan',
       onClick: actions.layout,
     },
-    { label: 'Roll', keys: 'R', onClick: actions.roll },
-    { label: '−', title: 'Decrease', keys: '-', onClick: actions.decrement },
-    { label: '+', title: 'Increase', keys: '+', onClick: actions.increment },
-    { label: actions.lockLabel, keys: 'L', onClick: actions.lock },
+    { label: 'Roll', keys: 'R', icon: 'dice', onClick: actions.roll },
+    { label: 'Decrease', keys: '-', icon: 'minus', iconOnly: true, onClick: actions.decrement },
+    { label: 'Increase', keys: '+', icon: 'plus', iconOnly: true, onClick: actions.increment },
+    {
+      label: actions.lockLabel,
+      keys: 'L',
+      icon: actions.lockLabel === 'Lock' ? 'lock' : 'unlock',
+      onClick: actions.lock,
+    },
   ];
   return all.filter((button) => button.onClick);
 }
@@ -44,24 +66,28 @@ export function moreItems(view: ProjectView | undefined, host: boolean): MenuIte
     items.push(
       {
         label: 'Design components',
-        title: 'Design the components: types, fields and faces',
+        icon: 'palette',
+        hint: 'Design the components: types, fields and faces',
         onSelect: () => go({ ...at, design: true }),
       },
       {
         label: 'Print and play',
-        title: 'Every component at real size, to print',
+        icon: 'printer',
+        hint: 'Every component at real size, to print',
         onSelect: () => go({ ...at, print: true }),
       },
       {
         label: 'Invite players…',
-        title: 'Invite players to this table',
+        icon: 'userPlus',
+        hint: 'Invite players to this table',
         onSelect: () => useStore.setState({ inviteOpen: true }),
       },
     );
   }
   items.push({
     label: 'Start over…',
-    title: 'Start this table over',
+    icon: 'restart',
+    hint: 'Start this table over',
     onSelect: () => void startOver(),
     separated: items.length > 0,
   });

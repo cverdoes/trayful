@@ -141,7 +141,8 @@ test('pieces move between surfaces by dragging and from the toolbar', async ({ p
   const second = await on('worker.red.2');
   const at = await screen(page, ...second.pos);
   await page.mouse.click(at.x, at.y);
-  await page.getByLabel('Send to').selectOption('side');
+  await page.getByRole('button', { name: 'Send to' }).click();
+  await page.getByRole('menuitem', { name: 'Side table' }).click();
   await expect.poll(async () => (await on('worker.red.2')).surface).toBe('side');
   await client.close();
 });

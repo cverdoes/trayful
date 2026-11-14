@@ -46,7 +46,7 @@ body,
   gap: 16px;
   padding: 0 12px;
   background: var(--bar);
-  border-bottom: 1px solid #000;
+  border-bottom: 1px solid var(--tf-outline);
   overflow-x: auto;
   z-index: 10;
 }
@@ -69,9 +69,15 @@ body,
   margin-bottom: 8px;
 }
 
+.toolbar .title strong {
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-lg);
+}
+
 .toolbar .group {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: var(--tf-space-1);
 }
 
 /*
@@ -111,53 +117,13 @@ body,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--tf-text-sm);
 }
 
 .table-toolbar .group:not(.selection) {
   flex-shrink: 0;
-  padding-left: 12px;
-  border-left: 1px solid #30363d;
-}
-
-.more {
-  position: relative;
-}
-
-.more-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  min-width: 200px;
-  padding: 4px;
-  border: 1px solid #30363d;
-  border-radius: 8px;
-  background: var(--bar);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  z-index: 15;
-}
-
-.table-toolbar .history button {
-  font-size: 16px;
-}
-
-.more-menu button {
-  text-align: left;
-  border-color: transparent;
-  background: transparent;
-}
-
-.more-menu button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-.more-menu .separated {
-  margin-top: 5px;
-  border-top-color: #30363d;
-  border-radius: 0 0 6px 6px;
+  padding-left: var(--tf-space-3);
+  border-left: 1px solid var(--tf-outline);
 }
 
 /* Narrow windows: players show as coloured dots (their names are in the tooltips). */
@@ -187,17 +153,32 @@ body,
   color: var(--muted);
 }
 
+/* The connection: a dot, and a word when it is not online. */
 .status {
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tf-space-1);
+  font-size: var(--tf-text-xs);
 }
+
+.status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
 .status-online {
-  color: #3fb950;
+  color: var(--tf-success);
 }
+
 .status-connecting {
-  color: #d29922;
+  color: var(--tf-warning);
 }
+
 .status-offline {
-  color: #f85149;
+  color: var(--tf-danger);
 }
 
 button {
@@ -424,12 +405,13 @@ button.primary {
 
 .toolbar select {
   font: inherit;
-  height: 32px;
+  height: var(--tf-control-md);
   max-width: 220px;
-  border: 1px solid #30363d;
-  border-radius: 6px;
-  background: #21262d;
-  color: var(--bar-text);
+  padding: 0 var(--tf-space-2);
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-sm);
+  background: var(--tf-control);
+  color: var(--tf-text);
 }
 
 /* Print-and-play sheets */
@@ -643,9 +625,9 @@ body.printing #root {
   min-width: 18px;
   padding: 0 5px;
   border-radius: 9px;
-  background: #30363d;
+  background: var(--tf-control);
   text-align: center;
-  font-size: 12px;
+  font-size: var(--tf-text-xs);
 }
 
 .join input {
@@ -731,15 +713,6 @@ body.printing #root {
 /* Tick boxes and radio buttons take the main action's colour. */
 .designer {
   accent-color: var(--tf-primary);
-}
-
-.designer .toolbar {
-  border-bottom-color: var(--tf-outline);
-}
-
-.designer .toolbar .title strong {
-  font-family: var(--tf-font-heading);
-  font-size: var(--tf-text-lg);
 }
 
 /* The modes, as one control with the mode shown underlined. */
@@ -1674,6 +1647,9 @@ body.printing #root {
 
 /* The surfaces under the toolbar, each a chip that switches its tile on or off. */
 .chip-row {
+  /* Chips sit on the felt, so they let a little of it through. */
+  --chip-fill: color-mix(in srgb, var(--tf-surface-sunken) 75%, transparent);
+
   position: fixed;
   top: 56px;
   left: 0;
@@ -1699,30 +1675,35 @@ body.printing #root {
   border-bottom-right-radius: 0;
 }
 
-.chip-row .more-button {
-  min-width: 24px;
-  height: 28px;
-  padding: 0 6px;
-  border-radius: 14px;
-  background: rgba(13, 17, 23, 0.55);
-  color: var(--muted);
+.chip-menu .ui-icon-button,
+.chip-add .ui-icon-button {
+  min-width: 0;
+  height: var(--tf-control-sm);
+  border-color: var(--tf-outline);
+  background: var(--chip-fill);
 }
 
-.chip-group .more-button {
+.chip-menu .ui-icon-button {
+  width: 24px;
   border-left: none;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
+  border-radius: 0 14px 14px 0;
 }
 
-.more-menu.from-left {
-  right: auto;
-  left: 0;
+.chip-add .ui-icon-button {
+  width: var(--tf-control-sm);
+  border-radius: 50%;
+}
+
+/* A shown chip's menu button is part of the same pill. */
+.chip-group:has(.chip.on) .chip-menu .ui-icon-button {
+  border-color: var(--tf-primary);
+  background: var(--tf-selected);
 }
 
 /* Where pieces dragged off another surface would land. */
 .chip-group.drop-target,
 .surface-tile.drop-target {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--tf-focus);
   outline-offset: -2px;
 }
 
@@ -1732,12 +1713,12 @@ body.printing #root {
 
 .chip-row select {
   font: inherit;
-  height: 28px;
-  border: 1px solid #30363d;
+  height: var(--tf-control-sm);
+  border: 1px solid var(--tf-outline);
   border-radius: 14px;
-  padding: 0 8px;
-  background: #21262d;
-  color: var(--bar-text);
+  padding: 0 var(--tf-space-2);
+  background: var(--tf-control);
+  color: var(--tf-text);
 }
 
 .chip {
@@ -1745,16 +1726,23 @@ body.printing #root {
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  height: 28px;
+  height: var(--tf-control-sm);
+  border-color: var(--tf-outline);
   border-radius: 14px;
-  background: rgba(13, 17, 23, 0.55);
-  color: var(--muted);
+  background: var(--chip-fill);
+  color: var(--tf-text-muted);
 }
 
-.chip.on {
-  border-color: var(--accent);
-  background: rgba(47, 129, 247, 0.22);
-  color: var(--bar-text);
+.chip:hover:not(:disabled) {
+  background: var(--tf-control-hover);
+  color: var(--tf-text);
+}
+
+.chip.on,
+.chip.on:hover:not(:disabled) {
+  border-color: var(--tf-primary);
+  background: var(--tf-selected);
+  color: var(--tf-text);
 }
 
 .chip.mine::before {
@@ -1762,7 +1750,7 @@ body.printing #root {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #e3b341;
+  background: var(--tf-primary);
 }
 
 /* A surface's colour, by its name on the chip and on its tile. */
@@ -1771,12 +1759,12 @@ body.printing #root {
   height: 10px;
   flex-shrink: 0;
   border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 35%);
 }
 
 .chip .sitter {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: var(--tf-text-xs);
+  color: var(--tf-text-muted);
 }
 
 /* Something changed on a hidden surface. */
@@ -1786,15 +1774,15 @@ body.printing #root {
 
 @keyframes chip-pulse {
   50% {
-    border-color: #e3b341;
-    box-shadow: 0 0 0 3px rgba(227, 179, 65, 0.35);
-    color: var(--bar-text);
+    border-color: var(--tf-warning);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--tf-warning) 35%, transparent);
+    color: var(--tf-text);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .chip.pulse {
     animation: none;
-    border-color: #e3b341;
+    border-color: var(--tf-warning);
   }
 }
