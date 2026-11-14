@@ -49,12 +49,8 @@ function registerInvites({
 }: RouteContext): void {
   app.get<{ Params: { token: string } }>('/join/:token', async (request, reply) => {
     const invite = players.byToken(request.params.token);
-    if (!invite) {
-      return reply
-        .code(403)
-        .type('text/plain')
-        .send('This invite link is not valid any more. Ask the host for a new one.');
-    }
+    // The app says the link has expired, in the same look as the rest of Trayful.
+    if (!invite) return reply.redirect('/?invite=expired');
     const who = caller(request, players);
     if (who.player) await players.grant(who.player.id, [tableKey(invite.project, invite.table)]);
     const query = new URLSearchParams({ project: invite.project, table: invite.table });

@@ -118,3 +118,9 @@ test('H shrinks the hand to a bubble that still takes cards', async ({ page }) =
   await page.keyboard.press('h');
   await expect(bubble).toBeVisible();
 });
+
+test('an invite link that no longer works says so in a page of its own', async ({ page }) => {
+  await page.goto('/join/not-a-real-invite');
+  await expect(page).toHaveURL(/invite=expired/);
+  await expect(page.getByRole('heading', { name: 'This invite link has expired' })).toBeVisible();
+});

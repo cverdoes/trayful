@@ -11,6 +11,8 @@ export function route(): {
   page: DesignPage;
   type?: string;
   join: boolean;
+  /** Set when an invite link that no longer works was followed. */
+  expiredInvite: boolean;
   /** The page that shows every shared component, which nothing links to. */
   ui: boolean;
 } {
@@ -24,6 +26,7 @@ export function route(): {
     type: params.get('type') ?? undefined,
     // Set by an invite link: ask for a name even on the host's computer.
     join: params.has('join'),
+    expiredInvite: params.get('invite') === 'expired',
     ui: params.has('ui'),
   };
 }

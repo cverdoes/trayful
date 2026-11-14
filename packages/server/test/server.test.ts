@@ -203,7 +203,9 @@ async function joinAsGuest(name: string): Promise<string> {
 describe('players and hands', () => {
   it('keeps tables closed to people without an invite', async () => {
     expect((await fetch(`${server.url}/api/table`, { headers: REMOTE })).status).toBe(403);
-    expect((await fetch(`${server.url}/join/wrong`, { headers: REMOTE })).status).toBe(403);
+    const wrong = await fetch(`${server.url}/join/wrong`, { headers: REMOTE, redirect: 'manual' });
+    expect(wrong.status).toBe(302);
+    expect(wrong.headers.get('location')).toBe('/?invite=expired');
     const me = (await (await fetch(`${server.url}/api/me`, { headers: REMOTE })).json()) as Me;
     expect(me).toMatchObject({ host: false, invited: false, joined: false });
     expect(me.player).toBeUndefined();
@@ -362,10 +364,10 @@ describe('invites and undo', () => {
       (
         await fetch(
           `${server.url}/join/${(await server.workspace.players.invite(project, 'other')).token.slice(1)}`,
-          { headers: REMOTE },
+          { headers: REMOTE, redirect: 'manual' },
         )
-      ).status,
-    ).toBe(403);
+      ).headers.get('location'),
+    ).toBe('/?invite=expired');
   });
 
   it('lets each player undo only their own moves', async () => {

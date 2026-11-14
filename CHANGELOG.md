@@ -37,6 +37,7 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - Everything over the table is in the same colours: the hand and its bubble, prompts and their buttons, the stamp and group pickers, the names on surface tiles, and the join and closed screens. What another player or an agent did, an error, and errors in the project files show as notices with an icon and a coloured stripe.
 - In the component list, the number in the box is a badge, **New component** is at the top, and **Duplicate** and **Delete** are in a **⋯** menu on the selected component.
 - The print-and-play page has the same header as the designer pages, with **Print** as its main action. With it, every part of the interface is in Trayful's colours; the grey look is gone.
+- An invite link that no longer works opens a page in Trayful's look that says the link has expired, in place of a line of plain text.
 
 ### Fixes
 

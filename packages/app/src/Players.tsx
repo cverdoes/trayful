@@ -72,11 +72,30 @@ export function JoinScreen() {
 /** For someone who reached the server without an invite link. */
 export function ClosedScreen() {
   return (
+    <GateMessage title="This table is private">
+      Ask the host for an invite link, and open it in this browser to join.
+    </GateMessage>
+  );
+}
+
+/** For someone who followed an invite link that was renewed or never existed. */
+export function ExpiredInviteScreen() {
+  return (
+    <GateMessage title="This invite link has expired">
+      The host has made a new link since, or this one was mistyped. Ask the host for the current
+      link, and open it in this browser to join.
+    </GateMessage>
+  );
+}
+
+/** A screen that only says why the table cannot be shown. */
+function GateMessage({ title, children }: Readonly<{ title: string; children: string }>) {
+  return (
     <div className="loading gate">
       <div className="gate-card">
         <Mark size={96} />
-        <h2>This table is private</h2>
-        <p>Ask the host for an invite link, and open it in this browser to join.</p>
+        <h2>{title}</h2>
+        <p>{children}</p>
       </div>
     </div>
   );
