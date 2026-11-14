@@ -31,7 +31,8 @@ export interface EntryContext {
   /** The image the component picks tiles of, if it does. */
   image?: Asset;
   tables: Record<string, CsvTable>;
-  onTable: (file: string, table: CsvTable) => void;
+  /** A CSV file changed; `alone` makes the change a step of its own to undo. */
+  onTable: (file: string, table: CsvTable, alone?: boolean) => void;
 }
 
 /** An entry, with its deck and copies, and the designs it makes. */
@@ -111,7 +112,7 @@ function EntryBody({
         <CsvGrid
           table={context.tables[entry.from!] ?? { header: [], rows: [] }}
           columns={context.columns}
-          onChange={(table) => context.onTable(entry.from!, table)}
+          onChange={(table, alone) => context.onTable(entry.from!, table, alone)}
         />
       );
     default:

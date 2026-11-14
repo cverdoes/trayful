@@ -54,8 +54,8 @@ function TrayEditor({ type }: Readonly<{ type: ComponentType }>) {
     columns: columnsOf(type),
     image,
     tables: tray?.tables ?? {},
-    onTable: (file: string, table: CsvTable) =>
-      tray && edit({ ...tray, tables: { ...tray.tables, [file]: table } }),
+    onTable: (file: string, table: CsvTable, alone?: boolean) =>
+      tray && edit({ ...tray, tables: { ...tray.tables, [file]: table } }, alone),
   };
   return (
     <main className="tray-page" aria-label="Tray">

@@ -93,3 +93,42 @@ test("a CSV file's rows are edited in the Tray", async ({ page }) => {
   await waitSaved(page);
   await expect(tray.getByLabel(`${name}, row 2`, { exact: true }).last()).toHaveValue('Feast');
 });
+
+test('a CSV file is edited like a spreadsheet', async ({ page }) => {
+  await page.goto(`/?project=${PROJECT}&design&tray&type=card`);
+  const grid = page.getByRole('main', { name: 'Tray' }).getByRole('region', { name: 'Entry 1' });
+  const cell = (name: string) => grid.getByLabel(name, { exact: true });
+
+  // The keys move from cell to cell, and typing replaces the text of the cell arrived in.
+  await cell('text, row 1').click();
+  await page.keyboard.press('ArrowDown');
+  await expect(cell('text, row 2')).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(cell('value, row 2')).toBeFocused();
+  await page.keyboard.press('Shift+Enter');
+  await expect(cell('value, row 1')).toBeFocused();
+  await page.keyboard.type('7');
+  await expect(cell('value, row 1')).toHaveValue('7');
+
+  // Cells copied from a spreadsheet fill the grid from the cell they are pasted in.
+  const last = await grid.getByRole('rowheader').count();
+  const first = await cell('Name of column 1').inputValue();
+  await cell(`${first}, row ${last}`).evaluate((box) => {
+    const copied = new DataTransfer();
+    copied.setData('text/plain', 'Rest\tRest a turn.\t0\t1\nFeast\tEat well.\t5\t1\n');
+    box.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: copied, bubbles: true, cancelable: true }),
+    );
+  });
+  await expect(cell(`text, row ${last + 1}`)).toHaveValue('Eat well.');
+  await expect(cell(`value, row ${last}`)).toHaveValue('0');
+  await waitSaved(page);
+  await expect
+    .poll(() => libraryFile(page, PROJECT, 'data/cards.csv'))
+    .toContain('Feast,Eat well.,5,1');
+
+  // The paste is one step to undo, apart from what was typed before it.
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(grid.getByRole('rowheader')).toHaveCount(last);
+  await expect(cell('value, row 1')).toHaveValue('7');
+});
