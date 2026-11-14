@@ -1,0 +1,351 @@
+/* The shared components in ui/: every colour, size and space is a token from tokens.css. */
+
+.ui-icon {
+  flex: none;
+}
+
+/* Buttons. One height by default, a taller one for the main action. */
+.ui-button,
+.ui-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tf-space-2);
+  height: var(--tf-control-md);
+  min-width: var(--tf-control-md);
+  padding: 0 var(--tf-space-3);
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-sm);
+  background: var(--tf-control);
+  color: var(--tf-text);
+  font: inherit;
+  font-size: var(--tf-text-md);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ui-button:hover:not(:disabled),
+.ui-icon-button:hover:not(:disabled) {
+  border-color: var(--tf-outline-strong);
+  background: var(--tf-control-hover);
+}
+
+.ui-button:focus-visible,
+.ui-icon-button:focus-visible,
+.ui-menu-item:focus-visible {
+  outline: 2px solid var(--tf-focus);
+  outline-offset: 1px;
+}
+
+.ui-button:active:not(:disabled),
+.ui-icon-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.ui-button:disabled,
+.ui-icon-button:disabled,
+.ui-menu-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ui-button-primary {
+  height: var(--tf-control-lg);
+  padding: 0 var(--tf-space-4);
+  border-color: var(--tf-primary);
+  background: var(--tf-primary);
+  color: var(--tf-on-primary);
+  font-weight: 600;
+}
+
+.ui-button-primary:hover:not(:disabled) {
+  border-color: var(--tf-primary);
+  background: var(--tf-primary);
+  filter: brightness(1.08);
+}
+
+.ui-button-quiet,
+.ui-icon-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--tf-text-muted);
+}
+
+.ui-button-quiet:hover:not(:disabled),
+.ui-icon-button:hover:not(:disabled),
+.ui-icon-button[aria-expanded='true'] {
+  border-color: transparent;
+  background: var(--tf-hover);
+  color: var(--tf-text);
+}
+
+.ui-button-danger {
+  border-color: var(--tf-danger);
+  color: var(--tf-danger);
+}
+
+.ui-icon-button {
+  padding: 0;
+}
+
+/* A field: label, box, hint. */
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tf-space-1);
+  min-width: 0;
+}
+
+.ui-field-label,
+.ui-field-hint {
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-xs);
+}
+
+.ui-field input,
+.ui-field select {
+  height: var(--tf-control-md);
+  padding: 0 var(--tf-space-2);
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-sm);
+  background: var(--tf-surface-sunken);
+  color: var(--tf-text);
+  font: inherit;
+}
+
+.ui-field input:focus-visible,
+.ui-field select:focus-visible {
+  outline: 2px solid var(--tf-focus);
+  outline-offset: -1px;
+}
+
+/* A card: header above, body flush with its edges. */
+.ui-card {
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-md);
+  background: var(--tf-surface-raised);
+}
+
+.ui-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-3);
+  padding: var(--tf-space-3) var(--tf-space-3) var(--tf-space-3) var(--tf-space-4);
+}
+
+.ui-card-icon,
+.ui-empty-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--tf-control-md);
+  height: var(--tf-control-md);
+  border-radius: var(--tf-radius-sm);
+  background: var(--tf-hover);
+  color: var(--tf-success);
+}
+
+.ui-card-heading {
+  min-width: 0;
+}
+
+.ui-card-heading h3 {
+  margin: 0;
+  color: var(--tf-text);
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-lg);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ui-card-heading p {
+  margin: 0;
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-xs);
+}
+
+.ui-card-actions {
+  margin-left: auto;
+}
+
+/* A count and a name, each in a pill. */
+.ui-badge,
+.ui-chip {
+  display: inline-grid;
+  place-items: center;
+  height: 20px;
+  padding: 0 var(--tf-space-2);
+  border: 1px solid var(--tf-outline);
+  border-radius: 10px;
+  background: var(--tf-surface);
+  font-size: var(--tf-text-xs);
+  font-weight: 500;
+}
+
+.ui-badge {
+  min-width: 24px;
+  padding: 0 6px;
+  color: var(--tf-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-chip {
+  color: var(--tf-text);
+  font-family: var(--tf-font-mono);
+}
+
+/* An empty page's note, centred. */
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--tf-space-2);
+  max-width: 420px;
+  margin: var(--tf-space-6) auto;
+  padding: var(--tf-space-6) var(--tf-space-5);
+  border: 1px dashed var(--tf-outline);
+  border-radius: var(--tf-radius-md);
+  text-align: center;
+}
+
+.ui-empty strong {
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-lg);
+}
+
+.ui-empty p {
+  margin: 0;
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-sm);
+}
+
+/* A menu: the list hangs under its button. */
+.ui-menu {
+  position: relative;
+  display: inline-block;
+}
+
+.ui-menu-list {
+  position: absolute;
+  top: calc(100% + var(--tf-space-1));
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: var(--tf-space-1);
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-md);
+  background: var(--tf-surface-overlay);
+  box-shadow: var(--tf-shadow-overlay);
+}
+
+.ui-menu-start {
+  left: 0;
+}
+
+.ui-menu-end {
+  right: 0;
+}
+
+.ui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-3);
+  width: 100%;
+  height: auto;
+  min-height: var(--tf-control-md);
+  padding: var(--tf-space-2) var(--tf-space-3);
+  border: none;
+  border-radius: var(--tf-radius-sm);
+  background: transparent;
+  color: var(--tf-text);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ui-menu-item .ui-icon {
+  color: var(--tf-text-muted);
+}
+
+.ui-menu-item small {
+  display: block;
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-xs);
+}
+
+.ui-menu-item:hover:not(:disabled),
+.ui-menu-item:focus-visible {
+  border-color: var(--tf-outline);
+  background: var(--tf-hover);
+}
+
+/* An action that removes stands apart from the rest, in the danger colour. */
+.ui-menu-item.danger,
+.ui-menu-item.danger .ui-icon {
+  color: var(--tf-danger);
+}
+
+.ui-menu-item.danger:not(:first-child) {
+  margin-top: var(--tf-space-1);
+  border-top: 1px solid var(--tf-outline);
+  border-radius: 0 0 var(--tf-radius-sm) var(--tf-radius-sm);
+  padding-top: calc(var(--tf-space-2) + var(--tf-space-1));
+}
+
+/* The page at `?ui` that shows every component. */
+.ui-page {
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--tf-space-5) var(--tf-space-6) var(--tf-space-6);
+  background: var(--tf-surface);
+  font-size: var(--tf-text-md);
+}
+
+.ui-page h1 {
+  margin: 0 0 var(--tf-space-5);
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-2xl);
+}
+
+.ui-page h2 {
+  margin: var(--tf-space-5) 0 var(--tf-space-3);
+  color: var(--tf-text-muted);
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ui-page-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--tf-space-3);
+}
+
+.ui-page-row > .ui-card,
+.ui-page-row > .ui-empty {
+  flex: 1 1 100%;
+  max-width: 560px;
+  margin: 0;
+}
+
+.ui-page-icon {
+  display: grid;
+  place-items: center;
+  width: var(--tf-control-lg);
+  height: var(--tf-control-lg);
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-sm);
+}
+
+.ui-page-body {
+  margin: 0;
+  padding: 0 var(--tf-space-4) var(--tf-space-4);
+  color: var(--tf-text-muted);
+}

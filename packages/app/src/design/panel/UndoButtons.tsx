@@ -18,13 +18,8 @@ export function UndoButtons() {
   return <HistoryButtons canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo} />;
 }
 
-/** Undo and redo buttons, also as Ctrl+Z and Ctrl+Shift+Z outside text boxes. */
-export function HistoryButtons({
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
-}: Readonly<{ canUndo: boolean; canRedo: boolean; onUndo: () => void; onRedo: () => void }>) {
+/** Undo and redo as Ctrl+Z and Ctrl+Shift+Z, outside text boxes. */
+export function useHistoryKeys(onUndo: () => void, onRedo: () => void): void {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // A text box undoes its own typing.
@@ -38,6 +33,16 @@ export function HistoryButtons({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onUndo, onRedo]);
+}
+
+/** Undo and redo buttons, also as keys. */
+function HistoryButtons({
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+}: Readonly<{ canUndo: boolean; canRedo: boolean; onUndo: () => void; onRedo: () => void }>) {
+  useHistoryKeys(onUndo, onRedo);
   return (
     <div className="design-history">
       <button type="button" disabled={!canUndo} onClick={onUndo} title="Undo (Ctrl+Z)">

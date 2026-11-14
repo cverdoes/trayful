@@ -11,6 +11,8 @@ export function route(): {
   page: DesignPage;
   type?: string;
   join: boolean;
+  /** The page that shows every shared component, which nothing links to. */
+  ui: boolean;
 } {
   const params = new URLSearchParams(location.search);
   return {
@@ -22,6 +24,7 @@ export function route(): {
     type: params.get('type') ?? undefined,
     // Set by an invite link: ask for a name even on the host's computer.
     join: params.has('join'),
+    ui: params.has('ui'),
   };
 }
 

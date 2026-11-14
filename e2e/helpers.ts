@@ -169,7 +169,7 @@ export async function libraryFile(page: Page, project: string, file: string): Pr
 }
 
 export async function waitSaved(page: Page) {
-  await expect(page.getByRole('status')).toContainText('Saved to');
+  await expect(page.getByRole('status')).toContainText('Saved');
 }
 
 /** Makes a component in the designer: its name, what to start like, and what it is. */
@@ -186,7 +186,7 @@ export async function addDropArea(page: Page, kind: string) {
 }
 
 export async function newComponent(page: Page, name: string, startLike: string) {
-  await page.getByRole('button', { name: '+ New component' }).click();
+  await page.getByRole('button', { name: 'New component' }).click();
   const dialog = page.getByRole('dialog', { name: 'New component' });
   await dialog.getByRole('textbox', { name: 'Name' }).fill(name);
   await dialog.getByLabel(startLike, { exact: true }).check();

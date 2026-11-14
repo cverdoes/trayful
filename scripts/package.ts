@@ -48,7 +48,10 @@ const version = readJson(path.join(cli, 'package.json')).version as string;
 await writeFile(path.join(out, 'package.json'), JSON.stringify(manifest(version), null, 2) + '\n');
 await cp(path.join(cli, 'npm/README.md'), path.join(out, 'README.md'));
 await cp(path.join(root, 'LICENSE.md'), path.join(out, 'LICENSE.md'));
-await writeFile(path.join(out, 'THIRD_PARTY_LICENSES.md'), notices(bundledPackages(metafile)));
+await writeFile(
+  path.join(out, 'THIRD_PARTY_LICENSES.md'),
+  notices(bundledPackages(metafile)) + '\n' + copiedIn(),
+);
 console.log(`Built trayful ${version} in ${path.relative(root, out)}`);
 
 /** Bundles the CLI and everything it imports, except Node's own modules, into one file. */
@@ -209,6 +212,13 @@ function notices(packages: PackageInfo[]): string {
     return `## ${name} ${version}\n\nLicence: ${license}\n\n\`\`\`text\n${text.trim()}\n\`\`\`\n`;
   });
   return `# Third-party licences\n\nTrayful bundles these packages. Their licences follow.\n\n${sections.join('\n')}`;
+}
+
+/** The notices for material copied into the source, such as icons and a typeface, under the packages'. */
+function copiedIn(): string {
+  const text = readFileSync(path.join(root, 'THIRD_PARTY_NOTICES.md'), 'utf8');
+  // Its headings go one level down, under the packages' own title.
+  return text.replaceAll(/^#/gm, '##');
 }
 
 function licenceText(dir: string): string | undefined {
