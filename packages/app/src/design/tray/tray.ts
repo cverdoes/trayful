@@ -181,6 +181,30 @@ export function designCount(entry: TrayEntry, tables: Record<string, CsvTable>):
   }
 }
 
+/**
+ * How many pieces an entry puts in the box: each design as many times as its own
+ * number of copies says, or the entry's when it has none.
+ */
+export function pieceCount(entry: TrayEntry, tables: Record<string, CsvTable>): number {
+  const copies = entry.count ?? 1;
+  const sum = (own: unknown[]) =>
+    own.reduce<number>((n, count) => n + (typeof count === 'number' ? count : copies), 0);
+  switch (shapeOf(entry)) {
+    case 'rows':
+      return sum(designRows(entry).map((row) => row.count));
+    case 'each':
+      return designCount(entry, tables) * copies;
+    case 'csv': {
+      const table = tables[entry.from!] ?? { header: [], rows: [] };
+      const at = table.header.indexOf('count');
+      // An empty or unreadable cell leaves the number to the entry.
+      return sum(
+        table.rows.map((row) => (/^\d+$/.test(row[at] ?? '') ? Number(row[at]) : undefined)),
+      );
+    }
+  }
+}
+
 /** A CSV cell as a value of its field's kind; a row's `count` is a number. */
 function typedValue(name: string, text: string, field: NormalizedField | undefined): Scalar {
   const kind: NormalizedField | undefined =

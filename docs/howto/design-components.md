@@ -14,9 +14,9 @@ The components page has three parts:
 
 ## Make a new component
 
-Click **+ New component**, give it a name and pick what to start like: a poker or mini card, a square or hex tile, a round token, a meeple, a six-sided die, a counter, a board or a zone, each at a common size you can change. **Next** asks what it is (a piece, a zone, a die or a counter), and **Create** makes it. The component is written to the library file that already holds components that are the same kind of thing (pieces go next to your other pieces), with an id made from its name, such as `event-card`.
+Click **New component** at the top of the list, give it a name and pick what to start like: a poker or mini card, a square or hex tile, a round token, a meeple, a six-sided die, a counter, a board or a zone, each at a common size you can change. **Next** asks what it is (a piece, a zone, a die or a counter), and **Create** makes it. The component is written to the library file that already holds components that are the same kind of thing (pieces go next to your other pieces), with an id made from its name, such as `event-card`.
 
-**Duplicate** copies the selected component into the same file, which is the quickest way to make a variant. **Delete** removes it, but only once nothing in the inventory uses it; take its entries out of `inventory.yaml` first.
+The selected component has a **⋯** menu in the list. **Duplicate** copies the component into the same file, which is the quickest way to make a variant. **Delete** removes it, but only once nothing in the inventory uses it; take its entries out of `inventory.yaml` first.
 
 **Rename…** next to the id gives the component a new one everywhere the project uses it, in one save: its library file, other components' `accepts` and `stackable.with` lists, the inventory, and the setups (`place: worker` becomes `place: farmer`, and `main-board/fields` targets follow a renamed board). Tables already laid out see the renamed pieces as new ones; **Start over** lays them out again.
 
@@ -107,13 +107,13 @@ A project still in the first file format (`format: trayful/1` in its manifest) p
 
 ## Put the components in the box
 
-The designer makes the component; the **Tray** says how many of it are in the box. Pick a component on the left, and add to the box:
+The designer makes the component; the **Tray** says how many of it are in the box. Pick a component on the left; the page names it and says how many are in the box. **Add** opens a menu of ways to put more in:
 
 - **One of every tile**, for a component that picks its tile from a sheet: one design per tile, as a deck named after the component. A sheet of 24 terrain tiles becomes a deck of 24 in one click.
-- **Designs**: a grid with a column per field and a row per design, each with its own number of copies. It starts with one design; **+ Row** adds another. Click a `tile` cell to pick the tile from the sheet.
+- **Designs**: a grid with a column per field and a row per design, each with its own number of copies. It starts with one design; **Row** under the grid adds another. Click a `tile` cell to pick the tile from the sheet.
 - **Every combination**: values for each field, with commas between them, such as `red, green`; every combination is a design.
-- **From a CSV file…**: copies a spreadsheet into the project's `data` folder; its rows show as a grid you can edit cell by cell. The header row names the field each column fills in; **+** adds a column named after the next field without one, and **×** takes a column or row out.
+- **Import a CSV file**: copies a spreadsheet into the project's `data` folder; its rows show as a grid you can edit cell by cell. The header row names the field each column fills in; **+** adds a column named after the next field without one, and **×** takes a column or row out.
 
-Each entry has a **Deck**, which makes its designs start as one pile, and **Copies of each**. Where an entry keeps its designs can change later: **Move to CSV** writes typed designs to a file of their own in the `data` folder, and **Move to inventory** types a CSV file's rows into `inventory.yaml`, leaving the file in the project. Every change is saved to `inventory.yaml` (and the CSV file) as you go, and the components appear on the table at once. A change that would break the project is not saved, and the Tray says why. **Undo** and **Redo** step through the Tray's changes, a CSV import included, the same way as in the designer.
+Each entry is a card. Its header says what it makes and how many of those are in the box, and under it are its **Deck**, which makes its designs start as one pile, and **Copies of each**. The **⋯** menu on the card holds what can be done with the entry. Where an entry keeps its designs can change later: **Move to CSV** writes typed designs to a file of their own in the `data` folder, and **Move to inventory** types a CSV file's rows into `inventory.yaml`, leaving the file in the project. **Remove** takes the entry out of the box. Every change is saved to `inventory.yaml` (and the CSV file) as you go, and the components appear on the table at once. A change that would break the project is not saved, and the Tray says why. **Undo** and **Redo** step through the Tray's changes, a CSV import included, the same way as in the designer.
 
 You can also edit `inventory.yaml` by hand as in [Add a deck of cards](add-a-deck.md), load cards from a spreadsheet as in [Load cards from a spreadsheet](cards-from-a-spreadsheet.md), or ask an agent as in [Let an agent build components](agent-builds-components.md).

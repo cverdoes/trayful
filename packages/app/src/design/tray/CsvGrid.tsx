@@ -1,6 +1,7 @@
 // A CSV file an inventory entry reads, edited in the Tray as a spreadsheet: its
 // header row names the fields, and each row below it is a design. The keys and
 // pasting work as in a spreadsheet; see GridFrame.tsx and grid.ts.
+import { Icon } from '../../ui/Icon';
 import { columnWidths, pastedInto, type Cell } from './grid';
 import { AddRow, cellName, GridFrame, RowHead } from './GridFrame';
 import {
@@ -133,7 +134,7 @@ function CsvHeader({
                 title="Remove column"
                 onClick={() => onChange(withoutColumn(table, j))}
               >
-                ×
+                <Icon name="x" />
               </button>
             </div>
           </th>
@@ -146,7 +147,7 @@ function CsvHeader({
             title="Add column"
             onClick={() => onChange(withColumn(table, nextColumn(table, columns)))}
           >
-            +
+            <Icon name="plus" />
           </button>
         </th>
       </tr>

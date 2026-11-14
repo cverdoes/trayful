@@ -17,11 +17,14 @@ import { useStore } from './store';
 import { Table } from './table/Table';
 import { pageOf } from './table/viewport';
 import { Toolbar } from './toolbar/Toolbar';
+import { UiPage } from './ui/UiPage';
 
 export function App() {
   useTestHook();
   const fatal = useStore((s) => s.fatal);
   const gate = useStore((s) => s.gate);
+  // The components page needs no table, so it shows whatever the connection says.
+  if (route().ui) return <UiPage />;
   if (fatal) return <div className="loading">{fatal}</div>;
   if (gate === 'closed') return <ClosedScreen />;
   if (gate === 'join') return <JoinScreen />;

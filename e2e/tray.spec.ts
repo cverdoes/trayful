@@ -1,8 +1,14 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import type { Stack } from '@trayful/core';
 import { addImage, agent, libraryFile, newComponent, table, waitSaved } from './helpers.js';
 
 const PROJECT = 'workshop';
+
+/** Adds an entry of a kind to the Tray, from its Add menu. */
+async function add(tray: Locator, kind: string) {
+  await tray.getByRole('button', { name: 'Add', exact: true }).click();
+  await tray.getByRole('menuitem', { name: kind }).click();
+}
 
 test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page, baseURL }) => {
   await page.goto(`/?project=${PROJECT}&design&assets`);
@@ -17,22 +23,22 @@ test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page
 
   await page.getByRole('button', { name: 'Tray' }).click();
   const tray = page.getByRole('main', { name: 'Tray' });
-  await tray.getByRole('button', { name: 'One of every tile' }).click();
+  await add(tray, 'One of every tile');
   await waitSaved(page);
   await expect(tray).toContainText('24 designs');
-  await expect(tray).toContainText('24 in the box now');
+  await expect(tray.locator('.tray-title')).toContainText('24 in the box');
   await expect
     .poll(() => libraryFile(page, PROJECT, 'inventory.yaml'))
     .toContain('  - component: terrain\n    deck: terrain\n');
 
   // Two more of one tile, picked from the sheet.
-  await tray.getByRole('button', { name: 'Designs', exact: true }).click();
+  await add(tray, 'Designs');
   const rows = tray.getByRole('region', { name: 'Entry 2' });
   await rows.getByLabel('tile, row 1', { exact: true }).click();
   await rows.getByRole('button', { name: 'Tile 5' }).click();
   await rows.getByLabel('copies, row 1', { exact: true }).fill('2');
   await waitSaved(page);
-  await expect(tray).toContainText('26 in the box now');
+  await expect(tray.locator('.tray-title')).toContainText('26 in the box');
   await page.screenshot({ path: 'test-results/tray.png' });
 
   // On a new table the 24 tiles lie in one deck.
@@ -54,7 +60,7 @@ test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page
   await page.getByRole('button', { name: 'Components' }).click();
   await expect(face.getByLabel('Image')).toHaveValue('landscape');
   await page.getByRole('button', { name: 'Tray' }).click();
-  await expect(tray).toContainText('26 in the box now');
+  await expect(tray.locator('.tray-title')).toContainText('26 in the box');
 });
 
 test("a CSV file's rows are edited in the Tray", async ({ page }) => {
@@ -167,32 +173,67 @@ test('designs move between the inventory and a CSV file', async ({ page }) => {
   await page.goto(`/?project=${PROJECT}&design&tray`);
   await page.getByRole('button', { name: /^Token/ }).click();
   const tray = page.getByRole('main', { name: 'Tray' });
-  await expect(tray.getByRole('heading', { name: 'Token in the box' })).toBeVisible();
-  const inBox = await tray.getByText('in the box now').textContent();
+  const inTheBox = tray.locator('.tray-title p');
+  await expect(tray.getByRole('heading', { name: 'Token', level: 2 })).toBeVisible();
+  const inBox = await inTheBox.textContent();
 
   // A new entry is one design; a second row keeps both in the inventory.
-  await tray.getByRole('button', { name: 'Designs', exact: true }).click();
+  await add(tray, 'Designs');
   const entry = tray.getByRole('region').last();
   await entry.getByLabel('color, row 1', { exact: true }).selectOption('blue');
   await waitSaved(page);
   await expect.poll(() => libraryFile(page, PROJECT, 'inventory.yaml')).toContain('color: blue');
-  await entry.getByRole('button', { name: '+ Row' }).click();
+  await entry.getByRole('button', { name: 'Add row' }).click();
   await entry.getByLabel('color, row 2', { exact: true }).selectOption('orange');
   await entry.getByLabel('copies, row 2', { exact: true }).fill('2');
   await waitSaved(page);
-  await expect(tray.getByText('in the box now')).not.toHaveText(inBox!);
-  const typed = await tray.getByText('in the box now').textContent();
+  await expect(inTheBox).not.toHaveText(inBox!);
+  const typed = await inTheBox.textContent();
 
   // The designs move to a file of their own, and back, with the same pieces in the box.
-  await entry.getByRole('button', { name: 'Move to CSV' }).click();
+  await entry.getByRole('button', { name: /^Actions for entry/ }).click();
+  await entry.getByRole('menuitem', { name: 'Move to CSV' }).click();
   await expect(entry).toContainText('.csv');
   await waitSaved(page);
   const [file] = /data\/[\w-]+\.csv/.exec((await entry.textContent()) ?? '') ?? [];
   expect(await libraryFile(page, PROJECT, file!)).toBe('color,count\nblue,\norange,2\n');
-  await expect(tray.getByText('in the box now')).toHaveText(typed!);
-  await entry.getByRole('button', { name: 'Move to inventory' }).click();
+  await expect(inTheBox).toHaveText(typed!);
+  await entry.getByRole('button', { name: /^Actions for entry/ }).click();
+  // The arrow keys move through the menu, and Enter picks.
+  await expect(entry.getByRole('menuitem', { name: 'Move to inventory' })).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(entry.getByRole('menuitem', { name: 'Remove' })).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Enter');
   await waitSaved(page);
   await expect(entry.getByLabel('copies, row 2', { exact: true })).toHaveValue('2');
   await expect.poll(() => libraryFile(page, PROJECT, 'inventory.yaml')).toContain('count: 2');
-  await expect(tray.getByText('in the box now')).toHaveText(typed!);
+  await expect(inTheBox).toHaveText(typed!);
+});
+
+test("the component list's menu duplicates the component shown", async ({ page }) => {
+  await page.goto(`/?project=${PROJECT}&design&tray`);
+  const list = page.getByRole('navigation', { name: 'Component list' });
+  await list.getByRole('button', { name: /^Token/ }).click();
+  const before = await list.getByRole('listitem').count();
+  await list.getByRole('button', { name: 'Actions for Token' }).click();
+  await list.getByRole('menuitem', { name: 'Duplicate' }).click();
+  await expect(list.getByRole('listitem')).toHaveCount(before + 1);
+
+  // Escape closes a menu and gives the focus back to its button.
+  const actions = list.getByRole('button', { name: /^Actions for/ });
+  await actions.click();
+  await expect(list.getByRole('menu')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(list.getByRole('menu')).toBeHidden();
+  await expect(actions).toBeFocused();
+});
+
+test('the components page shows every shared component', async ({ page }) => {
+  await page.goto('/?ui');
+  await expect(page.getByRole('heading', { name: 'Trayful components' })).toBeVisible();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: /^Not now/ })).toBeDisabled();
+  await page.getByRole('menuitem', { name: /^Designs/ }).click();
+  await expect(page.getByRole('menu')).toBeHidden();
 });

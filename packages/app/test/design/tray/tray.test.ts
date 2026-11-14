@@ -8,6 +8,7 @@ import {
   designCount,
   everyTile,
   newEntry,
+  pieceCount,
   replaced,
   shapeOf,
   tiledImage,
@@ -51,6 +52,27 @@ describe('the Tray', () => {
     expect(designCount({ each: { a: [1, 2], b: ['x', 'y', 'z'] } }, tables)).toBe(6);
     expect(designCount({ from: 'data/t.csv' }, tables)).toBe(3);
     expect(shapeOf({ from: 'data/t.csv' })).toBe('csv');
+  });
+
+  it('counts the pieces an entry puts in the box', () => {
+    const tables = {
+      'data/t.csv': {
+        header: ['name', 'count'],
+        rows: [
+          ['a', '2'],
+          ['b', ''],
+          ['c', 'x'],
+        ],
+      },
+      'data/plain.csv': { header: ['name'], rows: [['a'], ['b']] },
+    };
+    expect(pieceCount({ data: { name: 'Forest' } }, tables)).toBe(1);
+    expect(pieceCount({ count: 3, items: [{ count: 2 }, {}] }, tables)).toBe(5);
+    expect(pieceCount({ count: 2, each: { a: [1, 2], b: ['x', 'y', 'z'] } }, tables)).toBe(12);
+    // A row's own count wins; an empty or unreadable one leaves it to the entry.
+    expect(pieceCount({ count: 3, from: 'data/t.csv' }, tables)).toBe(8);
+    expect(pieceCount({ from: 'data/plain.csv' }, tables)).toBe(2);
+    expect(pieceCount({ from: 'data/missing.csv' }, tables)).toBe(0);
   });
 
   it('takes out values and keys that are cleared, so the file stays short', () => {

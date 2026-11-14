@@ -29,6 +29,8 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - The Tray's editors are spreadsheets: a CSV file, one design and designs in rows are each one ruled grid with numbered rows and columns as wide as their text. The arrow keys, `Enter` and `Shift+Enter` move between cells. A field with choices is a drop-down in its cell, in a CSV file too. Buttons to remove a row or column show when it is hovered or focused.
 - Cells copied from a spreadsheet paste across several cells of a CSV file, adding rows as needed.
 - The Tray adds typed designs with one **Designs** button, in place of "One design" and "Designs in rows": an entry starts with one design and takes more rows. **Move to CSV** and **Move to inventory** change where an entry keeps its designs.
+- The Tray has a designed layout in Trayful's own colours and typeface. Its header names the component and how many are in the box, with undo, redo and the save status beside one **Add** menu. Each entry is a card that says what it makes, with **Deck** and **Copies of each** as labelled fields and a **⋯** menu that holds **Move to CSV**, **Move to inventory** and **Remove**. An empty Tray says what to do.
+- In the component list, the number in the box is a badge, **New component** is at the top, and **Duplicate** and **Delete** are in a **⋯** menu on the selected component.
 
 ### Fixes
 

@@ -32,6 +32,7 @@ Trayful is TypeScript from end to end: one language for the file formats, the en
 - [[npm:konva]] draws the table and the designer canvas on an HTML canvas, with hit testing, drag and drop and transforms for hundreds of pieces. [[npm:react-konva]] lets React components describe that canvas.
 - [[npm:zustand]] holds the app's state in small stores (the table, the designer) without providers or boilerplate. What it holds is a copy of what the server sent, plus view state such as zoom and selection.
 - [[npm:vite]] builds the app and serves it with hot reload in `pnpm dev`; [[npm:@vitejs/plugin-react]] adds JSX and fast refresh.
+- No component library. The interface is drawn with Trayful's own design tokens (`packages/app/src/tokens.css`) and a small set of shared components ([[app/ui/Menu.tsx]], [[app/ui/Card.tsx]] and the files beside them), so it looks like Trayful and adds no runtime dependency. A few Lucide icons and the Red Hat Display typeface are copied into the source; `THIRD_PARTY_NOTICES.md` holds their licences. The views move to the tokens one at a time; the Tray was first.
 
 ## Command line
 

@@ -205,17 +205,17 @@ button {
   min-width: 32px;
   height: 32px;
   padding: 0 10px;
-  border: 1px solid #30363d;
+  border: 1px solid var(--tf-outline);
   border-radius: 6px;
-  background: #21262d;
+  background: var(--tf-control);
   color: var(--bar-text);
   cursor: pointer;
   white-space: nowrap;
 }
 
 button:hover:not(:disabled) {
-  background: #30363d;
-  border-color: #8b949e;
+  background: var(--tf-control-hover);
+  border-color: var(--tf-outline-strong);
 }
 
 button:disabled {
@@ -666,7 +666,7 @@ body.printing #root {
 }
 
 .error {
-  color: #f85149;
+  color: var(--tf-danger);
 }
 
 .invite .links {
@@ -713,9 +713,9 @@ body.printing #root {
   font: inherit;
   min-width: 0;
   padding: 4px 6px;
-  border: 1px solid #30363d;
+  border: 1px solid var(--tf-outline);
   border-radius: 6px;
-  background: #0d1117;
+  background: var(--tf-surface-sunken);
   color: var(--bar-text);
 }
 
@@ -739,10 +739,9 @@ body.printing #root {
 }
 
 .design-tabs .tab.chosen,
-.design-types button.chosen,
 .design-layers li.chosen .layer-name {
   border-color: var(--accent);
-  background: #1f3a5f;
+  background: var(--tf-selected);
 }
 
 .design-status {
@@ -754,13 +753,13 @@ body.printing #root {
 }
 
 .save-saved {
-  color: #3fb950;
+  color: var(--tf-success);
 }
 
 .save-invalid,
 .save-conflict,
 .save-failed {
-  color: #f85149;
+  color: var(--tf-danger);
 }
 
 .design-types,
@@ -770,25 +769,61 @@ body.printing #root {
   background: var(--bar);
 }
 
+/* The component list: a button to make one, then the components by kind. The one
+   shown is marked, and has a menu of what can be done with it. */
+.design-types {
+  padding-top: var(--tf-space-3);
+}
+
+.design-types .design-type-new {
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-2);
+  width: 100%;
+  border-style: dashed;
+  background: transparent;
+  color: var(--tf-text-muted);
+}
+
 .design-types ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.design-types li button {
-  width: 100%;
-  text-align: left;
+.design-types li {
+  display: flex;
+  align-items: center;
   margin-bottom: 2px;
-  border-color: transparent;
-  background: transparent;
+  border-radius: var(--tf-radius-sm);
 }
 
-.design-type-actions {
+.design-types li.chosen {
+  background: var(--tf-selected);
+  box-shadow: inset 3px 0 var(--tf-primary);
+}
+
+.design-types li > button {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 16px;
+  flex: 1;
+  align-items: center;
+  gap: var(--tf-space-2);
+  min-width: 0;
+  border-color: transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.design-type-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.design-types li .ui-icon-button {
+  min-width: var(--tf-control-sm);
+  height: var(--tf-control-sm);
+  margin-right: 2px;
 }
 
 .design-main {
@@ -940,13 +975,6 @@ body.printing #root {
   overflow: hidden;
   text-align: left;
   text-overflow: ellipsis;
-}
-
-.design-add {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  color: var(--muted);
 }
 
 .design-layer {
@@ -1188,71 +1216,190 @@ body.printing #root {
   cursor: pointer;
 }
 
-/* The Tray: the component list on the left, its entries across the rest. */
+/* The Tray: the component list on the left, and the page across the rest: a
+   header that names the component, then a card for each entry. */
 .designer.tray {
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 232px 1fr;
+  background: var(--tf-surface);
+}
+
+/* How the designer's shared parts (its toolbar, modes and list headings) look in
+   the brand. They are scoped to the Tray until the other views move over, when
+   they become the rules for the whole designer. */
+.designer.tray .toolbar {
+  border-bottom-color: var(--tf-outline);
+}
+
+.designer.tray .toolbar .title strong {
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-lg);
+}
+
+.designer.tray .design-types {
+  border-right: 1px solid var(--tf-outline);
+}
+
+.designer.tray h4 {
+  margin: var(--tf-space-4) var(--tf-space-2) var(--tf-space-1);
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The modes, as one control with the mode shown underlined. */
+.designer.tray .design-tabs {
+  padding: 3px;
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-md);
+  background: var(--tf-surface);
+}
+
+.designer.tray .design-tabs .tab {
+  height: var(--tf-control-sm);
+  border-color: transparent;
+  border-radius: var(--tf-radius-sm);
+  background: transparent;
+  color: var(--tf-text-muted);
+}
+
+.designer.tray .design-tabs .tab:hover {
+  background: var(--tf-hover);
+  color: var(--tf-text);
+}
+
+.designer.tray .design-tabs .tab.chosen {
+  background: var(--tf-surface-raised);
+  box-shadow: inset 0 -2px var(--tf-primary);
+  color: var(--tf-text);
 }
 
 .tray-page {
   overflow-y: auto;
-  padding: 0 24px 32px;
+  padding: var(--tf-space-5) var(--tf-space-6) var(--tf-space-6);
 }
 
 .tray-header {
   display: flex;
-  gap: 16px;
-  align-items: baseline;
+  align-items: center;
+  gap: var(--tf-space-2);
+  margin-bottom: var(--tf-space-5);
 }
 
-.tray-entry {
-  margin: 16px 0;
-  padding: 8px 12px;
-  border: 1px solid #30363d;
-  border-radius: 6px;
+.tray-title {
+  min-width: 0;
+  margin-right: auto;
 }
 
-.tray-entry header {
+.tray-title h2 {
+  margin: 0;
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-2xl);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tray-title p {
+  margin: 2px 0 0;
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-sm);
+}
+
+.tray-status {
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-1);
+  margin-right: var(--tf-space-2);
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-sm);
+}
+
+.tray-status.save-saved {
+  color: var(--tf-success);
+}
+
+.tray-status.save-failed {
+  color: var(--tf-danger);
+}
+
+.tray-status.save-saving .ui-icon,
+.tray-status.save-loading .ui-icon {
+  animation: tray-busy 0.9s linear infinite;
+}
+
+@keyframes tray-busy {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tray-status .ui-icon {
+    animation: none;
+  }
+}
+
+.tray-header > .ui-menu {
+  margin-left: var(--tf-space-2);
+}
+
+.tray-header .ui-menu-list {
+  min-width: 320px;
+}
+
+.tray-page .ui-card {
+  margin-bottom: var(--tf-space-4);
+}
+
+/* An entry's deck and copies, and the values of every combination: labelled fields in a row. */
+.tray-fields,
+.tray-each {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
+  gap: var(--tf-space-4);
+  padding: 0 var(--tf-space-4) var(--tf-space-4);
 }
 
-.tray-entry h3 {
-  margin: 0;
-  font-size: 1em;
+.tray-fields input {
+  width: 200px;
 }
 
-.tray-entry header input {
-  width: 8em;
+.tray-fields .design-number {
+  width: 120px;
 }
 
 .tray-each {
-  display: grid;
-  gap: 4px;
-  margin-top: 8px;
+  flex-direction: column;
+  gap: var(--tf-space-3);
 }
 
-.tray-each input {
-  width: 24em;
+.tray-each-field {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--tf-space-2);
+}
+
+.tray-each-field .ui-field {
+  flex: 0 1 28em;
 }
 
 /* The Tray's grids, drawn as a spreadsheet: one table of ruled cells, row numbers
-   down the side, and buttons to remove a row or column on hover. */
+   down the side, and buttons to remove a row or column on hover. A grid is the
+   foot of its card, flush with it: the card's border is the grid's. */
 .tray-grid {
   max-width: 100%;
-  margin-top: 8px;
   overflow-x: auto;
+  border-top: 1px solid var(--tf-outline);
+  border-radius: 0 0 var(--tf-radius-md) var(--tf-radius-md);
+  background: var(--tf-surface-sunken);
 }
 
 .tray-grid table {
-  --grid-line: #30363d;
-  --grid-head: #161b22;
-  border: 1px solid var(--grid-line);
-  border-radius: 6px;
+  --grid-line: var(--tf-outline);
+  --grid-head: var(--tf-surface);
+  min-width: 100%;
   border-spacing: 0;
-  background: #0d1117;
-  overflow: hidden;
+  font-size: var(--tf-text-sm);
 }
 
 .tray-grid th,
@@ -1277,7 +1424,7 @@ body.printing #root {
 }
 
 .tray-grid thead th {
-  height: 30px;
+  height: var(--tf-control-sm);
   padding: 0 8px;
   background: var(--grid-head);
   font-weight: 600;
@@ -1296,7 +1443,7 @@ body.printing #root {
 .designer .tray-grid select {
   display: block;
   width: 100%;
-  height: 30px;
+  height: var(--tf-control-sm);
   padding: 0 8px;
   border: none;
   border-radius: 0;
@@ -1317,7 +1464,7 @@ body.printing #root {
 .designer .tray-grid select:focus {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
-  background: #161b22;
+  background: var(--tf-surface);
 }
 
 .designer .tray-grid thead input {
@@ -1365,7 +1512,7 @@ body.printing #root {
 }
 
 .tray-grid tbody tr:focus-within .grid-row-head {
-  background: #1c2b3f;
+  background: var(--tf-selected);
   color: var(--bar-text);
 }
 
@@ -1376,6 +1523,12 @@ body.printing #root {
   border-radius: 4px;
   background: transparent;
   color: var(--muted);
+}
+
+.tray-grid .grid-remove,
+.tray-grid .grid-add-column {
+  display: grid;
+  place-items: center;
 }
 
 .tray-grid .grid-remove {
@@ -1404,14 +1557,16 @@ body.printing #root {
 
 .tray-grid .grid-add-column {
   width: 100%;
-  height: 30px;
+  height: var(--tf-control-sm);
   border-radius: 0;
 }
 
 .tray-grid .grid-add-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
   border-radius: 0;
-  text-align: left;
 }
 
 .tray-tile summary {
@@ -1420,23 +1575,6 @@ body.printing #root {
 
 .tray-tile .tile-picker {
   width: 320px;
-}
-
-/* A file picker that looks like the buttons next to it. */
-label.button {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid #30363d;
-  border-radius: 6px;
-  background: #21262d;
-  color: var(--bar-text);
-  cursor: pointer;
-}
-
-label.button:hover {
-  background: #30363d;
 }
 
 /* The pieces of a crowded group spot, listed where it was clicked. */

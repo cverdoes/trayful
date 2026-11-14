@@ -2,6 +2,7 @@
 // spreadsheet, whatever is in its cells. A cell is a `td` or `th` marked with
 // `cellName`, holding a box to type in, a drop-down or a picker.
 import type { ClipboardEvent, KeyboardEvent, ReactNode } from 'react';
+import { Icon } from '../../ui/Icon';
 import { cellAfterKey, type Cell, type CellKey, type GridSize } from './grid';
 
 /** The attribute that marks a cell of the grid, for the keys to find it by. */
@@ -112,7 +113,7 @@ export function RowHead({
         disabled={only}
         onClick={onRemove}
       >
-        ×
+        <Icon name="x" />
       </button>
     </th>
   );
@@ -124,8 +125,8 @@ export function AddRow({ span, onAdd }: Readonly<{ span: number; onAdd: () => vo
     <tfoot>
       <tr>
         <td colSpan={span}>
-          <button type="button" className="grid-add-row" onClick={onAdd}>
-            + Row
+          <button type="button" className="grid-add-row" aria-label="Add row" onClick={onAdd}>
+            <Icon name="plus" /> Row
           </button>
         </td>
       </tr>

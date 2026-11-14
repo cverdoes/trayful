@@ -1,0 +1,115 @@
+/* Design tokens: the colours, sizes and spaces the interface is drawn with. A rule
+   names a role (`--tf-surface`, `--tf-outline`), never a colour of its own.
+
+   The roles have two sets of values while the interface moves over view by view.
+   The first is the grey look every view started with. The second is Trayful's
+   brand (Forest surfaces, Parchment text, Mustard for the main action, Lake for
+   focus, Brick for danger), given to the views that are redrawn: add a view's
+   selector to the second rule to move it over. When the last view has moved, the
+   brand values become the only ones. */
+
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url('./assets/fonts/red-hat-display-latin-wght-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Red Hat Display';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url('./assets/fonts/red-hat-display-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+:root {
+  /* Colour roles, in the grey look. */
+  --tf-surface: #1f2328;
+  --tf-surface-raised: #21262d;
+  --tf-surface-sunken: #0d1117;
+  --tf-surface-overlay: #2d333b;
+  --tf-control: #21262d;
+  --tf-control-hover: #30363d;
+  --tf-outline: #30363d;
+  --tf-outline-strong: #8b949e;
+  --tf-text: #e6edf3;
+  --tf-text-muted: #8b949e;
+  --tf-primary: #2f81f7;
+  --tf-on-primary: #fff;
+  --tf-focus: #2f81f7;
+  --tf-selected: #1f3a5f;
+  --tf-hover: rgb(230 237 243 / 8%);
+  --tf-danger: #f85149;
+  --tf-success: #3fb950;
+  --tf-warning: #d29922;
+
+  /* Type: six sizes, and the brand's typeface for headings. */
+  --tf-font-heading: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --tf-font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --tf-text-xs: 12px;
+  --tf-text-sm: 13px;
+  --tf-text-md: 14px;
+  --tf-text-lg: 16px;
+  --tf-text-xl: 20px;
+  --tf-text-2xl: 24px;
+
+  /* Space: every padding and gap is one of these. */
+  --tf-space-1: 4px;
+  --tf-space-2: 8px;
+  --tf-space-3: 12px;
+  --tf-space-4: 16px;
+  --tf-space-5: 24px;
+  --tf-space-6: 32px;
+
+  /* Shape: controls, cards, dialogs. */
+  --tf-radius-sm: 4px;
+  --tf-radius-md: 8px;
+  --tf-radius-lg: 12px;
+
+  /* How tall a control is: in a grid, by default, and for the main action. */
+  --tf-control-sm: 28px;
+  --tf-control-md: 32px;
+  --tf-control-lg: 40px;
+
+  --tf-shadow-overlay: 0 8px 24px rgb(0 0 0 / 45%);
+}
+
+/* The views drawn in the brand. */
+.designer.tray,
+.ui-page {
+  --tf-surface: #0f1d19;
+  --tf-surface-raised: #162923;
+  --tf-surface-sunken: #0a1512;
+  --tf-surface-overlay: #1b332b;
+  --tf-control: #1b332b;
+  --tf-control-hover: #24423a;
+  --tf-outline: #2b443b;
+  --tf-outline-strong: #5b7f5f;
+  --tf-text: #f6eedb;
+  --tf-text-muted: #a3b3a2;
+  --tf-primary: #e0a933;
+  --tf-on-primary: #1d1603;
+  --tf-focus: #5b9cc7;
+  --tf-selected: #1e3a31;
+  --tf-hover: rgb(246 238 219 / 8%);
+  --tf-danger: #e8806b;
+  --tf-success: #8fb893;
+  --tf-warning: #e0a933;
+
+  /* The names older rules use, so what they draw here follows the brand too. */
+  --bar: var(--tf-surface-sunken);
+  --bar-text: var(--tf-text);
+  --muted: var(--tf-text-muted);
+  --accent: var(--tf-focus);
+
+  color: var(--tf-text);
+}
