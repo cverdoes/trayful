@@ -16,11 +16,11 @@ interface KonvaLayer {
 /**
  * The most one redraw of the whole Harvest Moon table may take, in milliseconds, on a
  * Retina-sized canvas. The table redraws on every step of a drag, pan or zoom, so this
- * decides whether those feel smooth. A healthy build takes about 10 ms fitted and 20 ms
- * zoomed in, in headless Chromium on a 4-core cloud machine. With the paper-grain board of PR #85 drawn straight
- * from its SVG it took 36 and 82 ms, and zooming stalled for up to 200 ms a frame. The
- * margin is for slower machines, not for new costs: when this fails, find what made
- * drawing slower rather than raising it.
+ * decides whether those feel smooth. A healthy build takes about 10 ms fitted and
+ * 20 ms zoomed in, in headless Chromium on a 4-core cloud machine. With the paper-grain
+ * board of PR #85 drawn straight from its SVG it took 36 and 82 ms, and zooming stalled
+ * for up to 200 ms a frame. The margin is for slower machines, not for new costs: when
+ * this fails, find what made drawing slower rather than raising it.
  */
 const REDRAW_BUDGET_MS = 40;
 
