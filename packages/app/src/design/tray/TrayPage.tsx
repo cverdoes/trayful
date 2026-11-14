@@ -5,8 +5,9 @@ import type { Asset, ComponentType } from '@trayful/formats/browser';
 import { useStore } from '../../store';
 import { IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/EmptyState';
-import { Icon, type IconName } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
+import { PageHeader } from '../../ui/PageHeader';
+import { Status, type StatusTone } from '../../ui/Status';
 import { useDesign } from '../store';
 import {
   columnsOf,
@@ -46,13 +47,13 @@ export function TrayPage() {
   return <TrayEditor key={type.id} type={type} />;
 }
 
-/** What the save status shows: an icon, a few words, and the whole of it on hover. */
-const STATUS: Record<TrayStatus, { icon: IconName; text: string; title: string }> = {
-  loading: { icon: 'spinner', text: 'Loading…', title: 'Reading the inventory' },
-  saved: { icon: 'check', text: 'Saved', title: 'Saved to the inventory' },
-  unsaved: { icon: 'spinner', text: 'Saving soon…', title: 'Saved a moment after you stop typing' },
-  saving: { icon: 'spinner', text: 'Saving…', title: 'Writing the inventory' },
-  failed: { icon: 'alert', text: 'Not saved', title: 'The inventory could not be saved' },
+/** What the save status shows: how it reads, a few words, and the whole of it on hover. */
+const STATUS: Record<TrayStatus, { tone: StatusTone; text: string; title: string }> = {
+  loading: { tone: 'busy', text: 'Loading…', title: 'Reading the inventory' },
+  saved: { tone: 'ok', text: 'Saved', title: 'Saved to the inventory' },
+  unsaved: { tone: 'quiet', text: 'Saving soon…', title: 'Saved a moment after you stop typing' },
+  saving: { tone: 'busy', text: 'Saving…', title: 'Writing the inventory' },
+  failed: { tone: 'bad', text: 'Not saved', title: 'The inventory could not be saved' },
 };
 
 function TrayEditor({ type }: Readonly<{ type: ComponentType }>) {
@@ -73,16 +74,11 @@ function TrayEditor({ type }: Readonly<{ type: ComponentType }>) {
   };
   return (
     <main className="tray-page" aria-label="Tray">
-      <header className="tray-header">
-        <div className="tray-title">
-          <h2>{type.name ?? type.id}</h2>
-          <p>{inBox} in the box</p>
-        </div>
-        <div className={`tray-status save-${status}`} role="status" title={STATUS[status].title}>
-          <Icon name={STATUS[status].icon} />
+      <PageHeader title={type.name ?? type.id} subtitle={`${inBox} in the box`}>
+        <Status tone={STATUS[status].tone} title={STATUS[status].title}>
           {STATUS[status].text}
           {message && <span className="error">{message}</span>}
-        </div>
+        </Status>
         <IconButton
           icon="undo"
           label="Undo"
@@ -105,7 +101,7 @@ function TrayEditor({ type }: Readonly<{ type: ComponentType }>) {
             onCsv={addCsv}
           />
         )}
-      </header>
+      </PageHeader>
       {entries.length === 0 && tray && (
         <EmptyState icon="box" title="None of these are in the box yet">
           The Tray lists what the box holds of this component. Use Add to type designs in, make

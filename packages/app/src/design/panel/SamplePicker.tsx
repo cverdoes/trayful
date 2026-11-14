@@ -13,7 +13,7 @@ export function SamplePicker() {
   const designs = distinctDesigns(components.filter((c) => c.type === draft.id));
   return (
     <label className="design-sample">
-      Sample design{' '}
+      <span>Sample design</span>
       <select
         value={sample ?? ''}
         onChange={(e) => useDesign.setState({ sample: e.target.value || undefined })}

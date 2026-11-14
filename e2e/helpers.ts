@@ -177,7 +177,7 @@ export async function waitSaved(page: Page) {
 export async function addDropArea(page: Page, kind: string) {
   await page
     .getByRole('region', { name: 'Drop areas' })
-    .getByRole('button', { name: '+ Add drop area' })
+    .getByRole('button', { name: 'Add drop area' })
     .click();
   await page
     .getByRole('dialog', { name: 'Add a drop area' })

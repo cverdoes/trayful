@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Icon } from '../../ui/Icon';
 import { isFolded, setFolded, useDesign } from '../store';
 
 /**
@@ -23,6 +24,7 @@ export function Section({
         }}
       >
         <summary>
+          <Icon name="right" />
           <h3>{title}</h3>
         </summary>
         {children}

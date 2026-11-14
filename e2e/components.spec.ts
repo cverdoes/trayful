@@ -65,7 +65,7 @@ test('what a component stacks with is picked from the other components', async (
   await partners.press('Enter');
   await partners.fill('Card');
   await partners.press('Enter');
-  await expect(behaviour.locator('.picker-chip')).toHaveText(['Token×', 'Card×']);
+  await expect(behaviour.locator('.picker-chip')).toHaveText(['Token', 'Card']);
   await waitSaved(page);
   await expect
     .poll(async () => (await savedType(page, 'penny'))?.stackable)

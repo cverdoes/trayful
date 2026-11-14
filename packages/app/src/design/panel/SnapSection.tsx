@@ -7,6 +7,7 @@ import {
   type DropMode,
   type SnapTarget,
 } from '@trayful/formats/browser';
+import { Button } from '../../ui/Button';
 import { useState } from 'react';
 import { sizeOf } from '../../render/geometry';
 import { useStore } from '../../store';
@@ -65,11 +66,9 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
           </li>
         ))}
       </ul>
-      <div className="design-add">
-        <button type="button" onClick={() => setAdding(true)}>
-          + Add drop area
-        </button>
-      </div>
+      <Button icon="plus" onClick={() => setAdding(true)}>
+        Add drop area
+      </Button>
       {adding && <DropAreaDialog onPick={add} onClose={() => setAdding(false)} />}
       {selected !== undefined && targets[selected] && (
         <TargetEditor target={targets[selected]} index={selected} />

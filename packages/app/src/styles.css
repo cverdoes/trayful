@@ -704,7 +704,7 @@ body.printing #root {
   position: fixed;
   inset: 56px 0 0 0;
   display: grid;
-  grid-template-columns: 220px 1fr 360px;
+  grid-template-columns: 232px 1fr 360px;
 }
 
 .designer input,
@@ -719,47 +719,67 @@ body.printing #root {
   color: var(--bar-text);
 }
 
-.designer h3 {
-  margin: 16px 0 8px;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-
+.designer h3,
 .designer h4 {
-  margin: 12px 0 4px;
-  font-size: 12px;
-  color: var(--muted);
+  margin: var(--tf-space-4) 0 var(--tf-space-2);
+  color: var(--tf-text-muted);
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
+.design-types h4 {
+  margin: var(--tf-space-4) var(--tf-space-2) var(--tf-space-1);
+}
+
+/* Tick boxes and radio buttons take the main action's colour. */
+.designer {
+  accent-color: var(--tf-primary);
+}
+
+.designer .toolbar {
+  border-bottom-color: var(--tf-outline);
+}
+
+.designer .toolbar .title strong {
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-lg);
+}
+
+/* The modes, as one control with the mode shown underlined. */
 .design-tabs {
   display: flex;
   gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--tf-outline);
+  border-radius: var(--tf-radius-md);
+  background: var(--tf-surface);
 }
 
-.design-tabs .tab.chosen,
+.design-tabs .tab {
+  height: var(--tf-control-sm);
+  border-color: transparent;
+  border-radius: var(--tf-radius-sm);
+  background: transparent;
+  color: var(--tf-text-muted);
+}
+
+.design-tabs .tab:hover {
+  border-color: transparent;
+  background: var(--tf-hover);
+  color: var(--tf-text);
+}
+
+.design-tabs .tab.chosen {
+  background: var(--tf-surface-raised);
+  box-shadow: inset 0 -2px var(--tf-primary);
+  color: var(--tf-text);
+}
+
 .design-layers li.chosen .layer-name {
-  border-color: var(--accent);
+  border-color: var(--tf-focus);
   background: var(--tf-selected);
-}
-
-.design-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  font-size: 13px;
-}
-
-.save-saved {
-  color: var(--tf-success);
-}
-
-.save-invalid,
-.save-conflict,
-.save-failed {
-  color: var(--tf-danger);
 }
 
 .design-types,
@@ -773,6 +793,11 @@ body.printing #root {
    shown is marked, and has a menu of what can be done with it. */
 .design-types {
   padding-top: var(--tf-space-3);
+  border-right: 1px solid var(--tf-outline);
+}
+
+.design-inspector {
+  border-left: 1px solid var(--tf-outline);
 }
 
 .design-types .design-type-new {
@@ -833,8 +858,30 @@ body.printing #root {
   min-height: 0;
 }
 
+/* The head of the Components page, across the top of the canvas. */
+.design-main .ui-header {
+  margin: 0;
+  padding: var(--tf-space-3) var(--tf-space-4);
+  border-bottom: 1px solid var(--tf-outline);
+  background: var(--tf-surface);
+}
+
+.design-main .ui-header h2 {
+  font-size: var(--tf-text-xl);
+}
+
 .design-sample {
-  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-2);
+  margin-right: var(--tf-space-3);
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-sm);
+}
+
+.designer .design-sample select {
+  height: var(--tf-control-md);
+  border-radius: var(--tf-radius-sm);
 }
 
 .design-canvas {
@@ -846,8 +893,9 @@ body.printing #root {
 .design-yaml {
   max-height: 40%;
   overflow: auto;
-  padding: 8px 12px;
-  background: var(--bar);
+  padding: var(--tf-space-2) var(--tf-space-3);
+  border-top: 1px solid var(--tf-outline);
+  background: var(--tf-surface);
 }
 
 .design-yaml pre {
@@ -885,25 +933,25 @@ body.printing #root {
 .design-row.invalid input,
 .design-row.invalid select,
 .design-row.invalid textarea {
-  border-color: #f85149;
+  border-color: var(--tf-danger);
 }
 
 .design-problem {
   margin: 0;
-  color: #f85149;
+  color: var(--tf-danger);
   font-size: 12px;
 }
 
 .design-problems {
   margin-top: 12px;
   padding: 8px 12px;
-  border: 1px solid #f85149;
+  border: 1px solid var(--tf-danger);
   border-radius: 6px;
 }
 
 .design-problems h3 {
   margin-top: 0;
-  color: #f85149;
+  color: var(--tf-danger);
 }
 
 .design-problems ul {
@@ -949,7 +997,7 @@ body.printing #root {
 .design-field {
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #30363d;
+  border-bottom: 1px solid var(--tf-outline);
 }
 
 .design-field-actions {
@@ -977,10 +1025,18 @@ body.printing #root {
   text-overflow: ellipsis;
 }
 
+/* A line of buttons that each add a kind of thing, after the word "Add:". */
+.design-add {
+  display: flex;
+  gap: var(--tf-space-1);
+  align-items: center;
+  color: var(--tf-text-muted);
+}
+
 .design-layer {
   margin-top: 12px;
   padding-top: 4px;
-  border-top: 1px solid #30363d;
+  border-top: 1px solid var(--tf-outline);
 }
 
 .new-type fieldset {
@@ -988,7 +1044,7 @@ body.printing #root {
   grid-template-columns: 1fr 1fr;
   gap: 4px;
   margin: 12px 0;
-  border: 1px solid #30363d;
+  border: 1px solid var(--tf-outline);
   border-radius: 6px;
 }
 
@@ -1012,7 +1068,7 @@ body.printing #root {
   display: block;
   margin: 8px 0 16px;
   padding: 16px;
-  border: 2px dashed #30363d;
+  border: 2px dashed var(--tf-outline);
   border-radius: 8px;
   color: var(--muted);
 }
@@ -1028,7 +1084,7 @@ body.printing #root {
 
 .asset-image {
   padding: 8px;
-  border: 1px solid #30363d;
+  border: 1px solid var(--tf-outline);
   border-radius: 8px;
 }
 
@@ -1070,7 +1126,8 @@ body.printing #root {
   max-width: 100%;
   margin: 6px 0;
   line-height: 0;
-  background: repeating-conic-gradient(#30363d 0 25%, #21262d 0 50%) 0 0 / 16px 16px;
+  background: repeating-conic-gradient(var(--tf-control-hover) 0 25%, var(--tf-control) 0 50%) 0 0 /
+    16px 16px;
 }
 
 .tile-picker img {
@@ -1106,13 +1163,13 @@ body.printing #root {
 }
 
 .design-kinds .kind.chosen {
-  border-color: var(--accent);
-  background: #1f3a5f;
+  border-color: var(--tf-focus);
+  background: var(--tf-selected);
 }
 
 .design-section + .design-section {
   margin-top: 8px;
-  border-top: 1px solid #30363d;
+  border-top: 1px solid var(--tf-outline);
 }
 
 .design-section > details > summary {
@@ -1132,14 +1189,13 @@ body.printing #root {
   display: none;
 }
 
-.design-section > details > summary::before {
-  content: '▸';
-  color: var(--muted);
-  font-size: 12px;
+/* The arrow before a section's heading points down while the section is open. */
+.design-section > details > summary .ui-icon {
+  color: var(--tf-text-muted);
   transition: transform 0.1s;
 }
 
-.design-section > details[open] > summary::before {
+.design-section > details[open] > summary .ui-icon {
   transform: rotate(90deg);
 }
 
@@ -1188,7 +1244,7 @@ body.printing #root {
   gap: 4px;
   align-items: center;
   padding: 2px;
-  border: 1px solid #30363d;
+  border: 1px solid var(--tf-outline);
   border-radius: 4px;
 }
 
@@ -1205,11 +1261,15 @@ body.printing #root {
   align-items: center;
   padding: 0 2px 0 6px;
   border-radius: 10px;
-  background: #30363d;
+  background: var(--tf-control-hover);
 }
 
 .picker-chip button {
-  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 2px;
   border: none;
   background: transparent;
   color: var(--muted);
@@ -1223,127 +1283,16 @@ body.printing #root {
   background: var(--tf-surface);
 }
 
-/* How the designer's shared parts (its toolbar, modes and list headings) look in
-   the brand. They are scoped to the Tray until the other views move over, when
-   they become the rules for the whole designer. */
-.designer.tray .toolbar {
-  border-bottom-color: var(--tf-outline);
-}
-
-.designer.tray .toolbar .title strong {
-  font-family: var(--tf-font-heading);
-  font-size: var(--tf-text-lg);
-}
-
-.designer.tray .design-types {
-  border-right: 1px solid var(--tf-outline);
-}
-
-.designer.tray h4 {
-  margin: var(--tf-space-4) var(--tf-space-2) var(--tf-space-1);
-  font-family: var(--tf-font-heading);
-  font-size: var(--tf-text-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* The modes, as one control with the mode shown underlined. */
-.designer.tray .design-tabs {
-  padding: 3px;
-  border: 1px solid var(--tf-outline);
-  border-radius: var(--tf-radius-md);
-  background: var(--tf-surface);
-}
-
-.designer.tray .design-tabs .tab {
-  height: var(--tf-control-sm);
-  border-color: transparent;
-  border-radius: var(--tf-radius-sm);
-  background: transparent;
-  color: var(--tf-text-muted);
-}
-
-.designer.tray .design-tabs .tab:hover {
-  background: var(--tf-hover);
-  color: var(--tf-text);
-}
-
-.designer.tray .design-tabs .tab.chosen {
-  background: var(--tf-surface-raised);
-  box-shadow: inset 0 -2px var(--tf-primary);
-  color: var(--tf-text);
-}
-
 .tray-page {
   overflow-y: auto;
   padding: var(--tf-space-5) var(--tf-space-6) var(--tf-space-6);
 }
 
-.tray-header {
-  display: flex;
-  align-items: center;
-  gap: var(--tf-space-2);
-  margin-bottom: var(--tf-space-5);
-}
-
-.tray-title {
-  min-width: 0;
-  margin-right: auto;
-}
-
-.tray-title h2 {
-  margin: 0;
-  font-family: var(--tf-font-heading);
-  font-size: var(--tf-text-2xl);
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.tray-title p {
-  margin: 2px 0 0;
-  color: var(--tf-text-muted);
-  font-size: var(--tf-text-sm);
-}
-
-.tray-status {
-  display: flex;
-  align-items: center;
-  gap: var(--tf-space-1);
-  margin-right: var(--tf-space-2);
-  color: var(--tf-text-muted);
-  font-size: var(--tf-text-sm);
-}
-
-.tray-status.save-saved {
-  color: var(--tf-success);
-}
-
-.tray-status.save-failed {
-  color: var(--tf-danger);
-}
-
-.tray-status.save-saving .ui-icon,
-.tray-status.save-loading .ui-icon {
-  animation: tray-busy 0.9s linear infinite;
-}
-
-@keyframes tray-busy {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tray-status .ui-icon {
-    animation: none;
-  }
-}
-
-.tray-header > .ui-menu {
+.tray-page .ui-header > .ui-menu {
   margin-left: var(--tf-space-2);
 }
 
-.tray-header .ui-menu-list {
+.tray-page .ui-header .ui-menu-list {
   min-width: 320px;
 }
 

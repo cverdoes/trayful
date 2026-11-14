@@ -222,6 +222,67 @@
   font-size: var(--tf-text-sm);
 }
 
+/* A page's head: its title and a quiet line on the left, status and actions on the right. */
+.ui-header {
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-2);
+  margin-bottom: var(--tf-space-5);
+}
+
+.ui-header-title {
+  min-width: 0;
+  margin-right: auto;
+}
+
+.ui-header-title h2 {
+  margin: 0;
+  font-family: var(--tf-font-heading);
+  font-size: var(--tf-text-2xl);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ui-header-title p {
+  margin: 2px 0 0;
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-sm);
+}
+
+/* A status: an icon and a few words, coloured by how it reads. */
+.ui-status {
+  display: flex;
+  align-items: center;
+  gap: var(--tf-space-1);
+  margin-right: var(--tf-space-2);
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-sm);
+}
+
+.ui-status-ok {
+  color: var(--tf-success);
+}
+
+.ui-status-bad {
+  color: var(--tf-danger);
+}
+
+.ui-status-busy .ui-icon {
+  animation: ui-busy 0.9s linear infinite;
+}
+
+@keyframes ui-busy {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-status .ui-icon {
+    animation: none;
+  }
+}
+
 /* A menu: the list hangs under its button. */
 .ui-menu {
   position: relative;
@@ -328,6 +389,7 @@
   gap: var(--tf-space-3);
 }
 
+.ui-page-row > .ui-header,
 .ui-page-row > .ui-card,
 .ui-page-row > .ui-empty {
   flex: 1 1 100%;

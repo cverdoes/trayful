@@ -25,7 +25,7 @@ test('a person builds a card type in the designer and deals it onto the table', 
   await newComponent(page, 'Season card', 'Poker card');
   const inspector = page.getByRole('complementary', { name: 'Inspector' });
   await inspector.getByText('Data fields').click();
-  await inspector.getByRole('button', { name: '+ Add field' }).click();
+  await inspector.getByRole('button', { name: 'Add field' }).click();
   const fieldName = inspector.locator('.design-field').getByLabel('Name');
   await fieldName.fill('title');
   await fieldName.press('Enter');

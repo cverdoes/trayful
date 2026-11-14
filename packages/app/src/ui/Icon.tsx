@@ -120,6 +120,30 @@ const SHAPES = {
       <path d="M21 12.43a1.93 1.93 0 0 0 0-3.36L8.83 2.2a1.64 1.64 0 0 0-1.63 0L3 4.57a1.93 1.93 0 0 0 0 3.36l12.18 6.86a1.636 1.636 0 0 0 1.63 0z" />
     </>
   ),
+  arrowUp: (
+    <>
+      <path d="m5 12 7-7 7 7" />
+      <path d="M12 19V5" />
+    </>
+  ),
+  arrowDown: (
+    <>
+      <path d="M12 5v14" />
+      <path d="m19 12-7 7-7-7" />
+    </>
+  ),
+  right: (
+    <>
+      <path d="m9 18 6-6-6-6" />
+    </>
+  ),
+  code: (
+    <>
+      <path d="m18 16 4-4-4-4" />
+      <path d="m6 8-4 4 4 4" />
+      <path d="m14.5 4-5 16" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof SHAPES;

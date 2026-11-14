@@ -26,7 +26,7 @@ test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page
   await add(tray, 'One of every tile');
   await waitSaved(page);
   await expect(tray).toContainText('24 designs');
-  await expect(tray.locator('.tray-title')).toContainText('24 in the box');
+  await expect(tray.locator('.ui-header-title')).toContainText('24 in the box');
   await expect
     .poll(() => libraryFile(page, PROJECT, 'inventory.yaml'))
     .toContain('  - component: terrain\n    deck: terrain\n');
@@ -38,7 +38,7 @@ test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page
   await rows.getByRole('button', { name: 'Tile 5' }).click();
   await rows.getByLabel('copies, row 1', { exact: true }).fill('2');
   await waitSaved(page);
-  await expect(tray.locator('.tray-title')).toContainText('26 in the box');
+  await expect(tray.locator('.ui-header-title')).toContainText('26 in the box');
   await page.screenshot({ path: 'test-results/tray.png' });
 
   // On a new table the 24 tiles lie in one deck.
@@ -60,7 +60,7 @@ test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page
   await page.getByRole('button', { name: 'Components' }).click();
   await expect(face.getByLabel('Image')).toHaveValue('landscape');
   await page.getByRole('button', { name: 'Tray' }).click();
-  await expect(tray.locator('.tray-title')).toContainText('26 in the box');
+  await expect(tray.locator('.ui-header-title')).toContainText('26 in the box');
 });
 
 test("a CSV file's rows are edited in the Tray", async ({ page }) => {
@@ -173,7 +173,7 @@ test('designs move between the inventory and a CSV file', async ({ page }) => {
   await page.goto(`/?project=${PROJECT}&design&tray`);
   await page.getByRole('button', { name: /^Token/ }).click();
   const tray = page.getByRole('main', { name: 'Tray' });
-  const inTheBox = tray.locator('.tray-title p');
+  const inTheBox = tray.locator('.ui-header-title p');
   await expect(tray.getByRole('heading', { name: 'Token', level: 2 })).toBeVisible();
   const inBox = await inTheBox.textContent();
 
