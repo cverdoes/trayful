@@ -1,12 +1,9 @@
 /* Design tokens: the colours, sizes and spaces the interface is drawn with. A rule
-   names a role (`--tf-surface`, `--tf-outline`), never a colour of its own.
+   names a role (`--tf-surface`, `--tf-outline`), never a colour of its own: this is
+   the only file with colour values in it, and `pnpm check:colours` keeps it so.
 
-   The roles have two sets of values while the interface moves over view by view.
-   The first is the grey look every view started with. The second is Trayful's
-   brand (Forest surfaces, Parchment text, Mustard for the main action, Lake for
-   focus, Brick for danger), given to the views that are redrawn: add a view's
-   selector to the second rule to move it over. When the last view has moved, the
-   brand values become the only ones. */
+   The colours are Trayful's brand: Forest surfaces, Parchment text, Mustard for the
+   main action, Lake for focus, Brick for danger, and the green felt of the table. */
 
 @font-face {
   font-family: 'Red Hat Display';
@@ -32,25 +29,49 @@
 }
 
 :root {
-  /* Colour roles, in the grey look. */
-  --tf-surface: #1f2328;
-  --tf-surface-raised: #21262d;
-  --tf-surface-sunken: #0d1117;
-  --tf-surface-overlay: #2d333b;
-  --tf-control: #21262d;
-  --tf-control-hover: #30363d;
-  --tf-outline: #30363d;
-  --tf-outline-strong: #8b949e;
-  --tf-text: #e6edf3;
-  --tf-text-muted: #8b949e;
-  --tf-primary: #2f81f7;
-  --tf-on-primary: #fff;
-  --tf-focus: #2f81f7;
-  --tf-selected: #1f3a5f;
-  --tf-hover: rgb(230 237 243 / 8%);
-  --tf-danger: #f85149;
-  --tf-success: #3fb950;
-  --tf-warning: #d29922;
+  /* Colour roles. */
+  --tf-surface: #0f1d19;
+  --tf-surface-raised: #162923;
+  --tf-surface-sunken: #0a1512;
+  --tf-surface-overlay: #1b332b;
+  --tf-control: #1b332b;
+  --tf-control-hover: #24423a;
+  --tf-outline: #2b443b;
+  --tf-outline-strong: #5b7f5f;
+  --tf-text: #f6eedb;
+  --tf-text-muted: #a3b3a2;
+  --tf-primary: #e0a933;
+  --tf-on-primary: #1d1603;
+  --tf-focus: #5b9cc7;
+  --tf-selected: #1e3a31;
+  --tf-hover: rgb(246 238 219 / 8%);
+  --tf-danger: #e8806b;
+  --tf-success: #8fb893;
+  --tf-warning: #e0a933;
+
+  /* The table: green felt, lighter in the middle, with a fine grain so it reads as
+     cloth rather than a flat colour. */
+  --tf-felt-light: #376b5c;
+  --tf-felt: #2f5d50;
+  --tf-felt-dark: #22473d;
+  --tf-felt-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='.3'/%3E%3C/svg%3E");
+  /* Light lines drawn over an image, such as the edges of the tiles it is cut into. */
+  --tf-line-on-image: rgb(255 255 255 / 50%);
+
+  /* What dims the page behind a dialog or the magnifier, and the table between its
+     surface tiles. */
+  --tf-scrim: rgb(0 0 0 / 55%);
+  --tf-scrim-strong: rgb(0 0 0 / 65%);
+  --tf-shade: rgb(0 0 0 / 28%);
+
+  /* The print page: white sheets on a grey desk, with dashed cut lines. */
+  --tf-paper: #fff;
+  --tf-print-desk: #525659;
+  --tf-cut-line: #bbb;
+
+  /* The checks behind a transparent colour. */
+  --tf-checker-dark: #888;
+  --tf-checker-light: #fff;
 
   /* Type: six sizes, and the brand's typeface for headings. */
   --tf-font-heading: 'Red Hat Display', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -81,46 +102,4 @@
   --tf-control-lg: 40px;
 
   --tf-shadow-overlay: 0 8px 24px rgb(0 0 0 / 45%);
-}
-
-/* What is drawn in the brand: the designer, the components page, every dialog,
-   and everything over the table: its toolbar, surface chips and tile names, the
-   hand, prompts, notices, pickers, and the join and closed screens. */
-.designer,
-.ui-page,
-.ui-dialog,
-.table-toolbar,
-.chip-row,
-.surface-tile-label,
-.hand-tray,
-.prompt,
-.ui-notice,
-.group-picker,
-.gate {
-  --tf-surface: #0f1d19;
-  --tf-surface-raised: #162923;
-  --tf-surface-sunken: #0a1512;
-  --tf-surface-overlay: #1b332b;
-  --tf-control: #1b332b;
-  --tf-control-hover: #24423a;
-  --tf-outline: #2b443b;
-  --tf-outline-strong: #5b7f5f;
-  --tf-text: #f6eedb;
-  --tf-text-muted: #a3b3a2;
-  --tf-primary: #e0a933;
-  --tf-on-primary: #1d1603;
-  --tf-focus: #5b9cc7;
-  --tf-selected: #1e3a31;
-  --tf-hover: rgb(246 238 219 / 8%);
-  --tf-danger: #e8806b;
-  --tf-success: #8fb893;
-  --tf-warning: #e0a933;
-
-  /* The names older rules use, so what they draw here follows the brand too. */
-  --bar: var(--tf-surface-sunken);
-  --bar-text: var(--tf-text);
-  --muted: var(--tf-text-muted);
-  --accent: var(--tf-focus);
-
-  color: var(--tf-text);
 }
