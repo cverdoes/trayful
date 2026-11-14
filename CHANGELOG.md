@@ -31,6 +31,7 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - The Tray adds typed designs with one **Designs** button, in place of "One design" and "Designs in rows": an entry starts with one design and takes more rows. **Move to CSV** and **Move to inventory** change where an entry keeps its designs.
 - The Tray has a designed layout in Trayful's own colours and typeface. Its header names the component and how many are in the box, with undo, redo and the save status beside one **Add** menu. Each entry is a card that says what it makes, with **Deck** and **Copies of each** as labelled fields and a **⋯** menu that holds **Move to CSV**, **Move to inventory** and **Remove**. An empty Tray says what to do.
 - The whole designer is in the same colours and typeface. The Components page has a header above the canvas with the component's name and file, the sample design, the save status, and undo and redo as icon buttons. The inspector's sections, the layer list and the mode tabs use the same icons and controls as the Tray.
+- The Assets page has the same header as the other designer pages, with **Add images** as its main action; pictures can be dropped anywhere on the page. Each image is a card with its rows and columns as fields and **Rename** and **Remove** in a **⋯** menu. Colours are rows with the colour's value beside its name.
 - In the component list, the number in the box is a badge, **New component** is at the top, and **Duplicate** and **Delete** are in a **⋯** menu on the selected component.
 
 ### Fixes

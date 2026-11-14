@@ -52,10 +52,9 @@ test('a sheet of 24 terrain tiles becomes a deck in a few clicks', async ({ page
   // Renaming the sheet changes the component that shows it.
   await page.getByRole('button', { name: 'Assets' }).click();
   page.once('dialog', (dialog) => void dialog.accept('landscape'));
-  await page
-    .getByRole('listitem', { name: 'terrain' })
-    .getByRole('button', { name: 'Rename' })
-    .click();
+  const terrain = page.getByRole('listitem', { name: 'terrain' });
+  await terrain.getByRole('button', { name: 'Actions for terrain' }).click();
+  await terrain.getByRole('menuitem', { name: 'Rename' }).click();
   await expect(page.getByRole('listitem', { name: 'landscape' })).toBeVisible();
   await page.getByRole('button', { name: 'Components' }).click();
   await expect(face.getByLabel('Image')).toHaveValue('landscape');

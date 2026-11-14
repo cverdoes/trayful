@@ -67,7 +67,7 @@ Colour boxes take any CSS colour, a `{{field}}`, or a colour named in the projec
 
 ## Images and colours
 
-The **Assets** page lists the project's images and named colours, as `assets.yaml` holds them. Drop picture files on it, or click **Add images**, to save them into `assets/` and name them after their file (`Die faces.png` becomes `die-faces`). For a sheet of cards or tiles, or a strip of die faces, set **Rows** and **Columns**: the grid drawn over the image shows the tiles it is cut into, numbered left to right, then top to bottom, from 0. **Rename** gives an image a new name and changes every component that shows it. **Remove** takes the name off an image; the file stays, and an image a component still uses cannot be removed.
+The **Assets** page lists the project's images and named colours, as `assets.yaml` holds them. Drop picture files anywhere on it, or click **Add images**, to save them into `assets/` and name them after their file (`Die faces.png` becomes `die-faces`). For a sheet of cards or tiles, or a strip of die faces, set **Rows** and **Columns**: the grid drawn over the image shows the tiles it is cut into, numbered left to right, then top to bottom, from 0. Each image has a **⋯** menu. **Rename** gives an image a new name and changes every component that shows it. **Remove** takes the name off an image; the file stays, and an image a component still uses cannot be removed.
 
 Under **Colours**, give a colour a name with **Add colour**, change one with its picker, or remove it. Named colours appear as swatches next to every colour box.
 
