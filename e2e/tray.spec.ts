@@ -132,3 +132,33 @@ test('a CSV file is edited like a spreadsheet', async ({ page }) => {
   await expect(grid.getByRole('rowheader')).toHaveCount(last);
   await expect(cell('value, row 1')).toHaveValue('7');
 });
+
+test('designs in rows share the grid, and a field with choices is a drop-down', async ({
+  page,
+}) => {
+  await page.goto('/?project=harvest-moon&design&tray&type=action-card');
+  const tray = page.getByRole('main', { name: 'Tray' });
+  const rows = tray.getByRole('region', { name: 'Entry 1' });
+  const cell = (name: string) => rows.getByLabel(name, { exact: true });
+
+  // The keys move between the designs' cells; the field names above them are not cells.
+  await cell('name, row 2').click();
+  await page.keyboard.press('ArrowUp');
+  await expect(cell('name, row 1')).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(cell('text, row 1')).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(cell('text, row 1')).toBeFocused();
+
+  // A CSV file's column for a field with choices picks from them too.
+  const suit = tray.getByRole('region', { name: 'Entry 2' }).getByLabel('suit, row 1');
+  await expect(suit).toHaveValue('green');
+  await suit.selectOption('red');
+  await waitSaved(page);
+  await expect
+    .poll(() => libraryFile(page, 'harvest-moon', 'data/actions.csv'))
+    .toContain('Plough,1,red,');
+  await tray.getByRole('button', { name: 'Undo' }).click();
+  await waitSaved(page);
+  await expect(suit).toHaveValue('green');
+});

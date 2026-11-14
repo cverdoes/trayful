@@ -1,8 +1,8 @@
 // A CSV file an inventory entry reads, edited in the Tray as a spreadsheet: its
 // header row names the fields, and each row below it is a design. The keys and
-// pasting work as in a spreadsheet; see grid.ts.
-import { useRef, type ClipboardEvent, type KeyboardEvent } from 'react';
-import { cellAfterKey, columnWidths, pastedInto, type Cell } from './grid';
+// pasting work as in a spreadsheet; see GridFrame.tsx and grid.ts.
+import { columnWidths, pastedInto, type Cell } from './grid';
+import { AddRow, cellName, GridFrame, RowHead } from './GridFrame';
 import {
   nextColumn,
   replaced,
@@ -22,123 +22,86 @@ export function CsvGrid({
   onChange,
 }: Readonly<{
   table: CsvTable;
-  /** The component's fields, which new columns are named after. */
+  /** The component's fields: new columns are named after them, and a field with choices gets a drop-down. */
   columns: Column[];
   onChange: TableChange;
 }>) {
-  const grid = useRef<HTMLDivElement>(null);
-  const cell = cellEvents(table, onChange, (at) =>
-    grid.current?.querySelector<HTMLInputElement>(`[data-cell="${at.row}:${at.col}"]`),
-  );
   const setRows = (rows: string[][]) => onChange({ ...table, rows });
-  const name = (j: number) => columnName(table, j);
+  // Several cells pasted at once fill the cells from the one pasted in.
+  const paste = (at: Cell, text: string) => {
+    const next = pastedInto(table, at, text);
+    if (next) onChange(next, true);
+    return next !== undefined;
+  };
   return (
-    <div className="csv-grid" ref={grid}>
-      <table>
-        <colgroup>
-          <col className="csv-gutter" />
-          {columnWidths(table).map((width, j) => (
-            <col key={j} style={{ width: `${width}ch` }} />
-          ))}
-          <col className="csv-gutter" />
-        </colgroup>
-        <CsvHeader table={table} columns={columns} onChange={onChange} cell={cell} />
-        <tbody>
-          {table.rows.map((row, i) => (
-            // Rows have no id of their own; their place is what identifies them here.
-            <tr key={i}>
-              <th scope="row" className="csv-row-head">
-                <span>{i + 1}</span>
-                <button
-                  type="button"
-                  className="csv-remove"
-                  aria-label={`Remove row ${i + 1}`}
-                  title="Remove row"
-                  onClick={() => setRows(replaced(table.rows, i, undefined))}
-                >
-                  ×
-                </button>
-              </th>
-              {table.header.map((_, j) => (
-                <td key={j}>
-                  <input
-                    type="text"
-                    {...cell({ row: i, col: j })}
-                    aria-label={`${name(j)}, row ${i + 1}`}
-                    value={row[j] ?? ''}
-                    onChange={(e) =>
-                      setRows(replaced(table.rows, i, replaced(row, j, e.target.value)))
-                    }
-                  />
-                </td>
-              ))}
-              <td />
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={table.header.length + 2}>
-              <button
-                type="button"
-                className="csv-add-row"
-                onClick={() => setRows([...table.rows, table.header.map(() => '')])}
-              >
-                + Row
-              </button>
-            </td>
+    <GridFrame
+      widths={columnWidths(table)}
+      size={{ rows: table.rows.length, cols: table.header.length, header: true }}
+      trailing
+      onPaste={paste}
+    >
+      <CsvHeader table={table} columns={columns} onChange={onChange} />
+      <tbody>
+        {table.rows.map((row, i) => (
+          // Rows have no id of their own; their place is what identifies them here.
+          <tr key={i}>
+            <RowHead index={i} onRemove={() => setRows(replaced(table.rows, i, undefined))} />
+            {table.header.map((name, j) => (
+              <td key={j} {...cellName({ row: i, col: j })}>
+                <CsvCell
+                  choices={columns.find((c) => c.name === name)?.field.enum}
+                  label={`${columnName(table, j)}, row ${i + 1}`}
+                  value={row[j] ?? ''}
+                  onChange={(cell) => setRows(replaced(table.rows, i, replaced(row, j, cell)))}
+                />
+              </td>
+            ))}
+            <td />
           </tr>
-        </tfoot>
-      </table>
-    </div>
+        ))}
+      </tbody>
+      <AddRow
+        span={table.header.length + 2}
+        onAdd={() => setRows([...table.rows, table.header.map(() => '')])}
+      />
+    </GridFrame>
   );
 }
 
-/** What a cell's box does with keys and pastes, and the name its box is found by. */
-type CellProps = (at: Cell) => {
-  'data-cell': string;
-  onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
-  onPaste: (e: ClipboardEvent<HTMLInputElement>) => void;
-};
-
-/**
- * Keys that move between cells, and pastes of several cells that fill the cells
- * from the one pasted in. `box` finds a cell's box, to move to.
- */
-function cellEvents(
-  table: CsvTable,
-  onChange: TableChange,
-  box: (at: Cell) => HTMLInputElement | null | undefined,
-): CellProps {
-  return (at) => ({
-    'data-cell': `${at.row}:${at.col}`,
-    onKeyDown: (e) => {
-      if (e.nativeEvent.isComposing) return;
-      const next = cellAfterKey(keyIn(e), at, table);
-      if (!next) return;
-      e.preventDefault();
-      // Arriving in a cell selects its text, so typing replaces it, as in a spreadsheet.
-      box(next)?.select();
-    },
-    onPaste: (e) => {
-      const next = pastedInto(table, at, e.clipboardData.getData('text/plain'));
-      if (!next) return;
-      e.preventDefault();
-      onChange(next, true);
-    },
-  });
-}
-
-/** A key pressed in a cell's box, with where its caret is. */
-function keyIn(e: KeyboardEvent<HTMLInputElement>) {
-  const { selectionStart, selectionEnd, value } = e.currentTarget;
-  const whole = selectionStart === 0 && selectionEnd === value.length;
-  return {
-    key: e.key,
-    shift: e.shiftKey,
-    atStart: whole || selectionEnd === 0,
-    atEnd: whole || selectionStart === value.length,
-  };
+/** A cell's text: typed, or picked from a drop-down when its column's field has choices. */
+function CsvCell({
+  choices,
+  label,
+  value,
+  onChange,
+}: Readonly<{
+  choices?: (string | number)[];
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}>) {
+  if (!choices) {
+    return (
+      <input
+        type="text"
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    );
+  }
+  const options = choices.map(String);
+  return (
+    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
+      {/* What the file has stays on offer, even when the field has no such choice. */}
+      {!options.includes(value) && <option value={value}>{value}</option>}
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  );
 }
 
 /** The header row: a name per column, and columns to add and remove. */
@@ -146,24 +109,17 @@ function CsvHeader({
   table,
   columns,
   onChange,
-  cell,
-}: Readonly<{
-  table: CsvTable;
-  columns: Column[];
-  onChange: TableChange;
-  cell: CellProps;
-}>) {
+}: Readonly<{ table: CsvTable; columns: Column[]; onChange: TableChange }>) {
   return (
     <thead>
       <tr>
-        <th className="csv-corner" aria-hidden="true" />
+        <th aria-hidden="true" />
         {table.header.map((h, j) => (
           // A column's name changes as it is typed, so its place identifies it here.
-          <th key={j}>
-            <div className="csv-head">
+          <th key={j} {...cellName({ row: -1, col: j })}>
+            <div className="grid-head">
               <input
                 type="text"
-                {...cell({ row: -1, col: j })}
                 aria-label={`Name of column ${j + 1}`}
                 value={h}
                 onChange={(e) =>
@@ -172,7 +128,7 @@ function CsvHeader({
               />
               <button
                 type="button"
-                className="csv-remove"
+                className="grid-remove"
                 aria-label={`Remove column ${columnName(table, j)}`}
                 title="Remove column"
                 onClick={() => onChange(withoutColumn(table, j))}
@@ -185,7 +141,7 @@ function CsvHeader({
         <th>
           <button
             type="button"
-            className="csv-add-column"
+            className="grid-add-column"
             aria-label="Add column"
             title="Add column"
             onClick={() => onChange(withColumn(table, nextColumn(table, columns)))}

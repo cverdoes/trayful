@@ -1,11 +1,19 @@
-// The spreadsheet side of the Tray's CSV grid: which cell a key moves to, what
+// The spreadsheet side of the Tray's grids: which cell a key moves to, what
 // pasting cells copied from a spreadsheet changes, and how wide each column is.
-import type { CsvTable } from './tray';
+import type { Column, CsvTable, Values } from './tray';
 
-/** A cell of a CSV grid. Row -1 is the header row, which names the columns. */
+/** A cell of a grid. Row -1 is the header row, which names the columns. */
 export interface Cell {
   row: number;
   col: number;
+}
+
+/** How many cells a grid has to move between. */
+export interface GridSize {
+  rows: number;
+  cols: number;
+  /** Whether the header row has boxes too, as a CSV file's column names do. */
+  header: boolean;
 }
 
 /** A key pressed in a cell, with where the caret was in the cell's text. */
@@ -23,14 +31,14 @@ export interface CellKey {
  * go a row down or up, and left and right go a column over once the caret is at the
  * edge of the text. Undefined when the key stays in the cell.
  */
-export function cellAfterKey(pressed: CellKey, at: Cell, table: CsvTable): Cell | undefined {
+export function cellAfterKey(pressed: CellKey, at: Cell, size: GridSize): Cell | undefined {
   const [down, right] = step(pressed) ?? [0, 0];
   const next = { row: at.row + down, col: at.col + right };
   const inside =
-    next.row >= -1 &&
-    next.row < table.rows.length &&
+    next.row >= (size.header ? -1 : 0) &&
+    next.row < size.rows &&
     next.col >= 0 &&
-    next.col < table.header.length;
+    next.col < size.cols;
   return (down !== 0 || right !== 0) && inside ? next : undefined;
 }
 
@@ -105,16 +113,42 @@ export function pastedInto(table: CsvTable, at: Cell, text: string): CsvTable | 
 /** The narrowest and widest a column is drawn, in characters. */
 const WIDTH = { min: 6, max: 40 };
 
-/** Room beside a column's name for its remove button, in characters. */
+/** Room beside a CSV column's name for its remove button, in characters. */
 const HEADER_ROOM = 3;
 
-/** How wide each column is drawn, in characters: enough for its longest cell, within limits. */
+/** Room beside a drop-down's choice for its arrow, in characters. */
+const ARROW_ROOM = 3;
+
+/** How wide a column with these texts is drawn, in characters: enough for the longest, within limits. */
+function widthFor(lengths: number[]): number {
+  return Math.min(WIDTH.max, Math.max(WIDTH.min, Math.max(...lengths) + 2));
+}
+
+/** How wide each column of a CSV file is drawn, in characters. */
 export function columnWidths(table: CsvTable): number[] {
-  return table.header.map((name, j) => {
-    const longest = Math.max(
-      name.length + HEADER_ROOM,
-      ...table.rows.map((row) => (row[j] ?? '').length),
-    );
-    return Math.min(WIDTH.max, Math.max(WIDTH.min, longest + 2));
-  });
+  return table.header.map((name, j) =>
+    widthFor([name.length + HEADER_ROOM, ...table.rows.map((row) => (row[j] ?? '').length)]),
+  );
+}
+
+/**
+ * The least room a field of a kind gets while its cells are empty, in characters:
+ * text needs room to start typing, and a colour has its picker and swatches.
+ */
+const EMPTY_ROOM: Partial<Record<Column['field']['type'], number>> = {
+  string: 12,
+  image: 12,
+  color: 28,
+};
+
+/** How wide each field's column is drawn for designs in rows, in characters. */
+export function designWidths(columns: Column[], rows: Values[]): number[] {
+  return columns.map(({ name, field }) =>
+    widthFor([
+      name.length,
+      EMPTY_ROOM[field.type] ?? 0,
+      ...(field.enum ?? []).map((option) => String(option).length + ARROW_ROOM),
+      ...rows.map((row) => String(row[name] ?? '').length),
+    ]),
+  );
 }
