@@ -5,12 +5,14 @@ import {
   keepFixedCorner,
   movedLayer,
   pivotOf,
+  reshapedLayer,
   resizedLayer,
   rotatedLayer,
   snapBox,
   snapLines,
   snapPoint,
   unrotate,
+  withRadius,
 } from '../../../src/design/canvas/manipulate';
 import { layerBounds } from '../../../src/design/canvas/layout';
 
@@ -109,5 +111,51 @@ describe('changing a layer', () => {
     ]);
     const text: Layer = { text: 'x', at: [0, 0] };
     expect(handlesOf(text, layerBounds(text, face)).map(([h]) => h)).toEqual(['e']);
+  });
+});
+
+describe('changing a shape layer', () => {
+  const circle: Layer = { shape: 'circle', at: [15, 15], r: 5, fill: 'red' };
+
+  it('gives a shape leaving a radius the box the radius covered', () => {
+    expect(reshapedLayer(circle, 'rect')).toEqual({
+      shape: 'rect',
+      at: [10, 10],
+      fill: 'red',
+      size: 10,
+    });
+  });
+
+  it('keeps the radius between shapes drawn around their anchor', () => {
+    expect(reshapedLayer(circle, 'hex')).toEqual({ ...circle, shape: 'hex' });
+  });
+
+  it('drops a radius and corners that the new shape would ignore', () => {
+    const stale: Layer = { shape: 'rect', at: [5, 5], size: [20, 10], r: 3, corner: 2 };
+    expect(reshapedLayer(stale, 'circle')).toEqual({ shape: 'circle', at: [5, 5], size: [20, 10] });
+    expect(reshapedLayer(stale, 'cube')).toEqual({
+      shape: 'cube',
+      at: [5, 5],
+      size: [20, 10],
+      corner: 2,
+    });
+  });
+
+  it('keeps a shape in place when its radius is set, changed or cleared', () => {
+    const boxed: Layer = { shape: 'circle', at: [10, 10], size: [10, 10] };
+    expect(withRadius(boxed, 5)).toEqual({ shape: 'circle', at: [15, 15], r: 5 });
+    expect(withRadius(circle, 8)).toEqual({ ...circle, r: 8 });
+    expect(withRadius(circle, undefined)).toEqual({
+      shape: 'circle',
+      at: [10, 10],
+      fill: 'red',
+      size: 10,
+    });
+  });
+
+  it('measures and resizes a rectangle by its size even when it has a stray radius', () => {
+    const stray: Layer = { shape: 'rect', at: [5, 5], size: [20, 10], r: 5 };
+    expect(pivotOf(stray, face)).toEqual([5, 5]);
+    expect(resizedLayer(stray, 'se', [35, 25], face)).toMatchObject({ size: [30, 20] });
   });
 });

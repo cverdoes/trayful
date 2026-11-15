@@ -1,8 +1,8 @@
 // Moving, resizing and rotating a layer on the designer canvas, and snapping it
 // to the grid, the face's edges and centre, and the other layers. Everything is in
 // millimetres on the face; the canvas turns pointer pixels into these first.
-import type { Layer } from '@trayful/formats/browser';
-import { textBox } from '../../render/face';
+import { shapeRadius, takesCorner, takesRadius, type Layer } from '@trayful/formats/browser';
+import { layerSize, textBox } from '../../render/face';
 import { setIn } from '../edit';
 import { layerBounds, type Box } from './layout';
 
@@ -115,7 +115,7 @@ export function resizedLayer(layer: Layer, handle: Handle, point: Point, face: P
       width: round(Math.max(5, point[0] - box.x)),
     };
   }
-  if (!('image' in layer) && layer.r !== undefined) {
+  if (!('image' in layer) && shapeRadius(layer) !== undefined) {
     const [cx, cy] = layer.at ?? [0, 0];
     return { ...layer, r: round(Math.max(0.5, Math.hypot(point[0] - cx, point[1] - cy))) };
   }
@@ -127,6 +127,39 @@ export function resizedLayer(layer: Layer, handle: Handle, point: Point, face: P
     round(Math.max(1, Math.abs(point[1] - fy))),
   ];
   return { ...layer, at: [round(x), round(y)], size };
+}
+
+type ShapeLayer = Extract<Layer, { shape: string }>;
+
+/**
+ * The shape layer drawn as another shape in the same place. A radius only means
+ * something to shapes drawn around their anchor, so leaving those turns it into the
+ * box it covered, and corners only mean something to rectangles and cubes. Keys the new shape
+ * would ignore go, so a stale radius never moves the drawing later.
+ */
+export function reshapedLayer(layer: ShapeLayer, shape: ShapeLayer['shape']): ShapeLayer {
+  const kept = takesCorner(shape) ? layer : setIn(layer, ['corner'], undefined);
+  const stays = shapeRadius(layer) !== undefined && takesRadius(shape);
+  return setIn(stays ? kept : withRadius(kept, undefined), ['shape'], shape);
+}
+
+/**
+ * A shape layer that takes a radius, with it set or cleared, staying where it is: a radius
+ * draws the shape around its anchor, so the anchor moves to the middle of the box
+ * it filled, and clearing the radius gives it back the box the radius covered.
+ */
+export function withRadius(layer: ShapeLayer, r: number | undefined): ShapeLayer {
+  const before = shapeRadius(layer);
+  const [x, y] = layer.at ?? [0, 0];
+  if (r === undefined) {
+    if (before === undefined) return setIn(layer, ['r'], undefined);
+    const boxed = setIn(layer, ['r'], undefined);
+    return { ...boxed, at: [round(x - before), round(y - before)], size: round(2 * before) };
+  }
+  if (before !== undefined) return { ...layer, r };
+  const [w, h] = layerSize(layer.size, [0, 0]);
+  const centred = setIn(layer, ['size'], undefined);
+  return { ...centred, at: [round(x + w / 2), round(y + h / 2)], r };
 }
 
 /** The corner that stays put while `handle` is dragged. */
@@ -165,7 +198,7 @@ export function pivotOf(layer: Layer, face: Point): Point {
     return [box.x, box.y];
   }
   const [x, y] = layer.at ?? [0, 0];
-  if ('image' in layer || layer.r !== undefined) return [x, y];
+  if ('image' in layer || shapeRadius(layer) !== undefined) return [x, y];
   const centred = ['circle', 'disc', 'ellipse', 'hex', 'triangle'].includes(layer.shape);
   if (!centred) return [x, y];
   const b = layerBounds(layer, face);

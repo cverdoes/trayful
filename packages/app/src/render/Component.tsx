@@ -304,7 +304,7 @@ function ShapeLayerView({ layer, common }: Readonly<{ layer: DrawShape; common: 
           y={ay}
           width={sw}
           height={sh}
-          cornerRadius={layer.shape === 'cube' ? 1 : 0}
+          cornerRadius={layer.corner ?? (layer.shape === 'cube' ? 1 : 0)}
           {...style}
         />
       );

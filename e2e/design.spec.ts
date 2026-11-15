@@ -139,6 +139,30 @@ test('a person lays out a board by dragging: a layer, a grid of drop spots and a
     });
 });
 
+test('a shape layer rounds its corners, and keeps its place when it becomes a circle', async ({
+  page,
+}) => {
+  await page.goto(`/?project=${PROJECT}&design`);
+  await newComponent(page, 'Rounded tile', 'Poker card');
+  const inspector = page.getByRole('complementary', { name: 'Inspector' });
+  await inspector
+    .getByRole('region', { name: 'Face' })
+    .getByRole('button', { name: /^Drawing/ })
+    .click();
+  await inspector.getByRole('button', { name: 'Add layer' }).click();
+  await inspector.getByRole('menuitem', { name: 'Shape' }).click();
+  const layer = async () => (await savedType(page, 'rounded-tile'))?.face?.layers?.[0];
+
+  await inspector.getByLabel('Corner (mm)').fill('4');
+  await expect.poll(layer).toMatchObject({ shape: 'rect', corner: 4 });
+
+  // A circle has a radius, no corners; given one, it is drawn around the old box's middle.
+  await inspector.getByLabel('Shape').selectOption('circle');
+  await expect(inspector.getByLabel('Corner (mm)')).toHaveCount(0);
+  await inspector.getByLabel('Radius (mm)').fill('8');
+  await expect.poll(layer).toEqual({ shape: 'circle', at: [15, 10], fill: '#cccccc', r: 8 });
+});
+
 test('renaming a type or a field changes every file that uses it', async ({ page }) => {
   await page.goto(`/?project=${PROJECT}&design&type=token`);
   const inspector = page.getByRole('complementary', { name: 'Inspector' });
