@@ -15,7 +15,12 @@ export type Usage = Map<string, Concept[]>;
 const P = '../';
 
 /** Walkthroughs show a module at work, so they come first under "Takes part in". */
-const KIND_RANK = { interaction: 0, concept: 100, onboarding: 200 };
+const KIND_RANK: Record<Concept['kind'], number> = {
+  interaction: 0,
+  concept: 100,
+  onboarding: 200,
+  contributing: 300,
+};
 
 export function sourceUrl(model: Model, file: string, line?: number): string {
   return `${REPO_URL}/blob/${model.commit}/${file}${line ? `#L${line}` : ''}`;
@@ -56,8 +61,10 @@ export function homePage(model: Model, registry: Registry): Page {
     (p) =>
       `<tr><td>${link('', pagePath.pkg(p.name), `<code>${esc(p.npmName)}</code>`)}</td><td>${p.layer}</td><td>${p.modules.length}</td><td>${inline(p.summary)}</td></tr>`,
   );
-  const body = `<h1>Trayful architecture</h1>
+  const body = `<h1>Trayful for contributors</h1>
 ${intro ? markdown(intro.markdown, { prefix: '', registry }) : ''}
+<h2>Working on Trayful</h2>
+<ul>${listOf('contributing')}</ul>
 <h2>Start here</h2>
 <ol>${listOf('onboarding')}</ol>
 <h2>The layers</h2>
@@ -69,7 +76,7 @@ ${layerSvg(model.packages)}
 <ul>${listOf('interaction')}</ul>
 <h2>Concepts</h2>
 <ul>${listOf('concept')}</ul>`;
-  return { path: pagePath.index(), title: 'Overview', body };
+  return { path: pagePath.contributors(), title: 'Contributors', body };
 }
 
 /** The folder a module sits in inside its package's `src/`; '' for the top level. */

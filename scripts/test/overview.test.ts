@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { frontMatter } from '../overview/concepts.js';
+import { docPages, landingPage } from '../overview/docs.js';
 import { resolveLinks } from '../overview/html.js';
 import { linksIn, type Registry } from '../overview/links.js';
 import { packagePage } from '../overview/pages-code.js';
@@ -138,5 +139,24 @@ describe('the architecture overview', () => {
     expect(formats).toMatch(/Entry point <a [^>]*><code>formats\/index\.ts<\/code>/);
     expect(formats).toContain('<h3><code>loading/</code></h3>');
     expect(formats.indexOf('browser.ts')).toBeLessThan(formats.indexOf('<h3>'));
+
+    // The user half: the docs in reading order, with links that stay in the site.
+    expect(model.docs.filter((d) => d.section === 'guide').map((d) => d.path)).toEqual(
+      expect.arrayContaining(['guide/README.md', 'guide/getting-started.md']),
+    );
+    expect(model.docs[1]!.path).toBe('guide/getting-started.md');
+    const pages = new Map(docPages(model).map((p) => [p.path, p.body]));
+    const started = pages.get('guide/getting-started.html')!;
+    expect(started).toContain('href="../howto/index.html"');
+    expect(started).toContain('src="../files/.github/readme/table.png"');
+    expect(pages.get('guide/command-line.html')).toContain('href="../guide/playing.html#options"');
+    expect(pages.get('guide/playing.html')).toContain('<h2 id="options">Options</h2>');
+    expect(pages.get('guide/docker.html')).toMatch(
+      /href="https:\/\/github\.com\/[^"]+\/compose\.yaml"/,
+    );
+
+    const landing = landingPage(model).body;
+    expect(landing).toContain('href="guide/getting-started.html"');
+    expect(landing).toContain('href="concepts/develop.html"');
   });
 });

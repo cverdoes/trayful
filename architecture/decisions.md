@@ -135,7 +135,7 @@ Each entry is a short decision record: what was decided, why, what it costs, and
 
 **Cost.** Files the server reads at run time must be listed as resources ([[server:RESOURCE_SOURCES]]) and the installed package is tested (`scripts/test-package.sh`) before each release.
 
-**Where.** [[server/shipped/resources.ts]], [[trayful:skill]], the Releasing section of the README.
+**Where.** [[server/shipped/resources.ts]], [[trayful:skill]], [[concept:releasing]].
 
 ## 14. Quality limits are fixed, not negotiated
 

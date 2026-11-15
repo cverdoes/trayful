@@ -1,6 +1,6 @@
 # Working on Trayful with Claude
 
-The README's Development section describes the commands, the package layout and the code quality limits. This file covers what Claude sessions do on top of that.
+[Develop Trayful](architecture/develop.md) and [Code quality](architecture/code-quality.md) describe the commands, the package layout and the code quality limits. This file covers what Claude sessions do on top of that.
 
 ## Before opening a pull request, or pushing to one
 

@@ -134,28 +134,12 @@ ${libraryTable(tooling, model)}`;
   return { path: pagePath.surface('libraries'), title: 'Libraries', body };
 }
 
-/** Links between reference pages stay in the site; links elsewhere go to GitHub. */
-function referenceHref(model: Model, href: string): string {
-  if (/^[a-z-]+\.md(#.*)?$/.test(href)) return href.replace('.md', '.html');
-  if (/^(https?:|#)/.test(href)) return href;
-  const target = new URL(href, 'https://x/docs/reference/').pathname.slice(1);
-  return sourceUrl(model, target);
-}
-
-export function referencePages(model: Model): Page[] {
-  return model.reference.map((r) => ({
-    path: pagePath.reference(r.slug),
-    title: r.title,
-    body: markdown(r.markdown, { prefix: P, rewrite: (href) => referenceHref(model, href) }),
-  }));
-}
-
 export function formatsPage(model: Model): Page {
-  const items = model.reference.map(
-    (r) => `<li>${link(P, pagePath.reference(r.slug), esc(r.title))}</li>`,
-  );
+  const items = model.docs
+    .filter((d) => d.section === 'reference' && !d.path.endsWith('README.md'))
+    .map((d) => `<li>${link(P, pagePath.doc(d.path), esc(d.title))}</li>`);
   const body = `<h1>File formats</h1>
-<p>A project is a folder of YAML files. Their schemas are Zod schemas in ${link(P, pagePath.pkg('formats'), '<code>@trayful/formats</code>')}; <code>pnpm generate</code> turns them into JSON Schema and into these reference pages, and CI checks they are current.</p>
+<p>A project is a folder of YAML files. Their schemas are Zod schemas in ${link(P, pagePath.pkg('formats'), '<code>@trayful/formats</code>')}; <code>pnpm generate</code> turns them into JSON Schema and into these pages of the format reference, and CI checks they are current.</p>
 <ul>${items.join('')}</ul>`;
   return { path: pagePath.surface('formats'), title: 'File formats', body };
 }
@@ -175,9 +159,12 @@ function explains(concept: Concept, model: Model, registry: Registry): string {
 }
 
 export function conceptPage(concept: Concept, model: Model, registry: Registry): Page {
-  const kind = { onboarding: 'Start here', interaction: 'Interaction', concept: 'Concept' }[
-    concept.kind
-  ];
+  const kind = {
+    contributing: 'Working on Trayful',
+    onboarding: 'Start here',
+    interaction: 'Interaction',
+    concept: 'Concept',
+  }[concept.kind];
   const body = `<p class="crumbs">${kind}</p>
 <h1>${esc(concept.title)}</h1>
 <p class="lead">${inline(concept.summary)}</p>

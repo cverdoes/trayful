@@ -62,6 +62,14 @@ th { color: var(--quiet); font-weight: 600; }
 .layers .edge { fill: none; stroke: var(--quiet); stroke-width: 1.25; }
 .layers .arrowhead { fill: var(--quiet); }
 .layers .edge-label { font-size: 12px; fill: var(--quiet); }
+.half { margin-top: 1rem; }
+.half summary { cursor: pointer; font-weight: 700; padding: 0.3rem 0; border-top: 1px solid var(--line); }
+nav h2 a { color: inherit; }
+.hero { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); margin: 0.5rem 0 1rem; }
+main img { max-width: 100%; height: auto; }
+.doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 1rem; }
+.door { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 0 1.2rem 1rem; }
+.door h2 { border: 0; }
 footer { margin-top: 3rem; color: var(--quiet); font-size: 0.8rem; }
 @media (max-width: 760px) {
   body { display: block; }

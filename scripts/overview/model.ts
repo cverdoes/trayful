@@ -92,9 +92,15 @@ export interface CliCommand {
   text: string;
 }
 
-/** A page from `docs/reference/`, shown in the site. */
-export interface ReferencePage {
-  slug: string;
+/** The folders of `docs/` the site shows, in the order of its navigation. */
+export const DOC_SECTIONS = ['guide', 'howto', 'reference'] as const;
+export type DocSection = (typeof DOC_SECTIONS)[number];
+
+/** A page from `docs/`: the user guide, a HOWTO guide or the format reference. */
+export interface DocPage {
+  /** Path inside `docs/`, such as `guide/agents.md`; a folder's `README.md` is its contents. */
+  path: string;
+  section: DocSection;
   title: string;
   markdown: string;
 }
@@ -111,10 +117,11 @@ export interface Library {
 }
 
 /**
- * Onboarding pages say what Trayful is and why it is built this way; interactions walk
- * through one thing someone does; concepts explain an idea several interactions share.
+ * Contributing pages say how to work on the repository; onboarding pages say what
+ * Trayful is and why it is built this way; interactions walk through one thing someone
+ * does; concepts explain an idea several interactions share.
  */
-export type ConceptKind = 'onboarding' | 'interaction' | 'concept';
+export type ConceptKind = 'contributing' | 'onboarding' | 'interaction' | 'concept';
 
 export interface Concept {
   slug: string;
@@ -136,7 +143,8 @@ export interface Model {
   tools: McpTool[];
   routes: Route[];
   cli: CliCommand[];
-  reference: ReferencePage[];
+  /** The user guide, HOWTO guides and format reference, each section in reading order. */
+  docs: DocPage[];
   libraries: Library[];
   concepts: Concept[];
   /** Last commit date of each repository file the concept pages explain. */
