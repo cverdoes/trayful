@@ -1,17 +1,19 @@
 import {
-  REPRESENTATIONS,
   formatPath,
   isValued,
   valuesOf,
   type ComponentType,
   type Control,
 } from '@trayful/formats/browser';
+import { useState } from 'react';
 import { useStore } from '../../store';
+import { Button, IconButton } from '../../ui/Button';
 import { ask } from '../../ui/dialogs';
 import { ComponentPicker, componentOptions, NO_TYPES } from './ComponentPicker';
 import { parseValues, setIn, withRepresentation, type Path } from '../edit';
 import { Checkbox, NumberInput, PairInput, Row, SizeInput, TextInput } from './controls';
 import { FieldsSection } from './FieldsSection';
+import { KindDialog } from './KindDialog';
 import { KIND_TEXT } from '../kinds';
 import { renameDraftType } from '../projectEdits';
 import { Section } from './Section';
@@ -32,7 +34,6 @@ export function Inspector() {
     <aside className="design-inspector" aria-label="Inspector">
       <Problems />
       <BasicsSection type={draft} />
-      <KindSection type={draft} />
       <SideSection type={draft} side="front" />
       {isValued(draft) && <ValueSection type={draft} />}
       {!isValued(draft) && draft.is !== 'stamp' && <BehaviourSection type={draft} />}
@@ -78,7 +79,7 @@ async function askRename(id: string): Promise<void> {
   if (to) await renameDraftType(to);
 }
 
-/** Its name and size. */
+/** Its name, id, kind and size. */
 function BasicsSection({ type }: Readonly<{ type: ComponentType }>) {
   return (
     <Section title="Basics">
@@ -94,14 +95,13 @@ function BasicsSection({ type }: Readonly<{ type: ComponentType }>) {
       </Row>
       <Row label="Id" path={['id']}>
         {(id) => (
-          <div className="design-pair">
+          <div className="design-inline">
             <TextInput id={id} value={type.id} onChange={() => undefined} readOnly />
-            <button type="button" onClick={() => void askRename(type.id)}>
-              Rename…
-            </button>
+            <IconButton icon="edit" label="Rename…" onClick={() => void askRename(type.id)} />
           </div>
         )}
       </Row>
+      <KindRow type={type} />
       <Row label="Size (mm)" path={['size']}>
         {(id) => <SizeInput id={id} value={type.size} onChange={setValue(['size'])} />}
       </Row>
@@ -114,27 +114,38 @@ function BasicsSection({ type }: Readonly<{ type: ComponentType }>) {
   );
 }
 
-/** What it is: a piece, a zone, a die, a counter or a stamp. Changing it drops what no longer applies. */
-function KindSection({ type }: Readonly<{ type: ComponentType }>) {
+/**
+ * What it is: a piece, a zone, a die, a counter or a stamp. It is rarely changed,
+ * so changing it takes a dialog; the change drops what no longer applies.
+ */
+function KindRow({ type }: Readonly<{ type: ComponentType }>) {
+  const [changing, setChanging] = useState(false);
   return (
-    <Section title="What it is">
-      <div className="design-kinds" role="radiogroup" aria-label="What it is">
-        {REPRESENTATIONS.map((is) => (
-          <button
-            key={is}
-            type="button"
-            role="radio"
-            aria-checked={type.is === is}
-            className={type.is === is ? 'kind chosen' : 'kind'}
-            title={KIND_TEXT[is].about}
-            onClick={() => type.is !== is && editDraft((t) => withRepresentation(t, is))}
+    <Row label="Kind" path={['is']}>
+      {(id) => (
+        <div className="design-pair" title={KIND_TEXT[type.is].about}>
+          <span className="design-kind">{KIND_TEXT[type.is].name}</span>
+          <Button
+            id={id}
+            variant="quiet"
+            onClick={() => setChanging(true)}
+            aria-label="Change kind"
           >
-            {KIND_TEXT[is].name}
-          </button>
-        ))}
-      </div>
-      <p className="muted">{KIND_TEXT[type.is].about}</p>
-    </Section>
+            Change…
+          </Button>
+          {changing && (
+            <KindDialog
+              type={type}
+              onClose={() => setChanging(false)}
+              onPick={(is) => {
+                setChanging(false);
+                editDraft((t) => withRepresentation(t, is));
+              }}
+            />
+          )}
+        </div>
+      )}
+    </Row>
   );
 }
 

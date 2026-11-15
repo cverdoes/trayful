@@ -8,6 +8,7 @@ import {
   type SnapTarget,
 } from '@trayful/formats/browser';
 import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
 import { useState } from 'react';
 import { sizeOf } from '../../render/geometry';
 import { useStore } from '../../store';
@@ -53,7 +54,7 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
         Where pieces land when dropped on this {type.is}. With one, it is a container: what lies on
         it moves with it.
       </p>
-      <ul className="design-targets">
+      <ol className="design-layers" aria-label="Drop areas">
         {targets.map((t, i) => (
           <li key={t.id} className={i === selected ? 'chosen' : undefined}>
             <button
@@ -63,9 +64,17 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
             >
               {t.id} <span className="muted">({describe(t)})</span>
             </button>
+            <button
+              type="button"
+              aria-label={`Remove ${t.id}`}
+              title="Remove"
+              onClick={() => removeTarget(i)}
+            >
+              <Icon name="x" />
+            </button>
           </li>
         ))}
-      </ul>
+      </ol>
       <Button icon="plus" onClick={() => setAdding(true)}>
         Add drop area
       </Button>
@@ -94,16 +103,17 @@ function describe(target: SnapTarget): string {
   return `${kind}, ${spots} ${what}${spots === 1 ? '' : 's'}`;
 }
 
+/** Takes a drop area out. A container has at least one, so removing the last one stops it being one. */
+function removeTarget(index: number) {
+  editDraft((t) =>
+    setIn(t, (t.container ?? []).length > 1 ? ['container', index] : ['container'], undefined),
+  );
+  useDesign.setState({ target: undefined });
+}
+
 function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: number }>) {
   const at = (...key: string[]) => ['container', index, ...key];
   const types = useStore((s) => s.view?.types ?? NO_TYPES);
-  const remove = () => {
-    // A container has at least one area, so removing the last one stops it being one.
-    editDraft((t) =>
-      setIn(t, (t.container ?? []).length > 1 ? ['container', index] : ['container'], undefined),
-    );
-    useDesign.setState({ target: undefined });
-  };
   return (
     <div className="design-layer" aria-label="Selected drop area">
       <h4>{kindName(targetKind(target))}</h4>
@@ -158,9 +168,6 @@ function TargetEditor({ target, index }: Readonly<{ target: SnapTarget; index: n
           </Row>
         </>
       )}
-      <button type="button" onClick={remove}>
-        Remove {target.id}
-      </button>
     </div>
   );
 }

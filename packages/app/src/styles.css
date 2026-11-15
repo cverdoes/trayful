@@ -947,6 +947,18 @@ body.printing #root {
   align-items: center;
 }
 
+/* A control with a small button after it, kept on one line. */
+.design-inline {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.design-inline input {
+  flex: 1;
+  min-width: 0;
+}
+
 .design-number {
   width: 72px;
 }
@@ -985,7 +997,8 @@ body.printing #root {
   align-items: center;
 }
 
-.design-layers ol {
+.design-layers ol,
+ol.design-layers {
   margin: 8px 0;
   padding: 0;
   list-style: none;
@@ -1002,14 +1015,6 @@ body.printing #root {
   overflow: hidden;
   text-align: left;
   text-overflow: ellipsis;
-}
-
-/* A line of buttons that each add a kind of thing, after the word "Add:". */
-.design-add {
-  display: flex;
-  gap: var(--tf-space-1);
-  align-items: center;
-  color: var(--tf-text-muted);
 }
 
 .design-layer {
@@ -1171,15 +1176,19 @@ body.printing #root {
   background: color-mix(in srgb, var(--tf-focus) 25%, transparent);
 }
 
-.design-kinds {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+.design-kind {
+  font-weight: 600;
 }
 
-.design-kinds .kind.chosen {
+.ui-picks button.chosen {
   border-color: var(--tf-focus);
   background: var(--tf-selected);
+}
+
+.ui-picks-tag {
+  margin-left: var(--tf-space-2);
+  color: var(--tf-text-muted);
+  font-size: var(--tf-text-xs);
 }
 
 .design-section + .design-section {

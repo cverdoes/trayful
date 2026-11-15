@@ -32,7 +32,8 @@ test('a person builds a card type in the designer and deals it onto the table', 
   await fieldName.press('Enter');
 
   await inspector.getByRole('region', { name: 'Face' }).getByText('Advanced drawing').click();
-  await inspector.getByRole('button', { name: 'Text', exact: true }).click();
+  await inspector.getByRole('button', { name: 'Add layer' }).click();
+  await inspector.getByRole('menuitem', { name: 'Text' }).click();
   await inspector.getByLabel('Text', { exact: true }).fill('{{title}}');
   await waitSaved(page);
 
@@ -83,7 +84,8 @@ test('a person lays out a board by dragging: a layer, a grid of drop spots and a
 
   // A text layer, dragged from where it starts (5, 5) and snapped to the grid.
   await inspector.getByRole('region', { name: 'Face' }).getByText('Advanced drawing').click();
-  await inspector.getByRole('button', { name: 'Text', exact: true }).click();
+  await inspector.getByRole('button', { name: 'Add layer' }).click();
+  await inspector.getByRole('menuitem', { name: 'Text' }).click();
   await dragOnFront(page, [8, 8], [101, 52]);
   await expect
     .poll(async () => (await savedType(page, 'farm-board'))?.face?.layers?.[0])
