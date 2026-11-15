@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { addImage, libraryFile, newComponent, savedType, waitSaved } from './helpers.js';
+import {
+  addDropArea,
+  addImage,
+  libraryFile,
+  newComponent,
+  savedType,
+  waitSaved,
+} from './helpers.js';
 
 const PROJECT = 'workshop';
 
@@ -18,7 +25,7 @@ test('a card, a hex tile, a die and a counter are made without touching YAML', a
 
   // A card with a label on its face.
   await newComponent(page, 'Storm card', 'Poker card');
-  await face.getByRole('button', { name: 'Label', exact: true }).click();
+  await face.getByRole('button', { name: 'Add label' }).click();
   await inspector.getByLabel('Text', { exact: true }).fill('Storm');
   await waitSaved(page);
   await expect
@@ -94,4 +101,31 @@ test('inspector sections fold away and stay folded from one component to the nex
   await expect(face.getByLabel('Fill')).toBeHidden();
   await face.getByText('Face', { exact: true }).click();
   await expect(face.getByLabel('Fill')).toBeVisible();
+});
+
+test('a component changes kind through a dialog, and a drop area is removed from its list', async ({
+  page,
+}) => {
+  await page.goto(`/?project=${PROJECT}&design`);
+  await newComponent(page, 'Garden', 'Board');
+  await addDropArea(page, 'Area');
+  await waitSaved(page);
+  await expect.poll(async () => (await savedType(page, 'garden'))?.container).toBeTruthy();
+
+  const inspector = page.getByRole('complementary', { name: 'Inspector' });
+  await inspector
+    .getByRole('region', { name: 'Drop areas' })
+    .getByRole('button', { name: /^Remove / })
+    .click();
+  await waitSaved(page);
+  await expect.poll(async () => (await savedType(page, 'garden'))?.container).toBeUndefined();
+
+  await inspector.getByRole('button', { name: 'Change kind' }).click();
+  await page
+    .getByRole('dialog', { name: 'Change what "Garden" is' })
+    .getByRole('button', { name: /^Zone\b/ })
+    .click();
+  await expect(inspector.getByRole('region', { name: 'Basics' })).toContainText('Zone');
+  await waitSaved(page);
+  await expect.poll(async () => (await savedType(page, 'garden'))?.is).toBe('zone');
 });

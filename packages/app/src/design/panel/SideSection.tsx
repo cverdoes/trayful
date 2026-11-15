@@ -1,4 +1,6 @@
+import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { Menu } from '../../ui/Menu';
 import { SHAPES, type ComponentType } from '@trayful/formats/browser';
 import {
   addItem,
@@ -145,20 +147,21 @@ function ItemList({
           </li>
         ))}
       </ol>
-      <div className="design-add">
-        Add:{' '}
-        {labels ? (
-          <button type="button" onClick={() => add({ label: newLabel(type) })}>
-            Label
-          </button>
-        ) : (
-          ADDABLE_LAYERS.map(([kind, label]) => (
-            <button key={kind} type="button" onClick={() => add({ layer: newLayer(kind, type) })}>
-              {label}
-            </button>
-          ))
-        )}
-      </div>
+      {labels ? (
+        <Button icon="plus" onClick={() => add({ label: newLabel(type) })}>
+          Add label
+        </Button>
+      ) : (
+        <Menu
+          label="Add layer"
+          align="start"
+          button={{ kind: 'secondary', icon: 'plus', text: 'Add layer' }}
+          items={ADDABLE_LAYERS.map(([kind, label]) => ({
+            label,
+            onSelect: () => add({ layer: newLayer(kind, type) }),
+          }))}
+        />
+      )}
     </div>
   );
 }
