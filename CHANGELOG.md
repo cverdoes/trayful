@@ -2,7 +2,20 @@
 
 What changed in each version of the `trayful` npm package. The Release workflow uses the section for a version as the notes of its GitHub release.
 
-## Unreleased
+## 0.3.0
+
+Projects and tables saved with 0.2.0 open unchanged in 0.3.0. A table that uses the new surfaces does not open in 0.2.0 or older.
+
+### Agents that run the game
+
+- An agent can ask players things: the `prompt` MCP tool shows some players a message, a yes/no question or a choice above their hand, and `cancel_prompt` and `list_prompts` withdraw it and read the answers. Only the players asked see a prompt.
+- Prompts can also ask a player to pick pieces (`pick`) or places (`place`) on the table, which glow gold, or to give a number or a short text. `anchor` shows a prompt as a bubble beside a piece or place and `highlight` makes other pieces glow. `to: 'everyone'`, `until: 'first'` and `expires` say who answers and for how long.
+- A prompt never names a piece that one of its players can't see; face-down candidates show under a stand-in id. Open prompts are kept in `tables/<name>.prompts.json` beside the table, so a restart keeps them; the file goes away once none are open.
+- `wait_for_events` follows the table: moves (in the words people see), undo and redo, answers, prompts closing, and players coming and going. `describe_table` now lists the players at the table and their ids.
+- A new MCP prompt, `run-game` (`/trayful:run-game` in Claude Code), starts an agent off as referee or tutor.
+- An engine, a program that runs a game from outside the table, knocks to join, and the host answers **Allow**, **Allow with full view** or **Deny**. Engines show as "(engine)" in the players list, and the host can send one away. See the new guide, `docs/howto/game-engine.md`.
+- The package now ships a typed client for engines written in JavaScript or TypeScript: `import { knock, TableConnection } from 'trayful/engine'`. It needs only Node 22's built-in `fetch` and `WebSocket`.
+- New example: `examples/referee`, a referee for Harvest Moon written with `trayful/engine`.
 
 ### Surfaces
 
@@ -15,7 +28,6 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - A surface can have a colour, a project colour name or a CSS colour, that tints its tile frame and chip. Set it in a setup, with `add_surface` or `edit_surface`, or from the chip's menu.
 - A setup's `place` takes the start of components' ids up to a dot, so `worker.red` places every red worker.
 - Harvest Moon has a `2-player-farms` setup with a coloured farm for each player.
-- A table that uses surfaces does not open in older versions.
 
 ### Following other players' moves
 
@@ -24,11 +36,26 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - Agents are paced while people watch: each MCP tool that changes the table answers once its change has played out on their tables, so a quick run of agent moves shows one at a time. `trayful play --no-pace` (and `trayful mcp --no-pace`) answers straight away.
 - Reduced motion keeps the rings but skips the sliding.
 
+### On the table
+
+- A piece dragged from one surface tile to another stays visible the whole way, at the zoom of the tile under the pointer, instead of being cut off at the tile's edge.
+- Round pieces such as meeples, discs and hexes are shaded from light to dark so they read as solid pieces, and the felt has a fine grain and a soft vignette.
+- Images on the table are drawn from copies painted at the size they are shown, so zooming, panning and dragging stay smooth with detailed SVG art. Zoomed in on a high-resolution screen, Harvest Moon redraws about four times faster.
+- Harvest Moon is redrawn: a framed board with field plots, a barn and a score track, art on every card, a new card back, ivory dice and a gold coin counter, in Trayful's palette.
+
 ### Designer
 
 - The Tray's editors are spreadsheets: a CSV file, one design and designs in rows are each one ruled grid with numbered rows and columns as wide as their text. The arrow keys, `Enter` and `Shift+Enter` move between cells. A field with choices is a drop-down in its cell, in a CSV file too. Buttons to remove a row or column show when it is hovered or focused.
 - Cells copied from a spreadsheet paste across several cells of a CSV file, adding rows as needed.
 - The Tray adds typed designs with one **Designs** button, in place of "One design" and "Designs in rows": an entry starts with one design and takes more rows. **Move to CSV** and **Move to inventory** change where an entry keeps its designs.
+- A component's kind is shown in Basics and changed with **Change…**, which opens a dialog describing the five kinds, in place of a row of five buttons. Labels and layers are added with **+ Add label** and a **+ Add layer** menu, and each drop area has a × to remove it.
+- Every colour control is one button showing the colour, which opens a small picker with the project's colours, none and transparent, the component's fields as `{{field}}`, and a box for any other value. Colour cells in the Tray use it too.
+- Labels, drawing and drop areas each have their own page in the inspector, opened from a row on the main page that counts them and names them. **‹ Back** or `Esc` returns to the main page; clicking a label, a layer or a drop area on the canvas opens its page. The label editor is shorter, with related settings sharing a row.
+
+### A new look
+
+The whole app is drawn in Trayful's own colours, typeface and icons; the grey look is gone.
+
 - The Tray has a designed layout in Trayful's own colours and typeface. Its header names the component and how many are in the box, with undo, redo and the save status beside one **Add** menu. Each entry is a card that says what it makes, with **Deck** and **Copies of each** as labelled fields and a **⋯** menu that holds **Move to CSV**, **Move to inventory** and **Remove**. An empty Tray says what to do.
 - The whole designer is in the same colours and typeface. The Components page has a header above the canvas with the component's name and file, the sample design, the save status, and undo and redo as icon buttons. The inspector's sections, the layer list and the mode tabs use the same icons and controls as the Tray.
 - The Assets page has the same header as the other designer pages, with **Add images** as its main action; pictures can be dropped anywhere on the page. Each image is a card with its rows and columns as fields and **Rename** and **Remove** in a **⋯** menu. Colours are rows with the colour's value beside its name.
@@ -36,7 +63,7 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - The table's toolbar and surface chips are in Trayful's colours and typeface. Undo, redo, fit, help and **More** are icon buttons; the actions on the selected pieces have icons, with rotating and the counter's − and + as icons alone. **More**, **Send to** and each chip's menu are the same menus as in the designer, and the connection shows as a coloured dot.
 - Everything over the table is in the same colours: the hand and its bubble, prompts and their buttons, the stamp and group pickers, the names on surface tiles, and the join and closed screens. What another player or an agent did, an error, and errors in the project files show as notices with an icon and a coloured stripe.
 - In the component list, the number in the box is a badge, **New component** is at the top, and **Duplicate** and **Delete** are in a **⋯** menu on the selected component.
-- The print-and-play page has the same header as the designer pages, with **Print** as its main action. With it, every part of the interface is in Trayful's colours; the grey look is gone.
+- The print-and-play page has the same header as the designer pages, with **Print** as its main action.
 - An invite link that no longer works opens a page in Trayful's look that says the link has expired, in place of a line of plain text.
 
 ### Fixes
