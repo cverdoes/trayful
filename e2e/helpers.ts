@@ -189,10 +189,16 @@ export async function agree(page: Page, action: string) {
 
 /** Adds a drop area of a kind (Grid, Points, Bag…) to the component being designed. */
 export async function addDropArea(page: Page, kind: string) {
-  await page
+  // The drop areas have a page of their own, opened from the main one.
+  const add = page
     .getByRole('region', { name: 'Drop areas' })
-    .getByRole('button', { name: 'Add drop area' })
-    .click();
+    .getByRole('button', { name: 'Add drop area' });
+  if (!(await add.isVisible())) {
+    const back = page.getByRole('button', { name: 'Back', exact: true });
+    if (await back.isVisible()) await back.click();
+    await page.getByRole('button', { name: /^Drop areas/ }).click();
+  }
+  await add.click();
   await page
     .getByRole('dialog', { name: 'Add a drop area' })
     .getByRole('button', { name: new RegExp(`^${kind}\\b`) })

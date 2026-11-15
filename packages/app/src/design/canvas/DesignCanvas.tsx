@@ -15,6 +15,7 @@ import { GRID, type Guide, type Point } from './manipulate';
 import { sampleData } from '../samples';
 import { readImage } from '../files';
 import { addImage } from '../projectEdits';
+import { pageFor } from '../pages';
 import { editDraft, useDesign } from '../store';
 
 /** Space between the front and the back, in millimetres. */
@@ -108,7 +109,9 @@ function Faces({ type, size }: Readonly<{ type: ComponentType; size: [number, nu
     if (!pixel) return;
     const { side, point } = layout.toFace([pixel.x, pixel.y]);
     const result = press({ type, side, point, tolerance }, selection);
-    useDesign.setState({ layer: undefined, target: undefined, ...result.selection });
+    const selected = { layer: undefined, target: undefined, ...result.selection };
+    // What is picked on the canvas opens its page; a press on nothing keeps the page open.
+    useDesign.setState((s) => ({ ...selected, page: pageFor(type, selected) ?? s.page }));
     // The canvas shows the last valid version; dragging it would undo later edits.
     if (useDesign.getState().problems.length) return;
     if (result.gesture) drag.start(result.gesture, (p) => layout.toFace(p).point, result.changed);

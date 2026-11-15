@@ -43,6 +43,8 @@ interface DesignStore {
   layer?: number;
   /** Index of the selected drop area, when a target is selected instead of a layer. */
   target?: number;
+  /** The inspector's page open instead of its main one: a side's labels or drawing, or the drop areas. */
+  page?: InspectorPage;
   /** Id of the component whose field values fill the faces; none means stand-in values. */
   sample?: string;
   problems: Problem[];
@@ -57,6 +59,9 @@ interface DesignStore {
   /** Inspector sections folded (true) or unfolded (false) by hand, by title. */
   folded: Record<string, boolean>;
 }
+
+/** A page of the inspector that takes the whole panel, with a way back to the main one. */
+export type InspectorPage = { kind: 'labels' | 'drawing'; side: Side } | { kind: 'drop-areas' };
 
 export const useDesign = create<DesignStore>(() => ({
   components: [],
@@ -123,6 +128,7 @@ export function openType(type: ComponentType | undefined): void {
     side: 'front',
     layer: undefined,
     target: undefined,
+    page: undefined,
     sample: type && components.find((c) => c.type === type.id)?.id,
     problems: type ? typeDraftProblems(type) : [],
     status: 'saved',
@@ -279,9 +285,9 @@ export async function projectChanged(types: Record<string, ComponentType>): Prom
   if (!draft || !saved) openType(Object.values(types)[0]);
   else if (!current) openType(Object.values(types)[0]);
   else if (!sameValue(current, saved)) {
-    const { side, layer, target, sample } = useDesign.getState();
+    const { side, layer, target, page, sample } = useDesign.getState();
     openType(current);
-    useDesign.setState({ side, layer, target, sample });
+    useDesign.setState({ side, layer, target, page, sample });
   }
 }
 
@@ -304,11 +310,11 @@ export function expectType(change: Expected): void {
 function showWhenLoaded(types: Record<string, ComponentType>): boolean {
   const type = expected && types[expected.id];
   if (!expected || !type || !expected.ready(type)) return false;
-  const { side, layer, target } = useDesign.getState();
+  const { side, layer, target, page } = useDesign.getState();
   const keep = expected.keepSelection;
   expected = undefined;
   openType(type);
-  if (keep) useDesign.setState({ side, layer, target });
+  if (keep) useDesign.setState({ side, layer, target, page });
   return true;
 }
 

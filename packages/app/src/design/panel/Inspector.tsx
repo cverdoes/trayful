@@ -5,7 +5,7 @@ import {
   type ComponentType,
   type Control,
 } from '@trayful/formats/browser';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
 import { Button, IconButton } from '../../ui/Button';
 import { ask } from '../../ui/dialogs';
@@ -19,6 +19,7 @@ import { renameDraftType } from '../projectEdits';
 import { Section } from './Section';
 import { SideSection } from './SideSection';
 import { SnapSection } from './SnapSection';
+import { pageFits, SubPage } from './SubPage';
 import { editDraft, setValue, useDesign } from '../store';
 
 /**
@@ -28,11 +29,41 @@ import { editDraft, setValue, useDesign } from '../store';
  */
 export function Inspector() {
   const draft = useDesign((s) => s.draft);
+  const page = useDesign((s) => s.page);
+  const shown = draft && page && pageFits(draft, page) ? page : undefined;
+  const panel = useRef<HTMLElement>(null);
+  // Where the main page was scrolled to, to come back to from a page of its own.
+  const mainScroll = useRef(0);
+  const onMain = shown === undefined;
+  useLayoutEffect(() => {
+    if (panel.current) panel.current.scrollTop = onMain ? mainScroll.current : 0;
+  }, [onMain]);
   if (!draft)
     return <aside className="design-inspector muted">Pick a component, or make a new one.</aside>;
   return (
-    <aside className="design-inspector" aria-label="Inspector">
+    <aside
+      ref={panel}
+      className="design-inspector"
+      aria-label="Inspector"
+      onScroll={(e) => {
+        if (onMain) mainScroll.current = e.currentTarget.scrollTop;
+      }}
+    >
       <Problems />
+      {shown ? <SubPage type={draft} page={shown} /> : <MainPage type={draft} />}
+      <datalist id="design-fields">
+        {Object.keys(draft.fields ?? {}).map((name) => (
+          <option key={name} value={`{{${name}}}`} />
+        ))}
+      </datalist>
+    </aside>
+  );
+}
+
+/** The main page: every part of the component, with links to the pages for longer lists. */
+function MainPage({ type: draft }: Readonly<{ type: ComponentType }>) {
+  return (
+    <>
       <BasicsSection type={draft} />
       <SideSection type={draft} side="front" />
       {isValued(draft) && <ValueSection type={draft} />}
@@ -40,12 +71,7 @@ export function Inspector() {
       {draft.flippable !== undefined && <SideSection type={draft} side="back" />}
       <SnapSection type={draft} />
       {draft.is !== 'stamp' && <FieldsSection type={draft} />}
-      <datalist id="design-fields">
-        {Object.keys(draft.fields ?? {}).map((name) => (
-          <option key={name} value={`{{${name}}}`} />
-        ))}
-      </datalist>
-    </aside>
+    </>
   );
 }
 
