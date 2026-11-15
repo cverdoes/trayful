@@ -39,12 +39,18 @@ export function SideSection({ type, side }: Readonly<{ type: ComponentType; side
       {side === 'front' && <OutlineRows type={type} />}
       <Row label="Fill" path={at('fill')}>
         {(id) => (
-          <ColorInput id={id} value={sideOf(type, side)?.fill} onChange={setValue(at('fill'))} />
+          <ColorInput
+            fields
+            id={id}
+            value={sideOf(type, side)?.fill}
+            onChange={setValue(at('fill'))}
+          />
         )}
       </Row>
       <Row label="Outline colour" path={at('stroke')}>
         {(id) => (
           <ColorInput
+            fields
             id={id}
             value={sideOf(type, side)?.stroke}
             onChange={setValue(at('stroke'))}

@@ -1,10 +1,11 @@
 // Small form controls for the inspector. Each edits one value and shows the
 // problems found at its path in the type.
-import { formatPath } from '@trayful/formats/browser';
+import { formatPath, type ComponentType } from '@trayful/formats/browser';
 import { useId, useState, type ReactNode } from 'react';
 import { useStore } from '../../store';
+import { ColourPicker } from '../../ui/ColourPicker';
 import { useDesign } from '../store';
-import type { Path } from '../edit';
+import { fieldSpec, type Path } from '../edit';
 
 /** Problems with the value at exactly this path. */
 function useProblemsAt(path: Path | undefined): string[] {
@@ -222,56 +223,44 @@ export function Select<T extends string>({
 }
 
 /**
- * A colour: typed as a CSS colour, `transparent`, a colour named in the assets
- * file or a `{{field}}`, or picked from those named colours and the colour picker.
+ * A colour: one of the project's named colours, none, transparent, a field's
+ * colour (`{{field}}`) or any other, picked from a small picker. Fields are
+ * offered only where the component being designed gives them; any other field
+ * can still be typed as `{{field}}`.
  */
 export function ColorInput({
   id,
   value,
   onChange,
   label,
+  fields = false,
 }: Readonly<{
   id?: string;
   value: string | undefined;
   onChange: (value: string | undefined) => void;
   label?: string;
+  /** Whether the open component's fields can give the colour. */
+  fields?: boolean;
 }>) {
-  const palette: Record<string, string> = useStore((s) => s.view?.assets.colors ?? {});
-  const hex = /^#[0-9a-f]{6}$/i.test(value ?? '') ? value : (palette[value ?? ''] ?? '#ffffff');
+  const colours: Record<string, string> = useStore((s) => s.view?.assets.colors ?? NO_COLOURS);
+  const typeFields = useDesign((s) => s.draft?.fields);
   return (
-    <span className="design-color">
-      <TextInput
-        id={id}
-        label={label}
-        value={value}
-        onChange={onChange}
-        placeholder="none"
-        list="design-fields"
-      />
-      <input
-        type="color"
-        aria-label="Pick a colour"
-        value={/^#[0-9a-f]{6}$/i.test(hex ?? '') ? hex : '#ffffff'}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      <button
-        type="button"
-        className={value === 'transparent' ? 'swatch transparent chosen' : 'swatch transparent'}
-        title="transparent"
-        aria-label="Transparent"
-        onClick={() => onChange('transparent')}
-      />
-      {Object.entries(palette).map(([name, color]) => (
-        <button
-          key={name}
-          type="button"
-          className={name === value ? 'swatch chosen' : 'swatch'}
-          title={name}
-          aria-label={`Named colour ${name}`}
-          style={{ background: color }}
-          onClick={() => onChange(name)}
-        />
-      ))}
-    </span>
+    <ColourPicker
+      id={id}
+      label={label}
+      value={value}
+      colours={colours}
+      fields={fields ? colourFields(typeFields) : []}
+      onChange={onChange}
+    />
   );
+}
+
+const NO_COLOURS: Record<string, string> = {};
+
+/** The fields that can give a colour: colour fields, and fields with a list of choices. */
+function colourFields(fields: ComponentType['fields']): string[] {
+  return Object.entries(fields ?? {})
+    .filter(([, field]) => ['color', 'enum'].includes(fieldSpec(field).type))
+    .map(([name]) => name);
 }

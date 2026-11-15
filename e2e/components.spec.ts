@@ -129,3 +129,27 @@ test('a component changes kind through a dialog, and a drop area is removed from
   await waitSaved(page);
   await expect.poll(async () => (await savedType(page, 'garden'))?.is).toBe('zone');
 });
+
+test('a colour is picked from the project colours, or typed in', async ({ page }) => {
+  await page.goto(`/?project=${PROJECT}&design`);
+  await newComponent(page, 'Tile', 'Square tile');
+  const face = page.getByRole('complementary', { name: 'Inspector' }).getByRole('region', {
+    name: 'Face',
+  });
+
+  await face.getByRole('button', { name: 'Fill' }).click();
+  const picker = page.getByRole('dialog', { name: 'Pick a colour' });
+  await picker.getByRole('button', { name: 'orange' }).click();
+  await expect(picker).toBeHidden();
+  await expect(face.getByRole('button', { name: 'Fill' })).toContainText('orange');
+  await waitSaved(page);
+  await expect.poll(async () => (await savedType(page, 'tile'))?.face?.fill).toBe('orange');
+
+  await face.getByRole('button', { name: 'Fill' }).click();
+  await picker.getByLabel('Colour value').fill('#123456');
+  await picker.getByLabel('Colour value').press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(picker).toBeHidden();
+  await waitSaved(page);
+  await expect.poll(async () => (await savedType(page, 'tile'))?.face?.fill).toBe('#123456');
+});

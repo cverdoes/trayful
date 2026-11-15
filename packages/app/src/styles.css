@@ -939,8 +939,7 @@ body.printing #root {
   font-size: 13px;
 }
 
-.design-pair,
-.design-color {
+.design-pair {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -961,28 +960,6 @@ body.printing #root {
 
 .design-number {
   width: 72px;
-}
-
-.design-color input[type='text'] {
-  flex: 1;
-}
-
-.design-color input[type='color'] {
-  width: 32px;
-  height: 28px;
-  padding: 0;
-}
-
-.design-color .swatch {
-  min-width: 20px;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border-radius: 4px;
-}
-
-.design-color .swatch.chosen {
-  outline: 2px solid var(--tf-focus);
 }
 
 .design-field {
@@ -1246,11 +1223,6 @@ ol.design-layers {
   color: var(--tf-text-muted);
 }
 
-.design-color .swatch.transparent {
-  background: repeating-conic-gradient(var(--tf-checker-dark) 0 25%, var(--tf-checker-light) 0 50%)
-    0 0 / 8px 8px;
-}
-
 /* Components picked in a list, as chips, with a box to add more. */
 .picker {
   display: flex;
@@ -1439,10 +1411,11 @@ ol.design-layers {
   align-items: center;
 }
 
-/* A colour's box, picker and swatches stay on one line of their cell. */
-.tray-grid .design-color {
-  flex-wrap: nowrap;
-  padding-right: 6px;
+/* A colour fills its cell, like the text boxes do. */
+.tray-grid .ui-colour-button {
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
 }
 
 .tray-grid .tray-tile summary {

@@ -215,7 +215,7 @@ interface SavedType {
   container?: unknown;
   stackable?: unknown;
   values?: unknown;
-  face?: { image?: unknown; layers?: unknown[] };
+  face?: { image?: unknown; layers?: unknown[]; fill?: string };
 }
 
 /** The component as the table has it, once a save has reached it. */
