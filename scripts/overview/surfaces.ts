@@ -1,6 +1,5 @@
 /**
- * The ways in from outside: MCP tools, HTTP routes, CLI commands and the file format
- * reference. MCP tools and CLI help come from running the real code in-process, so a
+ * The ways in from outside: MCP tools, HTTP routes and CLI commands. MCP tools and CLI help come from running the real code in-process, so a
  * new tool or command shows up without touching the generator.
  */
 import { cp, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
@@ -12,7 +11,7 @@ import { createMcpServer, Workspace } from '@trayful/server';
 import { run } from 'trayful';
 import ts from 'typescript';
 import { ROOT } from './config.js';
-import type { CliCommand, Member, ModuleInfo, McpTool, ReferencePage, Route } from './model.js';
+import type { CliCommand, Member, ModuleInfo, McpTool, Route } from './model.js';
 
 interface JsonSchema {
   type?: string | string[];
@@ -137,18 +136,4 @@ function routeAt(node: ts.Node, file: ts.SourceFile) {
   if (!first || !ts.isStringLiteral(first)) return;
   const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
   return { method: method.toUpperCase(), path: first.text, line };
-}
-
-/** The format reference pages in `docs/reference/`, generated from the schemas. */
-export async function readReference(): Promise<ReferencePage[]> {
-  const dir = path.join(ROOT, 'docs/reference');
-  const pages: ReferencePage[] = [];
-  for (const file of (await readdir(dir))
-    .filter((f) => f.endsWith('.md'))
-    .sort((a, b) => a.localeCompare(b))) {
-    const markdown = await readFile(path.join(dir, file), 'utf8');
-    const title = /^# (.+)$/m.exec(markdown)?.[1] ?? file;
-    pages.push({ slug: file.replace(/\.md$/, ''), title, markdown });
-  }
-  return pages;
 }

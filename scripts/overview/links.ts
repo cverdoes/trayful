@@ -16,13 +16,17 @@ interface Target {
 
 /** Where each page lives, from the site root. */
 export const pagePath = {
+  /** The landing page, with a door to each half of the site. */
   index: () => 'index.html',
+  /** The home of the contributors half: the architecture overview. */
+  contributors: () => 'contributors.html',
   pkg: (name: string) => `packages/${name}.html`,
   module: (id: string) => `modules/${id.replaceAll('/', '.')}.html`,
   type: (name: string) => `types/${name}.html`,
-  // `index.md` is the home page's introduction.
-  concept: (slug: string) => (slug === 'index' ? 'index.html' : `concepts/${slug}.html`),
-  reference: (slug: string) => `formats/${slug}.html`,
+  // `index.md` is the contributors home page's introduction.
+  concept: (slug: string) => (slug === 'index' ? 'contributors.html' : `concepts/${slug}.html`),
+  /** `guide/agents.md` → `guide/agents.html`; a folder's `README.md` → its `index.html`. */
+  doc: (file: string) => file.replace(/README\.md$/, 'index.md').replace(/\.md$/, '.html'),
   surface: (name: 'commands' | 'protocol' | 'mcp' | 'routes' | 'cli' | 'formats' | 'libraries') =>
     `surfaces/${name}.html`,
 };
@@ -99,8 +103,9 @@ function addSurfaces(registry: Registry, model: Model): void {
       module: 'cli/index.ts',
     });
   }
-  for (const page of model.reference) {
-    registry.set(`format:${page.slug}`, { href: pagePath.reference(page.slug), label: page.title });
+  for (const page of model.docs.filter((d) => d.section === 'reference')) {
+    const slug = page.path.slice('reference/'.length).replace(/\.md$/, '');
+    registry.set(`format:${slug}`, { href: pagePath.doc(page.path), label: page.title });
   }
   for (const library of model.libraries) {
     registry.set(`npm:${library.name}`, {

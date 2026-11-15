@@ -3,14 +3,14 @@ import path from 'node:path';
 import { resourceDir } from './resources.js';
 
 /**
- * The `docs/` folder, served to agents as `trayful://docs`: HOWTO guides for
- * designers and the generated format reference.
+ * The `docs/` folder, served to agents as `trayful://docs`: the user guide, HOWTO
+ * guides for designers and the generated format reference.
  */
 function docsDir(): string {
   return resourceDir('docs');
 }
 
-/** Markdown files under `docs/`, as paths relative to it, guides first. */
+/** Markdown files under `docs/`, as paths relative to it: the user guide, the HOWTO guides, the rest. */
 export async function docFiles(): Promise<string[]> {
   const files = await readdir(docsDir(), { recursive: true });
   return files
@@ -21,8 +21,9 @@ export async function docFiles(): Promise<string[]> {
 
 function rank(file: string): number {
   if (file === 'README.md') return 0;
-  if (file.startsWith('howto/')) return 1;
-  return 2;
+  if (file.startsWith('guide/')) return 1;
+  if (file.startsWith('howto/')) return 2;
+  return 3;
 }
 
 export async function readDoc(file: string): Promise<string> {
@@ -42,7 +43,7 @@ export async function docsIndex(): Promise<string> {
   const lines = [
     '# Trayful documentation',
     '',
-    'Read a page as `trayful://docs/<path>`. HOWTO guides walk through common tasks; the reference documents every key of every file kind.',
+    'Read a page as `trayful://docs/<path>`. The user guide explains how Trayful works; HOWTO guides walk through common tasks; the reference documents every key of every file kind.',
     '',
   ];
   for (const file of await docFiles()) {

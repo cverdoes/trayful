@@ -1,6 +1,6 @@
 # Architecture pages
 
-The hand-written half of the architecture overview. `pnpm docs:overview` turns these pages and the source into a clickable site in `.reports/overview/`; see the Architecture overview section of the [README](../README.md#architecture-overview).
+The Contributors half of the documentation site. `pnpm docs:overview` turns these pages, the source and the user guide in [`docs/`](../docs/README.md) into a clickable site in `.reports/overview/`, published to [GitHub Pages](https://cverdoes.github.io/trayful/); see [Develop Trayful](develop.md#this-site).
 
 These pages are for people working on Trayful's code. They are not part of the npm package and agents do not read them over MCP; game designers read [`docs/`](../docs/README.md) instead.
 
@@ -11,13 +11,13 @@ Each page starts with a front matter block:
 ```yaml
 ---
 title: A player drags a card onto a row
-kind: interaction # or onboarding, or concept
+kind: interaction # or contributing, onboarding, or concept
 order: 2 # place in the navigation
 summary: One sentence for the home page and the top of the page.
 ---
 ```
 
-An **onboarding** page is for an engineer new to the project: its scope, how it runs, the technology, the decisions behind it and how we work; they come first, in `order`. An **interaction** follows one thing a person or agent does from start to end, one numbered step per part, and says what that part's role is. A **concept** explains an idea that several interactions share. `index.md` is the introduction on the home page.
+A **contributing** page says how to work on the repository: building it, the commands, code quality and releasing; it heads the Contributors half. An **onboarding** page is for an engineer new to the project: its scope, how it runs, the technology, the decisions behind it and how we work; they come first, in `order`. An **interaction** follows one thing a person or agent does from start to end, one numbered step per part, and says what that part's role is. A **concept** explains an idea that several interactions share. `index.md` is the introduction on the Contributors home page.
 
 ## Symbol links
 

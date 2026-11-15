@@ -1,6 +1,6 @@
 /**
- * The hand-written pages in `architecture/`: onboarding, interaction walkthroughs and
- * concepts.
+ * The hand-written pages in `architecture/`: working on Trayful, onboarding, interaction
+ * walkthroughs and concepts.
  * Each starts with a small front matter block (title, kind, order, summary).
  */
 import { execFileSync } from 'node:child_process';
@@ -21,13 +21,13 @@ export function frontMatter(text: string): { fields: Record<string, string>; bod
   return { fields, body: text.slice(match[0].length) };
 }
 
-const KINDS: ConceptKind[] = ['onboarding', 'interaction', 'concept'];
+const KINDS: ConceptKind[] = ['contributing', 'onboarding', 'interaction', 'concept'];
 
 function kindOf(field: string | undefined): ConceptKind {
   return KINDS.find((kind) => kind === field) ?? 'concept';
 }
 
-/** Reads every page in `architecture/`, onboarding first, then interactions, each by `order`. */
+/** Reads every page in `architecture/`, contributing and onboarding first, then interactions, each by `order`. */
 export async function readConcepts(): Promise<Concept[]> {
   const concepts: Concept[] = [];
   for (const file of (await readdir(CONCEPTS_DIR)).filter((f) => f.endsWith('.md'))) {

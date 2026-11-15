@@ -20,196 +20,39 @@ Describe your components (cards, boards, tokens, meeples, dice, counters) in pla
 
 ## Features
 
-- **A real table in your browser.** Drag, flip, rotate, stack, draw, shuffle, fan out, roll and count, with undo. Pieces snap onto board spots, and a setup file lays out the game.
-- **Components as files.** Libraries, inventory, card data from a spreadsheet and setups are plain YAML and CSV, so they diff and merge like code. Save a file and the table updates at once; mistakes are reported with file, line and column.
-- **A designer.** Build components in the browser with a live preview, from tiled image sheets, without writing YAML. Your comments in the files are kept.
-- **Playtest with others.** Send an invite link over your network or through a tunnel. Every player has a private hand and undoes only their own moves.
-- **AI agents over MCP.** Claude and other MCP clients can read the table, play on it and build components with you, and you see their moves live.
-- **Surfaces.** Give each player an area of their own beside the main board, shown side by side as tiles that everyone can switch on and off.
-- **Roll-and-write sheets.** Score sheets with boxes to stamp or write in, one per player.
+- **A real table in your browser.** Drag, flip, rotate, stack, draw, shuffle, roll and count, with undo and snapping onto board spots.
+- **Components as files.** Libraries, inventory, card data and setups are plain YAML and CSV that diff like code, and the table updates as you save. Or build them in the browser with the designer.
+- **Playtest with others.** Send an invite link over your network or through a tunnel; every player has a private hand.
+- **AI agents over MCP.** Claude and other MCP clients can play on the table and build components with you, and you see their moves live.
 - **Print and play.** Print every component at real size.
 
-## Using Trayful
+## Getting started
 
-Everything you need to make and play prototypes, with the `trayful` package from npm.
-
-### Install
-
-With [Node.js](https://nodejs.org/) 22.12 or newer, you need nothing else:
+With [Node.js](https://nodejs.org/) 22.12 or newer:
 
 ```sh
 npx trayful new my-game      # a new prototype from the starter template
 npx trayful play my-game     # open it on a table in your browser
 ```
 
-Or install it once with `npm install -g trayful` and leave out the `npx`. The examples below use `npx trayful`; with a global install, type `trayful`.
-
-### Playing on the table
-
-Drag a piece to move it. While you drag, the board spots it may go to light up, and dropping it near one snaps it in; pieces on a board move along with the board. Drag the top card off a pile to draw it, and drop cards on a pile to stack them; hold Shift to drag a whole pile. Pieces sharing a group spot, like markers on a score track, stay separate: click one to list them all and pick the one you want. Double-click a card to flip it or a die to roll it. Click to select, Shift+click or Shift+drag on empty table to select several, then use the buttons that appear in the toolbar for what you selected, or the keys: **F** flip, **Q**/**E** rotate, **D** draw, **S** shuffle, **V** fan or spread a pile out (then drag out any card), **R** roll, **+**/**−** counters, **L** lock or unlock (setups can lock a board in place), **H** shrink your hand to a bubble and back, **Ctrl+Z** undo. Hold **Space** over a piece to see it large in the middle of the screen, so its text is easy to read (a board shows with everything on it); a quick tap keeps it there until the next. Drag empty table to pan, scroll to zoom, **0** to fit, **?** for all shortcuts.
-
-A new table starts from the setup named in `trayful.yaml` (Harvest Moon's puts the board in the middle, deals the market and lines up the workers). The table is saved to `tables/table-1.json` inside the project folder as you play, and reopens where you left off. **Start over** in the toolbar's **More** menu sets the table up again from the project files (you can undo it). The menu next to the game's name switches tables: make a **new table** for another playtest, **duplicate** one to try two moves from the same position, or delete one. **Print and play** in **More** opens [print-and-play](docs/howto/print-and-play.md) sheets with every component at real size.
-
-A table can also have [surfaces](docs/reference/surfaces.md): separate play spaces such as a farm for each player, each in a tile of its own with its own pan and zoom. The chips under the toolbar switch tiles on and off, or show just yours and the Centre; drag pieces from tile to tile or drop them on a chip. Harvest Moon's `2-player-farms` setup gives each player a farm (`--setup 2-player-farms`).
-
-![Harvest Moon with a farm for each player: the village board in a large tile on the left, the red and green farms in tiles on the right, and a chip for each surface under the toolbar](.github/readme/surfaces.png)
-
-| `trayful play` option | What it does                                                      |
-| --------------------- | ----------------------------------------------------------------- |
-| `--project <id>`      | In a folder of projects, the one to open first                    |
-| `--table <name>`      | Open or create another saved table, e.g. `--table b`              |
-| `--seed <n>`          | Shuffle seed for a new table, for repeatable games                |
-| `--setup <name>`      | Setup for a new table; `none` lays everything out                 |
-| `--port <n>`          | Use another port than 4317                                        |
-| `--no-open`           | Do not open a browser window                                      |
-| `--share`             | Let others on your network join, by invite link                   |
-| `--tunnel`            | Let others anywhere join, through a Cloudflare tunnel             |
-| `--container`         | Run inside a container; see [Run it in Docker](#run-it-in-docker) |
-| `--no-pace`           | Answer agents at once, not after people have seen each move       |
-
-### Play with others
-
-Start the table with `--share` (same network) or `--tunnel` (anywhere; needs [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/), no account), and Trayful prints an invite link to send your playtesters. They open it, pick a name, and play on that table, and no other; **Invite players** in the toolbar's **More** menu makes links to any of your tables. Everyone undoes only their own moves.
+To let Claude Code play on the open table, connect it once from another terminal, then ask it to deal a round:
 
 ```sh
-npx trayful play my-game --share
+claude mcp add --transport http trayful http://127.0.0.1:4317/mcp
 ```
 
-Everyone has a private **hand** along the bottom of the screen: drag cards onto it to keep them hidden, and drag them out to play them (hold Alt for face down). The others see only how many cards you hold, and face-down cards stay hidden from every browser, down to the data it is sent. Only the host can make or delete tables, print, invite and connect agents. See [Play with others](docs/howto/play-with-others.md) and [Players and hands](docs/reference/players-and-hands.md).
+## Documentation
 
-### Let an agent play
+The [documentation site](https://cverdoes.github.io/trayful/) has two halves:
 
-Trayful is an [MCP](https://modelcontextprotocol.io) server, so agents such as Claude Code or Claude Desktop can read the table and play on it. Their moves show up live in your browser, with a note saying what they did. They undo only their own moves, and you only yours.
+- **[User guide](https://cverdoes.github.io/trayful/guide/index.html)**: [getting started](https://cverdoes.github.io/trayful/guide/getting-started.html), [playing on the table](https://cverdoes.github.io/trayful/guide/playing.html), [playing with others](https://cverdoes.github.io/trayful/guide/play-with-others.html), [letting an agent play](https://cverdoes.github.io/trayful/guide/agents.html), [making your own prototype](https://cverdoes.github.io/trayful/guide/your-own-prototype.html), plus the [HOWTO guides](https://cverdoes.github.io/trayful/howto/index.html) and the [format reference](https://cverdoes.github.io/trayful/reference/index.html).
+- **[Contributors](https://cverdoes.github.io/trayful/contributors.html)**: building Trayful from a clone, the commands and checks, releasing, and the architecture: how it runs, the decisions behind it, walkthroughs, packages and modules.
 
-The simplest way: start the table, then point the agent at it over HTTP.
-
-```sh
-npx trayful play my-game
-claude mcp add --transport http trayful http://127.0.0.1:4317/mcp   # in another terminal, once
-```
-
-Then ask Claude something like "shuffle the deck, deal three cards to two players and play a round". It starts with `describe_table`, which lists every pile and piece with its position.
-
-For clients that start MCP servers themselves (stdio), run `trayful mcp`. It joins the table that `trayful play` has open, or opens the table itself so you can watch at http://127.0.0.1:4317:
-
-```sh
-claude mcp add trayful -- npx -y trayful mcp /path/to/my-game
-```
-
-In Claude Desktop the same goes in `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "trayful": {
-      "command": "npx",
-      "args": ["-y", "trayful", "mcp", "/path/to/my-game"]
-    }
-  }
-}
-```
-
-| Tools                                                                                                         | What they do                                      |
-| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `describe_table`, `query_objects`, `snapshot`                                                                 | Read the table as text or JSON, or as a PNG image |
-| `move`, `flip`, `rotate`, `stack`, `draw`, `deal`, `take`, `layout`, `shuffle`, `roll`, `set_counter`, `lock` | Play, the same moves people make                  |
-| `undo`, `redo`, `get_history`, `reset_table`                                                                  | Its own undo, the history, and a fresh table      |
-
-Agents can aim moves at board spots by name, such as `main-board/fields/3`, or deal into a whole drop area such as `main-board/market`; `describe_table` lists every drop area and which spots are free. Face-down cards stay hidden from the agent unless it asks with `reveal: true`. The agent plays as **Claude**, with its own hand (`hand:claude`); it can deal into anyone's hand with `hand:<player>`, but never sees other players' hands. MCP is only offered on your own computer, never to guests. `snapshot` needs the table open in a browser, since the browser draws the picture. Resources give the full table state, the project, each component, the file format schemas and these docs (`trayful://docs`).
-
-Agents can also build your prototype with you: ask Claude for "an event card with a title, a rule text and a season band, and a deck of six events", and it writes the component into your library, puts the cards in the box and looks at a picture of the result, while the new deck appears on your table. Every change is checked first, so an agent cannot leave your project broken. See [Let an agent build components](docs/howto/agent-builds-components.md).
-
-When your game lives in a repository of its own, `npx trayful skill` in that repository adds a [skill](skills/trayful/SKILL.md) that teaches Claude Code how to work with Trayful: the design loop, recipes for decks, tracks and boards, and the things that trip agents up. See [Use Trayful from your game's repository](docs/howto/game-repository.md).
-
-| Projects and authoring tools                                              | What they do                                                      |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `list_projects`, `open_table`, `duplicate_table`, `delete_table`          | Find projects and tables, and switch the table the agent plays on |
-| `create_project`, `validate_project`                                      | Start a project from the starter template; check one after edits  |
-| `migrate_project`                                                         | Rewrite a `trayful/1` project in the current file format          |
-| `upsert_type`, `rename_type`, `remove_type`, `set_inventory`, `add_asset` | Change components, what is in the box, and artwork                |
-| `render_component`                                                        | A picture of one component, as people will see it                 |
-
-### Make your own prototype
-
-A prototype is a folder:
-
-```
-my-game/
-  trayful.yaml            # project manifest: name and which files to load
-  assets.yaml             # named images (whole or cut into tiles) and colours
-  library/*.yaml          # components: size, what each is and can do, fields, its face
-  inventory.yaml          # what is in the box, and how many of each
-  data/*.csv              # optional card data, one row per card
-  setups/*.yaml           # optional scripted starting layouts
-  assets/                 # images and SVGs
-```
-
-Start one from the template, which has a deck of cards loaded from a spreadsheet, some tokens and a setup:
-
-```sh
-npx trayful new my-game --name "My Game"
-npx trayful play my-game
-```
-
-To build components without writing YAML, pick **Design components** in the toolbar's **More** menu: the [designer](docs/howto/design-components.md) switches behaviours on and off and lays out fields and faces with a live preview, lets you drag labels, layers and board drop areas into place, drop in pictures and rename components everywhere they are used, and saves each change to your library files, keeping your comments.
-
-Keep the table open while you edit: every time you save a file, the table updates (new cards appear, changed text redraws, and the change is one step you can undo). If a file has a mistake, a bar on the table names the file, line and column, and the table keeps the last version that worked. `npx trayful validate my-game` checks a project from the command line.
-
-To keep several games together, put their folders in one folder and run `npx trayful play` on that folder; the table menu switches between them.
-
-The [HOWTO guides](docs/howto/README.md) walk through adding a deck, designing components in the browser, loading cards from a spreadsheet, boards with drop areas, meeples and dice, your own images and tiled sheets, setups, designing with an agent and printing. Every key is documented in the [format reference](docs/reference/README.md).
-
-A component describes what it `is` (a `piece`, `zone`, `die`, `counter` or `stamp`) and switches on what it can do: `flippable`, `rotates`, `stackable`, or `values` for dice and counters. A board is a piece that is a `container`: it declares **drop areas**, a `grid` of spots (card slots, action spaces), a list of `points` (a score track) or a free `area` (a supply), each optionally limited to some components with `accepts`. A **setup** file places components on those drop areas and on the table, locks the board, shuffles and deals; set `setup: <file name>` in `trayful.yaml` to start every new table from it. See [`library/pieces.yaml`](examples/harvest-moon/library/pieces.yaml) and [`setups/2-player.yaml`](examples/harvest-moon/setups/2-player.yaml) in the Harvest Moon sample.
-
-#### Projects from an earlier Trayful
-
-Projects made before milestone 9 are in the file format `trayful/1`. They still load and play, with a warning, but the designer and agents can only change their components once they are rewritten in `trayful/2`:
-
-```sh
-npx trayful migrate my-game
-```
-
-`migrate` rewrites the libraries in the new form, keeping the comment lines at their top; moves images and palette colours to a new `assets.yaml`; renames each inventory entry's `type` to `component`; and adds `lock: true` to the setup steps that place a board, since boards no longer start locked. The manifest, inventory and setups keep their comments. Commit the folder first if you want the old files. See [Versioning](docs/reference/versioning.md#moving-a-project-to-trayful2).
-
-### Command line
-
-| Command                                   | What it does                                                   |
-| ----------------------------------------- | -------------------------------------------------------------- |
-| `trayful new <folder> [--name <name>]`    | A new project from the starter template                        |
-| `trayful play [project-dir]`              | Open the table in your browser; options above                  |
-| `trayful mcp [project-dir]`               | MCP server on stdio, for agents                                |
-| `trayful validate <project-dir> [--json]` | Check a project and report problems with file, line and column |
-| `trayful migrate <project-dir>`           | Rewrite a `trayful/1` project in the current file format       |
-| `trayful skill [repo-dir]`                | Add the agent skill to a repository, for Claude Code           |
-
-Run them as `npx trayful …`, or as `pnpm trayful …` from a clone of this repository. See the [CLI README](packages/cli/README.md) for every option.
-
-### Run it in Docker
-
-To keep the server apart from the rest of your computer, run it in a container. It then sees only the folder you give it, runs as an ordinary user on a read-only system, and can be reached only from your own computer. You need [Docker](https://docs.docker.com/get-docker/) and a clone of this repository; Node and pnpm are not needed.
-
-```sh
-scripts/docker.sh            # serves examples/
-scripts/docker.sh ~/games    # serves your own project, or folder of projects
-```
-
-Then open http://localhost:4317. The script builds the image, starts the container, and saves tables as you, so the files stay yours. It runs `docker compose up --build` with the settings below, which you can also set yourself:
-
-| Setting            | What it does                                                        |
-| ------------------ | ------------------------------------------------------------------- |
-| `TRAYFUL_PROJECTS` | The folder to serve (default `./examples`); the only one it can see |
-| `TRAYFUL_USER`     | The `uid:gid` to save files as (default `1000:1000`)                |
-| `TRAYFUL_PORT`     | The port on your computer (default 4317); open the table there      |
-
-You are the host, as with `trayful play`: inside a container the server counts requests through the published port as yours, so [`compose.yaml`](compose.yaml) publishes it on `127.0.0.1` only. Do not publish it on your network. `--share` does not work in a container. Agents connect over HTTP at `http://127.0.0.1:4317/mcp` as described above; `trayful mcp` on your computer cannot reach the container's table. Edits to the project files reload as usual. Stop it with Ctrl+C, or `docker compose down`.
+The same pages are in this repository, in [`docs/`](docs/README.md) and [`architecture/`](architecture/README.md).
 
 ## Contributing
 
-Working on Trayful itself: building it from a clone, the repository layout, checks, and releases.
-
-### Run it from a clone
-
-You need [Node.js](https://nodejs.org/) 22.12 or newer and [pnpm](https://pnpm.io/) 10. If you have Node but not pnpm, run `corepack enable` once.
+You need Node.js 22.12 or newer and [pnpm](https://pnpm.io/) 10 (`corepack enable` gets it).
 
 ```sh
 git clone https://github.com/cverdoes/trayful.git
@@ -227,109 +70,7 @@ pnpm trayful play examples/harvest-moon
 
 <!-- quickstart:end -->
 
-`validate` should end with `✓ Harvest Moon: 6 types, 26 components, 1 deck, 1 setup`. `play` starts a local server at http://127.0.0.1:4317 and opens the table in your browser; press Ctrl+C to stop it. CI runs exactly the commands between the quick-start markers above on a clean checkout, so they stay correct.
-
-### Repository layout
-
-Each package keeps its code in `src/` and its unit tests in `test/`, in the same folders as the code they test.
-
-| Path                                                       | What it is                                                                                                        |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| [`packages/formats`](packages/formats)                     | File format schemas (Zod), YAML loader and validator, generated JSON Schemas                                      |
-| [`packages/core`](packages/core)                           | Table state, commands, snapping, setups, undo and seeded randomness                                               |
-| [`packages/server`](packages/server)                       | Local server: projects and tables, players and invites, live reload, WebSocket sync, MCP                          |
-| [`packages/app`](packages/app)                             | Browser table (React and Konva)                                                                                   |
-| [`packages/cli`](packages/cli)                             | The `trayful` command line                                                                                        |
-| [`packages/engine-client`](packages/engine-client)         | The client engines use to run a game at a table, published as `trayful/engine`                                    |
-| [`examples/harvest-moon`](examples/harvest-moon)           | Sample prototype that uses every file kind; validated in CI                                                       |
-| [`examples/starter`](examples/starter)                     | The template `trayful new` copies; validated in CI                                                                |
-| [`examples/piecepack`](examples/piecepack)                 | The public-domain piecepack with Backgammon and Tablut, built to find what Trayful cannot do yet; validated in CI |
-| [`examples/roll-and-write`](examples/roll-and-write)       | Six Rows, a small roll-and-write game on score sheets with stamp and text boxes; validated in CI                  |
-| [`examples/referee`](examples/referee)                     | An example engine: a referee that runs a buying game at a Harvest Moon table, tested against a real table         |
-| [`docs`](docs)                                             | HOWTO guides and the format reference (partly generated)                                                          |
-| [`architecture`](architecture)                             | Hand-written pages of the architecture overview: onboarding, interaction walkthroughs and concepts                |
-| [`skills/trayful`](skills/trayful)                         | The agent skill `trayful skill` installs: how to design and play over MCP; a test keeps it true to the tools      |
-| [`e2e`](e2e)                                               | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players                           |
-| [`scripts`](scripts)                                       | Code generation, example validation and the dev server                                                            |
-| [`Dockerfile`](Dockerfile), [`compose.yaml`](compose.yaml) | Running the server in a container; `scripts/docker.sh` starts it                                                  |
-
-### Development
-
-| Command                  | What it does                                                               |
-| ------------------------ | -------------------------------------------------------------------------- |
-| `pnpm dev`               | Table server plus the app with hot reload at http://localhost:5173         |
-| `pnpm build`             | Build the browser app (needed before `trayful play`)                       |
-| `pnpm package`           | Build the `trayful` npm package in `packages/cli/dist`                     |
-| `pnpm test`              | Run all unit tests (Vitest)                                                |
-| `pnpm test:e2e`          | Play in a real browser, by hand and as an agent; run `pnpm build` first    |
-| `pnpm test:watch`        | Re-run tests on change                                                     |
-| `pnpm test:coverage`     | Unit tests with a coverage report in `coverage/`; fails below the floor    |
-| `pnpm typecheck`         | Type-check every package                                                   |
-| `pnpm lint`              | ESLint (incl. complexity and size limits) and Prettier check               |
-| `pnpm quality`           | Package boundaries, unused code and copy-paste duplication                 |
-| `pnpm quality:summary`   | Test counts, coverage, complexity and duplication as Markdown              |
-| `pnpm e2e:summary`       | Browser test counts per spec file as Markdown, after `pnpm test:e2e`       |
-| `pnpm format`            | Format everything with Prettier                                            |
-| `pnpm generate`          | Regenerate JSON Schemas and the format reference after changing a schema   |
-| `pnpm validate:examples` | Validate every project in `examples/`                                      |
-| `pnpm docs:overview`     | Build the architecture overview in `.reports/overview/`; `--open` opens it |
-| `pnpm check`             | Everything CI runs, in one go                                              |
-
-Packages are TypeScript run directly from source (through `tsx` and Vitest). Only the browser app is built, with Vite. `pnpm dev [project-dir]` serves the app with hot reload; it opens `examples/harvest-moon` unless you name another folder. Before `pnpm test:e2e` on a new machine, run `pnpm exec playwright install chromium` once.
-
-When you change a schema in `packages/formats/src/schemas/index.ts`, run `pnpm generate` and commit the regenerated files; CI fails when they are stale. When you change setup steps, scripts or commands, update this README in the same change. When you change what a HOWTO guide describes, update the guide; `scripts/test/docs.test.ts` checks that the files the guides quote still match `examples/`, and that their links work.
-
-#### Architecture overview
-
-`pnpm docs:overview` builds a clickable site about the code into `.reports/overview/`: open its `index.html` in a browser, no server needed (`pnpm docs:overview --open` does that for you). It starts with onboarding pages for an engineer new to the project: what Trayful is and is not, how it runs, the technology and libraries and why each is there, the architectural decisions and what they cost, and how we work. Then it shows the packages in their layers, every module with its purpose, exports and imports, the key types, the table commands, the WebSocket messages, the MCP tools, the HTTP routes and the CLI, all read from the source each time it runs, plus walkthroughs of what happens when someone drags a card, draws into a hand, undoes, joins or designs a component.
-
-The walkthroughs and concepts are Markdown in [`architecture/`](architecture/README.md). They name code with symbol links such as `[[core:TableEngine]]` instead of paths, and `pnpm docs:overview --check` (part of `pnpm check`) fails when one names something that is gone, when a key type disappears, when a source file has no comment saying what it is for, when a package is in no page, or when a library in a `package.json` has no reason given in [`architecture/technology.md`](architecture/technology.md). When you rename or move what a page explains, update the page in the same change. CI attaches the site to each run as `architecture-overview`, and the Pages workflow publishes the overview of `main` to the repository's GitHub Pages site.
-
-#### Code quality
-
-CI enforces limits a person would otherwise have to police in review. ESLint checks complexity (cognitive complexity 15, nesting depth 4, at most 4 parameters, functions up to 80 lines, files up to 400) and common code smells. `.dependency-cruiser.cjs` keeps packages layered (formats, then core, then server and app, then cli; the engine client stands alone) and core and the app free of Node built-ins. Knip finds unused files, exports and dependencies, and jscpd finds copy-pasted code. Unit test coverage must not drop below each package's floor in `vitest.config.ts`. The app's React components (`.tsx`) are left out of the coverage report, because the e2e suite covers them; the app's floor guards its plain modules.
-
-The e2e suite also guards drawing speed: `e2e/performance.spec.ts` times a full redraw of the Harvest Moon table on a Retina-sized canvas, fitted and zoomed in, and fails above a budget. The table redraws on every step of a drag, pan or zoom, so a slow redraw is what makes it feel sluggish. When it fails, find what made drawing slower (heavy SVG filters, wide shadows) rather than raising the budget.
-
-Every file meets these limits, so a violation fails the build; fix the code rather than switching a rule off. When your tests raise a package's coverage, `pnpm test:coverage` raises its floor in `vitest.config.ts` to 2 points under the new number; commit that change with your tests.
-
-Each CI run's summary page shows the number of unit tests and the coverage of each package next to its floor, the most complex functions, duplication, and the number of browser tests in each e2e spec file. The HTML coverage report is attached to the run as `coverage-report`.
-
-Claude sessions also review their own changes against [REVIEW.md](REVIEW.md) for readability, naming and design, locally, before opening a pull request. There is no review on the pull request itself.
-
-#### Releasing
-
-A version is published to npm by pushing a tag. Set the new version in `packages/cli/package.json`, add a section for it to [CHANGELOG.md](CHANGELOG.md), merge that to `main`, then tag the merge commit:
-
-```sh
-git tag v0.2.0 && git push origin v0.2.0
-```
-
-The Release workflow (`.github/workflows/release.yml`) builds the package, checks that the tag matches the version, runs `scripts/test-package.sh` on it, publishes it to npm and makes a GitHub release with the tarball and the version's CHANGELOG.md section as its notes (`scripts/release-notes.sh`; the workflow stops before publishing if the section is missing). A version with a suffix, such as `0.2.0-rc.1`, goes to the `next` tag, so `npx trayful` keeps the last full release and `npx trayful@next` tries the new one. npm accepts the upload through [trusted publishing](https://docs.npmjs.com/trusted-publishers): the package's settings on npmjs.com name this repository, `release.yml` and the GitHub environment `npm`, so no npm token is stored anywhere.
-
-#### Dependencies
-
-Dependabot opens weekly pull requests for npm packages, GitHub Actions and the Docker base image (`.github/dependabot.yml`). The Audit workflow runs `pnpm audit` on every push and pull request and each Monday, and fails on any high or critical advisory; fix it by updating or replacing the package, not by ignoring the advisory.
-
-## Roadmap
-
-| Milestone                  | Scope                                                                                                                 |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| 0. Foundations             | Monorepo, file schemas, validator with line numbers, core engine with undo, JSON Schemas, generated reference         |
-| 1. First playable table    | Browser table: drag, flip, rotate, stack, draw, shuffle, undo, save and load                                          |
-| 2. Components and snapping | Boards with snap grids, meeples, dice, counters, setups, fanned and spread piles                                      |
-| 3. MCP                     | Agents read and play tables over the Model Context Protocol                                                           |
-| 4. Projects and authoring  | Several projects and tables, live reload, CSV, authoring tools, print-and-play, HOWTO guides                          |
-| 5. Multiplayer             | Players, invite links over the network or a tunnel, private hands, per-player hidden views                            |
-| 6. Invites and undo        | Invite links to one table, made from the toolbar; each player undoes only their own moves                             |
-| 7. Component designer      | Design mode: types, fields and faces in the browser with a live preview, saved with comments kept                     |
-| 8. Hands on the canvas     | Drag, resize and rotate layers with snapping; board snap spot editor; image drop; renames everywhere; undo            |
-| 9. Components by property  | File format `trayful/2`: `is` plus behaviours, faces with labels, an assets file with tiled images, `trayful migrate` |
-| 10. Step-by-step designer  | A designer that builds a component one property at a time, and an Assets page for images and colours                  |
-| 11. Containers             | Drop areas that hold a pile, a row or a bag of pieces                                                                 |
-| 12. Tray                   | What is in the box, edited in the browser: inventory entries, decks from every tile of a sheet, CSV card data         |
-| 13. Designer gaps          | Undo in the Tray, CSV columns, image renames, and MCP tools to rename fields and images and set colours               |
-| 14. Roll-and-write         | Stamps, and score sheets with boxes to stamp or write in, by hand and by agents                                       |
+`play` opens Harvest Moon, the sample game, at http://127.0.0.1:4317. CI runs exactly the commands between the quick-start markers above on a clean checkout. See [Develop Trayful](https://cverdoes.github.io/trayful/concepts/develop.html) for the repository layout, every command and the checks a change must pass, and [CONTRIBUTING.md](CONTRIBUTING.md) for how to send a change.
 
 ## Licence
 

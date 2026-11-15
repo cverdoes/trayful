@@ -6,6 +6,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { SITE_CSS, SITE_JS } from './assets.js';
 import { currentCommit, lastChanged, readConcepts } from './concepts.js';
+import { copyDocImages, docPages, landingPage, readDocs } from './docs.js';
 import { KEY_TYPES, ROOT } from './config.js';
 import { readLibraries } from './dependencies.js';
 import { frame, type Page } from './html.js';
@@ -21,20 +22,19 @@ import {
   librariesPage,
   mcpPage,
   protocolPage,
-  referencePages,
   routesPage,
 } from './pages-surfaces.js';
-import { readCli, readReference, readRoutes, readTools } from './surfaces.js';
+import { readCli, readRoutes, readTools } from './surfaces.js';
 
-/** Reads the source, the running MCP server and CLI, and the pages in `architecture/`. */
+/** Reads the source, the running MCP server and CLI, and the pages in `docs/` and `architecture/`. */
 export async function buildModel(): Promise<Model> {
   const modules = await readModules();
-  const [packages, tools, routes, cli, reference, libraries, concepts] = await Promise.all([
+  const [packages, tools, routes, cli, docs, libraries, concepts] = await Promise.all([
     readPackages(modules),
     readTools(),
     readRoutes(modules),
     readCli(),
-    readReference(),
+    readDocs(),
     readLibraries(modules),
     readConcepts(),
   ]);
@@ -47,7 +47,7 @@ export async function buildModel(): Promise<Model> {
     tools,
     routes,
     cli,
-    reference,
+    docs,
     libraries,
     concepts,
     changed: {},
@@ -132,6 +132,7 @@ async function pages(model: Model, registry: Registry): Promise<Page[]> {
     ),
   );
   return [
+    landingPage(model),
     homePage(model, registry),
     ...model.packages.map((p) => packagePage(model, p.name, usage)),
     ...modulePages,
@@ -143,7 +144,7 @@ async function pages(model: Model, registry: Registry): Promise<Page[]> {
     cliPage(model),
     formatsPage(model),
     librariesPage(model),
-    ...referencePages(model),
+    ...docPages(model),
     ...model.concepts.filter((c) => c.slug !== 'index').map((c) => conceptPage(c, model, registry)),
   ];
 }
@@ -200,6 +201,7 @@ export async function writeSite(model: Model, out: string): Promise<number> {
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, frame(page, model));
   }
+  await copyDocImages(model, out);
   await mkdir(path.join(out, 'assets'), { recursive: true });
   await writeFile(path.join(out, 'assets/site.css'), SITE_CSS);
   await writeFile(path.join(out, 'assets/site.js'), SITE_JS);

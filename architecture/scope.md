@@ -17,7 +17,7 @@ A board game designer changes their components dozens of times before a prototyp
 | Playtester          | Opens an invite link and plays with a private hand. Needs no install.                          | the browser app, [[concept:join-by-invite\|an invite]]  |
 | AI agent            | Builds components and plays as player `claude`, through MCP tools.                             | [[trayful:mcp]], [[route:POST /mcp]]                    |
 | Game engine         | A program that runs a game's rules: it watches the table and asks players to choose. Advisory. | [[concept:an-engine-knocks\|a knock]], `trayful/engine` |
-| Trayful contributor | Works on this repository.                                                                      | these pages, the README                                 |
+| Trayful contributor | Works on this repository.                                                                      | these pages, [[concept:develop]]                        |
 
 ## In scope
 

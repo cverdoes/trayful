@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Starts the Trayful server in a container (see "Run it in Docker" in the README).
+# Starts the Trayful server in a container (see docs/guide/docker.md).
 #
 #   scripts/docker.sh              serves examples/
 #   scripts/docker.sh ~/games      serves another project, or folder of projects

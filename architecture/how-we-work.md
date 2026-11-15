@@ -5,7 +5,7 @@ order: 5
 summary: Where things live, the checks a change must pass, and what to update along with the code.
 ---
 
-The README's Contributing section has the commands. This page says how they fit together.
+[[concept:develop]] has the commands. This page says how they fit together.
 
 ## Where things live
 
@@ -15,7 +15,7 @@ The README's Contributing section has the commands. This page says how they fit 
 | `packages/<name>/test` | Unit tests, in the same folders as the code they test.                                             |
 | `e2e/`                 | Browser tests: a real server, a real Chromium, and two players or an agent where it matters.       |
 | `examples/`            | Projects that are validated in CI and used by tests and guides. Harvest Moon uses every file kind. |
-| `docs/`                | For game designers: HOWTO guides and the format reference. Ships in the npm package and over MCP.  |
+| `docs/`                | For game designers: the user guide, HOWTO guides and the format reference. Ships in npm and MCP.   |
 | `architecture/`        | These pages, for people working on the code. Not shipped.                                          |
 | `skills/trayful/`      | The agent skill `trayful skill` installs into a game's repository.                                 |
 | `scripts/`             | Code generation, example validation, packaging, CI summaries and this overview.                    |
@@ -38,7 +38,7 @@ The limits are fixed (see [[concept:decisions]], entry 14): cognitive complexity
 | When you change              | Also change                                                                     |
 | ---------------------------- | ------------------------------------------------------------------------------- |
 | A schema                     | Run `pnpm generate`, update an example, and commit the generated files.         |
-| A command, setup step or CLI | The README, in the same change.                                                 |
+| A command, setup step or CLI | The user guide in `docs/guide/` or [[concept:develop]], in the same change.     |
 | What a HOWTO guide shows     | The guide; `scripts/test/docs.test.ts` checks quoted files and links.           |
 | An MCP tool                  | The agent skill in `skills/trayful/`; its test fails otherwise.                 |
 | Something these pages name   | The page; `pnpm docs:overview --check` fails on a broken symbol link.           |
