@@ -196,6 +196,7 @@ export function Select<T extends string>({
   onChange,
   empty,
   labels,
+  label,
 }: Readonly<{
   id?: string;
   value: T | undefined;
@@ -205,10 +206,13 @@ export function Select<T extends string>({
   empty?: string;
   /** What to show for each option, when not the value itself. */
   labels?: Partial<Record<T, string>>;
+  /** For a drop-down with no label of its own next to it, such as the second of a row. */
+  label?: string;
 }>) {
   return (
     <select
       id={id}
+      aria-label={label}
       value={value ?? ''}
       onChange={(e) => onChange(e.target.value === '' ? undefined : (e.target.value as T))}
     >

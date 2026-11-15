@@ -21,24 +21,22 @@ export function LayerSection({ item }: Readonly<{ item: Item }>) {
       <Row label="Position (mm)" path={at('at')}>
         {(id) => <PairInput id={id} value={layer.at} onChange={setValue(at('at'))} />}
       </Row>
-      <Row label="Rotate (°)" path={at('rotate')}>
+      <Row label="Rotate (°), opacity" path={at('rotate')}>
         {(id) => (
-          <NumberInput
-            id={id}
-            value={layer.rotate}
-            onChange={setValue(at('rotate'))}
-            placeholder="0"
-          />
-        )}
-      </Row>
-      <Row label="Opacity" path={at('opacity')}>
-        {(id) => (
-          <NumberInput
-            id={id}
-            value={layer.opacity}
-            onChange={setValue(at('opacity'))}
-            placeholder="1"
-          />
+          <div className="design-pair">
+            <NumberInput
+              id={id}
+              value={layer.rotate}
+              onChange={setValue(at('rotate'))}
+              placeholder="0"
+            />
+            <NumberInput
+              label="Opacity"
+              value={layer.opacity}
+              onChange={setValue(at('opacity'))}
+              placeholder="1"
+            />
+          </div>
         )}
       </Row>
       <Row label="Show when" path={at('when')}>
@@ -105,30 +103,28 @@ function TextRows({ layer, at, label }: Readonly<{ layer: TextLayer; at: At; lab
             id={id}
             value={layer.width}
             onChange={setValue(at('width'))}
-            placeholder="no wrapping"
+            placeholder="none"
           />
         )}
       </Row>
       <Row label="Align" path={at('align')}>
         {(id) => (
-          <Select
-            id={id}
-            value={layer.align}
-            options={['left', 'center', 'right'] as const}
-            onChange={setValue(at('align'))}
-            empty="left"
-          />
-        )}
-      </Row>
-      <Row label="Vertical align" path={at('valign')}>
-        {(id) => (
-          <Select
-            id={id}
-            value={layer.valign}
-            options={['top', 'middle', 'bottom'] as const}
-            onChange={setValue(at('valign'))}
-            empty="top"
-          />
+          <div className="design-pair">
+            <Select
+              id={id}
+              value={layer.align}
+              options={['left', 'center', 'right'] as const}
+              onChange={setValue(at('align'))}
+              empty="left"
+            />
+            <Select
+              label="Vertical align"
+              value={layer.valign}
+              options={['top', 'middle', 'bottom'] as const}
+              onChange={setValue(at('valign'))}
+              empty="top"
+            />
+          </div>
         )}
       </Row>
       <FontRows layer={layer} at={at} />
@@ -139,42 +135,35 @@ function TextRows({ layer, at, label }: Readonly<{ layer: TextLayer; at: At; lab
   );
 }
 
+/** Its size, weight and style, on one row. */
 function FontRows({ layer, at }: Readonly<{ layer: TextLayer; at: At }>) {
   return (
-    <>
-      <Row label="Font size (pt)" path={at('font', 'size')}>
-        {(id) => (
+    <Row label="Font (pt)" path={at('font', 'size')}>
+      {(id) => (
+        <div className="design-pair">
           <NumberInput
             id={id}
             value={layer.font?.size}
             onChange={setValue(at('font', 'size'))}
             placeholder="10"
           />
-        )}
-      </Row>
-      <Row label="Weight" path={at('font', 'weight')}>
-        {(id) => (
           <Select
-            id={id}
+            label="Weight"
             value={layer.font?.weight}
             options={['normal', 'bold'] as const}
             onChange={setValue(at('font', 'weight'))}
             empty="normal"
           />
-        )}
-      </Row>
-      <Row label="Style" path={at('font', 'style')}>
-        {(id) => (
           <Select
-            id={id}
+            label="Style"
             value={layer.font?.style}
             options={['normal', 'italic'] as const}
             onChange={setValue(at('font', 'style'))}
             empty="normal"
           />
-        )}
-      </Row>
-    </>
+        </div>
+      )}
+    </Row>
   );
 }
 

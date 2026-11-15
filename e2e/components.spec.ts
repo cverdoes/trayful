@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   addDropArea,
   addImage,
+  clickOnFront,
   libraryFile,
   newComponent,
   savedType,
@@ -25,7 +26,8 @@ test('a card, a hex tile, a die and a counter are made without touching YAML', a
 
   // A card with a label on its face.
   await newComponent(page, 'Storm card', 'Poker card');
-  await face.getByRole('button', { name: 'Add label' }).click();
+  await face.getByRole('button', { name: /^Labels/ }).click();
+  await inspector.getByRole('button', { name: 'Add label' }).click();
   await inspector.getByLabel('Text', { exact: true }).fill('Storm');
   await waitSaved(page);
   await expect
@@ -120,6 +122,7 @@ test('a component changes kind through a dialog, and a drop area is removed from
   await waitSaved(page);
   await expect.poll(async () => (await savedType(page, 'garden'))?.container).toBeUndefined();
 
+  await inspector.getByRole('button', { name: 'Back', exact: true }).click();
   await inspector.getByRole('button', { name: 'Change kind' }).click();
   await page
     .getByRole('dialog', { name: 'Change what "Garden" is' })
@@ -152,4 +155,31 @@ test('a colour is picked from the project colours, or typed in', async ({ page }
   await expect(picker).toBeHidden();
   await waitSaved(page);
   await expect.poll(async () => (await savedType(page, 'tile'))?.face?.fill).toBe('#123456');
+});
+
+test('labels have a page of their own, opened from the main page or the canvas', async ({
+  page,
+}) => {
+  await page.goto(`/?project=${PROJECT}&design`);
+  await newComponent(page, 'Notice', 'Poker card');
+  const inspector = page.getByRole('complementary', { name: 'Inspector' });
+  const labels = inspector.getByRole('region', { name: 'Labels' });
+  const face = inspector.getByRole('region', { name: 'Face' });
+
+  await face.getByRole('button', { name: /^Labels/ }).click();
+  await labels.getByRole('button', { name: 'Add label' }).click();
+  await expect(labels.getByLabel('Text', { exact: true })).toHaveValue('Label');
+
+  // Back, or Escape, goes to the main page, which counts the label.
+  await labels.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(labels).toBeHidden();
+  await expect(face.getByRole('button', { name: /^Labels/ })).toContainText('1');
+
+  // Picking the label on the canvas opens its page with it selected.
+  await clickOnFront(page, [8, 7]);
+  await expect(labels.getByLabel('Text', { exact: true })).toHaveValue('Label');
+  await labels.getByRole('button', { name: 'Back', exact: true }).focus();
+  await page.keyboard.press('Escape');
+  await expect(labels).toBeHidden();
+  await expect(inspector.getByRole('region', { name: 'Basics' })).toBeVisible();
 });

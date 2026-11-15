@@ -16,6 +16,7 @@ import { acceptOptions, ComponentPicker, NO_TYPES } from './ComponentPicker';
 import { DropAreaDialog, DROP_AREA_KINDS } from './DropAreaDialog';
 import { setIn } from '../edit';
 import { NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
+import { PageLink } from './PageLink';
 import { Section } from './Section';
 import { newTarget, spotsOf, targetKind, type NewTargetKind } from '../canvas/snaps';
 import { editDraft, setValue, useDesign } from '../store';
@@ -34,14 +35,32 @@ const MODE_LABEL: Record<DropMode, string> = {
   bag: 'A bag: hidden, drawn at random',
 };
 
+/** Whether a component can have drop areas: dice, counters and stamps cannot. */
+export const takesDropAreas = (type: ComponentType) => !isValued(type) && type.is !== 'stamp';
+
+/** The main page's link to a container's drop areas, naming them. */
+export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
+  if (!takesDropAreas(type)) return null;
+  const targets = type.container ?? [];
+  return (
+    <Section title="Drop areas">
+      <PageLink
+        title="Drop areas"
+        count={targets.length}
+        summary={targets.map((t) => t.id).join(', ') || 'None yet: not a container'}
+        page={{ kind: 'drop-areas' }}
+      />
+    </Section>
+  );
+}
+
 /**
  * A container's drop areas: where other pieces land when dropped on it. Areas are
  * drawn on the face, where they can also be picked and dragged.
  */
-export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
+export function DropAreasPage({ type }: Readonly<{ type: ComponentType }>) {
   const selected = useDesign((s) => s.target);
   const [adding, setAdding] = useState(false);
-  if (isValued(type) || type.is === 'stamp') return null;
   const targets = type.container ?? [];
   const add = (kind: NewTargetKind) => {
     setAdding(false);
@@ -49,7 +68,7 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
     useDesign.setState({ side: 'front', layer: undefined, target: targets.length });
   };
   return (
-    <Section title="Drop areas">
+    <>
       <p className="muted">
         Where pieces land when dropped on this {type.is}. With one, it is a container: what lies on
         it moves with it.
@@ -82,7 +101,7 @@ export function SnapSection({ type }: Readonly<{ type: ComponentType }>) {
       {selected !== undefined && targets[selected] && (
         <TargetEditor target={targets[selected]} index={selected} />
       )}
-    </Section>
+    </>
   );
 }
 

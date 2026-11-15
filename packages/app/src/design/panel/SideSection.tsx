@@ -20,20 +20,21 @@ import {
 import { ColorInput, NumberInput, Row, Select } from './controls';
 import { ImagePicker } from '../assets/ImagePicker';
 import { LayerSection } from './LayerSection';
+import { PageLink } from './PageLink';
+import { itemsSummary } from '../pages';
 import { Section } from './Section';
 import { editDraft, setValue, useDesign } from '../store';
 
 /**
  * One side of a component, the way it is built up: its colours and outline, an
- * image, then labels. Shapes and pictures beyond that are tucked away under
- * Advanced, since most components never need them.
+ * image, then labels. Labels, and the shapes and pictures drawn under them, are
+ * edited on pages of their own, which the side links to.
  */
 export function SideSection({ type, side }: Readonly<{ type: ComponentType; side: Side }>) {
-  const selected = useDesign((s) => (s.side === side ? s.layer : undefined));
-  const items = itemsOf(type, side);
-  const chosen = selected === undefined ? undefined : items[selected];
   const at = (key: string) => [...sidePath(side), key];
   const name = side === 'front' ? 'Face' : 'Back';
+  const labels = itemsSummary(type, side, true);
+  const drawing = itemsSummary(type, side, false);
   return (
     <Section title={name}>
       {side === 'front' && <OutlineRows type={type} />}
@@ -58,16 +59,39 @@ export function SideSection({ type, side }: Readonly<{ type: ComponentType; side
         )}
       </Row>
       <ImagePicker type={type} side={side} />
-      <h4>Labels</h4>
-      <ItemList type={type} side={side} labels selected={selected} />
-      {chosen?.label && <LayerSection item={chosen} />}
-      <details className="design-advanced" open={items.some((item) => !item.label)}>
-        <summary>Advanced drawing</summary>
-        <p className="muted">Shapes, pictures and text drawn under the labels.</p>
-        <ItemList type={type} side={side} labels={false} selected={selected} />
-        {chosen && !chosen.label && <LayerSection item={chosen} />}
-      </details>
+      <PageLink
+        title="Labels"
+        count={labels.length}
+        summary={labels.join(', ') || 'None yet'}
+        page={{ kind: 'labels', side }}
+      />
+      <PageLink
+        title="Drawing"
+        count={drawing.length}
+        summary={drawing.join(', ') || 'Shapes and pictures under the labels'}
+        page={{ kind: 'drawing', side }}
+      />
     </Section>
+  );
+}
+
+/**
+ * The page for a side's labels, or for the shapes, pictures and text drawn
+ * under them: the list, a button to add one, then the selected one's settings.
+ */
+export function SideItemsPage({
+  type,
+  side,
+  labels,
+}: Readonly<{ type: ComponentType; side: Side; labels: boolean }>) {
+  const selected = useDesign((s) => (s.side === side ? s.layer : undefined));
+  const chosen = selected === undefined ? undefined : itemsOf(type, side)[selected];
+  return (
+    <>
+      {!labels && <p className="muted">Shapes, pictures and text drawn under the labels.</p>}
+      <ItemList type={type} side={side} labels={labels} selected={selected} />
+      {chosen && Boolean(chosen.label) === labels && <LayerSection item={chosen} />}
+    </>
   );
 }
 
