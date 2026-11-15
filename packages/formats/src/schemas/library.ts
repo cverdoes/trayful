@@ -118,7 +118,14 @@ export const ShapeLayer = z
       .number()
       .positive()
       .optional()
-      .describe('Radius, for circles and hexes. `at` is then the centre.'),
+      .describe(
+        'Radius, for circles, discs, hexes and triangles. `at` is then the centre. Other shapes ignore it.',
+      ),
+    corner: z
+      .number()
+      .nonnegative()
+      .optional()
+      .describe('Corner radius in millimetres, for rectangles and cubes.'),
     fill: Color.optional(),
     stroke: Color.optional(),
     strokeWidth: z.number().nonnegative().optional().describe('Outline width in millimetres.'),

@@ -53,7 +53,9 @@ Layers draw anything a face image and labels do not: a band of colour, a circle 
 | ------- | -------------------------------------------------------- | ---------------------------------------------------- |
 | `text`  | Text, optionally wrapped to `width`                      | `at`, `font`, `color`, `align`, `valign`             |
 | `image` | An image asset by name, or a file in the project folder  | `at`, `size`, `fit`                                  |
-| `shape` | `rect`, `circle`, `ellipse`, `hex`, `triangle`, and more | `at`, `size` or `r`, `fill`, `stroke`, `strokeWidth` |
+| `shape` | `rect`, `circle`, `ellipse`, `hex`, `triangle`, and more | `at`, `size` or `r`, `corner`, `fill`, `stroke`, `strokeWidth` |
+
+A shape fills the box `size` gives it, from `at` as its top-left corner. Circles, discs, hexes and triangles can take a radius `r` instead, and are then drawn around `at`. Rectangles and cubes round their corners by `corner` millimetres.
 
 Every layer and label also takes `rotate`, `opacity` and `when`. Positions are in millimetres from the face's top-left corner; see [Units and coordinates](units-and-coordinates.md).
 

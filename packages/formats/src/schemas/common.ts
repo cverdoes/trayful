@@ -83,6 +83,22 @@ export const SHAPES = [
   'disc',
 ] as const;
 
+type Shape = (typeof SHAPES)[number];
+
+/** Whether a shape layer of this shape can be drawn from a radius `r` around its anchor. */
+export const takesRadius = (shape: Shape) => ['circle', 'disc', 'hex', 'triangle'].includes(shape);
+
+/** Whether a shape layer of this shape can have rounded corners. */
+export const takesCorner = (shape: Shape) => shape === 'rect' || shape === 'cube';
+
+/**
+ * The radius a shape layer is drawn with: its `r` for shapes drawn around their anchor,
+ * none for the others, which ignore `r` and fill their `size` box.
+ */
+export function shapeRadius(layer: { shape: Shape; r?: number }): number | undefined {
+  return takesRadius(layer.shape) ? layer.r : undefined;
+}
+
 /** One field value in an inventory or on a piece. */
 export const Scalar = z.union([z.string(), z.number(), z.boolean()]);
 

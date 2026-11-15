@@ -161,6 +161,20 @@ describe('drawingOf: labels and layers', () => {
     expect(layers[2]).toMatchObject({ fill: undefined, stroke: undefined, strokeWidth: 0 });
   });
 
+  it('keeps a radius only for shapes drawn around their anchor, and corners as given', () => {
+    const type = piece({
+      face: {
+        layers: [
+          { shape: 'rect', size: [20, 10], r: 5, corner: 2 },
+          { shape: 'hex', r: 5 },
+        ],
+      },
+    });
+    const [rect, hex] = draw(type).layers;
+    expect(rect).toMatchObject({ shape: 'rect', r: undefined, corner: 2 });
+    expect(hex).toMatchObject({ shape: 'hex', r: 5 });
+  });
+
   it('finds layer images by asset name or file, and skips empty ones', () => {
     const type = piece({
       face: {

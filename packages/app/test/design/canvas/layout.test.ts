@@ -20,6 +20,12 @@ describe('layerBounds', () => {
     expect(layerBounds({ image: 'a.svg' }, face)).toEqual({ x: 0, y: 0, w: 63, h: 88 });
   });
 
+  it('ignores a radius on shapes that are drawn from their size', () => {
+    const box = { x: 5, y: 5, w: 20, h: 10 };
+    expect(layerBounds({ shape: 'rect', at: [5, 5], size: [20, 10], r: 5 }, face)).toEqual(box);
+    expect(layerBounds({ shape: 'ellipse', at: [5, 5], size: [20, 10], r: 5 }, face)).toEqual(box);
+  });
+
   it('measures text roughly, from where it is aligned', () => {
     const left = layerBounds({ text: 'Hello', at: [10, 10] }, face);
     expect(left.x).toBe(10);

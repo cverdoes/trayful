@@ -1,5 +1,5 @@
 // Where things are on the designer canvas, in millimetres on a face.
-import type { Layer } from '@trayful/formats/browser';
+import { shapeRadius, type Layer } from '@trayful/formats/browser';
 import { boxStart, layerSize } from '../../render/face';
 
 /** 1 typographic point in millimetres, as the renderer uses it. */
@@ -24,8 +24,8 @@ export function layerBounds(layer: Layer, face: [number, number]): Box {
     const [w, h] = layerSize(layer.size, face);
     return { x, y, w, h };
   }
-  if (layer.r !== undefined)
-    return { x: x - layer.r, y: y - layer.r, w: 2 * layer.r, h: 2 * layer.r };
+  const r = shapeRadius(layer);
+  if (r !== undefined) return { x: x - r, y: y - r, w: 2 * r, h: 2 * r };
   const [w, h] = layerSize(layer.size, [0, 0]);
   return { x, y, w, h };
 }

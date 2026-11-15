@@ -599,9 +599,14 @@
           "$ref": "#/$defs/Size"
         },
         "r": {
-          "description": "Radius, for circles and hexes. `at` is then the centre.",
+          "description": "Radius, for circles, discs, hexes and triangles. `at` is then the centre. Other shapes ignore it.",
           "type": "number",
           "exclusiveMinimum": 0
+        },
+        "corner": {
+          "description": "Corner radius in millimetres, for rectangles and cubes.",
+          "type": "number",
+          "minimum": 0
         },
         "fill": {
           "$ref": "#/$defs/Color"

@@ -203,7 +203,8 @@ Draws a filled or outlined shape.
 | `opacity` | number ≥ 0 ≤ 1 |  |  |
 | `when` | [Template](#template) |  | Only draw this layer when the template resolves to a non-empty value other than `false` or `0`. |
 | `size` | [Size](#size) |  | Bounding size. Use this or `r`. |
-| `r` | number > 0 |  | Radius, for circles and hexes. `at` is then the centre. |
+| `r` | number > 0 |  | Radius, for circles, discs, hexes and triangles. `at` is then the centre. Other shapes ignore it. |
+| `corner` | number ≥ 0 |  | Corner radius in millimetres, for rectangles and cubes. |
 | `fill` | [Color](#color) |  | A CSS colour (`"#d94b3d"`, `"white"`, `"transparent"`), a colour name from the assets file, or a `{{field}}` template that resolves to one. |
 | `stroke` | [Color](#color) |  | A CSS colour (`"#d94b3d"`, `"white"`, `"transparent"`), a colour name from the assets file, or a `{{field}}` template that resolves to one. |
 | `strokeWidth` | number ≥ 0 |  | Outline width in millimetres. |

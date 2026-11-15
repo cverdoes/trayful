@@ -1,4 +1,11 @@
-import { SHAPES, type Layer } from '@trayful/formats/browser';
+import {
+  SHAPES,
+  shapeRadius,
+  takesCorner,
+  takesRadius,
+  type Layer,
+} from '@trayful/formats/browser';
+import { reshapedLayer, withRadius } from '../canvas/manipulate';
 import { editType, layerKind, type Item, type Path } from '../edit';
 import { ColorInput, NumberInput, PairInput, Row, Select, SizeInput, TextInput } from './controls';
 import { editDraft, setValue } from '../store';
@@ -200,31 +207,41 @@ function ImageRows({ layer, at }: Readonly<{ layer: ImageLayer; at: At }>) {
 }
 
 function ShapeRows({ layer, at }: Readonly<{ layer: ShapeLayer; at: At }>) {
+  // Both keep the shape where it is on the face; see `reshapedLayer` and `withRadius`.
+  const reshape = (shape: ShapeLayer['shape'] | undefined) =>
+    editDraft((t) => editType(t, at(), reshapedLayer(layer, shape ?? 'rect')));
+  const setRadius = (r: number | undefined) =>
+    editDraft((t) => editType(t, at(), withRadius(layer, r)), true);
   return (
     <>
       <Row label="Shape" path={at('shape')}>
-        {(id) => (
-          <Select
-            id={id}
-            value={layer.shape}
-            options={SHAPES}
-            onChange={(v) => setValue(at('shape'))(v ?? 'rect')}
-          />
-        )}
+        {(id) => <Select id={id} value={layer.shape} options={SHAPES} onChange={reshape} />}
       </Row>
-      <Row label="Size (mm)" path={at('size')}>
-        {(id) => <SizeInput id={id} value={layer.size} onChange={setValue(at('size'))} />}
-      </Row>
-      <Row label="Radius (mm)" path={at('r')}>
-        {(id) => (
-          <NumberInput
-            id={id}
-            value={layer.r}
-            onChange={setValue(at('r'))}
-            placeholder="use size"
-          />
-        )}
-      </Row>
+      {/* A radius, while set, decides the size. */}
+      {shapeRadius(layer) === undefined && (
+        <Row label="Size (mm)" path={at('size')}>
+          {(id) => <SizeInput id={id} value={layer.size} onChange={setValue(at('size'))} />}
+        </Row>
+      )}
+      {takesRadius(layer.shape) && (
+        <Row label="Radius (mm)" path={at('r')}>
+          {(id) => (
+            <NumberInput id={id} value={layer.r} onChange={setRadius} placeholder="use size" />
+          )}
+        </Row>
+      )}
+      {takesCorner(layer.shape) && (
+        <Row label="Corner (mm)" path={at('corner')}>
+          {(id) => (
+            <NumberInput
+              id={id}
+              value={layer.corner}
+              onChange={setValue(at('corner'))}
+              placeholder={layer.shape === 'cube' ? '1' : '0'}
+            />
+          )}
+        </Row>
+      )}
       <Row label="Fill" path={at('fill')}>
         {(id) => <ColorInput fields id={id} value={layer.fill} onChange={setValue(at('fill'))} />}
       </Row>

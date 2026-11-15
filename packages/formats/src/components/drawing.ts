@@ -3,7 +3,14 @@
 // a drawing as it is, so it holds every decision about how a component looks.
 import { backOf, isValued, valueIndex, valuesOf, type Asset, type Assets } from './component.js';
 import { renderTemplate } from './fields.js';
-import type { ComponentType, ImageRef, Label, Layer, Scalar } from '../schemas/index.js';
+import {
+  shapeRadius,
+  type ComponentType,
+  type ImageRef,
+  type Label,
+  type Layer,
+  type Scalar,
+} from '../schemas/index.js';
 
 export const DEFAULT_FILL = '#f4f1ea';
 export const BACK_FILL = '#3b4252';
@@ -50,7 +57,9 @@ export interface DrawShape extends Placement {
   kind: 'shape';
   shape: Extract<Layer, { shape: string }>['shape'];
   size?: number | [number, number];
+  /** Set only for shapes drawn around their anchor; see `shapeRadius`. */
   r?: number;
+  corner?: number;
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
@@ -203,7 +212,8 @@ function drawLayer(layer: Layer, { data, assets }: Context): DrawLayer[] {
       ...placement,
       shape: layer.shape,
       size: layer.size,
-      r: layer.r,
+      r: shapeRadius(layer),
+      corner: layer.corner,
       fill: color(layer.fill),
       stroke,
       strokeWidth: layer.strokeWidth ?? (stroke ? 0.3 : 0),
