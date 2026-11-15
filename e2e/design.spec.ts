@@ -63,12 +63,13 @@ test('a person builds a card type in the designer and deals it onto the table', 
   await claude.client.close();
   await page.getByRole('button', { name: 'Table' }).click();
   await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
+  // The table arrives a moment after the connection does, so it may not be there at first.
   await expect
     .poll(() =>
       page.evaluate(() =>
         Object.keys(
-          (window.__trayful!.store.getState() as unknown as { table: { objects: object } }).table
-            .objects,
+          (window.__trayful!.store.getState() as unknown as { table?: { objects: object } }).table
+            ?.objects ?? {},
         ),
       ),
     )

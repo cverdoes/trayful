@@ -9,11 +9,15 @@ import { cellAfterKey, type Cell, type CellKey, type GridSize } from './grid';
 export const cellName = (at: Cell) => ({ 'data-cell': `${at.row}:${at.col}` });
 
 /** What a cell can hold that takes the focus. */
-const FOCUSABLE = 'input, select, summary';
+const FOCUSABLE = 'input, select, summary, .ui-colour-button';
+
+/** What the keys move the focus from: a box to type in or tick, or a colour's button. */
+const MOVES_FROM = "input:not([type='color']), .ui-colour-button";
 
 /**
  * A grid of cells: the arrow keys and Enter move between its text boxes and
- * tick boxes, as in a spreadsheet. A drop-down keeps its keys, which pick from it.
+ * tick boxes, as in a spreadsheet. A drop-down keeps its keys, which pick from it,
+ * and a colour's button keeps Enter, which opens its picker.
  */
 export function GridFrame({
   widths,
@@ -34,7 +38,8 @@ export function GridFrame({
 }>) {
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const box = e.target;
-    if (!(box instanceof HTMLInputElement) || box.type === 'color') return;
+    if (!(box instanceof HTMLElement) || !box.matches(MOVES_FROM)) return;
+    if (box instanceof HTMLButtonElement && e.key === 'Enter') return;
     const at = cellOf(box);
     if (!at || e.nativeEvent.isComposing) return;
     const next = cellAfterKey(keyIn(e, box), at, size);
@@ -71,10 +76,12 @@ function cellOf(element: Element): Cell | undefined {
   return { row, col };
 }
 
-/** A key pressed in a cell's box, with where its caret is. A tick box has no text to move in. */
-function keyIn(e: KeyboardEvent, box: HTMLInputElement): CellKey {
+/** A key pressed in a cell's box, with where its caret is. A tick box or a button has no text to move in. */
+function keyIn(e: KeyboardEvent, box: HTMLElement): CellKey {
+  if (!(box instanceof HTMLInputElement) || box.type !== 'text')
+    return { key: e.key, shift: e.shiftKey, atStart: true, atEnd: true };
   const { selectionStart, selectionEnd, value } = box;
-  const whole = box.type !== 'text' || (selectionStart === 0 && selectionEnd === value.length);
+  const whole = selectionStart === 0 && selectionEnd === value.length;
   return {
     key: e.key,
     shift: e.shiftKey,

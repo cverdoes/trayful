@@ -133,7 +133,7 @@ function TextRows({ layer, at, label }: Readonly<{ layer: TextLayer; at: At; lab
       </Row>
       <FontRows layer={layer} at={at} />
       <Row label="Colour" path={at('color')}>
-        {(id) => <ColorInput id={id} value={layer.color} onChange={setValue(at('color'))} />}
+        {(id) => <ColorInput fields id={id} value={layer.color} onChange={setValue(at('color'))} />}
       </Row>
     </>
   );
@@ -237,10 +237,12 @@ function ShapeRows({ layer, at }: Readonly<{ layer: ShapeLayer; at: At }>) {
         )}
       </Row>
       <Row label="Fill" path={at('fill')}>
-        {(id) => <ColorInput id={id} value={layer.fill} onChange={setValue(at('fill'))} />}
+        {(id) => <ColorInput fields id={id} value={layer.fill} onChange={setValue(at('fill'))} />}
       </Row>
       <Row label="Outline" path={at('stroke')}>
-        {(id) => <ColorInput id={id} value={layer.stroke} onChange={setValue(at('stroke'))} />}
+        {(id) => (
+          <ColorInput fields id={id} value={layer.stroke} onChange={setValue(at('stroke'))} />
+        )}
       </Row>
       <Row label="Outline width (mm)" path={at('strokeWidth')}>
         {(id) => (
