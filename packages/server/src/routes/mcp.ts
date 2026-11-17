@@ -18,7 +18,7 @@ export function registerMcp(ctx: RouteContext): void {
       if (app.owner) return askForOwnerToken(request, reply);
       return reply.code(403).send({ error: 'MCP is only available from this computer.' });
     }
-    const mcp = createMcpServer(ctx.workspace, { url: ctx.url });
+    const mcp = createMcpServer(ctx.workspace, { url: ctx.url, git: ctx.git });
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,

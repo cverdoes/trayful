@@ -339,7 +339,7 @@ function registerReset(server: McpServer, ctx: ToolContext): void {
           .union([z.string(), z.literal(false)])
           .optional()
           .describe(
-            `Setup to start from${setupList(Object.keys(session().project.setups))}, or false for everything straight out of the box.`,
+            `Setup to start from${ctx.workspace.ready ? setupList(Object.keys(session().project.setups)) : ''}, or false for everything straight out of the box.`,
           ),
       },
       annotations: { destructiveHint: true },

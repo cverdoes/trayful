@@ -1,5 +1,6 @@
 import { SetupError } from '@trayful/core';
 import { allowed, allowedProject, caller, isTrustedOrigin } from '../play/access.js';
+import { GitError } from '../git/git.js';
 import { AuthoringError, ConflictError } from '../projects/authoring.js';
 import { PlayerError } from '../play/players.js';
 import { ProjectLoadError } from '../play/session.js';
@@ -63,6 +64,7 @@ function statusFor(err: Error): number {
     err instanceof ProjectLoadError ||
     err instanceof SetupError ||
     err instanceof PlayerError ||
-    err instanceof AuthoringError;
+    err instanceof AuthoringError ||
+    err instanceof GitError;
   return known ? 400 : 500;
 }

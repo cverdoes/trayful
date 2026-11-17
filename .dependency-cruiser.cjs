@@ -75,7 +75,7 @@ module.exports = {
     },
     ...foldersPointDown('formats', ['schemas', 'components', 'project', 'loading']),
     ...foldersPointDown('core', ['table', 'placement', 'commands', 'views']),
-    ...foldersPointDown('server', ['play', 'shipped', 'projects', 'mcp', 'routes']),
+    ...foldersPointDown('server', ['play', 'shipped', 'projects', 'git', 'mcp', 'routes']),
     {
       name: 'src-never-imports-tests',
       severity: 'error',

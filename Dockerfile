@@ -9,6 +9,10 @@ RUN pnpm install --frozen-lockfile && pnpm build
 
 FROM node:22-slim
 WORKDIR /trayful
+# git for a git-backed Trayful (--data); certificates for its HTTPS remotes.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 # Only what the server needs: the packages, and their runtime dependencies.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

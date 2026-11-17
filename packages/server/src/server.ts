@@ -18,12 +18,21 @@ import { registerSocket } from './routes/socket.js';
 import { registerTableRoutes } from './routes/tables.js';
 import type { TableSession } from './play/session.js';
 import { Workspace } from './projects/workspace.js';
+import { GitLink } from './git/link.js';
+import type { Repository } from './git/repository.js';
+import { registerRepositoryRoutes } from './routes/repository.js';
 
 export const DEFAULT_PORT = 4317;
 
 export interface ServerOptions {
-  /** A project folder, or a folder whose sub-folders are projects. */
-  projectDir: string;
+  /** A project folder, or a folder whose sub-folders are projects. Not with `repository`. */
+  projectDir?: string;
+  /**
+   * A git-backed Trayful: the projects come from this repository's clone, and Trayful
+   * commits, pulls and pushes them. If no repository is connected yet, Trayful starts
+   * with no project and waits to be connected to one.
+   */
+  repository?: Repository;
   /** In a folder of projects: the one to open first. Default: the first that loads. */
   project?: string;
   /** Table name; its state lives in `tables/<table>.json`. Default `table-1`. */
@@ -76,6 +85,8 @@ export interface ContainerOptions {
 export interface RunningServer {
   url: string;
   workspace: Workspace;
+  /** The repository of a git-backed Trayful. */
+  git?: GitLink;
   /** The table agents play on: the one opened at start, until an agent opens another. */
   readonly session: TableSession;
   app: FastifyInstance;
@@ -91,6 +102,9 @@ export interface RunningServer {
 export { isLocalOrigin };
 export { Owner, OwnerError } from './play/owner.js';
 export { containerGateway } from './container.js';
+export { Repository, type RepositoryOptions, type RepositoryStatus } from './git/repository.js';
+export { GitError, type GitAuthor } from './git/git.js';
+export type { GitLink } from './git/link.js';
 
 export function defaultAppDir(): string {
   return resourceDir('app');
@@ -100,22 +114,16 @@ export function defaultAppDir(): string {
 export async function startServer(options: ServerOptions): Promise<RunningServer> {
   // Checked first, so a short secret stops the start before anything is opened.
   const owner = options.ownerSecret === undefined ? undefined : new Owner(options.ownerSecret);
-  const workspace = await Workspace.open(options.projectDir, {
-    project: options.project,
-    table: options.table,
-    seed: options.seed,
-    setup: options.setup,
-    watch: options.watch,
-    agentPace: options.agentPace,
-  });
+  const { workspace, git } = await openWorkspace(options);
   const app = Fastify({ logger: options.logger ?? false });
   app.decorate('hostAddresses', new Set(options.container?.hostAddresses));
   app.decorate('owner', owner);
   await app.register(fastifyWebsocket);
 
-  const ctx = routeContext(app, workspace);
+  const ctx = routeContext(app, workspace, git);
   registerGuards(ctx);
   if (owner) registerOwnerRoutes(ctx, owner);
+  if (git) registerRepositoryRoutes(ctx, git);
   registerPlayerRoutes(ctx);
   registerEngineRoutes(ctx);
   registerTableRoutes(ctx);
@@ -141,6 +149,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   return {
     url: ctx.url,
     workspace,
+    git,
     get session() {
       return workspace.active;
     },
@@ -158,6 +167,26 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
       await workspace.close();
     },
   };
+}
+
+/** The workspace for a project folder, or for a repository's clone. */
+async function openWorkspace(
+  options: ServerOptions,
+): Promise<{ workspace: Workspace; git?: GitLink }> {
+  const open = {
+    project: options.project,
+    table: options.table,
+    seed: options.seed,
+    setup: options.setup,
+    watch: options.watch,
+    agentPace: options.agentPace,
+  };
+  if (options.repository) {
+    const git = await GitLink.open(options.repository, open);
+    return { workspace: git.workspace, git };
+  }
+  if (!options.projectDir) throw new Error('Give a project folder or a repository.');
+  return { workspace: await Workspace.open(options.projectDir, open) };
 }
 
 /** This computer's addresses on the local network, for invite links. */

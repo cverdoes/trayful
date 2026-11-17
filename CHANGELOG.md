@@ -10,6 +10,12 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - `--public-url` makes invite links under the server's own address.
 - `compose.owner.yaml` runs Trayful with Caddy in front for HTTPS. See the new guide, `docs/howto/host-your-own.md`.
 
+### Work on a git repository
+
+- `trayful play --data <folder>` works on a git repository instead of a folder on the server: Trayful keeps a clone in `<folder>`, and commits, pulls and pushes. `--repo`, `--branch` and `--path` say which repository, branch and folder; without them Trayful starts with no project and waits for one.
+- New MCP tools: `connect_repository`, `sync_repository`, `repository_status` and `resolve_conflict`. A sync never leaves a half-merged file in the project: when both sides changed the same lines, Trayful's side goes to a `trayful/conflict-…` branch.
+- The token for HTTPS repositories comes from `TRAYFUL_GIT_TOKEN` or `TRAYFUL_GIT_TOKEN_FILE`, and is never written to disk. `compose.git.yaml` runs it on a server. See the new guide, `docs/howto/git-backed.md`.
+
 ## 0.3.0
 
 Projects and tables saved with 0.2.0 open unchanged in 0.3.0. A table that uses the new surfaces does not open in 0.2.0 or older.

@@ -1,11 +1,14 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import {
   DEFAULT_PORT,
   containerGateway,
   defaultAppDir,
+  GitError,
   OwnerError,
+  Repository,
   startServer,
+  type GitAuthor,
   type ContainerOptions,
   type RunningServer,
 } from '@trayful/server';
@@ -48,9 +51,11 @@ export async function play(
 }
 
 async function startTable(options: PlayOptions, appDir: string): Promise<RunningServer> {
+  const repository = await gitRepository(options);
   try {
     return await startServer({
-      projectDir: path.resolve(options.dir),
+      projectDir: repository ? undefined : path.resolve(options.dir),
+      repository,
       project: options.project,
       table: options.table,
       port: options.port,
@@ -70,6 +75,55 @@ async function startTable(options: PlayOptions, appDir: string): Promise<Running
       `Port ${options.port ?? DEFAULT_PORT} is in use. Is Trayful already running? Try --port <n>.`,
     );
   }
+}
+
+/**
+ * With `--data`: the repository Trayful keeps there, connected to `--repo` first if
+ * it was given and nothing is connected yet.
+ */
+async function gitRepository(options: PlayOptions): Promise<Repository | undefined> {
+  if (!options.data) return undefined;
+  const dataDir = path.resolve(options.data);
+  const repository = await Repository.open({ dataDir, token: gitToken(), author: gitAuthor() });
+  const wanted = options.repo;
+  const current = repository.settings;
+  if (wanted && current && current.url !== wanted.url) {
+    throw new CliError(
+      `${dataDir} is already connected to ${current.url}. Give another --data folder for another repository.`,
+    );
+  }
+  if (wanted && !current) {
+    try {
+      await repository.connect(wanted);
+    } catch (e) {
+      if (e instanceof GitError) throw new CliError(e.message);
+      throw e;
+    }
+  }
+  return repository;
+}
+
+/**
+ * The token for HTTPS repositories, from TRAYFUL_GIT_TOKEN or the file named in
+ * TRAYFUL_GIT_TOKEN_FILE, such as a Docker secret. Undefined for public or SSH ones.
+ */
+function gitToken(): string | undefined {
+  const file = process.env.TRAYFUL_GIT_TOKEN_FILE;
+  if (file) return readFileSync(file, 'utf8').trim();
+  return filled(process.env.TRAYFUL_GIT_TOKEN);
+}
+
+/** Who Trayful's commits are by: TRAYFUL_GIT_NAME and TRAYFUL_GIT_EMAIL, or "Trayful". */
+function gitAuthor(): GitAuthor | undefined {
+  const name = filled(process.env.TRAYFUL_GIT_NAME);
+  const email = filled(process.env.TRAYFUL_GIT_EMAIL);
+  if (name === undefined && email === undefined) return undefined;
+  return { name: name ?? 'Trayful', email: email ?? 'trayful@localhost' };
+}
+
+/** An environment variable's value, with an empty one counting as not set. */
+function filled(value: string | undefined): string | undefined {
+  return value === '' ? undefined : value;
 }
 
 /** The owner secret, from the environment so it stays out of the process list and shell history. */
@@ -108,8 +162,18 @@ async function openTunnel(server: RunningServer, out: (s: string) => void): Prom
 
 /** Tells the person where the table is, where it saves, and how others can join. */
 async function announce(server: RunningServer, out: (s: string) => void): Promise<void> {
-  const { session, url } = server;
+  const { url, git } = server;
+  if (!server.workspace.ready) {
+    out(`Trayful is waiting for a repository at ${url}`);
+    out('Connect one with connect_repository over MCP. Press Ctrl+C to stop.');
+    return;
+  }
+  const { session } = server;
   out(`${session.project.manifest.name} is on the table at ${url}`);
+  if (git?.repository.settings) {
+    const { url: repo, branch, path: folder } = git.repository.settings;
+    out(`Working on ${repo}, branch ${branch}${folder ? `, folder ${folder}` : ''}.`);
+  }
   const saved = path.relative(process.cwd(), session.file);
   out(`Saving to ${saved.startsWith('..') ? session.file : saved}.`);
   const projects = server.workspace.projects().length;

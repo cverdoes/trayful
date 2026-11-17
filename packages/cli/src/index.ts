@@ -1,4 +1,4 @@
-import { DEFAULT_PORT, MigrateError, ProjectLoadError } from '@trayful/server';
+import { DEFAULT_PORT, GitError, MigrateError, ProjectLoadError } from '@trayful/server';
 import { CliError, UsageError } from './errors.js';
 import { mcp } from './mcp.js';
 import { migrate } from './migrate.js';
@@ -39,6 +39,13 @@ Commands:
                                            invite links
                            --no-pace       answer agents straight away instead of once
                                            people watching have seen each move
+                           --data <folder> work on a git repository instead of a folder
+                                           here: Trayful keeps its clone in <folder>
+                                           and commits, pulls and pushes (see
+                                           docs/howto/git-backed.md)
+                           --repo <url>    with --data: the repository to connect to
+                           --branch <name> with --repo: the branch (default main)
+                           --path <folder> with --repo: the project's folder in it
   mcp [project-dir]        Let an AI agent play the table over MCP (stdio). Shares the table
                            with \`trayful play\` if it is running; same options as play.
                            Agents can also connect over HTTP at http://127.0.0.1:${DEFAULT_PORT}/mcp.
@@ -58,7 +65,7 @@ const USAGE: Record<string, string> = {
   validate: 'trayful validate <project-dir> [--json]',
   migrate: 'trayful migrate <project-dir>',
   skill: 'trayful skill [repo-dir]',
-  play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel] [--container] [--owner] [--public-url <url>] [--no-pace]',
+  play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel] [--container] [--owner] [--public-url <url>] [--no-pace] [--data <folder> [--repo <url> [--branch <name>] [--path <folder>]]]',
   mcp: 'trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>]',
 };
 
@@ -108,7 +115,8 @@ function report(e: unknown, command: string, err: (s: string) => void): number {
     e instanceof CliError ||
     e instanceof ProjectLoadError ||
     e instanceof TunnelError ||
-    e instanceof MigrateError
+    e instanceof MigrateError ||
+    e instanceof GitError
   ) {
     err(e.message);
     return 1;

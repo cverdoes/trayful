@@ -78,4 +78,32 @@ describe('parsePlayArgs', () => {
     expect(() => parsePlayArgs(['--frob'])).toThrow('Unknown option "--frob".');
     expect(() => parsePlayArgs(['a', 'b'])).toThrow('Give one project folder.');
   });
+
+  it('reads a git-backed start', () => {
+    expect(parsePlayArgs(['--data', 'srv'])).toMatchObject({ data: 'srv' });
+    expect(parsePlayArgs(['--data', 'srv']).repo).toBeUndefined();
+    expect(
+      parsePlayArgs([
+        '--data',
+        'srv',
+        '--repo',
+        'https://github.com/me/game',
+        '--branch',
+        'prototype',
+        '--path',
+        'proto',
+      ]),
+    ).toMatchObject({
+      data: 'srv',
+      repo: { url: 'https://github.com/me/game', branch: 'prototype', path: 'proto' },
+    });
+  });
+
+  it('refuses git-backed options that do not go together', () => {
+    expect(() => parsePlayArgs(['--repo', 'https://github.com/me/game'])).toThrow(/need --data/);
+    expect(() => parsePlayArgs(['games', '--data', 'srv'])).toThrow(/give no project folder/);
+    expect(() => parsePlayArgs(['--data', 'srv', '--branch', 'x'])).toThrow(/go with --repo/);
+    expect(() => parsePlayArgs(['--data'])).toThrow(/--data needs a folder/);
+    expect(() => parsePlayArgs(['--data', 'srv', '--repo'])).toThrow(/--repo needs a value/);
+  });
 });
