@@ -3,3 +3,10 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+
+# Advisories `pnpm audit` skips, each with why. Take one out once a fixed version exists.
+auditConfig:
+  ignoreGhsas:
+    # picomatch ReDoS (2026-11): no fixed version yet; only dependency-cruiser, a dev tool
+    # reading our own config, uses it, so nothing that ships is affected.
+    - GHSA-fc5q-39xc-vjpf
