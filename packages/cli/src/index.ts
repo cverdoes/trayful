@@ -30,6 +30,13 @@ Commands:
                                            quick tunnel (needs cloudflared; no account)
                            --container     run inside a container (see the Docker section
                                            of the README); implies --no-open
+                           --owner         owner mode, for a Trayful on a server: sign in
+                                           with the secret in TRAYFUL_OWNER_SECRET from
+                                           anywhere; agents connect with OAuth. Implies
+                                           --no-open (see docs/howto/host-your-own.md)
+                           --public-url <url>
+                                           the address others reach this server at, for
+                                           invite links
                            --no-pace       answer agents straight away instead of once
                                            people watching have seen each move
   mcp [project-dir]        Let an AI agent play the table over MCP (stdio). Shares the table
@@ -51,7 +58,7 @@ const USAGE: Record<string, string> = {
   validate: 'trayful validate <project-dir> [--json]',
   migrate: 'trayful migrate <project-dir>',
   skill: 'trayful skill [repo-dir]',
-  play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel] [--container] [--no-pace]',
+  play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel] [--container] [--owner] [--public-url <url>] [--no-pace]',
   mcp: 'trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>]',
 };
 

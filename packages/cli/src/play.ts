@@ -4,6 +4,7 @@ import {
   DEFAULT_PORT,
   containerGateway,
   defaultAppDir,
+  OwnerError,
   startServer,
   type ContainerOptions,
   type RunningServer,
@@ -32,6 +33,7 @@ export async function play(
     );
   }
   const server = await startTable(options, appDir);
+  if (options.publicUrl) server.addShareBase(options.publicUrl);
   const tunnel = options.tunnel ? await openTunnel(server, out) : undefined;
   try {
     await announce(server, out);
@@ -58,14 +60,27 @@ async function startTable(options: PlayOptions, appDir: string): Promise<Running
       // Sharing on the network listens on every interface; a tunnel reaches us locally.
       host: options.share ? '0.0.0.0' : undefined,
       container: options.container ? inContainer() : undefined,
+      ownerSecret: options.owner ? ownerSecret() : undefined,
       agentPace: options.pace,
     });
   } catch (e) {
+    if (e instanceof OwnerError) throw new CliError(e.message);
     if ((e as NodeJS.ErrnoException).code !== 'EADDRINUSE') throw e;
     throw new CliError(
       `Port ${options.port ?? DEFAULT_PORT} is in use. Is Trayful already running? Try --port <n>.`,
     );
   }
+}
+
+/** The owner secret, from the environment so it stays out of the process list and shell history. */
+function ownerSecret(): string {
+  const secret = process.env.TRAYFUL_OWNER_SECRET;
+  if (!secret) {
+    throw new CliError(
+      '--owner needs the owner secret in TRAYFUL_OWNER_SECRET. Make one with `openssl rand -hex 32`.',
+    );
+  }
+  return secret;
 }
 
 function inContainer(): ContainerOptions {
@@ -99,6 +114,10 @@ async function announce(server: RunningServer, out: (s: string) => void): Promis
   out(`Saving to ${saved.startsWith('..') ? session.file : saved}.`);
   const projects = server.workspace.projects().length;
   if (projects > 1) out(`${projects} projects in this folder; switch between them in the browser.`);
+  if (server.app.owner) {
+    const base = server.shareBases[0] ?? 'this server';
+    out(`Owner mode: sign in at ${base}/sign-in, and connect agents to ${base}/mcp.`);
+  }
   if (server.shareBases.length) {
     // Invites are per table; this one is for the table that opened. Invite in the
     // browser to make links for other tables.

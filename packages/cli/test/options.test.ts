@@ -9,6 +9,7 @@ describe('parsePlayArgs', () => {
       share: false,
       tunnel: false,
       container: false,
+      owner: false,
       pace: true,
     });
   });
@@ -31,6 +32,9 @@ describe('parsePlayArgs', () => {
         '--share',
         '--tunnel',
         '--no-pace',
+        '--owner',
+        '--public-url',
+        'https://trayful.example.com',
       ]),
     ).toEqual({
       dir: 'games',
@@ -43,6 +47,8 @@ describe('parsePlayArgs', () => {
       share: true,
       tunnel: true,
       container: false,
+      owner: true,
+      publicUrl: 'https://trayful.example.com',
       pace: false,
     });
   });
@@ -51,6 +57,13 @@ describe('parsePlayArgs', () => {
     expect(parsePlayArgs(['--container'])).toMatchObject({ container: true, open: false });
     expect(() => parsePlayArgs(['--container', '--share'])).toThrow(
       '--share does not work in a container',
+    );
+  });
+
+  it('runs in owner mode without opening a browser, and checks the public address', () => {
+    expect(parsePlayArgs(['--owner'])).toMatchObject({ owner: true, open: false });
+    expect(() => parsePlayArgs(['--public-url', 'trayful.example.com'])).toThrow(
+      '--public-url needs a web address',
     );
   });
 

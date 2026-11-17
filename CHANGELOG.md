@@ -2,6 +2,14 @@
 
 What changed in each version of the `trayful` npm package. The Release workflow uses the section for a version as the notes of its GitHub release.
 
+## Unreleased
+
+### Host your own
+
+- Owner mode, for a Trayful on a server of your own: `trayful play --owner` takes an owner secret from `TRAYFUL_OWNER_SECRET`. Whoever signs in with it is the host from anywhere, and agents such as claude.ai connectors reach MCP through OAuth, or with the secret as a bearer token. Without `--owner`, nothing changes.
+- `--public-url` makes invite links under the server's own address.
+- `compose.owner.yaml` runs Trayful with Caddy in front for HTTPS. See the new guide, `docs/howto/host-your-own.md`.
+
 ## 0.3.0
 
 Projects and tables saved with 0.2.0 open unchanged in 0.3.0. A table that uses the new surfaces does not open in 0.2.0 or older.

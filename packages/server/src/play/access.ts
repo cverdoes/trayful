@@ -1,16 +1,21 @@
 import type { FastifyRequest } from 'fastify';
+import { Owner } from './owner.js';
 import { tableKey, type Player, type Players } from './players.js';
 
 /** Proves which player a browser is: `<id>:<secret>`. Engines send it as a bearer token. */
 export const PLAYER_COOKIE = 'trayful_player';
 /** Set by visiting invite links: their tokens, separated by dots. Lets a browser join as a guest. */
 export const INVITE_COOKIE = 'trayful_invite';
+/** In owner mode: proves the browser signed in with the owner secret. */
+export const OWNER_COOKIE = 'trayful_owner';
 const TOKEN_SEPARATOR = '.';
 
 declare module 'fastify' {
   interface FastifyInstance {
     /** Other addresses whose requests come from this computer, such as a container's gateway. */
     hostAddresses: ReadonlySet<string>;
+    /** In owner mode, who the owner is; they count as the host from anywhere. */
+    owner: Owner | undefined;
   }
 }
 
@@ -21,7 +26,10 @@ const FORWARDED = ['x-forwarded-for', 'forwarded', 'cf-connecting-ip', 'x-real-i
 
 /** Who is asking, as far as the server can tell. */
 export interface Caller {
-  /** From this computer, not through a tunnel: the host, who may do anything. */
+  /**
+   * The host, who may do anything: from this computer and not through a tunnel, or,
+   * in owner mode, the signed-in owner.
+   */
   local: boolean;
   /** Holds at least one valid invite (or is the host), so may join as a guest. */
   invited: boolean;
@@ -37,12 +45,14 @@ export interface Caller {
 
 export function caller(request: FastifyRequest, players: Players): Caller {
   const cookies = parseCookies(request.headers.cookie);
-  const local = isLocalRequest(request);
+  const owner = isOwnerRequest(request);
+  const local = isLocalRequest(request) || owner;
   const credential = bearer(request);
   const [id, secret] = splitOnce(cookies[PLAYER_COOKIE] ?? credential, ':');
   const player = id ? players.authenticate(id, secret) : undefined;
-  // A bad credential is never taken for the host, even from this computer.
-  const refused = credential !== '' && !player;
+  // A bad credential is never taken for the host, even from this computer. An expired
+  // owner token is not refused here: the MCP endpoint answers it so the agent can refresh.
+  const refused = credential !== '' && !player && !owner && !Owner.isToken(credential);
   const tokens = inviteTokens(request).filter((t) => players.byToken(t));
   const tables = new Set([
     ...tokens.map((t) => {
@@ -99,6 +109,28 @@ export function isLocalRequest(request: FastifyRequest): boolean {
     fromHere &&
     isLocalOrigin(`http://${request.headers.host ?? 'localhost'}`) &&
     !FORWARDED.some((header) => request.headers[header] !== undefined)
+  );
+}
+
+/**
+ * The host asking: from this computer, in a page served here or from an agent, or, in
+ * owner mode, the owner. The owner's page is on the server's public address, and the
+ * guards already turn away changes from other websites.
+ */
+export function isHostRequest(request: FastifyRequest): boolean {
+  return (
+    (isLocalRequest(request) && isLocalOrigin(request.headers.origin)) || isOwnerRequest(request)
+  );
+}
+
+/** In owner mode, whether the owner is asking: by the browser's cookie, or an agent's token. */
+export function isOwnerRequest(request: FastifyRequest): boolean {
+  const owner = request.server.owner;
+  if (!owner) return false;
+  const cookie = parseCookies(request.headers.cookie)[OWNER_COOKIE];
+  return (
+    (cookie !== undefined && owner.accepts(cookie, 'web')) ||
+    owner.accepts(bearer(request), 'access')
   );
 }
 
