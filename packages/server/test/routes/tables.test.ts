@@ -45,6 +45,24 @@ describe('the table menu', () => {
     expect(await server.workspace.tables(server.session.projectId)).toEqual(['empty', 'table-1']);
   });
 
+  it('makes new projects only in a folder of projects', async () => {
+    const single = await post('/api/projects', { name: 'Moon Market' });
+    expect(single.status).toBe(400);
+    expect(((await single.json()) as { error: string }).error).toMatch(/folder of projects/);
+    expect((await post('/api/projects', { name: ' ' })).status).toBe(400);
+
+    await server.close();
+    const root = await mkdtemp(path.join(os.tmpdir(), 'trayful-routes-'));
+    await cp(example, path.join(root, 'harvest-moon'), {
+      recursive: true,
+      filter: (src) => path.basename(src) !== 'tables',
+    });
+    server = await startServer({ projectDir: root, port: 0, appDir: path.join(root, 'no-app') });
+    const made = await post('/api/projects', { name: 'Moon Market' });
+    expect(await made.json()).toEqual({ id: 'moon-market', name: 'Moon Market' });
+    expect(server.workspace.projects().map((p) => p.id)).toEqual(['harvest-moon', 'moon-market']);
+  });
+
   it('lists every component for print-and-play', async () => {
     const components = (await (await fetch(`${server.url}/api/components`)).json()) as unknown[];
     expect(components).toHaveLength(server.session.project.components.length);

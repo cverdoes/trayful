@@ -1,4 +1,5 @@
 import { allowed, caller, isLocalRequest } from '../play/access.js';
+import { ProjectLoadError } from '../play/session.js';
 import type { RouteContext, TableQuery } from './context.js';
 
 /** Projects and tables: viewing them, and the host's table menu. */
@@ -57,8 +58,23 @@ function registerProjectViews({
   });
 }
 
-/** New, duplicated and deleted tables, for the table menu in the browser. */
-function registerTableMenu({ app, workspace, hostOnly }: RouteContext): void {
+/** New projects, and new, duplicated and deleted tables, for the table menu in the browser. */
+function registerTableMenu({ app, workspace, hostOnly, git }: RouteContext): void {
+  app.post<{ Body: { name?: string } | undefined }>('/api/projects', async (request, reply) => {
+    if (hostOnly(request, reply)) return;
+    const name = request.body?.name?.trim();
+    if (!name) return reply.code(400).send({ error: 'Give the new project a name.' });
+    const folder = git?.repository.settings?.path;
+    if (workspace.single && folder !== undefined) {
+      // The workspace's own message names a folder of the clone, which means nothing here.
+      throw new ProjectLoadError(
+        `Trayful works on the one project in ${folder ? `"${folder}"` : 'the top folder'} of the repository. To have several, start it with a new data folder connected to the folder that holds them.`,
+      );
+    }
+    const entry = await workspace.createProject(name);
+    return { id: entry.id, name };
+  });
+
   app.post<{
     Body: { project?: string; name?: string; from?: string; setup?: string | false } | undefined;
   }>('/api/tables', async (request, reply) => {
