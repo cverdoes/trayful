@@ -6,6 +6,7 @@ interface ConnectBody {
   url?: string;
   branch?: string;
   path?: string;
+  create?: boolean;
 }
 
 /**
@@ -22,9 +23,9 @@ export function registerRepositoryRoutes(ctx: RouteContext, link: GitLink): void
 
   app.post<{ Body: ConnectBody | null }>('/api/repository/connect', async (request, reply) => {
     if (hostOnly(request, reply)) return;
-    const { url, branch, path } = request.body ?? {};
+    const { url, branch, path, create } = request.body ?? {};
     if (!url) throw new GitError('Give the address of the repository.');
-    return link.connect({ url, branch, path });
+    return link.connect({ url, branch, path, create: create === true });
   });
 
   app.post<{ Body: { message?: string } | null }>(

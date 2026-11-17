@@ -102,8 +102,13 @@ export interface RunningServer {
 export { isLocalOrigin };
 export { Owner, OwnerError } from './play/owner.js';
 export { containerGateway } from './container.js';
-export { Repository, type RepositoryOptions, type RepositoryStatus } from './git/repository.js';
-export { GitError, type GitAuthor } from './git/git.js';
+export {
+  Repository,
+  type ConnectInput,
+  type RepositoryOptions,
+  type RepositoryStatus,
+} from './git/repository.js';
+export { FreshError, GitError, type Fresh, type GitAuthor } from './git/git.js';
 export type { GitLink } from './git/link.js';
 
 export function defaultAppDir(): string {

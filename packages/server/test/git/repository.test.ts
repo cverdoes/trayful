@@ -3,11 +3,14 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { GitError } from '../../src/git/git.js';
+import { FreshError, GitError } from '../../src/git/git.js';
 import { Repository } from '../../src/git/repository.js';
 import { makeRemote, pushFromLaptop, sh, type Remote } from './remote.js';
 
-async function connected(remote: Remote, input: { branch?: string; path?: string } = {}) {
+async function connected(
+  remote: Remote,
+  input: { branch?: string; path?: string; create?: boolean } = {},
+) {
   const dataDir = await mkdtemp(path.join(os.tmpdir(), 'trayful-data-'));
   const repository = await Repository.open({ dataDir, allowLocalUrls: true });
   await repository.connect({ url: remote.url, path: 'prototype', ...input });
@@ -44,9 +47,27 @@ describe('Repository', () => {
     await expect(again.connect({ url: remote.url })).rejects.toThrow(/already connected/);
   });
 
+  it('asks before making a branch or a project that is not there yet', async () => {
+    const remote = await makeRemote();
+    const dataDir = await mkdtemp(path.join(os.tmpdir(), 'trayful-data-'));
+    const repository = await Repository.open({ dataDir, allowLocalUrls: true });
+    const typo = repository.connect({ url: remote.url, branch: 'mian', path: 'prototypes' });
+    await expect(typo).rejects.toThrow(FreshError);
+    await expect(typo).rejects.toMatchObject({ fresh: { branch: 'mian', folder: 'prototypes' } });
+    // Nothing was kept or pushed, and the right settings still connect.
+    expect(existsSync(repository.cloneDir)).toBe(false);
+    expect(sh(remote.root, '--git-dir', 'game.git', 'branch', '--list', 'mian')).toBe('');
+    await repository.connect({ url: remote.url, path: 'prototype' });
+    expect(existsSync(manifest(repository))).toBe(true);
+  });
+
   it('starts a project in an empty repository and pushes it to a new branch', async () => {
     const remote = await makeRemote({ empty: true });
-    const repository = await connected(remote, { branch: 'prototype', path: 'my-game' });
+    const repository = await connected(remote, {
+      branch: 'prototype',
+      path: 'my-game',
+      create: true,
+    });
     expect(existsSync(manifest(repository))).toBe(true);
     expect(await readFile(manifest(repository), 'utf8')).toContain('name: "My game"');
     expect(sh(remote.root, '--git-dir', 'game.git', 'log', '--format=%s', 'prototype')).toContain(

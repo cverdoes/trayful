@@ -27,6 +27,8 @@ trayful play --data ~/trayful-data --repo https://github.com/me/my-game --branch
 - `--branch` is the branch to work on, `main` if you leave it out. A branch that does not exist yet is made from the repository's default branch.
 - `--path` is the folder with the project, or with a folder of projects. Trayful checks out only that folder and the files at the top of the repository. A folder with no project in it gets the starter project, committed and pushed.
 
+On the command line a new branch or starter project is made as asked. The `connect_repository` tool first says what is missing and makes it only when called again with `create: true`, so a typo in the branch or folder does not quietly start something new.
+
 The data folder remembers the repository, so later starts need only `--data`. One data folder is for one repository.
 
 On a server, run it with Docker on top of [owner mode](host-your-own.md):
@@ -39,7 +41,7 @@ with `TRAYFUL_DATA` (the folder for the clone) and `TRAYFUL_GIT_TOKEN` in your `
 
 ## Give it access
 
-For a private repository, or to push to any repository over HTTPS, Trayful needs a token. On GitHub, make a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) for just this one repository, with **Contents: Read and write**, and give it to Trayful in `TRAYFUL_GIT_TOKEN`, or in a file named by `TRAYFUL_GIT_TOKEN_FILE`.
+For a private repository, or to push to any repository over HTTPS, Trayful needs a token. On GitHub, make a [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new) for just this one repository, with **Contents: Read and write**, and give it to Trayful in `TRAYFUL_GIT_TOKEN`, or in a file named by `TRAYFUL_GIT_TOKEN_FILE`. Use the repository's `https://` address with it. Without a token, a private repository looks to git as if it did not exist; Trayful's error then says to set `TRAYFUL_GIT_TOKEN`.
 
 Trayful hands the token to git only while git runs. It is never written into the repository's settings, so it does not show in `git remote -v` or in error messages. Only the host can connect a repository or sync it; playtesters see nothing of git.
 

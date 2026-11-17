@@ -25,7 +25,7 @@ export function registerRepositoryTools(server: McpServer, link: GitLink): void 
     {
       title: 'Connect a repository',
       description:
-        'Point a Trayful that has no project yet at a git repository. Trayful clones it, checks out the branch (making it if it is new), and opens the project in the folder; a folder with no project gets the starter, committed and pushed.',
+        'Point a Trayful that has no project yet at a git repository. Trayful clones it, checks out the branch, and opens the project in the folder. A branch that does not exist yet, or a folder with no project, fails with what is missing; check with the user that it is not a typo, then call again with `create: true` to make the branch, or start the folder from the starter, committed and pushed.',
       inputSchema: {
         url: z
           .string()
@@ -37,6 +37,10 @@ export function registerRepositoryTools(server: McpServer, link: GitLink): void 
           .describe(
             'Folder in the repository with the project, such as `prototype`. Default: the top.',
           ),
+        create: z
+          .boolean()
+          .optional()
+          .describe('Make the branch, or a starter project in the folder, if missing.'),
       },
     },
     async (input) => {

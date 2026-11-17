@@ -1,10 +1,18 @@
 // A git-backed workspace's repository: connecting to it, syncing with it, and how the two stand.
-import { existsSync } from 'node:fs';
-import { appendFile, readdir, rm } from 'node:fs/promises';
+import { existsSync, readdirSync } from 'node:fs';
+import { appendFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { MANIFEST_FILE } from '@trayful/formats';
 import { createProjectFolder } from '../projects/workspace.js';
-import { git, GitError, writeAskpass, type GitAuthor, type GitOptions } from './git.js';
+import {
+  FreshError,
+  git,
+  GitError,
+  writeAskpass,
+  type Fresh,
+  type GitAuthor,
+  type GitOptions,
+} from './git.js';
 import { checkSettings, loadSettings, saveSettings, type RepositorySettings } from './settings.js';
 import {
   commitChanges,
@@ -26,6 +34,14 @@ export interface RepositoryOptions {
   author?: GitAuthor;
   /** Lets git read repositories on this computer's disk. Only for tests. */
   allowLocalUrls?: boolean;
+}
+
+/** Where to connect; `create` allows a new branch or project there. */
+export interface ConnectInput {
+  url: string;
+  branch?: string;
+  path?: string;
+  create?: boolean;
 }
 
 /** How Trayful and the repository stand, for people and agents. */
@@ -98,9 +114,11 @@ export class Repository {
 
   /**
    * Clones the repository and checks out the branch, making it if it is new. A folder
-   * with no project gets the starter, committed and pushed. Throws if already connected.
+   * with no project gets the starter, committed and pushed. A new branch or project
+   * needs `create`, so a typo does not make one: without it, a `FreshError` says which.
+   * Throws if already connected.
    */
-  connect(input: { url: string; branch?: string; path?: string }): Promise<RepositorySettings> {
+  connect(input: ConnectInput): Promise<RepositorySettings> {
     return this.serial(async () => {
       if (this.settingsNow) {
         throw new GitError(`Trayful is already connected to ${this.settingsNow.url}.`);
@@ -121,7 +139,15 @@ export class Repository {
           { ...this.gitOptions(), cwd: this.options.dataDir },
         );
         await this.checkOut(settings);
-        await startProject(path.join(this.cloneDir, settings.path), projectName(settings));
+        const dir = path.join(this.cloneDir, settings.path);
+        const fresh: Fresh = {
+          ...((await commitOf(this.run, remoteRef(settings.branch)))
+            ? {}
+            : { branch: settings.branch }),
+          ...(hasProject(dir) ? {} : { folder: settings.path }),
+        };
+        if (Object.keys(fresh).length > 0 && !input.create) throw new FreshError(fresh);
+        if (fresh.folder !== undefined) await createProjectFolder(dir, projectName(settings));
         await this.sync1(settings, 'Trayful: start a prototype');
       } catch (err) {
         await rm(this.cloneDir, { recursive: true, force: true });
@@ -257,17 +283,13 @@ export class Repository {
   }
 }
 
-/** Starts a project in `dir` from the starter, unless it has one, or a folder of them, already. */
-async function startProject(dir: string, name: string): Promise<void> {
-  if (existsSync(path.join(dir, MANIFEST_FILE))) return;
-  if (existsSync(dir)) {
-    const entries = await readdir(dir, { withFileTypes: true });
-    const projects = entries.filter(
-      (e) => e.isDirectory() && existsSync(path.join(dir, e.name, MANIFEST_FILE)),
-    );
-    if (projects.length > 0) return;
-  }
-  await createProjectFolder(dir, name);
+/** Whether `dir` is a project, or a folder of them. */
+function hasProject(dir: string): boolean {
+  if (existsSync(path.join(dir, MANIFEST_FILE))) return true;
+  if (!existsSync(dir)) return false;
+  return readdirSync(dir, { withFileTypes: true }).some(
+    (e) => e.isDirectory() && existsSync(path.join(dir, e.name, MANIFEST_FILE)),
+  );
 }
 
 /** A name for a new project: its folder's, or the repository's, in words. */

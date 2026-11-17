@@ -99,6 +99,13 @@ describe('a git-backed Trayful', () => {
         body: JSON.stringify(body),
       });
     expect((await post('/api/repository/connect', {})).status).toBe(400);
+    const typo = await post('/api/repository/connect', {
+      url: remote.url,
+      branch: 'mian',
+      path: 'prototype',
+    });
+    expect(typo.status).toBe(400);
+    expect(await typo.json()).toMatchObject({ fresh: { branch: 'mian' } });
     const connected = await post('/api/repository/connect', { url: remote.url, path: 'prototype' });
     expect(await connected.json()).toMatchObject({ connected: true, path: 'prototype' });
     expect((await fetch(`${server.url}/api/table`)).status).toBe(200);

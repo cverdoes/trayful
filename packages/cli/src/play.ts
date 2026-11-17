@@ -94,7 +94,8 @@ async function gitRepository(options: PlayOptions): Promise<Repository | undefin
   }
   if (wanted && !current) {
     try {
-      await repository.connect(wanted);
+      // Typed out on the command line, so a new branch or project is meant.
+      await repository.connect({ ...wanted, create: true });
     } catch (e) {
       if (e instanceof GitError) throw new CliError(e.message);
       throw e;

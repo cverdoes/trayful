@@ -6,6 +6,34 @@ import path from 'node:path';
 /** A git command that failed, or a repository setting git cannot use. */
 export class GitError extends Error {}
 
+/** What connecting would make that is not in the repository yet. */
+export interface Fresh {
+  /** The branch, when the repository has no branch by that name. */
+  branch?: string;
+  /** The folder, when it has no Trayful project: connecting starts one there. */
+  folder?: string;
+}
+
+/**
+ * Connecting would make a new branch or a new project, which might be a typo: the caller
+ * asks the person and connects again with `create`.
+ */
+export class FreshError extends GitError {
+  constructor(readonly fresh: Fresh) {
+    super(freshMessage(fresh));
+  }
+}
+
+function freshMessage({ branch, folder }: Fresh): string {
+  const where = folder ? `"${folder}"` : 'the top folder';
+  const parts = [
+    branch === undefined ? '' : `there is no branch "${branch}" yet`,
+    folder === undefined ? '' : `there is no Trayful project in ${where} yet`,
+  ].filter(Boolean);
+  const them = parts.length > 1 ? 'them' : 'it';
+  return `In this repository ${parts.join(', and ')}. Connect again with create to make ${them}.`;
+}
+
 /** Who commits: the name and email address on Trayful's commits. */
 export interface GitAuthor {
   name: string;
@@ -84,8 +112,9 @@ export function git(args: string[], options: GitOptions, okCodes = [0]): Promise
       (err, stdout, stderr) => {
         const code = exitCode(err);
         if (okCodes.includes(code)) return resolve({ stdout, code });
-        const said = (stderr || stdout || (err?.message ?? '')).trim();
-        reject(new GitError(`git ${args[0] ?? ''} failed: ${scrub(said, options.token)}`));
+        const said = scrub((stderr || stdout || (err?.message ?? '')).trim(), options.token);
+        const hint = refusedAccess(said) ? ` ${accessHint(options.token)}` : '';
+        reject(new GitError(`git ${args[0] ?? ''} failed: ${said}${hint}`));
       },
     );
   });
@@ -95,6 +124,29 @@ export function git(args: string[], options: GitOptions, okCodes = [0]): Promise
 function exitCode(err: { code?: unknown } | null): number {
   if (!err) return 0;
   return typeof err.code === 'number' ? err.code : -1;
+}
+
+/**
+ * Whether git was turned away: no or a wrong password, no SSH key, or a private repository
+ * that GitHub and others report as not found to anyone without access.
+ */
+function refusedAccess(said: string): boolean {
+  return [
+    'could not read Username',
+    'could not read Password',
+    'Authentication failed',
+    'Repository not found',
+    'Permission denied (publickey',
+    'Invalid username or password',
+    'The requested URL returned error: 403',
+  ].some((sign) => said.includes(sign));
+}
+
+/** What to do about a repository that turned Trayful away. */
+function accessHint(token: string | undefined): string {
+  return token
+    ? 'The repository refused the token in TRAYFUL_GIT_TOKEN: check that it has not expired and that it covers this repository with Contents read and write.'
+    : 'If the repository is private, it needs a token: start Trayful with TRAYFUL_GIT_TOKEN set to a fine-grained personal access token for the repository, with Contents read and write, and use its https:// address.';
 }
 
 function scrub(text: string, token: string | undefined): string {

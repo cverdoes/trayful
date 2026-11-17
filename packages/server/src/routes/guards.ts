@@ -1,6 +1,6 @@
 import { SetupError } from '@trayful/core';
 import { allowed, allowedProject, caller, isTrustedOrigin } from '../play/access.js';
-import { GitError } from '../git/git.js';
+import { FreshError, GitError } from '../git/git.js';
 import { AuthoringError, ConflictError } from '../projects/authoring.js';
 import { PlayerError } from '../play/players.js';
 import { ProjectLoadError } from '../play/session.js';
@@ -22,7 +22,9 @@ const TOKEN_ONLY = new Set(['/mcp', '/oauth/register', '/oauth/token']);
  */
 export function registerGuards({ app, players, shareBases, target }: RouteContext): void {
   app.setErrorHandler((err: Error, _request, reply) => {
-    void reply.code(statusFor(err)).send({ error: err.message });
+    // A new branch or project to confirm says which, so the page can ask about each.
+    const fresh = err instanceof FreshError ? { fresh: err.fresh } : {};
+    void reply.code(statusFor(err)).send({ error: err.message, ...fresh });
   });
 
   app.addHook('onRequest', async (request, reply) => {
