@@ -1,6 +1,6 @@
 // What the HTTP routes share: the workspace, finding the table a request names, and who is asking.
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { caller, isLocalOrigin, isLocalRequest, type Caller } from '../play/access.js';
+import { caller, isHostRequest, type Caller } from '../play/access.js';
 import type { Invite, Player, Players } from '../play/players.js';
 import type { TableSession } from '../play/session.js';
 import type { Workspace } from '../projects/workspace.js';
@@ -26,7 +26,7 @@ export interface RouteContext {
   sessionFor: (query: TableQuery) => Promise<TableSession>;
   /** Who a request is from. Requests from this computer without a cookie are the host. */
   identify: (request: FastifyRequest) => Promise<{ who: Caller; player: Player | undefined }>;
-  /** Only the person at this computer may change which tables exist, or author. Replies 403 otherwise. */
+  /** Only the host may change which tables exist, or author. Replies 403 otherwise. */
   hostOnly: (request: FastifyRequest, reply: FastifyReply) => boolean;
   /** The links to an invite, one per address others reach this server at. */
   linksFor: (invite: Invite) => string[];
@@ -82,7 +82,7 @@ export function routeContext(app: FastifyInstance, workspace: Workspace): RouteC
       return { who, player };
     },
     hostOnly: (request, reply) => {
-      if (isLocalRequest(request) && isLocalOrigin(request.headers.origin)) return false;
+      if (isHostRequest(request)) return false;
       void reply.code(403).send({ error: 'Only the host can do that.' });
       return true;
     },

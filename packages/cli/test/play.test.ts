@@ -72,6 +72,28 @@ describe('trayful play', () => {
     expect(out).toMatch(/ {2}https:\/\/brave-little-moon\.trycloudflare\.com\/join\/\S+/);
   });
 
+  it('runs in owner mode with the secret from the environment', async () => {
+    vi.stubEnv('TRAYFUL_OWNER_SECRET', 'x'.repeat(32));
+    const out = await playUntilStopped([
+      await scratchProject(),
+      '--owner',
+      '--public-url',
+      'https://trayful.example.com',
+    ]);
+    expect(out).toContain(
+      'Owner mode: sign in at https://trayful.example.com/sign-in, and connect agents to https://trayful.example.com/mcp.',
+    );
+    expect(out).toMatch(/ {2}https:\/\/trayful\.example\.com\/join\/\S+/);
+  });
+
+  it('needs a long enough owner secret for owner mode', async () => {
+    const options = parsePlayArgs([await scratchProject(), '--port', '0', '--owner']);
+    vi.stubEnv('TRAYFUL_OWNER_SECRET', '');
+    await expect(play(options, vi.fn(), { appDir })).rejects.toThrow('TRAYFUL_OWNER_SECRET');
+    vi.stubEnv('TRAYFUL_OWNER_SECRET', 'too short');
+    await expect(play(options, vi.fn(), { appDir })).rejects.toThrow('at least 32 characters');
+  });
+
   it('stops the server when the tunnel cannot open', async () => {
     vi.stubEnv('TRAYFUL_CLOUDFLARED', '/nonexistent/cloudflared');
     const options = parsePlayArgs([await scratchProject(), '--port', '0', '--tunnel']);

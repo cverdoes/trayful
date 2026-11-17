@@ -1,0 +1,33 @@
+# Owner mode: Trayful on a server of your own, behind HTTPS, used from anywhere.
+# See docs/howto/host-your-own.md. Start it with
+#
+#   docker compose -f compose.yaml -f compose.owner.yaml up -d --build
+#
+# with TRAYFUL_DOMAIN, TRAYFUL_OWNER_SECRET and TRAYFUL_PROJECTS set, such as in a .env file.
+services:
+  trayful:
+    command:
+      - play
+      - /projects
+      - --container
+      - --owner
+      - --public-url
+      - https://${TRAYFUL_DOMAIN:?Set TRAYFUL_DOMAIN to the server's domain name}
+    environment:
+      TRAYFUL_OWNER_SECRET: ${TRAYFUL_OWNER_SECRET:?Set TRAYFUL_OWNER_SECRET; make one with openssl rand -hex 32}
+    restart: unless-stopped
+
+  # Gets an HTTPS certificate for the domain by itself, and passes requests on to Trayful.
+  caddy:
+    image: caddy:2
+    command: caddy reverse-proxy --from ${TRAYFUL_DOMAIN} --to trayful:4317
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - caddy-data:/data
+    restart: unless-stopped
+
+volumes:
+  # Caddy's certificates, kept so a restart does not ask for new ones.
+  caddy-data:

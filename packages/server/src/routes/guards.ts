@@ -9,6 +9,12 @@ import { NOT_INVITED, type RouteContext, type TableQuery } from './context.js';
 const OPEN = new Set(['/api/me', '/api/join', '/api/health', '/api/knock']);
 
 /**
+ * Routes agents call with a token rather than a browser's cookies, so a request from
+ * another website gains nothing a request from anywhere else would not.
+ */
+const TOKEN_ONLY = new Set(['/mcp', '/oauth/register', '/oauth/token']);
+
+/**
  * Error replies, and who may reach which route, checked before any route runs. A table,
  * its images and its socket are for the host and the guests invited to it. The page
  * itself is not secret; without an invite it shows how to get one.
@@ -21,7 +27,11 @@ export function registerGuards({ app, players, shareBases, target }: RouteContex
   app.addHook('onRequest', async (request, reply) => {
     const route = request.url.split('?')[0]!;
     // Changes must come from a Trayful page, not from another website open in the browser.
-    if (request.method !== 'GET' && route !== '/mcp' && !isTrustedOrigin(request, shareBases)) {
+    if (
+      request.method !== 'GET' &&
+      !TOKEN_ONLY.has(route) &&
+      !isTrustedOrigin(request, shareBases)
+    ) {
       return reply.code(403).send({ error: 'Origin not allowed' });
     }
   });

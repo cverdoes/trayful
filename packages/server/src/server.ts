@@ -2,6 +2,7 @@ import os from 'node:os';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { isLocalOrigin } from './play/access.js';
+import { Owner } from './play/owner.js';
 import { resourceDir } from './shipped/resources.js';
 import { routeContext, type TableQuery } from './routes/context.js';
 import { registerAssetRoutes } from './routes/assets.js';
@@ -11,6 +12,7 @@ import { registerEngineRoutes } from './routes/engines.js';
 import { registerFileRoutes } from './routes/files.js';
 import { registerGuards } from './routes/guards.js';
 import { registerMcp } from './routes/mcp.js';
+import { registerOwnerRoutes } from './routes/owner.js';
 import { registerPlayerRoutes } from './routes/players.js';
 import { registerSocket } from './routes/socket.js';
 import { registerTableRoutes } from './routes/tables.js';
@@ -35,6 +37,12 @@ export interface ServerOptions {
   host?: string;
   /** Running inside a container, such as with the repository's Docker setup. */
   container?: ContainerOptions;
+  /**
+   * Owner mode, for a Trayful on a server somewhere: whoever signs in with this secret
+   * is the host, from anywhere, and their agents reach MCP with OAuth. At least 32
+   * characters. Leave it out to run as usual, where only this computer is the host.
+   */
+  ownerSecret?: string;
   /** Folder with the built browser app. Default: `packages/app/dist` in this repository. */
   appDir?: string;
   /** Seed for a newly created table. */
@@ -81,6 +89,7 @@ export interface RunningServer {
 }
 
 export { isLocalOrigin };
+export { Owner, OwnerError } from './play/owner.js';
 export { containerGateway } from './container.js';
 
 export function defaultAppDir(): string {
@@ -89,6 +98,8 @@ export function defaultAppDir(): string {
 
 /** Starts the local Trayful server for a project, or a folder of projects. */
 export async function startServer(options: ServerOptions): Promise<RunningServer> {
+  // Checked first, so a short secret stops the start before anything is opened.
+  const owner = options.ownerSecret === undefined ? undefined : new Owner(options.ownerSecret);
   const workspace = await Workspace.open(options.projectDir, {
     project: options.project,
     table: options.table,
@@ -99,10 +110,12 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   });
   const app = Fastify({ logger: options.logger ?? false });
   app.decorate('hostAddresses', new Set(options.container?.hostAddresses));
+  app.decorate('owner', owner);
   await app.register(fastifyWebsocket);
 
   const ctx = routeContext(app, workspace);
   registerGuards(ctx);
+  if (owner) registerOwnerRoutes(ctx, owner);
   registerPlayerRoutes(ctx);
   registerEngineRoutes(ctx);
   registerTableRoutes(ctx);
