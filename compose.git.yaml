@@ -23,3 +23,5 @@ services:
       TRAYFUL_GIT_TOKEN: ${TRAYFUL_GIT_TOKEN:-}
       TRAYFUL_GIT_NAME: ${TRAYFUL_GIT_NAME:-}
       TRAYFUL_GIT_EMAIL: ${TRAYFUL_GIT_EMAIL:-}
+      # The secret a push webhook signs its events with; no webhook without it.
+      TRAYFUL_GIT_WEBHOOK_SECRET: ${TRAYFUL_GIT_WEBHOOK_SECRET:-}

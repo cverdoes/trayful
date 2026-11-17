@@ -58,8 +58,11 @@ interface TrayfulStore {
   /** The table as this player sees it: other hands and face-down cards hidden. */
   table?: TableView;
   me?: Me;
-  /** Before the table: asking for a name to join with, or no invite to get in. */
-  gate?: 'join' | 'closed';
+  /**
+   * Before the table: asking for a name to join with, no invite to get in, or (for the
+   * host of a git-backed Trayful with no project yet) which repository to work on.
+   */
+  gate?: 'join' | 'closed' | 'connect';
   /** Everyone at this table. */
   players: PlayerInfo[];
   /** Questions and messages this player has still to answer, oldest first. */

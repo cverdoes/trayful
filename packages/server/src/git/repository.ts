@@ -26,6 +26,8 @@ export interface RepositoryOptions {
   author?: GitAuthor;
   /** Lets git read repositories on this computer's disk. Only for tests. */
   allowLocalUrls?: boolean;
+  /** The secret a push webhook signs its events with. No webhook without one. */
+  webhookSecret?: string;
 }
 
 /** What connecting would make that is not in the repository yet. */
@@ -113,6 +115,10 @@ export class Repository {
     return this.settingsNow;
   }
 
+  get webhookSecret(): string | undefined {
+    return this.options.webhookSecret;
+  }
+
   get dataDir(): string {
     return this.options.dataDir;
   }
@@ -179,9 +185,21 @@ export class Repository {
     });
   }
 
-  /** Commits what changed, takes in the branch's new commits and pushes. */
-  sync(message = 'Trayful: save changes'): Promise<SyncResult> {
-    return this.serial(() => this.sync1(this.connected(), message));
+  /** Commits what changed, takes in the branch's new commits and, unless `push` is false, pushes. */
+  sync(message = 'Trayful: save changes', push = true): Promise<SyncResult> {
+    return this.serial(() => this.sync1(this.connected(), message, push));
+  }
+
+  /** Commits what changed, and nothing more. False when nothing had. */
+  save(message: string): Promise<boolean> {
+    return this.serial(async () => {
+      try {
+        return await commitChanges(this.run, this.connected(), message);
+      } catch (err) {
+        this.lastError = err instanceof Error ? err.message : String(err);
+        throw err;
+      }
+    });
   }
 
   /**
@@ -234,9 +252,17 @@ export class Repository {
 
   // -------------------------------------------------------------------------
 
-  private async sync1(settings: RepositorySettings, message: string): Promise<SyncResult> {
+  private async sync1(
+    settings: RepositorySettings,
+    message: string,
+    push = true,
+  ): Promise<SyncResult> {
     try {
-      const result = await syncOnce(this.run, settings, message, () => this.conflictBranch());
+      const result = await syncOnce(this.run, settings, {
+        message,
+        push,
+        conflictBranch: () => this.conflictBranch(),
+      });
       this.conflictNow = result.conflict;
       this.lastError = undefined;
       if (result.pulled) await this.changed();

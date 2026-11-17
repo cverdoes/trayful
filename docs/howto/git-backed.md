@@ -17,7 +17,7 @@ Make a folder for Trayful's clone, and start Trayful on it with `--data` instead
 trayful play --data ~/trayful-data
 ```
 
-With nothing connected yet, Trayful has no project and waits for a repository. Connect one with the `connect_repository` MCP tool, or right away at the start:
+With nothing connected yet, Trayful has no project and waits for a repository. Open its page and fill in **Connect a repository**, use the `connect_repository` MCP tool, or connect one right away at the start:
 
 ```sh
 trayful play --data ~/trayful-data --repo https://github.com/me/my-game --branch main --path prototype
@@ -49,20 +49,39 @@ Commits are by "Trayful" unless you set `TRAYFUL_GIT_NAME` and `TRAYFUL_GIT_EMAI
 
 ## Sync
 
-`sync_repository` commits what changed on the server, takes in the branch's new commits and pushes. Open tables reload when files change. Ask your agent to call it after you push, so the table shows your changes, and before you pull, so the repository has the changes made on the table:
+Trayful syncs by itself:
+
+| What   | When                                                  |
+| ------ | ----------------------------------------------------- |
+| Commit | 30 seconds after the last change to the project files |
+| Fetch  | Every 2 minutes, taking in new commits on the branch  |
+| Push   | On a fetch, at most every 5 minutes                   |
+
+Open tables reload when the files change. To sync at once, click the branch in the toolbar and **Sync now**, or ask your agent to call `sync_repository`: after you push, so the table shows your changes, and before you pull, so the repository has the changes made on the table.
 
 - "I pushed new card art; sync Trayful and show me the deck."
 - "Sync Trayful, then pull, so I have the cards you designed."
 
-`repository_status` shows the branch, the commits not pushed yet, the files changed and the last sync.
+The dot by the branch name says how things stand: green when in sync, yellow while changes wait to be committed, pushed or taken in, red after a conflict or a failed sync. `repository_status` tells an agent the same.
 
-Saved tables (`tables/`) are never committed by a sync: they change on every move. `.trayful/`, with the players and their keys, is never committed at all.
+Commit messages say who changed what, such as `Trayful: upsert_type, add_asset (agent); Tray (Claes)`. Saved tables (`tables/`) are never committed by a sync: they change on every move. `.trayful/`, with the players and their keys, is never committed at all.
+
+### Sync on every push
+
+To have Trayful take in a push at once instead of at its next fetch, add a webhook. Make a secret (`openssl rand -hex 32`) and give it to Trayful in `TRAYFUL_GIT_WEBHOOK_SECRET`. Then, in the repository's **Settings → Webhooks → Add webhook** on GitHub:
+
+- **Payload URL**: `https://trayful.example.com/api/repository/hook`
+- **Content type**: `application/json`
+- **Secret**: the same secret
+- **Which events**: just the push event
+
+Trayful checks each event's signature, and syncs when the push was to its branch.
 
 ## When both sides changed the same lines
 
 Trayful never leaves a half-merged file in the project. If you and Trayful changed different files, or different parts of a file, a sync merges them. If you both changed the same lines, the sync stops: the project on the table stays as it was, and Trayful pushes its side to a branch of its own, such as `trayful/conflict-20261117-0912`. Then either:
 
 - Merge that branch on your computer, push, and sync again. Trayful takes in the result.
-- Or call `resolve_conflict` to take the repository's version. Trayful's side stays on its branch, so nothing is lost.
+- Or take the repository's version: **Take the repository's version** on the banner, or `resolve_conflict`. Trayful's side stays on its branch, so nothing is lost.
 
 Until then Trayful keeps working, but pushes only to its conflict branch.
