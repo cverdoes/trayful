@@ -103,12 +103,14 @@ export { isLocalOrigin };
 export { Owner, OwnerError } from './play/owner.js';
 export { containerGateway } from './container.js';
 export {
+  FreshError,
   Repository,
   type ConnectInput,
+  type Fresh,
   type RepositoryOptions,
   type RepositoryStatus,
 } from './git/repository.js';
-export { FreshError, GitError, type Fresh, type GitAuthor } from './git/git.js';
+export { GitError, type GitAuthor } from './git/git.js';
 export type { GitLink } from './git/link.js';
 
 export function defaultAppDir(): string {

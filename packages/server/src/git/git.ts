@@ -6,34 +6,6 @@ import path from 'node:path';
 /** A git command that failed, or a repository setting git cannot use. */
 export class GitError extends Error {}
 
-/** What connecting would make that is not in the repository yet. */
-export interface Fresh {
-  /** The branch, when the repository has no branch by that name. */
-  branch?: string;
-  /** The folder, when it has no Trayful project: connecting starts one there. */
-  folder?: string;
-}
-
-/**
- * Connecting would make a new branch or a new project, which might be a typo: the caller
- * asks the person and connects again with `create`.
- */
-export class FreshError extends GitError {
-  constructor(readonly fresh: Fresh) {
-    super(freshMessage(fresh));
-  }
-}
-
-function freshMessage({ branch, folder }: Fresh): string {
-  const where = folder ? `"${folder}"` : 'the top folder';
-  const parts = [
-    branch === undefined ? '' : `there is no branch "${branch}" yet`,
-    folder === undefined ? '' : `there is no Trayful project in ${where} yet`,
-  ].filter(Boolean);
-  const them = parts.length > 1 ? 'them' : 'it';
-  return `In this repository ${parts.join(', and ')}. Connect again with create to make ${them}.`;
-}
-
 /** Who commits: the name and email address on Trayful's commits. */
 export interface GitAuthor {
   name: string;

@@ -1,6 +1,7 @@
 import { SetupError } from '@trayful/core';
 import { allowed, allowedProject, caller, isTrustedOrigin } from '../play/access.js';
-import { FreshError, GitError } from '../git/git.js';
+import { GitError } from '../git/git.js';
+import { FreshError } from '../git/repository.js';
 import { AuthoringError, ConflictError } from '../projects/authoring.js';
 import { PlayerError } from '../play/players.js';
 import { ProjectLoadError } from '../play/session.js';

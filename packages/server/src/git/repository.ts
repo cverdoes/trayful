@@ -4,15 +4,7 @@ import { appendFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { MANIFEST_FILE } from '@trayful/formats';
 import { createProjectFolder } from '../projects/workspace.js';
-import {
-  FreshError,
-  git,
-  GitError,
-  writeAskpass,
-  type Fresh,
-  type GitAuthor,
-  type GitOptions,
-} from './git.js';
+import { git, GitError, writeAskpass, type GitAuthor, type GitOptions } from './git.js';
 import { checkSettings, loadSettings, saveSettings, type RepositorySettings } from './settings.js';
 import {
   commitChanges,
@@ -34,6 +26,34 @@ export interface RepositoryOptions {
   author?: GitAuthor;
   /** Lets git read repositories on this computer's disk. Only for tests. */
   allowLocalUrls?: boolean;
+}
+
+/** What connecting would make that is not in the repository yet. */
+export interface Fresh {
+  /** The branch, when the repository has no branch by that name. */
+  branch?: string;
+  /** The folder, when it has no Trayful project: connecting starts one there. */
+  folder?: string;
+}
+
+/**
+ * Connecting would make a new branch or a new project, which might be a typo: the caller
+ * asks the person and connects again with `create`.
+ */
+export class FreshError extends GitError {
+  constructor(readonly fresh: Fresh) {
+    super(freshMessage(fresh));
+  }
+}
+
+function freshMessage({ branch, folder }: Fresh): string {
+  const where = folder ? `"${folder}"` : 'the top folder';
+  const parts = [
+    branch === undefined ? '' : `there is no branch "${branch}" yet`,
+    folder === undefined ? '' : `there is no Trayful project in ${where} yet`,
+  ].filter(Boolean);
+  const them = parts.length > 1 ? 'them' : 'it';
+  return `In this repository ${parts.join(', and ')}. Connect again with create to make ${them}.`;
 }
 
 /** Where to connect; `create` allows a new branch or project there. */

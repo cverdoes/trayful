@@ -3,8 +3,8 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { FreshError, GitError } from '../../src/git/git.js';
-import { Repository } from '../../src/git/repository.js';
+import { GitError } from '../../src/git/git.js';
+import { FreshError, Repository } from '../../src/git/repository.js';
 import { makeRemote, pushFromLaptop, sh, type Remote } from './remote.js';
 
 async function connected(
