@@ -20,6 +20,7 @@ import type { TableSession } from './play/session.js';
 import { Workspace } from './projects/workspace.js';
 import { GitLink } from './git/link.js';
 import type { Repository } from './git/repository.js';
+import type { SyncTimes } from './git/autosync.js';
 import { registerRepositoryRoutes } from './routes/repository.js';
 
 export const DEFAULT_PORT = 4317;
@@ -33,6 +34,12 @@ export interface ServerOptions {
    * with no project and waits to be connected to one.
    */
   repository?: Repository;
+  /**
+   * With `repository`: how often Trayful commits, fetches and pushes by itself, or
+   * false for only when asked. Default: commit 30 s after a change, fetch every 2
+   * minutes, push every 5.
+   */
+  syncTimes?: SyncTimes | false;
   /** In a folder of projects: the one to open first. Default: the first that loads. */
   project?: string;
   /** Table name; its state lives in `tables/<table>.json`. Default `table-1`. */
@@ -112,6 +119,7 @@ export {
 } from './git/repository.js';
 export { GitError, type GitAuthor } from './git/git.js';
 export type { GitLink } from './git/link.js';
+export type { SyncTimes } from './git/autosync.js';
 
 export function defaultAppDir(): string {
   return resourceDir('app');
@@ -170,6 +178,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
       return ctx.linksFor(await workspace.players.invite(project, table));
     },
     async close() {
+      git?.close();
       await app.close();
       await workspace.close();
     },
@@ -189,7 +198,7 @@ async function openWorkspace(
     agentPace: options.agentPace,
   };
   if (options.repository) {
-    const git = await GitLink.open(options.repository, open);
+    const git = await GitLink.open(options.repository, open, options.syncTimes);
     return { workspace: git.workspace, git };
   }
   if (!options.projectDir) throw new Error('Give a project folder or a repository.');

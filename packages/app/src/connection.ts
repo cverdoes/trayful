@@ -2,6 +2,7 @@ import type { ProjectView, ServerMessage } from '@trayful/core';
 import { landIn } from './motion/glides';
 import { settleIn } from './motion/motions';
 import { forgetJoin, route, tableQuery } from './route';
+import { waitingForRepository } from './repository/api';
 import { snapshotTable } from './snapshot';
 import { dropWhileOffline, useStore, type Me } from './store';
 
@@ -18,7 +19,8 @@ export async function start(): Promise<void> {
     return;
   }
   useStore.setState({ me });
-  if (!me.host && !me.invited && !me.joined) useStore.setState({ gate: 'closed' });
+  if (me.host && (await waitingForRepository())) useStore.setState({ gate: 'connect' });
+  else if (!me.host && !me.invited && !me.joined) useStore.setState({ gate: 'closed' });
   else if (!me.player || (route().join && !me.joined)) useStore.setState({ gate: 'join' });
   else {
     if (route().join) forgetJoin();

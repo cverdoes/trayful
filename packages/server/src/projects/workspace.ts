@@ -30,7 +30,7 @@ export interface ProjectEntry {
 
 /** What tools and routes say before a workspace that started empty has any projects. */
 export const NO_PROJECT_YET =
-  'Trayful has no project yet. Connect a repository first, with connect_repository.';
+  'Trayful has no project yet. Connect a repository first: on the page in the browser, or with connect_repository.';
 
 export interface WorkspaceOptions {
   /** Reload projects when their files change. Default true. */

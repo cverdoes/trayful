@@ -5,16 +5,18 @@ import { FreshError } from '../git/repository.js';
 import { AuthoringError, ConflictError } from '../projects/authoring.js';
 import { PlayerError } from '../play/players.js';
 import { ProjectLoadError } from '../play/session.js';
+import { WEBHOOK_ROUTE } from './repository.js';
 import { NOT_INVITED, type RouteContext, type TableQuery } from './context.js';
 
 /** API routes anyone may call, invited or not. Knocking asks the host, who decides. */
-const OPEN = new Set(['/api/me', '/api/join', '/api/health', '/api/knock']);
+const OPEN = new Set(['/api/me', '/api/join', '/api/health', '/api/knock', WEBHOOK_ROUTE]);
 
 /**
- * Routes agents call with a token rather than a browser's cookies, so a request from
- * another website gains nothing a request from anywhere else would not.
+ * Routes agents call with a token rather than a browser's cookies, and the webhook
+ * that proves itself with a signature, so a request from another website gains
+ * nothing a request from anywhere else would not.
  */
-const TOKEN_ONLY = new Set(['/mcp', '/oauth/register', '/oauth/token']);
+const TOKEN_ONLY = new Set(['/mcp', '/oauth/register', '/oauth/token', WEBHOOK_ROUTE]);
 
 /**
  * Error replies, and who may reach which route, checked before any route runs. A table,

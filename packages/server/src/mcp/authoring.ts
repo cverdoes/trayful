@@ -12,6 +12,23 @@ const authored = (summary: string): CallToolResult =>
     `${summary} Open tables show the change already. Use render_component to see a type, or snapshot to see the table.`,
   );
 
+/**
+ * The tools that change project files, so a git-backed Trayful can say in its
+ * commit messages which ones an agent used.
+ */
+export const EDITING_TOOLS: ReadonlySet<string> = new Set([
+  'upsert_type',
+  'remove_type',
+  'rename_type',
+  'rename_field',
+  'rename_image',
+  'set_color',
+  'set_inventory',
+  'add_asset',
+  'migrate_project',
+  'create_project',
+]);
+
 /** Tools for designing components: the library, the inventory and assets. */
 export function registerAuthoringTools(server: McpServer, ctx: ToolContext): void {
   registerTypeTools(server, ctx);

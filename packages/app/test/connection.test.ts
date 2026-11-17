@@ -99,6 +99,13 @@ describe('start', () => {
     expect(useStore.getState().view).toEqual({ project: 'game', types: {} });
   });
 
+  it('asks the host which repository to work on when there is no project yet', async () => {
+    routes['/api/health'] = { body: { ok: true, waiting: true } };
+    await start();
+    expect(useStore.getState().gate).toBe('connect');
+    expect(FakeSocket.opened).toEqual([]);
+  });
+
   it('keeps out someone who was not invited', async () => {
     routes['/api/me'] = { body: { host: false, invited: false, joined: false } };
     await start();

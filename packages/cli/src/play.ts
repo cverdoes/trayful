@@ -84,7 +84,12 @@ async function startTable(options: PlayOptions, appDir: string): Promise<Running
 async function gitRepository(options: PlayOptions): Promise<Repository | undefined> {
   if (!options.data) return undefined;
   const dataDir = path.resolve(options.data);
-  const repository = await Repository.open({ dataDir, token: gitToken(), author: gitAuthor() });
+  const repository = await Repository.open({
+    dataDir,
+    token: gitToken(),
+    author: gitAuthor(),
+    webhookSecret: filled(process.env.TRAYFUL_GIT_WEBHOOK_SECRET),
+  });
   const wanted = options.repo;
   const current = repository.settings;
   if (wanted && current && current.url !== wanted.url) {
@@ -166,7 +171,7 @@ async function announce(server: RunningServer, out: (s: string) => void): Promis
   const { url, git } = server;
   if (!server.workspace.ready) {
     out(`Trayful is waiting for a repository at ${url}`);
-    out('Connect one with connect_repository over MCP. Press Ctrl+C to stop.');
+    out('Open that page to connect one, or use connect_repository over MCP. Press Ctrl+C to stop.');
     return;
   }
   const { session } = server;
