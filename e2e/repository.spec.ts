@@ -51,8 +51,14 @@ test('the host connects a repository, syncs, and settles a conflict', async ({ p
   await page.goto(server.url);
   await expect(page.getByRole('heading', { name: 'Connect a repository' })).toBeVisible();
   await page.getByLabel('Repository').fill(url);
-  await page.getByLabel('Folder').fill('prototype');
+  // A typo in the folder is caught before Trayful starts a project there.
+  await page.getByLabel('Folder').fill('protoype');
   await page.getByRole('button', { name: 'Connect' }).click();
+  await expect(page.getByText('There is no Trayful project in protoype yet.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Create and connect' })).toBeVisible();
+  await page.getByRole('button', { name: 'Go back' }).click();
+  await page.getByLabel('Folder').fill('prototype');
+  await page.getByRole('button', { name: 'Connect', exact: true }).click();
 
   await expect(page.locator('.toolbar strong').first()).toHaveText('Git Game');
   const chip = page.getByRole('button', { name: /^Repository: main, In sync/ });

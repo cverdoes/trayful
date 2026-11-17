@@ -22,6 +22,24 @@ export interface ConnectInput {
   url: string;
   branch?: string;
   path?: string;
+  /** Make the branch, or a starter project in the folder, if missing. */
+  create?: boolean;
+}
+
+/** What connecting would make that the repository does not have yet. */
+export interface Fresh {
+  branch?: string;
+  folder?: string;
+}
+
+/** A failed repository request; `fresh` when it only needs the person to confirm. */
+export class RepositoryError extends Error {
+  constructor(
+    message: string,
+    readonly fresh?: Fresh,
+  ) {
+    super(message);
+  }
 }
 
 async function send(route: string, body?: object): Promise<RepositoryStatus> {
@@ -31,8 +49,8 @@ async function send(route: string, body?: object): Promise<RepositoryStatus> {
       ? { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
       : {}),
   });
-  const result = (await response.json()) as RepositoryStatus & { error?: string };
-  if (!response.ok) throw new Error(result.error ?? response.statusText);
+  const result = (await response.json()) as RepositoryStatus & { error?: string; fresh?: Fresh };
+  if (!response.ok) throw new RepositoryError(result.error ?? response.statusText, result.fresh);
   return result;
 }
 

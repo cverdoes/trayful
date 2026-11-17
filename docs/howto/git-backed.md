@@ -27,7 +27,7 @@ trayful play --data ~/trayful-data --repo https://github.com/me/my-game --branch
 - `--branch` is the branch to work on, `main` if you leave it out. A branch that does not exist yet is made from the repository's default branch.
 - `--path` is the folder with the project, or with a folder of projects. Trayful checks out only that folder and the files at the top of the repository. A folder with no project in it gets the starter project, committed and pushed.
 
-On the command line a new branch or starter project is made as asked. The `connect_repository` tool first says what is missing and makes it only when called again with `create: true`, so a typo in the branch or folder does not quietly start something new.
+On the command line a new branch or starter project is made as asked. The page and the `connect_repository` tool first say what is missing, and make it only once you confirm (the tool with `create: true`), so a typo in the branch or folder does not quietly start something new.
 
 The data folder remembers the repository, so later starts need only `--data`. One data folder is for one repository.
 
