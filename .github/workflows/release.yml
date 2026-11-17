@@ -1,20 +1,23 @@
 name: Release
 
-# Publishes the `trayful` npm package when a version tag such as v0.2.0 is pushed.
-# npm accepts the upload through trusted publishing: npmjs.com is told to trust this
-# workflow, so no npm token is stored in GitHub. See "Releasing" in the README.
+# Publishes the `trayful` npm package when a version tag such as v0.2.0 is pushed, then
+# the Docker image to ghcr.io/cverdoes/trayful. npm accepts the upload through trusted
+# publishing: npmjs.com is told to trust this workflow, so no npm token is stored in
+# GitHub. The image is pushed with the workflow's own GITHUB_TOKEN. See
+# architecture/releasing.md.
 on:
   push:
     tags: ['v*']
 
-permissions:
-  contents: write # to create the GitHub release
-  id-token: write # to prove to npm that this workflow is publishing
+permissions: {}
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     environment: npm
+    permissions:
+      contents: write # to create the GitHub release
+      id-token: write # to prove to npm that this workflow is publishing
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -55,3 +58,42 @@ jobs:
           prerelease=$([[ "$GITHUB_REF_NAME" == *-* ]] && echo --prerelease || true)
           gh release create "$GITHUB_REF_NAME" packages/cli/dist/trayful-*.tgz \
             --title "Trayful ${GITHUB_REF_NAME#v}" --notes-file "$RUNNER_TEMP/notes.md" $prerelease
+
+  # The same version as a Docker image, for amd64 and arm64 (Apple Silicon, ARM servers).
+  # Only after npm has it, so the tag check above guards both.
+  image:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # to push to ghcr.io
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Name the image's tags
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}
+          # v0.4.0 gives 0.4.0, 0.4 and latest. A version like 0.4.0-rc.1 gets only its
+          # own tag, so `latest` stays on the last full release, as on npm.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          labels: |
+            org.opencontainers.image.title=Trayful
+            org.opencontainers.image.description=Where your games come together: a boardgame prototyping table.
+            org.opencontainers.image.licenses=FSL-1.1-MIT
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

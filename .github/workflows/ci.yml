@@ -105,6 +105,13 @@ jobs:
         run: |
           docker run --rm -e TRAYFUL_SMOKE_TEST=1 --user "$(id -u):$(id -g)" \
             -v "$PWD/examples:/projects" trayful
+      - name: Check the image's own examples, and making a project in a mounted folder
+        run: |
+          docker run --rm -e TRAYFUL_SMOKE_TEST=1 trayful
+          mkdir "$RUNNER_TEMP/games"
+          docker run --rm --user "$(id -u):$(id -g)" -v "$RUNNER_TEMP/games:/projects" \
+            trayful new /projects/my-game
+          test -f "$RUNNER_TEMP/games/my-game/trayful.yaml"
 
   # Builds the npm package and packs it the way `npm publish` would.
   package:

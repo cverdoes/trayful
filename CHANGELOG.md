@@ -16,6 +16,11 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - New MCP tools: `connect_repository`, `sync_repository`, `repository_status` and `resolve_conflict`. A sync never leaves a half-merged file in the project: when both sides changed the same lines, Trayful's side goes to a `trayful/conflict-…` branch.
 - The token for HTTPS repositories comes from `TRAYFUL_GIT_TOKEN` or `TRAYFUL_GIT_TOKEN_FILE`, and is never written to disk. `compose.git.yaml` runs it on a server. See the new guide, `docs/howto/git-backed.md`.
 
+### Docker
+
+- Each release is also published as a Docker image, `ghcr.io/cverdoes/trayful`, for amd64 and arm64: `docker run --rm -it --init -p 127.0.0.1:4317:4317 ghcr.io/cverdoes/trayful` plays the examples, and `-v ~/games:/projects --user "$(id -u):$(id -g)"` plays your own. It has git and runs as a non-root user. See `docs/guide/docker.md`.
+- The image now runs the same bundle as the npm package, so `trayful new` and **New project** work in a container, and `trayful --version` says which version it is.
+
 ## 0.3.0
 
 Projects and tables saved with 0.2.0 open unchanged in 0.3.0. A table that uses the new surfaces does not open in 0.2.0 or older.

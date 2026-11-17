@@ -9,7 +9,7 @@ Trayful is TypeScript from end to end: one language for the file formats, the en
 
 ## Language, runtime and workspace
 
-- **TypeScript, strict, run from source.** [[npm:typescript]] only type-checks (`pnpm typecheck`); it never emits files. [[npm:tsx]] runs the `.ts` files directly in Node, for development, for the scripts and for `trayful` started from a checkout or in Docker, so there is no build step for the packages and no `dist/` to go stale. It is a runtime dependency of the CLI for that reason.
+- **TypeScript, strict, run from source.** [[npm:typescript]] only type-checks (`pnpm typecheck`); it never emits files. [[npm:tsx]] runs the `.ts` files directly in Node, for development, for the scripts and for `trayful` started from a checkout, so there is no build step for the packages and no `dist/` to go stale. It is a runtime dependency of the CLI for that reason.
 - **Node.js 22.12 or newer** (`.nvmrc`, `engines` in `package.json`), ES modules only. The npm package's launcher checks the version before it starts.
 - **A pnpm workspace.** Six packages under `packages/`, linked with `workspace:*`. Packages are private; the only thing published is the bundle described under [[concept:decisions]].
 
