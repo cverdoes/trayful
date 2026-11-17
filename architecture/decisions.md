@@ -17,6 +17,8 @@ Each entry is a short decision record: what was decided, why, what it costs, and
 
 **Where.** [[server:Workspace]], [[server/play/tableFiles.ts]], [[concept:system]].
 
+**Later: git-backed.** A Trayful on a server cannot see the designer's folders, so `trayful play --data` keeps a clone of their repository instead and syncs through git: it commits what changed on the table, pushes, and takes in what they push. Still files, still one process: git is how the files travel, not a new store. A sync merges outside the project folder (`git merge-tree`), so a conflict never leaves the project half-merged and unloadable; Trayful's side goes to a branch of its own. Git runs as the system `git` with hooks, local transports and credential helpers off, and the token only in the environment of each command. See [[server/git/sync.ts]] and [[server/git/repository.ts]].
+
 ## 2. Project files are the truth, and humans own them
 
 **Decision.** What exists (component types, the inventory, assets, setups) is defined only by YAML and CSV files in the project. [[formats]] is the only code that parses them. The designer and the MCP authoring tools change the files, never a copy, and they keep comments and layout.

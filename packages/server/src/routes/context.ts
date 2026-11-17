@@ -1,5 +1,6 @@
 // What the HTTP routes share: the workspace, finding the table a request names, and who is asking.
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import type { GitLink } from '../git/link.js';
 import { caller, isHostRequest, type Caller } from '../play/access.js';
 import type { Invite, Player, Players } from '../play/players.js';
 import type { TableSession } from '../play/session.js';
@@ -17,6 +18,8 @@ export interface RouteContext {
   app: FastifyInstance;
   workspace: Workspace;
   players: Players;
+  /** The repository of a git-backed Trayful; undefined for a folder on this computer. */
+  git?: GitLink;
   /** Addresses others reach this server at: the network's, and a tunnel's. */
   shareBases: string[];
   /** The server's own address, told to agents; set once the server listens. */
@@ -58,7 +61,11 @@ class Connections {
   }
 }
 
-export function routeContext(app: FastifyInstance, workspace: Workspace): RouteContext {
+export function routeContext(
+  app: FastifyInstance,
+  workspace: Workspace,
+  git?: GitLink,
+): RouteContext {
   const { players } = workspace;
   const shareBases: string[] = [];
   const target = (query: TableQuery) =>
@@ -69,6 +76,7 @@ export function routeContext(app: FastifyInstance, workspace: Workspace): RouteC
     app,
     workspace,
     players,
+    git,
     shareBases,
     url: '',
     target,

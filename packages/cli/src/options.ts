@@ -18,6 +18,13 @@ export interface PlayOptions {
   publicUrl?: string;
   /** Hold each agent move until people watching have seen it (default); `--no-pace` lets agents rush. */
   pace?: boolean;
+  /**
+   * A git-backed Trayful: its own folder, where it keeps a clone of the repository it
+   * works on and which repository that is. See docs/howto/git-backed.md.
+   */
+  data?: string;
+  /** With `data`: the repository to connect to, if none is connected yet. */
+  repo?: { url: string; branch?: string; path?: string };
 }
 
 /** Options that are on or off. */
@@ -40,6 +47,14 @@ const SETTINGS = new Map<string, (value: string | undefined) => Partial<PlayOpti
   ['--seed', (value) => ({ seed: wholeNumber('--seed', value) })],
   ['--setup', (value) => ({ setup: setupName(value) })],
   ['--public-url', (value) => ({ publicUrl: webAddress(value) })],
+  ['--data', (value) => ({ data: needed('--data', 'a folder', value) })],
+]);
+
+/** Options that say which repository to connect to; read into `repo`. */
+const REPO_SETTINGS = new Map<string, 'url' | 'branch' | 'path'>([
+  ['--repo', 'url'],
+  ['--branch', 'branch'],
+  ['--path', 'path'],
 ]);
 
 /** Reads the options of `play` and `mcp`; throws a `UsageError` on anything it does not know. */
@@ -54,11 +69,14 @@ export function parsePlayArgs(args: string[]): PlayOptions {
     pace: true,
   };
   const dirs: string[] = [];
+  const repoSettings: { url?: string; branch?: string; path?: string } = {};
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
     const setting = SETTINGS.get(arg);
     const toggle = SWITCHES.get(arg);
-    if (setting) Object.assign(options, setting(args[++i]));
+    const repo = REPO_SETTINGS.get(arg);
+    if (repo) repoSettings[repo] = needed(arg, 'a value', args[++i]);
+    else if (setting) Object.assign(options, setting(args[++i]));
     else if (toggle) Object.assign(options, toggle);
     else if (arg.startsWith('--')) throw new UsageError(`Unknown option "${arg}".`);
     else dirs.push(arg);
@@ -68,7 +86,34 @@ export function parsePlayArgs(args: string[]): PlayOptions {
     throw new UsageError('--share does not work in a container: its addresses are its own.');
   }
   if (dirs[0]) options.dir = dirs[0];
-  return options;
+  return withRepository(options, dirs, repoSettings);
+}
+
+/** Checks the git-backed options go together, and puts the repository's in `repo`. */
+function withRepository(
+  options: PlayOptions,
+  dirs: string[],
+  { url, branch, path }: { url?: string; branch?: string; path?: string },
+): PlayOptions {
+  if ((url ?? branch ?? path) !== undefined && !options.data) {
+    throw new UsageError(
+      '--repo, --branch and --path need --data <folder>, where Trayful keeps its clone.',
+    );
+  }
+  if (options.data && dirs.length) {
+    throw new UsageError(
+      'With --data the projects come from the repository; give no project folder.',
+    );
+  }
+  if ((branch ?? path) !== undefined && !url) {
+    throw new UsageError('--branch and --path go with --repo <url>.');
+  }
+  return url ? { ...options, repo: { url, branch, path } } : options;
+}
+
+function needed(option: string, what: string, value: string | undefined): string {
+  if (!value) throw new UsageError(`${option} needs ${what}.`);
+  return value;
 }
 
 function wholeNumber(option: string, value: string | undefined): number {

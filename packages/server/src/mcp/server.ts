@@ -10,11 +10,15 @@ import { registerSurfaceTools } from './surfaces.js';
 import { registerTableTools } from './tables.js';
 import { AGENT_PLAYER } from '../play/players.js';
 import { packagedVersion } from '../shipped/resources.js';
+import type { GitLink } from '../git/link.js';
 import type { Workspace } from '../projects/workspace.js';
+import { registerRepositoryTools } from './repository.js';
 
 export interface McpOptions {
   /** Where people can watch the table, mentioned to the agent. */
   url?: string;
+  /** A git-backed Trayful: offer the repository tools. */
+  git?: GitLink;
 }
 
 /**
@@ -25,13 +29,12 @@ export interface McpOptions {
  * open table picks up at once.
  */
 export function createMcpServer(workspace: Workspace, options: McpOptions = {}): McpServer {
-  const active = workspace.active;
   const server = new McpServer(
     // In this repository there is no release yet to name.
     { name: 'trayful', version: packagedVersion() ?? '0.0.0-dev' },
     {
       instructions: [
-        `Trayful is a tabletop for boardgame prototypes. The active table is "${active.tableName}" of the project "${active.project.manifest.name}" (${active.projectId})${options.url ? `; people can watch at ${options.url}` : ''}. list_projects shows every project and table; open_table switches.`,
+        `Trayful is a tabletop for boardgame prototypes. ${whereWeAre(workspace)}${options.url ? ` People can watch at ${options.url}.` : ''} list_projects shows every project and table; open_table switches.`,
         'To play, start with describe_table. Positions are piece centres in millimetres, y grows downwards. Stacks (piles and decks) hold cards bottom to top; draw and deal take from the top.',
         'Boards declare snap targets (card slots, action spaces, tracks). Use them as `to` in move, draw and deal, e.g. `main-board/fields/3`; pieces in a spot ride along when the board moves.',
         'Face-down cards are hidden: their fields (apart from those printed on the back) and the order of piles only show with reveal: true, which is like peeking, so only use it when the game allows.',
@@ -39,6 +42,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
         'To design components, read trayful://docs (HOWTO guides and the format reference), then use upsert_type, rename_type, set_inventory and add_asset; render_component shows a type as people will see it. Edits are checked and undone if they would break the project.',
         'To run a game or a tutorial, ask players with prompt (a message, a yes or no question, a choice, pieces or a place to click, or a number or text to type) and follow the table with wait_for_events, passing back its `next` as `since` each time. Prompts only advise: players may still move anything.',
         'Every change goes into the same history as the people at the table, but each player undoes only their own changes, you included. Trayful does not know the rules; you bring them.',
+        ...(options.git ? [GIT_INSTRUCTIONS] : []),
       ].join('\n'),
     },
   );
@@ -51,5 +55,18 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
   registerAuthoringTools(server, ctx);
   registerResources(server, ctx);
   registerStarters(server);
+  if (options.git) registerRepositoryTools(server, options.git);
   return server;
+}
+
+const GIT_INSTRUCTIONS =
+  "This Trayful works on a git repository: it commits changes made here and pushes them, and takes in commits pushed to the branch. After you push files to the repository, call sync_repository so Trayful shows them; before you pull, call sync_repository so the repository has Trayful's changes. repository_status shows where things stand.";
+
+/** The active table, or what to do when there is none yet. */
+function whereWeAre(workspace: Workspace): string {
+  if (!workspace.ready) {
+    return 'There is no project yet: connect a git repository with connect_repository first.';
+  }
+  const active = workspace.active;
+  return `The active table is "${active.tableName}" of the project "${active.project.manifest.name}" (${active.projectId}).`;
 }

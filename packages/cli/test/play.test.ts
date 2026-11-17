@@ -1,4 +1,5 @@
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -126,5 +127,65 @@ describe('trayful play', () => {
     await expect(
       play(parsePlayArgs([notAProject, '--port', '0']), vi.fn(), { appDir }),
     ).rejects.toThrow(ProjectLoadError);
+  });
+
+  it('waits for a repository when started on an empty data folder', async () => {
+    const data = await mkdtemp(path.join(os.tmpdir(), 'trayful-data-'));
+    const lines: string[] = [];
+    const out = (s: string) => lines.push(s);
+    const stopped = async () => {
+      const url = /at (http\S+)/.exec(lines[0] ?? '')?.[1];
+      expect(await (await fetch(`${url}/api/health`)).json()).toEqual({ ok: true, waiting: true });
+    };
+    const options = parsePlayArgs(['--data', data, '--port', '0', '--no-open']);
+    expect(await play(options, out, { appDir, stopped })).toBe(0);
+    expect(lines[0]).toMatch(/^Trayful is waiting for a repository at http/);
+    expect(lines.join('\n')).toContain('connect_repository');
+  });
+
+  it('says why a repository could not be connected', async () => {
+    const data = await mkdtemp(path.join(os.tmpdir(), 'trayful-data-'));
+    const options = parsePlayArgs(['--data', data, '--repo', 'file:///etc', '--port', '0']);
+    await expect(play(options, () => undefined, { appDir })).rejects.toThrow(/https:\/\//);
+  });
+
+  it('reads the git token from a file', async () => {
+    const data = await mkdtemp(path.join(os.tmpdir(), 'trayful-data-'));
+    const tokenFile = path.join(data, 'token');
+    await writeFile(tokenFile, 'secret-token\n');
+    vi.stubEnv('TRAYFUL_GIT_TOKEN_FILE', tokenFile);
+    vi.stubEnv('TRAYFUL_GIT_NAME', 'Claes');
+    const options = parsePlayArgs(['--data', data, '--port', '0', '--no-open']);
+    expect(await play(options, () => undefined, { appDir, stopped: () => Promise.resolve() })).toBe(
+      0,
+    );
+    // Git asks a script for the token; the token itself is never written down.
+    const askpass = await readFile(path.join(data, '.trayful', 'git-askpass.sh'), 'utf8');
+    expect(askpass).toContain('TRAYFUL_GIT_TOKEN');
+    expect(askpass).not.toContain('secret-token');
+  });
+
+  it('keeps one data folder to one repository', async () => {
+    const data = await mkdtemp(path.join(os.tmpdir(), 'trayful-data-'));
+    await mkdir(path.join(data, '.trayful'));
+    await writeFile(
+      path.join(data, '.trayful', 'repository.json'),
+      JSON.stringify({ url: 'https://github.com/me/first', branch: 'main', path: '' }),
+    );
+    const options = parsePlayArgs(['--data', data, '--repo', 'https://github.com/me/second']);
+    await expect(play(options, () => undefined, { appDir })).rejects.toThrow(
+      /already connected to https:\/\/github\.com\/me\/first/,
+    );
+  });
+
+  it('commits as the email address given, with an empty token taken as none', async () => {
+    const data = await mkdtemp(path.join(os.tmpdir(), 'trayful-data-'));
+    vi.stubEnv('TRAYFUL_GIT_TOKEN', '');
+    vi.stubEnv('TRAYFUL_GIT_EMAIL', 'me@example.com');
+    const options = parsePlayArgs(['--data', data, '--port', '0', '--no-open']);
+    expect(await play(options, () => undefined, { appDir, stopped: () => Promise.resolve() })).toBe(
+      0,
+    );
+    expect(existsSync(path.join(data, '.trayful', 'git-askpass.sh'))).toBe(false);
   });
 });

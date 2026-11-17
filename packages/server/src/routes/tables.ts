@@ -16,14 +16,18 @@ function registerProjectViews({
   sessionFor,
   hostOnly,
 }: RouteContext): void {
-  app.get('/api/health', (request) => ({
-    ok: true,
-    project: workspace.active.project.manifest.name,
-    table: workspace.active.tableName,
-    ...(isLocalRequest(request)
-      ? { projectDir: workspace.active.project.dir, root: workspace.root }
-      : {}),
-  }));
+  app.get('/api/health', (request) => {
+    // A git-backed Trayful waits with no project until a repository is connected.
+    if (!workspace.ready) return { ok: true, waiting: true };
+    return {
+      ok: true,
+      project: workspace.active.project.manifest.name,
+      table: workspace.active.tableName,
+      ...(isLocalRequest(request)
+        ? { projectDir: workspace.active.project.dir, root: workspace.root }
+        : {}),
+    };
+  });
   app.get('/api/projects', async (request) => {
     const who = caller(request, players);
     const projects = await Promise.all(

@@ -18,5 +18,6 @@ Short guides for the things you do most when building a prototype. Each one star
 | [Play with others](play-with-others.md)                       | Let playtesters join from their own computers, with hidden hands |
 | [Run your game with an engine](game-engine.md)                | Write a program that runs the game and asks players questions    |
 | [Host your own Trayful](host-your-own.md)                     | Run it on a server of your own and use it from anywhere          |
+| [Work on a git repository](git-backed.md)                     | Have a Trayful on a server commit, pull and push your prototype  |
 
 When you need every key of a file, see the [format reference](../reference/README.md).

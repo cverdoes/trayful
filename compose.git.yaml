@@ -1,0 +1,25 @@
+# A git-backed Trayful on a server of your own: the projects come from a git repository
+# that Trayful clones, commits to, pulls and pushes. See docs/howto/git-backed.md. Start it
+# on top of owner mode with
+#
+#   docker compose -f compose.yaml -f compose.owner.yaml -f compose.git.yaml up -d --build
+#
+# with TRAYFUL_DATA (a folder for the clone) and TRAYFUL_GIT_TOKEN set as well.
+services:
+  trayful:
+    command:
+      - play
+      - --data
+      - /data
+      - --container
+      - --owner
+      - --public-url
+      - https://${TRAYFUL_DOMAIN:?Set TRAYFUL_DOMAIN to the server's domain name}
+    volumes:
+      # Trayful's clone of the repository, which repository that is, and the players.
+      - ${TRAYFUL_DATA:?Set TRAYFUL_DATA to a folder for Trayful's clone}:/data
+    environment:
+      # A fine-grained personal access token for the one repository, with Contents read and write.
+      TRAYFUL_GIT_TOKEN: ${TRAYFUL_GIT_TOKEN:-}
+      TRAYFUL_GIT_NAME: ${TRAYFUL_GIT_NAME:-}
+      TRAYFUL_GIT_EMAIL: ${TRAYFUL_GIT_EMAIL:-}
