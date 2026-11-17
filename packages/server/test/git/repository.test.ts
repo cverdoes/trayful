@@ -186,4 +186,68 @@ describe('Repository', () => {
     expect(existsSync(repository.cloneDir)).toBe(false);
     expect(repository.settings).toBeUndefined();
   });
+
+  it('starts a branch for an experiment, and moves between branches', async () => {
+    const remote = await makeRemote();
+    const repository = await connected(remote);
+    let changes = 0;
+    repository.onChange(() => {
+      changes++;
+      return Promise.resolve();
+    });
+    await writeFile(
+      manifest(repository),
+      (await readFile(manifest(repository), 'utf8')) + '# main\n',
+    );
+    await repository.createBranch('deck-v2');
+    expect(repository.settings?.branch).toBe('deck-v2');
+    expect(await repository.branches()).toEqual(['deck-v2', 'main']);
+    // What changed before the branch went to the branch it was on.
+    expect(
+      sh(remote.root, '--git-dir', 'game.git', 'show', 'main:prototype/trayful.yaml'),
+    ).toContain('# main');
+    await writeFile(
+      manifest(repository),
+      (await readFile(manifest(repository), 'utf8')) + '# v2\n',
+    );
+    await repository.switchBranch('main');
+    expect(await readFile(manifest(repository), 'utf8')).not.toContain('# v2');
+    expect(changes).toBe(1);
+    expect(
+      sh(remote.root, '--git-dir', 'game.git', 'show', 'deck-v2:prototype/trayful.yaml'),
+    ).toContain('# v2');
+    // The data folder remembers the branch.
+    const again = await Repository.open({ dataDir: path.dirname(repository.cloneDir) });
+    expect(again.settings?.branch).toBe('main');
+  });
+
+  it('refuses branches it cannot start or find', async () => {
+    const remote = await makeRemote();
+    const repository = await connected(remote);
+    await expect(repository.createBranch('main')).rejects.toThrow(/already has a branch "main"/);
+    await expect(repository.switchBranch('nowhere')).rejects.toThrow(/no branch "nowhere"/);
+    await expect(repository.createBranch('-x')).rejects.toThrow(/not a usable branch name/);
+  });
+
+  it('commits the saved tables only when asked', async () => {
+    const remote = await makeRemote();
+    // The starter keeps tables out of git; this game wants them in.
+    await pushFromLaptop(remote, 'prototype/.gitignore', (t) => t.replace('tables/\n', ''));
+    const repository = await connected(remote);
+    expect(await repository.snapshotTables()).toBe(false);
+    await mkdir(path.join(repository.projectRoot, 'tables'), { recursive: true });
+    await writeFile(path.join(repository.projectRoot, 'tables', 'table-1.json'), '{}\n');
+    expect(await repository.snapshotTables('End of playtest 1')).toBe(true);
+    sh(remote.laptop, 'pull', '--quiet', 'origin', 'main');
+    expect(sh(remote.laptop, 'log', '-1', '--format=%s')).toContain('End of playtest 1');
+    expect(existsSync(path.join(remote.laptop, 'prototype', 'tables', 'table-1.json'))).toBe(true);
+  });
+
+  it('leaves tables out that the repository ignores, as the starter does', async () => {
+    const remote = await makeRemote();
+    const repository = await connected(remote);
+    await mkdir(path.join(repository.projectRoot, 'tables'), { recursive: true });
+    await writeFile(path.join(repository.projectRoot, 'tables', 'table-1.json'), '{}\n');
+    expect(await repository.snapshotTables()).toBe(false);
+  });
 });

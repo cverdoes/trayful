@@ -44,7 +44,7 @@ export function checkSettings(
 }
 
 /** Throws unless `name` is a branch name git accepts and no option in disguise. */
-function checkBranch(name: string): void {
+export function checkBranch(name: string): void {
   const bad =
     !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(name) ||
     name.endsWith('/') ||

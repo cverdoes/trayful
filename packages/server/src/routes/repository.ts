@@ -50,6 +50,32 @@ export function registerRepositoryRoutes(ctx: RouteContext, link: GitLink): void
     },
   );
 
+  app.get('/api/repository/branches', async (request, reply) => {
+    if (hostOnly(request, reply)) return;
+    return { branches: await link.repository.branches() };
+  });
+
+  app.post<{ Body: { name?: string; create?: boolean } | null }>(
+    '/api/repository/branch',
+    async (request, reply) => {
+      if (hostOnly(request, reply)) return;
+      const { name, create } = request.body ?? {};
+      if (!name) throw new GitError('Give the name of the branch.');
+      if (create) await link.repository.createBranch(name);
+      else await link.repository.switchBranch(name);
+      return link.status();
+    },
+  );
+
+  app.post<{ Body: { message?: string } | null }>(
+    '/api/repository/snapshot',
+    async (request, reply) => {
+      if (hostOnly(request, reply)) return;
+      await link.snapshotTables(request.body?.message);
+      return link.status();
+    },
+  );
+
   app.post('/api/repository/resolve', async (request, reply) => {
     if (hostOnly(request, reply)) return;
     await link.repository.takeTheirs();

@@ -57,6 +57,14 @@ async function eventually(check: () => boolean | Promise<boolean>) {
   expect(await check()).toBe(true);
 }
 
+/** Posts to the server as the host's page does. */
+const post = (route: string, body: unknown) =>
+  fetch(`${server.url}${route}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: server.url },
+    body: JSON.stringify(body),
+  });
+
 const lastCommit = () => {
   sh(remote.laptop, 'fetch', '--quiet', 'origin');
   return sh(remote.laptop, 'log', '-1', '--format=%s', 'origin/main').trim();
@@ -120,12 +128,6 @@ describe('a git-backed Trayful', () => {
   });
 
   it('lets the host connect, sync and see the status over HTTP', async () => {
-    const post = (route: string, body: unknown) =>
-      fetch(`${server.url}${route}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', origin: server.url },
-        body: JSON.stringify(body),
-      });
     expect((await post('/api/repository/connect', {})).status).toBe(400);
     const typo = await post('/api/repository/connect', {
       url: remote.url,
@@ -168,6 +170,39 @@ describe('a git-backed Trayful', () => {
     await pushFromLaptop(remote, 'prototype/trayful.yaml', (t) => t.replace('name: [', 'name:'));
     expect((await call('sync_repository')).text).toContain('took in new commits');
     expect((await call('list_projects')).text).toContain('My Game');
+  });
+});
+
+describe('branches and snapshots', () => {
+  beforeEach(() => start());
+
+  it('start, list and switch branches over MCP, and commit the tables when asked', async () => {
+    await call('connect_repository', { url: remote.url, path: 'prototype' });
+    expect((await call('create_branch', { name: 'deck-v2' })).text).toContain('deck-v2');
+    expect(JSON.parse((await call('list_branches')).text)).toEqual({
+      current: 'deck-v2',
+      branches: ['deck-v2', 'main'],
+    });
+    expect((await call('switch_branch', { name: 'main' })).text).toBe('Trayful now works on main.');
+    expect(await call('switch_branch', { name: 'nowhere' })).toMatchObject({ isError: true });
+    expect(await call('create_branch', { name: 'main' })).toMatchObject({ isError: true });
+    // The starter's .gitignore keeps tables out.
+    expect((await call('snapshot_tables')).text).toContain('.gitignore');
+  });
+
+  it('start and switch branches over HTTP', async () => {
+    await call('connect_repository', { url: remote.url, path: 'prototype' });
+    expect(
+      await (await post('/api/repository/branch', { name: 'v2', create: true })).json(),
+    ).toMatchObject({ branch: 'v2' });
+    expect(await (await fetch(`${server.url}/api/repository/branches`)).json()).toEqual({
+      branches: ['main', 'v2'],
+    });
+    expect(await (await post('/api/repository/branch', { name: 'main' })).json()).toMatchObject({
+      branch: 'main',
+    });
+    expect((await post('/api/repository/branch', {})).status).toBe(400);
+    expect((await post('/api/repository/snapshot', {})).status).toBe(200);
   });
 });
 

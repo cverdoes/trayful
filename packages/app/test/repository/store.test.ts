@@ -5,6 +5,7 @@ import {
   type RepositoryStatus,
 } from '../../src/repository/api';
 import { summary, tone, useRepository } from '../../src/repository/store';
+import { useDialogs } from '../../src/ui/dialogs';
 
 const SYNCED: RepositoryStatus = {
   connected: true,
@@ -82,6 +83,53 @@ describe('the repository store', () => {
     expect(await waitingForRepository()).toBe(false);
     routes['/api/health'] = { body: { ok: true, waiting: true } };
     expect(await waitingForRepository()).toBe(true);
+  });
+});
+
+/** Answers the dialog that opens next with `text`, or backs out of it. */
+async function answer(text: string | undefined) {
+  await vi.waitFor(() => expect(useDialogs.getState().open).toBeDefined());
+  const open = useDialogs.getState().open!;
+  if (open.kind === 'ask') open.answer(text);
+}
+
+describe('branches and tables', () => {
+  it('starts a branch with the name the host gives, or nothing if they back out', async () => {
+    routes['/api/repository/branch'] = { body: { ...SYNCED, branch: 'v2' } };
+    const started = useRepository.getState().newBranch();
+    await answer('v2');
+    await started;
+    expect(sent.at(-1)?.body).toEqual({ name: 'v2', create: true });
+    expect(useRepository.getState().status?.branch).toBe('v2');
+    const count = sent.length;
+    const backedOut = useRepository.getState().newBranch();
+    await answer(undefined);
+    await backedOut;
+    expect(sent).toHaveLength(count);
+  });
+
+  it('switches to a branch the host picks from the list', async () => {
+    routes['/api/repository/branches'] = { body: { branches: ['main', 'v2'] } };
+    routes['/api/repository/branch'] = { body: SYNCED };
+    const switched = useRepository.getState().switchBranch();
+    await vi.waitFor(() => expect(useDialogs.getState().open).toBeDefined());
+    const open = useDialogs.getState().open!;
+    expect(open.kind === 'ask' && open.question.text).toContain('Branches: main, v2.');
+    await answer('main');
+    await switched;
+    expect(sent.at(-1)?.body).toEqual({ name: 'main', create: false });
+  });
+
+  it('says why the branches could not be listed', async () => {
+    routes['/api/repository/branches'] = { body: { error: 'git ls-remote failed' }, status: 400 };
+    await useRepository.getState().switchBranch();
+    expect(useRepository.getState().error).toBe('git ls-remote failed');
+  });
+
+  it('commits the tables', async () => {
+    routes['/api/repository/snapshot'] = { body: SYNCED };
+    await useRepository.getState().snapshot();
+    expect(sent.at(-1)?.url).toBe('/api/repository/snapshot');
   });
 });
 

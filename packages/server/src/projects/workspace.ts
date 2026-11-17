@@ -317,6 +317,11 @@ export class Workspace {
     return entry.problems;
   }
 
+  /** Saves every open table now, rather than after the usual short wait. */
+  async saveAll(): Promise<void> {
+    for (const session of this.sessions.values()) await session.save();
+  }
+
   /** Reloads every project, such as after new commits came in from a repository. */
   async reloadAll(): Promise<void> {
     for (const entry of this.projects()) await this.load(entry.id, entry.dir);

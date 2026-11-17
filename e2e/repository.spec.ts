@@ -82,4 +82,19 @@ test('the host connects a repository, syncs, and settles a conflict', async ({ p
   await expect(banner).toBeHidden();
   await expect(page.getByRole('button', { name: /^Repository: main, In sync/ })).toBeVisible();
   expect(await readFile(manifest, 'utf8')).toContain('# laptop');
+
+  // An experiment on a branch of its own, then back.
+  await page.getByRole('button', { name: /^Repository: main/ }).click();
+  await page.getByRole('menuitem', { name: /New branch/ }).click();
+  await page.getByLabel('Branch name').fill('deck-v2');
+  await page.getByRole('button', { name: 'Start branch' }).click();
+  await expect(page.getByRole('button', { name: /^Repository: deck-v2, In sync/ })).toBeVisible();
+  expect(sh(laptop, 'ls-remote', '--heads', 'origin')).toContain('refs/heads/deck-v2');
+
+  await page.getByRole('button', { name: /^Repository: deck-v2/ }).click();
+  await page.getByRole('menuitem', { name: /Switch branch/ }).click();
+  await expect(page.getByText(/Branches: deck-v2, main, trayful\/conflict-/)).toBeVisible();
+  await page.getByLabel('Branch name').fill('main');
+  await page.getByRole('button', { name: 'Switch' }).click();
+  await expect(page.getByRole('button', { name: /^Repository: main, In sync/ })).toBeVisible();
 });

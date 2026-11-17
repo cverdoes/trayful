@@ -77,6 +77,18 @@ To have Trayful take in a push at once instead of at its next fetch, add a webho
 
 Trayful checks each event's signature, and syncs when the push was to its branch.
 
+## Try something on a branch
+
+To try a second version of a deck without touching the first, start a branch: click the branch in the toolbar and **New branch…**, or ask your agent to call `create_branch`. Trayful syncs, starts the branch from where it is, pushes it and works on it from then on. The branch it was on keeps its state.
+
+**Switch branch…** (or `switch_branch`) syncs, then moves Trayful to another of the repository's branches; the tables reload with that branch's files. `list_branches` lists them. Trayful never deletes a branch.
+
+## Keep a playtest's tables
+
+Syncs leave saved tables out. To keep a position, such as the end of a playtest, click **Commit the tables** in the branch menu, or ask your agent to call `snapshot_tables` with a message. Trayful commits and pushes `tables/` as it is then.
+
+A project made with `trayful new` has `tables/` in its `.gitignore`, as [Use Trayful from your game's repository](game-repository.md) suggests; take that line out if you want tables in your history.
+
 ## When both sides changed the same lines
 
 Trayful never leaves a half-merged file in the project. If you and Trayful changed different files, or different parts of a file, a sync merges them. If you both changed the same lines, the sync stops: the project on the table stays as it was, and Trayful pushes its side to a branch of its own, such as `trayful/conflict-20261117-0912`. Then either:

@@ -25,6 +25,30 @@ export function RepositoryChip() {
       onSelect: () => void useRepository.getState().sync(),
     },
   ];
+  const { newBranch, switchBranch, snapshot } = useRepository.getState();
+  items.push(
+    {
+      label: 'New branch…',
+      icon: 'branch',
+      description: 'Try something out on a branch of its own',
+      separated: true,
+      disabled: busy,
+      onSelect: () => void newBranch(),
+    },
+    {
+      label: 'Switch branch…',
+      description: 'Work on another of the repository’s branches',
+      disabled: busy,
+      onSelect: () => void switchBranch(),
+    },
+    {
+      label: 'Commit the tables',
+      icon: 'check',
+      description: 'Save the tables as they are now in the repository',
+      disabled: busy,
+      onSelect: () => void snapshot(),
+    },
+  );
   if (status.conflict) {
     items.push({
       label: "Take the repository's version",

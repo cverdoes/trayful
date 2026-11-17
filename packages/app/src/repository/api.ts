@@ -64,6 +64,17 @@ export async function fetchStatus(): Promise<RepositoryStatus | undefined> {
 export const connectRepository = (input: ConnectInput) => send('/api/repository/connect', input);
 export const syncRepository = () => send('/api/repository/sync', {});
 export const takeRepositoryVersion = () => send('/api/repository/resolve', {});
+export const changeBranch = (name: string, create: boolean) =>
+  send('/api/repository/branch', { name, create });
+export const snapshotTables = () => send('/api/repository/snapshot', {});
+
+/** The repository's branches. */
+export async function fetchBranches(): Promise<string[]> {
+  const response = await fetch('/api/repository/branches');
+  const result = (await response.json()) as { branches?: string[]; error?: string };
+  if (!response.ok) throw new Error(result.error ?? response.statusText);
+  return result.branches ?? [];
+}
 
 /** Whether the server is up but has no project yet, waiting for a repository. */
 export async function waitingForRepository(): Promise<boolean> {

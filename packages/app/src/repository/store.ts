@@ -1,6 +1,15 @@
 // The repository of a git-backed Trayful as the host's page sees it, kept fresh by polling.
 import { create } from 'zustand';
-import { fetchStatus, syncRepository, takeRepositoryVersion, type RepositoryStatus } from './api';
+import { ask } from '../ui/dialogs';
+import {
+  changeBranch,
+  fetchBranches,
+  fetchStatus,
+  snapshotTables,
+  syncRepository,
+  takeRepositoryVersion,
+  type RepositoryStatus,
+} from './api';
 
 interface RepositoryStore {
   /** Undefined until loaded, and for a Trayful that works on a folder. */
@@ -12,6 +21,12 @@ interface RepositoryStore {
   refresh: () => Promise<void>;
   sync: () => Promise<void>;
   takeRepositoryVersion: () => Promise<void>;
+  /** Asks for a name, then starts that branch from here and works on it. */
+  newBranch: () => Promise<void>;
+  /** Asks which branch, then works on it. */
+  switchBranch: () => Promise<void>;
+  /** Commits and pushes the saved tables. */
+  snapshot: () => Promise<void>;
 }
 
 export const useRepository = create<RepositoryStore>()((set) => {
@@ -36,6 +51,32 @@ export const useRepository = create<RepositoryStore>()((set) => {
     },
     sync: () => act(syncRepository),
     takeRepositoryVersion: () => act(takeRepositoryVersion),
+    newBranch: async () => {
+      const name = await ask({
+        title: 'Start a branch',
+        text: 'Trayful syncs, starts the branch from here, pushes it and works on it from now on. The branch it was on keeps its state.',
+        label: 'Branch name',
+        action: 'Start branch',
+      });
+      if (name) await act(() => changeBranch(name, true));
+    },
+    switchBranch: async () => {
+      let branches: string[];
+      try {
+        branches = await fetchBranches();
+      } catch (err) {
+        set({ error: (err as Error).message });
+        return;
+      }
+      const name = await ask({
+        title: 'Switch branch',
+        text: `Trayful syncs, then works on that branch. Branches: ${branches.join(', ')}.`,
+        label: 'Branch name',
+        action: 'Switch',
+      });
+      if (name) await act(() => changeBranch(name, false));
+    },
+    snapshot: () => act(snapshotTables),
   };
 });
 

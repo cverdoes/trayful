@@ -16,6 +16,7 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - New MCP tools: `connect_repository`, `sync_repository`, `repository_status` and `resolve_conflict`. A sync never leaves a half-merged file in the project: when both sides changed the same lines, Trayful's side goes to a `trayful/conflict-…` branch.
 - Trayful syncs by itself: it commits 30 seconds after the files change, fetches every 2 minutes and pushes at most every 5. Commit messages say who changed what, such as `Trayful: upsert_type (agent); Tray (Claes)`. A push webhook (`/api/repository/hook`, signed with `TRAYFUL_GIT_WEBHOOK_SECRET`) makes it take in a push at once.
 - In the browser, the host connects a repository on the first page, sees the branch and how it stands in the toolbar, syncs from there, and settles a conflict from a banner.
+- Branches for experiments: `create_branch`, `switch_branch` and `list_branches`, or **New branch…** and **Switch branch…** in the toolbar. `snapshot_tables` (**Commit the tables**) commits and pushes the saved tables, which syncs leave out.
 - The token for HTTPS repositories comes from `TRAYFUL_GIT_TOKEN` or `TRAYFUL_GIT_TOKEN_FILE`, and is never written to disk. `compose.git.yaml` runs it on a server. See the new guide, `docs/howto/git-backed.md`.
 
 ## 0.3.0
