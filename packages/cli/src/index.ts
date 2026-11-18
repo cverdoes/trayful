@@ -49,7 +49,8 @@ Commands:
                                            docs/howto/git-backed.md)
                            --repo <url>    with --data: the repository to connect to
                            --branch <name> with --repo: the branch (default main)
-                           --path <folder> with --repo: the project's folder in it
+                           --path <folder> with --repo: the folder of projects in it,
+                                           or one project's own folder
   mcp [folder]             Let an AI agent play the table over MCP (stdio). Shares the table
                            with \`trayful play\` if it is running; same options as play.
                            Agents can also connect over HTTP at http://127.0.0.1:${DEFAULT_PORT}/mcp.

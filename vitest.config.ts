@@ -34,7 +34,7 @@ export default defineConfig({
         autoUpdate: (measured, previous) => Math.max(previous, Math.floor(measured) - 2),
         'packages/core/src/**': { statements: 95, branches: 91, functions: 97, lines: 96 },
         'packages/formats/src/**': { statements: 95, branches: 93, functions: 97, lines: 96 },
-        'packages/server/src/**': { statements: 91, branches: 83, functions: 94, lines: 93 },
+        'packages/server/src/**': { statements: 91, branches: 83, functions: 94, lines: 94 },
         'packages/cli/src/**': { statements: 92, branches: 88, functions: 87, lines: 94 },
         'packages/engine-client/src/**': { statements: 92, branches: 88, functions: 91, lines: 95 },
         'packages/app/src/**': { statements: 81, branches: 80, functions: 81, lines: 82 },

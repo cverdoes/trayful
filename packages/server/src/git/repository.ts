@@ -1,9 +1,10 @@
 // A git-backed workspace's repository: connecting to it, syncing with it, and how the two stand.
-import { existsSync, readdirSync } from 'node:fs';
 import { appendFile, rm } from 'node:fs/promises';
 import path from 'node:path';
-import { MANIFEST_FILE } from '@trayful/formats';
+import { slugify } from '@trayful/formats';
+import { projectDirs } from '../projects/base.js';
 import { createProjectFolder } from '../projects/workspace.js';
+import { addToCone, baseIn, projectFolders, setCone } from './cone.js';
 import { git, GitError, writeAskpass, type GitAuthor, type GitOptions } from './git.js';
 import { checkOutBranch, commitTables, listBranches, startBranch } from './branches.js';
 import { checkSettings, loadSettings, saveSettings, type RepositorySettings } from './settings.js';
@@ -35,7 +36,7 @@ export interface RepositoryOptions {
 export interface Fresh {
   /** The branch, when the repository has no branch by that name. */
   branch?: string;
-  /** The folder, when it has no Trayful project: connecting starts one there. */
+  /** The folder of projects, when it has none: connecting starts one in it. */
   folder?: string;
 }
 
@@ -128,7 +129,7 @@ export class Repository {
     return path.join(this.options.dataDir, 'repository');
   }
 
-  /** The folder with the projects. Only once connected. */
+  /** The folder of projects in the clone. Only once connected. */
   get projectRoot(): string {
     if (!this.settingsNow) throw new GitError('No repository is connected yet.');
     return path.join(this.cloneDir, this.settingsNow.path);
@@ -141,16 +142,16 @@ export class Repository {
 
   /**
    * Clones the repository and checks out the branch, making it if it is new. A folder
-   * with no project gets the starter, committed and pushed. A new branch or project
-   * needs `create`, so a typo does not make one: without it, a `FreshError` says which.
-   * Throws if already connected.
+   * with no project gets the starter in a folder of its own, committed and pushed. A
+   * new branch or project needs `create`, so a typo does not make one: without it, a
+   * `FreshError` says which. Throws if already connected.
    */
   connect(input: ConnectInput): Promise<RepositorySettings> {
     return this.serial(async () => {
       if (this.settingsNow) {
         throw new GitError(`Trayful is already connected to ${this.settingsNow.url}.`);
       }
-      const settings = checkSettings(input, this.options.allowLocalUrls);
+      let settings = checkSettings(input, this.options.allowLocalUrls);
       await rm(this.cloneDir, { recursive: true, force: true });
       try {
         await git(
@@ -165,16 +166,18 @@ export class Repository {
           ],
           { ...this.gitOptions(), cwd: this.options.dataDir },
         );
-        await this.checkOut(settings);
-        const dir = path.join(this.cloneDir, settings.path);
+        const start = await startingCommit(this.run, settings.branch);
+        const { base, project } = await baseIn(this.run, start, settings.path);
+        settings = { ...settings, path: base, ...(project ? { project } : {}) };
+        const projects = await this.checkOut(settings, start);
         const fresh: Fresh = {
           ...((await commitOf(this.run, remoteRef(settings.branch)))
             ? {}
             : { branch: settings.branch }),
-          ...(hasProject(dir) ? {} : { folder: settings.path }),
+          ...(projects.length > 0 ? {} : { folder: settings.path }),
         };
         if (Object.keys(fresh).length > 0 && !input.create) throw new FreshError(fresh);
-        if (fresh.folder !== undefined) await createProjectFolder(dir, projectName(settings));
+        if (fresh.folder !== undefined) settings = await this.startProject(settings);
         await this.sync1(settings, 'Trayful: start a prototype');
       } catch (err) {
         await rm(this.cloneDir, { recursive: true, force: true });
@@ -250,6 +253,24 @@ export class Repository {
     });
   }
 
+  /**
+   * Makes room for a new project folder in the folder of projects: the clone checks out
+   * only project folders, and git would not commit one outside them.
+   */
+  includeProject(id: string): Promise<void> {
+    return this.serial(async () => {
+      const folder = projectPath(this.connected(), id);
+      // A folder that is there but no project, such as art, is just not checked out.
+      const there = await this.run(['ls-tree', '--name-only', 'HEAD', '--', folder], [0, 128]);
+      if (there.stdout.trim()) {
+        throw new GitError(
+          `The repository already has a folder "${folder}"; give the project another name.`,
+        );
+      }
+      await addToCone(this.run, folder);
+    });
+  }
+
   /** Commits and pushes the saved tables, which syncs leave out. False when none had changed. */
   snapshotTables(message = 'Trayful: save the tables'): Promise<boolean> {
     return this.serial(async () => {
@@ -298,7 +319,7 @@ export class Repository {
       });
       this.conflictNow = result.conflict;
       this.lastError = undefined;
-      if (result.pulled) await this.changed();
+      if (result.pulled) await this.changed(settings);
       return result;
     } catch (err) {
       this.lastError = err instanceof Error ? err.message : String(err);
@@ -331,26 +352,48 @@ export class Repository {
     return `trayful/conflict-${stamp}`;
   }
 
-  private async checkOut(settings: RepositorySettings): Promise<void> {
+  /** Checks out the branch with only its project folders. Returns those folders. */
+  private async checkOut(
+    settings: RepositorySettings,
+    start: string | undefined,
+  ): Promise<string[]> {
     // Players and their keys, and editors' half-written files, are never committed.
     await appendFile(
       path.join(this.cloneDir, '.git', 'info', 'exclude'),
       '\n# Trayful\n.trayful/\n*.tmp\n',
     );
-    if (settings.path) {
-      await this.run(['sparse-checkout', 'set', '--cone', '--', settings.path]);
-    }
+    const projects = await projectFolders(this.run, start, settings.path);
+    await setCone(this.run, projects);
     const branch = settings.branch;
     if (await commitOf(this.run, remoteRef(branch))) {
       await this.run(['checkout', '--quiet', '-B', branch, remoteRef(branch)]);
-    } else if (await commitOf(this.run, 'refs/remotes/origin/HEAD')) {
-      await this.run(['checkout', '--quiet', '-b', branch, 'refs/remotes/origin/HEAD']);
+    } else if (start) {
+      await this.run(['checkout', '--quiet', '-b', branch, start]);
     } else {
       await this.run(['checkout', '--quiet', '--orphan', branch]);
     }
+    return projects;
   }
 
-  private async changed(): Promise<void> {
+  /** Puts the starter in a folder of its own in the folder of projects, named after the repository. */
+  private async startProject(settings: RepositorySettings): Promise<RepositorySettings> {
+    const name = repositoryName(settings.url);
+    const id = slugify(name) || 'prototype';
+    await addToCone(this.run, projectPath(settings, id));
+    await createProjectFolder(path.join(this.cloneDir, projectPath(settings, id)), name);
+    return { ...settings, project: id };
+  }
+
+  /** Files came in or the branch moved: check out the projects there now, then reload. */
+  private async changed(settings = this.connected()): Promise<void> {
+    const head = await commitOf(this.run, 'HEAD');
+    const committed = await projectFolders(this.run, head, settings.path);
+    // A project made here and not committed yet stays checked out too.
+    const base = path.join(this.cloneDir, settings.path);
+    const local = (await projectDirs(base).catch(() => [])).map((dir) =>
+      projectPath(settings, path.basename(dir)),
+    );
+    await setCone(this.run, [...new Set([...committed, ...local])]);
     for (const listener of this.changeListeners) await listener();
   }
 
@@ -378,18 +421,21 @@ export class Repository {
   }
 }
 
-/** Whether `dir` is a project, or a folder of them. */
-function hasProject(dir: string): boolean {
-  if (existsSync(path.join(dir, MANIFEST_FILE))) return true;
-  if (!existsSync(dir)) return false;
-  return readdirSync(dir, { withFileTypes: true }).some(
-    (e) => e.isDirectory() && existsSync(path.join(dir, e.name, MANIFEST_FILE)),
+/** Where the branch starts from before it exists here: its own commit, or the default branch's. */
+async function startingCommit(run: Run, branch: string): Promise<string | undefined> {
+  return (
+    (await commitOf(run, remoteRef(branch))) ?? (await commitOf(run, 'refs/remotes/origin/HEAD'))
   );
 }
 
-/** A name for a new project: its folder's, or the repository's, in words. */
-function projectName(settings: RepositorySettings): string {
-  const last = (settings.path || settings.url).split(/[/:]/).filter(Boolean).at(-1) ?? 'Prototype';
+/** A project's folder, relative to the top of the repository. */
+function projectPath(settings: RepositorySettings, id: string): string {
+  return settings.path ? `${settings.path}/${id}` : id;
+}
+
+/** A name for a new project: the repository's, in words. */
+function repositoryName(url: string): string {
+  const last = url.split(/[/:]/).filter(Boolean).at(-1) ?? 'Prototype';
   const words = last
     .replace(/\.git$/, '')
     .replace(/[-_]+/g, ' ')

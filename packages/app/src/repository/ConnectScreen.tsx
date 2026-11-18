@@ -68,7 +68,7 @@ export function ConnectScreen() {
         </Field>
         <Field
           label="Folder"
-          hint="Where the prototype is, such as prototype; empty for the top. Trayful asks before starting a new project."
+          hint="The folder your prototypes are in, or one prototype's own folder, such as prototype; empty for the top. Trayful asks before starting a new project."
         >
           <input
             type="text"
@@ -130,7 +130,7 @@ function FreshNote({ fresh }: Readonly<{ fresh: Fresh }>) {
         <p>
           There is no Trayful project in{' '}
           {fresh.folder ? <strong>{fresh.folder}</strong> : 'the top folder'} yet. Trayful will
-          start one there and push it.
+          start one in a folder of its own there, named after the repository, and push it.
         </p>
       )}
       <p>Check for typos, then create, or go back and change them.</p>

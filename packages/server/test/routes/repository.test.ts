@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
-import { readFile, writeFile, mkdtemp } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, writeFile, mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -7,6 +8,7 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Repository } from '../../src/git/repository.js';
 import { EDITING_TOOLS } from '../../src/mcp/authoring.js';
+import { createProjectFolder } from '../../src/projects/workspace.js';
 import { startServer, type RunningServer, type ServerOptions } from '../../src/server.js';
 import { makeRemote, pushFromLaptop, sh, type Remote } from '../git/remote.js';
 
@@ -99,7 +101,7 @@ describe('a git-backed Trayful', () => {
     expect((await call('describe_table')).isError).toBe(false);
 
     const root = server.git!.repository.projectRoot;
-    const manifest = path.join(root, 'trayful.yaml');
+    const manifest = path.join(root, 'prototype', 'trayful.yaml');
     await writeFile(manifest, (await readFile(manifest, 'utf8')) + '# from trayful\n');
     expect((await call('sync_repository', { message: 'Edit the manifest' })).text).toBe(
       'Synced: committed the changes made here, pushed.',
@@ -117,7 +119,7 @@ describe('a git-backed Trayful', () => {
 
   it('reports a conflict, and resolves it by taking the repository', async () => {
     await call('connect_repository', { url: remote.url, path: 'prototype' });
-    const manifest = path.join(server.git!.repository.projectRoot, 'trayful.yaml');
+    const manifest = path.join(server.git!.repository.projectRoot, 'prototype', 'trayful.yaml');
     await pushFromLaptop(remote, 'prototype/trayful.yaml', (t) => t + '# laptop\n');
     await writeFile(manifest, (await readFile(manifest, 'utf8')) + '# trayful\n');
     const synced = await call('sync_repository');
@@ -137,7 +139,11 @@ describe('a git-backed Trayful', () => {
     expect(typo.status).toBe(400);
     expect(await typo.json()).toMatchObject({ fresh: { branch: 'mian' } });
     const connected = await post('/api/repository/connect', { url: remote.url, path: 'prototype' });
-    expect(await connected.json()).toMatchObject({ connected: true, path: 'prototype' });
+    expect(await connected.json()).toMatchObject({
+      connected: true,
+      path: '',
+      project: 'prototype',
+    });
     expect((await fetch(`${server.url}/api/table`)).status).toBe(200);
     expect(await (await post('/api/repository/sync', {})).json()).toMatchObject({
       unpushed: 0,
@@ -238,12 +244,39 @@ describe('commit messages', () => {
     expect(sh(remote.laptop, 'ls-files', 'moon-market/trayful.yaml')).toContain('trayful.yaml');
   });
 
-  it('says how to have several projects when it works on just one', async () => {
+  it('makes a project beside the one whose folder it was connected to', async () => {
     await post('/api/repository/connect', { url: remote.url, path: 'prototype' });
-    const refused = await post('/api/projects', { name: 'Moon Market' });
-    expect(refused.status).toBe(400);
+    expect(server.workspace.active.projectId).toBe('prototype');
+    const made = await post('/api/projects', { name: 'Moon Market' });
+    expect(await made.json()).toEqual({ id: 'moon-market', name: 'Moon Market' });
+    await call('sync_repository');
+    sh(remote.laptop, 'pull', '--quiet', 'origin', 'main');
+    expect(sh(remote.laptop, 'ls-files', 'moon-market/trayful.yaml')).toContain('trayful.yaml');
+  });
+
+  it('checks out only project folders, and takes in a project pushed from elsewhere', async () => {
+    sh(remote.laptop, 'pull', '--quiet', 'origin', 'main');
+    await mkdir(path.join(remote.laptop, 'art'));
+    await writeFile(path.join(remote.laptop, 'art', 'cover.svg'), '<svg/>\n');
+    sh(remote.laptop, 'add', '--all');
+    sh(remote.laptop, 'commit', '--quiet', '-m', 'Art');
+    sh(remote.laptop, 'push', '--quiet', 'origin', 'HEAD:refs/heads/main');
+    await post('/api/repository/connect', { url: remote.url, path: '' });
+    const clone = server.git!.repository.cloneDir;
+    expect(existsSync(path.join(clone, 'art'))).toBe(false);
+    expect(existsSync(path.join(clone, 'README.md'))).toBe(true);
+
+    await createProjectFolder(path.join(remote.laptop, 'dice'), 'Dice');
+    sh(remote.laptop, 'add', '--all');
+    sh(remote.laptop, 'commit', '--quiet', '-m', 'Another game');
+    sh(remote.laptop, 'push', '--quiet', 'origin', 'HEAD:refs/heads/main');
+    await call('sync_repository');
+    expect(existsSync(path.join(clone, 'dice', 'trayful.yaml'))).toBe(true);
+    expect(server.workspace.projects().map((p) => p.id)).toEqual(['dice', 'prototype']);
+    // The art is there, only not checked out: no project goes into it.
+    const refused = await post('/api/projects', { name: 'Art' });
     expect(((await refused.json()) as { error: string }).error).toMatch(
-      /one project in "prototype" of the repository/,
+      /already has a folder "art"/,
     );
   });
 });
@@ -269,7 +302,7 @@ describe('the push webhook', () => {
     await pushFromLaptop(remote, 'prototype/trayful.yaml', (t) => t + '# pushed\n');
     const body = JSON.stringify({ ref: 'refs/heads/main' });
     expect((await hook(body, sign(body))).status).toBe(202);
-    const manifest = path.join(server.git!.repository.projectRoot, 'trayful.yaml');
+    const manifest = path.join(server.git!.repository.projectRoot, 'prototype', 'trayful.yaml');
     await eventually(async () => (await readFile(manifest, 'utf8')).includes('# pushed'));
   });
 

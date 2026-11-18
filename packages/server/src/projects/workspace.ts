@@ -42,10 +42,10 @@ export interface WorkspaceOptions {
   /** Where players are kept. Default: `.trayful/players.json` in the base folder. */
   playerStore?: PlayerStore;
   /**
-   * Why no project can be made here, if none can. A git-backed Trayful whose folder in
-   * the repository is a project has nowhere to commit another.
+   * Called with a new project's id before its folder is written, such as for a
+   * git-backed Trayful to check the folder out.
    */
-  noNewProjects?: () => string | undefined;
+  beforeNewProject?: (id: string) => Promise<void>;
 }
 
 /** Which project and table to open first, and how to make the table if it is new. */
@@ -310,12 +310,11 @@ export class Workspace {
 
   /** Makes a new project from the starter template, in a new folder of the base. */
   async createProject(name: string): Promise<ProjectEntry> {
-    const refusal = this.options.noNewProjects?.();
-    if (refusal) throw new ProjectLoadError(refusal);
     const id = slugify(name);
     if (!id) throw new ProjectLoadError(`"${name}" does not make a usable folder name.`);
     const dir = path.join(this.root, id);
     if (existsSync(dir)) throw new ProjectLoadError(`There is already a folder "${id}".`);
+    await this.options.beforeNewProject?.(id);
     await createProjectFolder(dir, name);
     const entry = await this.load(id, dir);
     if (this.options.watch ?? true) this.watch(entry);

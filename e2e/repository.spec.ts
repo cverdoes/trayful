@@ -65,7 +65,7 @@ test('the host connects a repository, syncs, and settles a conflict', async ({ p
   await expect(chip).toBeVisible();
 
   // Both sides change the same line of the manifest.
-  const manifest = path.join(server.git!.repository.projectRoot, 'trayful.yaml');
+  const manifest = path.join(server.git!.repository.projectRoot, 'prototype', 'trayful.yaml');
   await writeFile(manifest, (await readFile(manifest, 'utf8')) + '# trayful\n');
   const onLaptop = path.join(laptop, 'prototype', 'trayful.yaml');
   await writeFile(onLaptop, (await readFile(onLaptop, 'utf8')) + '# laptop\n');
