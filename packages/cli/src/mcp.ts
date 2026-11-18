@@ -1,8 +1,8 @@
-import path from 'node:path';
 import type { Readable, Writable } from 'node:stream';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createMcpServer, DEFAULT_PORT, startServer } from '@trayful/server';
+import { createMcpServer, DEFAULT_PORT, resolveBase, startServer } from '@trayful/server';
+import { checkedBase } from './base.js';
 import { CliError } from './errors.js';
 import type { PlayOptions } from './options.js';
 
@@ -21,17 +21,20 @@ export interface Stdio {
  * stdout carries the protocol, so every message for people goes to `err`.
  */
 export async function mcp(
-  options: Omit<PlayOptions, 'open' | 'share' | 'tunnel' | 'container' | 'owner' | 'publicUrl'>,
+  options: Omit<
+    PlayOptions,
+    'open' | 'share' | 'tunnel' | 'container' | 'owner' | 'publicUrl' | 'yes'
+  > & { yes?: boolean },
   err: (s: string) => void,
   io: Stdio = { stdin: process.stdin, stdout: process.stdout },
 ): Promise<number> {
   const port = options.port ?? DEFAULT_PORT;
-  const projectDir = path.resolve(options.dir);
+  const { base } = resolveBase(options.dir, options.project);
   const running = await health(port);
 
   if (running) {
-    const same = running.projectDir === projectDir || running.root === projectDir;
-    if (!same || (options.table && options.table !== running.table)) {
+    // Any project of the same base will do: the agent can open another table itself.
+    if (running.root !== base || (options.table && options.table !== running.table)) {
       throw new CliError(
         `Port ${port} already has "${running.project}" (table ${running.table}) open. ` +
           'Stop it, or give this table another port with --port <n>.',
@@ -41,9 +44,14 @@ export async function mcp(
     return relay(`http://127.0.0.1:${port}/mcp`, io);
   }
 
+  // stdin carries the protocol, so there is nobody to ask.
+  const start = await checkedBase(options.dir, options.project, {
+    yes: options.yes ?? false,
+    confirm: undefined,
+  });
   const server = await startServer({
-    projectDir,
-    project: options.project,
+    projectDir: start.base,
+    project: start.project,
     table: options.table,
     port,
     seed: options.seed,
@@ -62,7 +70,7 @@ export async function mcp(
 
 async function health(
   port: number,
-): Promise<{ project: string; projectDir: string; root?: string; table: string } | undefined> {
+): Promise<{ project: string; root?: string; table: string } | undefined> {
   try {
     const response = await fetch(`http://127.0.0.1:${port}/api/health`, {
       signal: AbortSignal.timeout(1000),

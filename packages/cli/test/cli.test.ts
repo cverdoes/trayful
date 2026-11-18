@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -86,6 +87,8 @@ describe('trayful new', () => {
     expect(r.code).toBe(0);
     expect(r.out).toBe(`Created "Moon Base Two" in ${dir}. Play it with: trayful play ${dir}`);
     expect(await readFile(path.join(dir, 'trayful.yaml'), 'utf8')).toContain('Moon Base Two');
+    // The folder it is in is now a folder of projects, so play need not ask about it.
+    expect(existsSync(path.join(path.dirname(dir), '.trayful', '.gitignore'))).toBe(true);
   });
 
   it('takes a name, and refuses to overwrite a project', async () => {
@@ -127,10 +130,10 @@ describe('trayful CLI', () => {
   it('rejects bad play and mcp options with the usage', async () => {
     const play = await capture(['play', '--port', 'abc']);
     expect(play.code).toBe(2);
-    expect(play.err).toContain('--port needs a whole number.\nUsage: trayful play [project-dir]');
+    expect(play.err).toContain('--port needs a whole number.\nUsage: trayful play [folder]');
     const mcp = await capture(['mcp', '--frob']);
     expect(mcp.code).toBe(2);
-    expect(mcp.err).toContain('Unknown option "--frob".\nUsage: trayful mcp [project-dir]');
+    expect(mcp.err).toContain('Unknown option "--frob".\nUsage: trayful mcp [folder]');
   });
 
   it('shows help and rejects unknown commands', async () => {

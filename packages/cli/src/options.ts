@@ -16,6 +16,8 @@ export interface PlayOptions {
   owner: boolean;
   /** The address others reach this server at, such as `https://trayful.example.com`, for invite links. */
   publicUrl?: string;
+  /** Serve a busy folder Trayful has not served before without asking first. */
+  yes: boolean;
   /** Hold each agent move until people watching have seen it (default); `--no-pace` lets agents rush. */
   pace?: boolean;
   /**
@@ -33,8 +35,9 @@ const SWITCHES = new Map<string, Partial<PlayOptions>>([
   ['--no-pace', { pace: false }],
   ['--share', { share: true }],
   ['--tunnel', { tunnel: true }],
-  // Inside a container nothing can open a browser.
-  ['--container', { container: true, open: false }],
+  ['--yes', { yes: true }],
+  // Inside a container nothing can open a browser, nor ask; the folder mounted is the choice.
+  ['--container', { container: true, open: false, yes: true }],
   // A server somewhere has nobody at it to open a browser for.
   ['--owner', { owner: true, open: false }],
 ]);
@@ -66,6 +69,7 @@ export function parsePlayArgs(args: string[]): PlayOptions {
     tunnel: false,
     container: false,
     owner: false,
+    yes: false,
     pace: true,
   };
   const dirs: string[] = [];
@@ -81,7 +85,7 @@ export function parsePlayArgs(args: string[]): PlayOptions {
     else if (arg.startsWith('--')) throw new UsageError(`Unknown option "${arg}".`);
     else dirs.push(arg);
   }
-  if (dirs.length > 1) throw new UsageError('Give one project folder.');
+  if (dirs.length > 1) throw new UsageError('Give one folder: a project, or a folder of projects.');
   if (options.container && options.share) {
     throw new UsageError('--share does not work in a container: its addresses are its own.');
   }

@@ -4,9 +4,13 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 
 ## Unreleased
 
-### Table menu
+### Always a folder of projects
 
-- **New project…** in the table menu starts a new game from the starter template, when Trayful runs on a folder of projects. On a git repository, it is committed and pushed like any other change.
+- Trayful always serves a folder of projects. `trayful play my-game` still works: it serves the folder `my-game` is in and opens `my-game` first, so the table menu also lists the games beside it.
+- **New project…** in the table menu (and the `create_project` MCP tool) starts a new game from the starter template, beside the others, however Trayful was started. On a git repository, it is committed and pushed like any other change.
+- The players who joined are kept in `.trayful/` in the folder of projects, which leaves itself out of git. Started on a project folder that has `.trayful/players.json` from 0.3.0, Trayful moves the file there, so invite links keep working.
+- The first time Trayful serves a folder that holds other files too, such as the home folder, it asks before going on. `--yes` answers for it; `trayful new` marks the folder it puts the project in, so playing it needs no answer.
+- A project folder added to the folder of projects while Trayful runs shows up in the table menu.
 
 ### Host your own
 

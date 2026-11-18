@@ -13,6 +13,7 @@ import {
   type RunningServer,
 } from '@trayful/server';
 import openBrowser from 'open';
+import { checkedBase, terminalConfirm, type Confirm } from './base.js';
 import { CliError } from './errors.js';
 import type { PlayOptions } from './options.js';
 import { startTunnel, type Tunnel } from './tunnel.js';
@@ -22,20 +23,26 @@ export interface PlayEnvironment {
   appDir?: string;
   /** Resolves when the person wants to stop. Default: on Ctrl+C or a stop signal. */
   stopped?: () => Promise<void>;
+  /** Asks before serving a busy folder. Default: on the terminal, if there is one; else nobody asks. */
+  confirm?: Confirm;
 }
 
 /** `trayful play`: serves the table and opens it in the browser, until stopped. */
 export async function play(
   options: PlayOptions,
   out: (s: string) => void,
-  { appDir = defaultAppDir(), stopped = untilSignal }: PlayEnvironment = {},
+  {
+    appDir = defaultAppDir(),
+    stopped = untilSignal,
+    confirm = terminalConfirm(),
+  }: PlayEnvironment = {},
 ): Promise<number> {
   if (!existsSync(path.join(appDir, 'index.html'))) {
     throw new CliError(
       'The browser app has not been built yet. Run `pnpm build` in the Trayful repository first.',
     );
   }
-  const server = await startTable(options, appDir);
+  const server = await startTable(options, appDir, confirm);
   if (options.publicUrl) server.addShareBase(options.publicUrl);
   const tunnel = options.tunnel ? await openTunnel(server, out) : undefined;
   try {
@@ -50,13 +57,23 @@ export async function play(
   return 0;
 }
 
-async function startTable(options: PlayOptions, appDir: string): Promise<RunningServer> {
+async function startTable(
+  options: PlayOptions,
+  appDir: string,
+  confirm: Confirm | undefined,
+): Promise<RunningServer> {
   const repository = await gitRepository(options);
+  const start = repository
+    ? undefined
+    : await checkedBase(options.dir, options.project, {
+        yes: options.yes,
+        confirm,
+      });
   try {
     return await startServer({
-      projectDir: repository ? undefined : path.resolve(options.dir),
+      projectDir: start?.base,
       repository,
-      project: options.project,
+      project: start ? start.project : options.project,
       table: options.table,
       port: options.port,
       seed: options.seed,
@@ -182,8 +199,11 @@ async function announce(server: RunningServer, out: (s: string) => void): Promis
   }
   const saved = path.relative(process.cwd(), session.file);
   out(`Saving to ${saved.startsWith('..') ? session.file : saved}.`);
+  for (const note of server.workspace.notes) out(note);
   const projects = server.workspace.projects().length;
-  if (projects > 1) out(`${projects} projects in this folder; switch between them in the browser.`);
+  if (projects > 1) {
+    out(`${projects} projects in ${server.workspace.root}; switch between them in the browser.`);
+  }
   if (server.app.owner) {
     const base = server.shareBases[0] ?? 'this server';
     out(`Owner mode: sign in at ${base}/sign-in, and connect agents to ${base}/mcp.`);

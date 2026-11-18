@@ -1,5 +1,6 @@
 // Ties a repository to the workspace it feeds: connecting attaches the projects, syncing reloads them.
 import { FilePlayerStore } from '../play/players.js';
+import { isProjectFolder } from '../projects/base.js';
 import { Workspace, type OpenOptions } from '../projects/workspace.js';
 import { AutoSync, DEFAULT_SYNC_TIMES, type SyncTimes } from './autosync.js';
 import { Journal } from './journal.js';
@@ -44,7 +45,7 @@ export class GitLink {
   ): Promise<GitLink> {
     // Players stay with the server, never in the clone.
     const playerStore = FilePlayerStore.in(repository.dataDir);
-    const opened = { ...options, playerStore };
+    const opened = { ...options, playerStore, noNewProjects: () => noNewProjects(repository) };
     const workspace = repository.settings
       ? await Workspace.open(repository.projectRoot, opened)
       : await Workspace.empty(opened);
@@ -96,4 +97,14 @@ export class GitLink {
   private async save(): Promise<void> {
     if (await this.repository.save(this.journal.message())) this.journal.clear();
   }
+}
+
+/**
+ * Why a new project cannot be made, when the repository's folder is itself a project:
+ * Trayful checks out and commits only that folder, so a project beside it would be lost.
+ */
+function noNewProjects(repository: Repository): string | undefined {
+  const folder = repository.settings?.path;
+  if (folder === undefined || !isProjectFolder(repository.projectRoot)) return undefined;
+  return `Trayful works on the one project in ${folder ? `"${folder}"` : 'the top folder'} of the repository. To have several, start it with a new data folder connected to the folder that holds them.`;
 }

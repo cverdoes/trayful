@@ -16,7 +16,7 @@ pnpm trayful skill ../my-game-repo                   # add the agent skill to a 
 
 `new <folder> [--name <name>]` copies [`examples/starter`](../../examples/starter) into a new folder, names the game and points the editor schema hints at this checkout (or, from the npm package, at that release's schemas on jsDelivr).
 
-`play [project-dir]` loads the project (default: the current folder), or every project in a folder of projects, starts the local server at http://127.0.0.1:4317 and opens your browser. Project files are watched, so saved changes show up on the table at once. It needs the browser app built once with `pnpm build`. Options:
+`play [folder]` loads every project in a folder of projects (default: the current folder). Given one project's folder, it serves the folder that project is in and opens that project first. It starts the local server at http://127.0.0.1:4317 and opens your browser. Project files are watched, so saved changes show up on the table at once. It needs the browser app built once with `pnpm build`. Options:
 
 | Option           | What it does                                                                                                       |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -29,10 +29,11 @@ pnpm trayful skill ../my-game-repo                   # add the agent skill to a 
 | `--share`        | Listen on every network interface and print invite links to the opened table for others on your network            |
 | `--tunnel`       | Open a Cloudflare quick tunnel with `cloudflared` and print an invite link to the opened table that works anywhere |
 | `--container`    | Run inside a container: listen on every interface, count the computer running it as the host, and open no browser  |
+| `--yes`          | Serve a folder that holds more than projects without asking; Trayful asks the first time it serves such a folder   |
 
 `--tunnel` runs `cloudflared tunnel --url http://127.0.0.1:<port>` (from `tunnel.ts`) and reads the `https://….trycloudflare.com` address from its output; set `TRAYFUL_CLOUDFLARED` to run another program instead, as the tests do. Without `cloudflared` installed it says where to get it.
 
-`mcp [project-dir]` takes the same options, apart from `--share`, `--tunnel` and `--container`. It speaks MCP on stdin and stdout. If `trayful play` already serves the project (or the folder of projects) on that port, it relays to that server; otherwise it opens the table itself, so people can watch at the printed address. Messages for people go to stderr.
+`mcp [folder]` takes the same options, apart from `--share`, `--tunnel` and `--container`. It speaks MCP on stdin and stdout, so it cannot ask about a busy folder: run `trayful play` there once, or add `--yes`. If `trayful play` already serves the same folder of projects on that port, it relays to that server; otherwise it opens the table itself, so people can watch at the printed address. Messages for people go to stderr.
 
 `migrate <project-dir>` rewrites a project in the first file format, `trayful/1`, in the current one, `trayful/2`, and lists the files it wrote (`migrateFolder` in the server package). Libraries are written afresh, keeping the comment lines at their top; images and palette colours move to a new `assets.yaml`; inventory entries name their `component` instead of their `type`; and setup steps that place a board get `lock: true`. The manifest, inventory and setups are edited in place, so their comments stay. It exits with `1` for a project that is already current or has errors, and changes nothing then. See [Versioning](../../docs/reference/versioning.md#moving-a-project-to-trayful2).
 

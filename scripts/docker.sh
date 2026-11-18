@@ -2,7 +2,8 @@
 # Starts the Trayful server in a container (see docs/guide/docker.md).
 #
 #   scripts/docker.sh              serves examples/
-#   scripts/docker.sh ~/games      serves another project, or folder of projects
+#   scripts/docker.sh ~/games      serves another folder of projects; given one project's
+#                                  folder, serves the folder it is in
 #
 # Set TRAYFUL_PORT to use another port than 4317. Stop it with Ctrl+C.
 set -euo pipefail
@@ -20,6 +21,8 @@ case $# in
      games="$(cd "$1" && pwd)" ;;
   *) usage ;;
 esac
+# A project is served with the projects beside it, as `trayful play` does.
+[[ -f $games/trayful.yaml ]] && games="$(dirname "$games")"
 
 command -v docker >/dev/null || {
   echo "Docker is not installed: see https://docs.docker.com/get-docker/" >&2

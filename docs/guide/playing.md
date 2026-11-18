@@ -16,7 +16,7 @@ A table can also have [surfaces](../reference/surfaces.md): separate play spaces
 
 ## Options
 
-Options for `trayful play`, after the project folder:
+Options for `trayful play`, after the folder:
 
 | `trayful play` option | What it does                                                |
 | --------------------- | ----------------------------------------------------------- |
@@ -30,3 +30,4 @@ Options for `trayful play`, after the project folder:
 | `--tunnel`            | Let others anywhere join, through a Cloudflare tunnel       |
 | `--container`         | Run inside a container; see [Run it in Docker](docker.md)   |
 | `--no-pace`           | Answer agents at once, not after people have seen each move |
+| `--yes`               | Serve a folder with other files in it without asking first  |

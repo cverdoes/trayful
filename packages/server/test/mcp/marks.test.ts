@@ -27,7 +27,7 @@ describe('MCP stamp and text tools', () => {
   const sheet = () => workspace.active.engine.state.objects['sheet.1'] as Piece;
 
   beforeEach(async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-marks-'));
+    const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-marks-')), 'game');
     await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
     workspace = await Workspace.open(dir, { watch: false });
     const [a, b] = InMemoryTransport.createLinkedPair();

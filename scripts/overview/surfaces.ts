@@ -50,7 +50,7 @@ async function toolGroups(): Promise<Map<string, string>> {
 
 /** Lists the tools of a real MCP server over an in-memory connection. */
 export async function readTools(): Promise<McpTool[]> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-overview-'));
+  const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-overview-')), 'game');
   const example = path.join(ROOT, 'examples/harvest-moon');
   await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
   const workspace = await Workspace.open(dir, { setup: false, watch: false });

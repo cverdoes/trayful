@@ -15,8 +15,10 @@ const HELP = `Usage: trayful <command> [options]
 Commands:
   new <folder> [--name <name>]
                            Start a new prototype from the starter template.
-  play [project-dir]       Open the project on a table in your browser (default: this folder).
-                           Give a folder of projects to switch between them in the browser.
+  play [folder]            Open a project on a table in your browser (default: this folder).
+                           Give a project's folder or a folder of projects. The browser
+                           switches between the projects there (beside the one you gave),
+                           and New project adds another.
                            --project <id>  in a folder of projects, the one to open first
                            --table <name>  which saved table to open (default table-1)
                            --port <n>      port for the local server (default ${DEFAULT_PORT})
@@ -39,6 +41,8 @@ Commands:
                                            invite links
                            --no-pace       answer agents straight away instead of once
                                            people watching have seen each move
+                           --yes           serve a folder that holds more than projects
+                                           without asking first
                            --data <folder> work on a git repository instead of a folder
                                            here: Trayful keeps its clone in <folder>
                                            and commits, pulls and pushes (see
@@ -46,7 +50,7 @@ Commands:
                            --repo <url>    with --data: the repository to connect to
                            --branch <name> with --repo: the branch (default main)
                            --path <folder> with --repo: the project's folder in it
-  mcp [project-dir]        Let an AI agent play the table over MCP (stdio). Shares the table
+  mcp [folder]             Let an AI agent play the table over MCP (stdio). Shares the table
                            with \`trayful play\` if it is running; same options as play.
                            Agents can also connect over HTTP at http://127.0.0.1:${DEFAULT_PORT}/mcp.
   validate <project-dir>   Check a project folder and report problems with file and line.
@@ -65,8 +69,8 @@ const USAGE: Record<string, string> = {
   validate: 'trayful validate <project-dir> [--json]',
   migrate: 'trayful migrate <project-dir>',
   skill: 'trayful skill [repo-dir]',
-  play: 'trayful play [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel] [--container] [--owner] [--public-url <url>] [--no-pace] [--data <folder> [--repo <url> [--branch <name>] [--path <folder>]]]',
-  mcp: 'trayful mcp [project-dir] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>]',
+  play: 'trayful play [folder] [--project <id>] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--no-open] [--share] [--tunnel] [--container] [--owner] [--public-url <url>] [--no-pace] [--yes] [--data <folder> [--repo <url> [--branch <name>] [--path <folder>]]]',
+  mcp: 'trayful mcp [folder] [--project <id>] [--table <name>] [--port <n>] [--seed <n>] [--setup <name>] [--yes]',
 };
 
 /** Runs the CLI and returns the process exit code. */
