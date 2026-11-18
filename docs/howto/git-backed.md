@@ -34,10 +34,10 @@ The data folder remembers the repository, so later starts need only `--data`. On
 On a server, run it with Docker on top of [owner mode](host-your-own.md):
 
 ```sh
-docker compose -f compose.yaml -f compose.owner.yaml -f compose.git.yaml up -d --build
+docker compose -f compose.yaml -f compose.owner.yaml -f compose.git.yaml up -d
 ```
 
-with `TRAYFUL_DATA` (the folder for the clone) and `TRAYFUL_GIT_TOKEN` in your `.env` file as well.
+with `TRAYFUL_DATA` (the folder for the clone) and `TRAYFUL_GIT_TOKEN` in your `.env` file as well. The image has git in it, so the server needs nothing else.
 
 ## Give it access
 

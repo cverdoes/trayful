@@ -23,7 +23,7 @@ Then open http://localhost:4317. `-v` gives the container your folder as `/proje
 
 Everything after the image name is a `trayful` command in place of the usual `play /projects --container`. With the same `-v` and `--user`, ending the command with `new /projects/my-game` starts a project in your folder, and `play /projects/my-game --container` plays just that one. Keep `--container` on `play`: it tells Trayful where its host's requests come from. `docker pull ghcr.io/cverdoes/trayful` gets the newest release.
 
-For a stricter container, add `--read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges`, as [`compose.yaml`](../../compose.yaml) does. To run it on a server of your own, see [Host your own Trayful](../howto/host-your-own.md) and [Work on a git repository](../howto/git-backed.md).
+For a stricter container, add `--read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges`, as [`compose.yaml`](../../compose.yaml) does. To run it on a server of your own, with only the compose files and no clone, see [Host your own Trayful](../howto/host-your-own.md) and [Work on a git repository](../howto/git-backed.md).
 
 ## From a clone of this repository
 

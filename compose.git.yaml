@@ -2,7 +2,7 @@
 # that Trayful clones, commits to, pulls and pushes. See docs/howto/git-backed.md. Start it
 # on top of owner mode with
 #
-#   docker compose -f compose.yaml -f compose.owner.yaml -f compose.git.yaml up -d --build
+#   docker compose -f compose.yaml -f compose.owner.yaml -f compose.git.yaml up -d
 #
 # with TRAYFUL_DATA (a folder for the clone) and TRAYFUL_GIT_TOKEN set as well.
 services:

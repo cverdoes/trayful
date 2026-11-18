@@ -12,33 +12,46 @@ This is **owner mode**. Without it, Trayful trusts whoever is at the computer it
 
 ## Start it
 
-1. On the server, clone this repository and put your projects in a folder, such as `~/games`.
+1. On the server, put your projects in a folder, such as `~/games`, and make a folder for Trayful's settings with the compose files of the [release](https://github.com/cverdoes/trayful/releases) you run, such as `v0.4.0`:
+
+   ```sh
+   mkdir ~/trayful && cd ~/trayful
+   for f in compose.yaml compose.owner.yaml compose.git.yaml; do
+     curl -fsSLO "https://raw.githubusercontent.com/cverdoes/trayful/v0.4.0/$f"
+   done
+   ```
+
+   You need no clone of the repository: Docker pulls the ready-made image, `ghcr.io/cverdoes/trayful`.
+
 2. Make an owner secret, and keep it in your password manager:
 
    ```sh
    openssl rand -hex 32
    ```
 
-3. In the repository, write a `.env` file with your settings:
+3. In the same folder, write a `.env` file with your settings:
 
    ```sh
+   TRAYFUL_IMAGE=ghcr.io/cverdoes/trayful:0.4.0
    TRAYFUL_DOMAIN=trayful.example.com
    TRAYFUL_OWNER_SECRET=<the secret>
    TRAYFUL_PROJECTS=/home/you/games
    TRAYFUL_USER=1000:1000
    ```
 
-   `TRAYFUL_USER` is the `uid:gid` that owns the projects folder (`id -u` and `id -g`).
+   `TRAYFUL_IMAGE` is the image's version, the same as the compose files'; without it you get `latest`. `TRAYFUL_USER` is the `uid:gid` that owns the projects folder (`id -u` and `id -g`).
 
 4. Start Trayful and Caddy in front of it:
 
    ```sh
-   docker compose -f compose.yaml -f compose.owner.yaml up -d --build
+   docker compose -f compose.yaml -f compose.owner.yaml up -d
    ```
 
 5. Open `https://trayful.example.com` and sign in with the secret. This browser stays signed in for a year.
 
 The server must accept connections on ports 80 and 443, for HTTPS and its certificate. Trayful itself stays on the server's loopback address, where only Caddy reaches it.
+
+To update, fetch the compose files of the new release as in step 1, change the version in `TRAYFUL_IMAGE`, and run `docker compose -f compose.yaml -f compose.owner.yaml up -d` again. To run code that is not released yet, start from a clone of this repository instead, with `TRAYFUL_IMAGE=trayful` in `.env` and `--build` added to the `docker compose` command.
 
 ## Connect Claude
 

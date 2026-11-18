@@ -22,6 +22,7 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 ### Docker
 
 - Each release is also published as a Docker image, `ghcr.io/cverdoes/trayful`, for amd64 and arm64: `docker run --rm -it --init -p 127.0.0.1:4317:4317 ghcr.io/cverdoes/trayful` plays the examples, and `-v ~/games:/projects --user "$(id -u):$(id -g)"` plays your own. It has git and runs as a non-root user. See `docs/guide/docker.md`.
+- `compose.owner.yaml` runs the published image (`TRAYFUL_IMAGE`, `latest` by default), so a server of your own needs only the compose files and a `.env` file, not a clone of the repository.
 - The image now runs the same bundle as the npm package, so `trayful new` and **New project** work in a container, and `trayful --version` says which version it is.
 
 ## 0.3.0
