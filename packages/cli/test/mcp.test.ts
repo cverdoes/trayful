@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -57,7 +58,25 @@ describe('trayful mcp', () => {
     }
   });
 
-  it('will not join a different project on the same port', async () => {
+  it('relays for another project in the folder trayful play has open', async () => {
+    const examples = await scratchExamples();
+    const server = await startServer({ projectDir: examples, port: 4394, appDir: '/nonexistent' });
+    try {
+      const { messages, close } = await connect(path.join(examples, 'piecepack'), 4394);
+      expect(messages).toEqual(['Connecting to the open table at http://127.0.0.1:4394']);
+      expect(await close()).toBe(0);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('asks for --yes before opening a busy folder itself, since it cannot ask', async () => {
+    await expect(mcp({ dir: await scratchExamples(), port: 4395 }, vi.fn())).rejects.toThrow(
+      /add --yes/,
+    );
+  });
+
+  it('will not join a different folder on the same port', async () => {
     const server = await startServer({
       projectDir: await scratchExamples(),
       port: 4393,

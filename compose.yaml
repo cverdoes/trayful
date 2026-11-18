@@ -9,7 +9,7 @@ services:
       # this port as the host's, so never publish it on the network.
       - 127.0.0.1:${TRAYFUL_PORT:-4317}:4317
     volumes:
-      # The project, or folder of projects, to play. The only folder the server can see.
+      # The folder of projects to play. The only folder the server can see.
       - ${TRAYFUL_PROJECTS:-./examples}:/projects
     # Save tables as you, so the files stay yours (`id -u` and `id -g`).
     user: ${TRAYFUL_USER:-1000:1000}

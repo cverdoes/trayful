@@ -11,6 +11,7 @@ import {
   type ResolvedProject,
 } from '@trayful/formats';
 import { packagedVersion, resourceDir } from '../shipped/resources.js';
+import { adoptPlayers, markBase, projectDirs, resolveBase } from './base.js';
 import { FilePlayerStore, Players, type Player, type PlayerStore } from '../play/players.js';
 import { checkTableName, ProjectLoadError, TableSession, tableFile } from '../play/session.js';
 import { promptsFile, PROMPTS_SUFFIX } from '../play/tableFiles.js';
@@ -38,8 +39,13 @@ export interface WorkspaceOptions {
   saveDelayMs?: number;
   /** Hold each agent change until people watching have seen it play out. Default true. */
   agentPace?: boolean;
-  /** Where players are kept. Default: `.trayful/players.json` in the root folder. */
+  /** Where players are kept. Default: `.trayful/players.json` in the base folder. */
   playerStore?: PlayerStore;
+  /**
+   * Why no project can be made here, if none can. A git-backed Trayful whose folder in
+   * the repository is a project has nowhere to commit another.
+   */
+  noNewProjects?: () => string | undefined;
 }
 
 /** Which project and table to open first, and how to make the table if it is new. */
@@ -69,9 +75,10 @@ function ignored(file: string): boolean {
 }
 
 /**
- * The projects Trayful serves and their open tables. The root is either one
- * project folder (with a `trayful.yaml`) or a folder whose sub-folders are
- * projects. Project files are watched, so edits show up on open tables at once.
+ * The projects Trayful serves and their open tables. The root is a base folder whose
+ * sub-folders are the projects; started on one project's folder, the base is the
+ * folder it is in. Files are watched, so edits show up on open tables at once, and a
+ * project folder that appears in the base joins the workspace.
  */
 export class Workspace {
   private entries = new Map<string, ProjectEntry>();
@@ -83,7 +90,8 @@ export class Workspace {
   private attachListeners = new Set<() => void>();
   private activeTable: TableSession | undefined;
   private rootDir = '';
-  private singleProject = false;
+  private watched = new Set<string>();
+  private notesNow: string[] = [];
 
   private constructor(
     private readonly options: WorkspaceOptions,
@@ -91,14 +99,14 @@ export class Workspace {
     readonly players: Players,
   ) {}
 
-  /** The folder the projects are in: one project, or a folder of projects. Empty until attached. */
+  /** The base folder the projects are in. Empty until attached. */
   get root(): string {
     return this.rootDir;
   }
 
-  /** True when the root is itself a project, so no other projects can be created. */
-  get single(): boolean {
-    return this.singleProject;
+  /** What the person should know about how this workspace was opened, such as moved files. */
+  get notes(): readonly string[] {
+    return this.notesNow;
   }
 
   /** The table agents play on unless they open another. */
@@ -116,12 +124,20 @@ export class Workspace {
     return this.activeTable !== undefined;
   }
 
-  static async open(root: string, options: OpenOptions = {}): Promise<Workspace> {
-    const players = await Players.open(
-      options.playerStore ?? FilePlayerStore.in(path.resolve(root)),
-    );
+  /** Opens a base folder of projects, or one project's folder and the projects beside it. */
+  static async open(dir: string, options: OpenOptions = {}): Promise<Workspace> {
+    const { base, project } = resolveBase(dir, options.project);
+    const notes: string[] = [];
+    // Only a folder that has projects becomes a base; starting anywhere else fails below.
+    if (!options.playerStore && (await projectDirs(base)).length > 0) {
+      await markBase(base);
+      const note = project ? await adoptPlayers(base, project) : undefined;
+      if (note) notes.push(note);
+    }
+    const players = await Players.open(options.playerStore ?? FilePlayerStore.in(base));
     const workspace = new Workspace(options, players);
-    await workspace.attach(root, options);
+    workspace.notesNow = notes;
+    await workspace.attach(base, { ...options, project });
     return workspace;
   }
 
@@ -137,21 +153,21 @@ export class Workspace {
    * Loads the projects in `root` and opens the first table. A workspace is attached
    * once: `open` does it, or a later call on an `empty` one.
    */
-  async attach(root: string, options: OpenOptions = {}): Promise<void> {
+  async attach(dir: string, options: OpenOptions = {}): Promise<void> {
     if (this.activeTable) throw new ProjectLoadError('Trayful already has its projects.');
-    root = path.resolve(root);
-    const single = existsSync(path.join(root, MANIFEST_FILE));
-    const dirs = single ? [root] : await projectDirs(root);
-    for (const dir of dirs) await this.load(path.basename(dir), dir);
+    const { base: root, project } = resolveBase(dir, options.project);
+    for (const projectDir of await projectDirs(root)) {
+      await this.load(path.basename(projectDir), projectDir);
+    }
 
     const entries = this.projects();
     if (entries.length === 0) {
       throw new ProjectLoadError(
-        `No Trayful project in ${root}: there is no ${MANIFEST_FILE} here or in its sub-folders. ` +
+        `No Trayful project in ${root}: none of its folders has a ${MANIFEST_FILE}. ` +
           'Start one with `trayful new <folder>`.',
       );
     }
-    const wanted = options.project ?? entries.find((e) => e.project)?.id ?? entries[0]!.id;
+    const wanted = project ?? entries.find((e) => e.project)?.id ?? entries[0]!.id;
     const entry = this.entry(wanted);
     if (!entry.project) {
       throw new ProjectLoadError(
@@ -159,7 +175,6 @@ export class Workspace {
       );
     }
     this.rootDir = root;
-    this.singleProject = single;
     this.activeTable = await this.table(entry.id, options.table ?? DEFAULT_TABLE, {
       seed: options.seed,
       setup: options.setup,
@@ -293,13 +308,10 @@ export class Workspace {
     await rm(promptsFile(project, name), { force: true });
   }
 
-  /** Makes a new project from the starter template. Only when the root is a folder of projects. */
+  /** Makes a new project from the starter template, in a new folder of the base. */
   async createProject(name: string): Promise<ProjectEntry> {
-    if (this.single) {
-      throw new ProjectLoadError(
-        `Trayful was started on the project in ${this.root}. Start it on a folder of projects to create more.`,
-      );
-    }
+    const refusal = this.options.noNewProjects?.();
+    if (refusal) throw new ProjectLoadError(refusal);
     const id = slugify(name);
     if (!id) throw new ProjectLoadError(`"${name}" does not make a usable folder name.`);
     const dir = path.join(this.root, id);
@@ -325,6 +337,22 @@ export class Workspace {
   /** Reloads every project, such as after new commits came in from a repository. */
   async reloadAll(): Promise<void> {
     for (const entry of this.projects()) await this.load(entry.id, entry.dir);
+    await this.rescan();
+  }
+
+  /** Takes in project folders that appeared in the base since it was opened. Returns them. */
+  async rescan(): Promise<ProjectEntry[]> {
+    const added: ProjectEntry[] = [];
+    // A workspace that started empty has no base folder to look in yet.
+    if (!this.rootDir) return added;
+    for (const dir of await projectDirs(this.rootDir)) {
+      const id = path.basename(dir);
+      if (this.entries.has(id)) continue;
+      const entry = await this.load(id, dir);
+      if (this.options.watch ?? true) this.watch(entry);
+      added.push(entry);
+    }
+    return added;
   }
 
   /** Renames a player, and shows the new name at every open table. */
@@ -375,9 +403,31 @@ export class Workspace {
 
   private watchAll(): void {
     for (const entry of this.entries.values()) this.watch(entry);
+    this.watchBase();
+  }
+
+  /** Watches the base itself, one level deep, for project folders that are added. */
+  private watchBase(): void {
+    const key = '\u0000base';
+    try {
+      const watcher = watch(this.rootDir, (_event, file) => {
+        if (file?.startsWith('.')) return;
+        clearTimeout(this.timers.get(key));
+        this.timers.set(
+          key,
+          setTimeout(() => void this.rescan().catch(() => undefined), 150),
+        );
+      });
+      this.watchers.push(watcher);
+    } catch {
+      // As for projects: without watching, new folders show up after a restart.
+    }
   }
 
   private watch(entry: ProjectEntry): void {
+    // A folder made by New project can also be found by the base's watcher first.
+    if (this.watched.has(entry.id)) return;
+    this.watched.add(entry.id);
     try {
       const watcher = watch(entry.dir, { recursive: true }, (_event, file) => {
         if (file && ignored(file)) return;
@@ -397,14 +447,6 @@ export class Workspace {
 
 function errors(diagnostics: Diagnostic[]): string[] {
   return diagnostics.filter((d) => d.severity === 'error').map(formatDiagnostic);
-}
-
-async function projectDirs(root: string): Promise<string[]> {
-  const entries = await readdir(root, { withFileTypes: true });
-  return entries
-    .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
-    .map((e) => path.join(root, e.name))
-    .filter((dir) => existsSync(path.join(dir, MANIFEST_FILE)));
 }
 
 /** Where packaged Trayful releases are served from, file by file, for editor schema hints. */

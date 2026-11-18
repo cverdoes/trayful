@@ -13,7 +13,7 @@ let dir: string;
 let server: RunningServer;
 
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-server-'));
+  dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-server-')), 'game');
   // Leave out tables saved by local play sessions so every test starts fresh.
   await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
   server = await startServer({
@@ -41,8 +41,7 @@ describe('server', () => {
     expect(health).toEqual({
       ok: true,
       project: 'Harvest Moon',
-      projectDir: dir,
-      root: dir,
+      root: path.dirname(dir),
       table: 'table-1',
     });
     const view = (await (await fetch(`${server.url}/api/project`)).json()) as ProjectView;

@@ -11,14 +11,13 @@ cd my-game
 npx trayful new prototype --name "My Game"
 ```
 
-Add Trayful's own working files to your `.gitignore`. `.trayful/` holds the players who joined and their keys, so it must never be committed. `tables/` holds the saved tables; leave it out of the ignore list if you want playtest positions in your history.
+Trayful treats the top of your repository as the folder your prototypes live in. It keeps the players who joined, and their keys, in `.trayful/` there; that folder leaves itself out of git, so it is never committed. `prototype/tables/` holds the saved tables. Add it to your `.gitignore` unless you want playtest positions in your history:
 
 ```
-prototype/.trayful/
 prototype/tables/
 ```
 
-Everything else in `prototype/` is plain text and images, so the prototype is versioned with the rules.
+Everything else in `prototype/` is plain text and images, so the prototype is versioned with the rules. **New project…** in the table menu starts another prototype beside it, such as `prototype-v2/`.
 
 ## Add the Trayful skill
 

@@ -24,7 +24,7 @@ const CALLBACK = 'https://claude.example/callback';
 let server: RunningServer;
 
 beforeEach(async () => {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-owner-'));
+  const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-owner-')), 'game');
   await cp(examplePath('harvest-moon'), dir, {
     recursive: true,
     filter: (src) => path.basename(src) !== 'tables',

@@ -14,7 +14,7 @@ let server: RunningServer;
 let host: string;
 
 beforeEach(async () => {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-engine-client-'));
+  const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-engine-client-')), 'game');
   await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
   server = await startServer({ projectDir: dir, port: 0, seed: 7, appDir: path.join(dir, 'x') });
   host = (await server.workspace.players.host()).id;

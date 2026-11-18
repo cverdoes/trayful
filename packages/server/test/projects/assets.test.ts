@@ -19,7 +19,7 @@ afterEach(async () => {
 });
 
 async function open(): Promise<{ ws: Workspace; dir: string }> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-assets-'));
+  const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-assets-')), 'game');
   await cp(starter, dir, { recursive: true });
   workspace = await Workspace.open(dir, { watch: false });
   return { ws: workspace, dir };

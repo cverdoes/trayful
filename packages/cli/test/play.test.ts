@@ -50,8 +50,30 @@ describe('trayful play', () => {
   });
 
   it('says how to switch projects in a folder of projects', async () => {
-    const out = await playUntilStopped([await scratchExamples(), '--project', 'harvest-moon']);
-    expect(out).toContain('4 projects in this folder; switch between them in the browser.');
+    const examples = await scratchExamples();
+    const out = await playUntilStopped([examples, '--project', 'harvest-moon', '--yes']);
+    expect(out).toContain(`4 projects in ${examples}; switch between them in the browser.`);
+  });
+
+  it('asks before serving a busy folder for the first time, and only once', async () => {
+    // The examples folder also holds the referee engine, which is no project.
+    const examples = await scratchExamples();
+    const options = parsePlayArgs([examples, '--port', '0', '--no-open']);
+    // The tests run without a terminal, so nobody can answer.
+    await expect(play(options, vi.fn(), { appDir })).rejects.toThrow(
+      /holds 1 other file or folder besides Trayful projects[\s\S]*add --yes/,
+    );
+    const no = vi.fn(() => Promise.resolve(false));
+    await expect(play(options, vi.fn(), { appDir, confirm: no })).rejects.toThrow('Stopped');
+    expect(existsSync(path.join(examples, '.trayful'))).toBe(false);
+
+    const yes = vi.fn(() => Promise.resolve(true));
+    const stopped = () => Promise.resolve();
+    expect(await play(options, vi.fn(), { appDir, confirm: yes, stopped })).toBe(0);
+    expect(yes).toHaveBeenCalledOnce();
+    const again = vi.fn(() => Promise.resolve(true));
+    expect(await play(options, vi.fn(), { appDir, confirm: again, stopped })).toBe(0);
+    expect(again).not.toHaveBeenCalled();
   });
 
   it('prints invite links when sharing on the network', async () => {

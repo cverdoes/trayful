@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -57,17 +57,38 @@ function withCorner(type: ReturnType<typeof asWritten>, corner: number) {
 describe('Workspace', () => {
   it('serves a folder of projects and opens the first one', async () => {
     const ws = await open();
-    expect(ws.single).toBe(false);
     expect(ws.projects().map((p) => p.id)).toEqual(['harvest-moon', 'starter-game']);
     expect(ws.active.projectId).toBe('harvest-moon');
     expect(ws.project('starter-game').manifest.name).toBe('Starter Game');
   });
 
-  it('serves one project folder', async () => {
+  it('opens one project folder with the projects beside it, and makes new ones there', async () => {
     const root = await scratchWorkspace();
     workspace = await Workspace.open(path.join(root, 'starter-game'), { watch: false });
-    expect(workspace.single).toBe(true);
-    await expect(workspace.createProject('More')).rejects.toThrow(/folder of projects/);
+    expect(workspace.root).toBe(root);
+    expect(workspace.active.projectId).toBe('starter-game');
+    expect(workspace.projects().map((p) => p.id)).toEqual(['harvest-moon', 'starter-game']);
+    const entry = await workspace.createProject('More');
+    expect(entry.dir).toBe(path.join(root, 'more'));
+  });
+
+  it('takes in project folders added to the base after it opened', async () => {
+    const ws = await open();
+    expect(await ws.rescan()).toEqual([]);
+    await createProjectFolder(path.join(ws.root, 'later'), 'Later');
+    expect((await ws.rescan()).map((e) => e.id)).toEqual(['later']);
+    expect(ws.project('later').manifest.name).toBe('Later');
+  });
+
+  it('moves the players of a project served on its own to the base', async () => {
+    const root = await scratchWorkspace();
+    const old = path.join(root, 'starter-game', '.trayful', 'players.json');
+    await mkdir(path.dirname(old), { recursive: true });
+    await writeFile(old, JSON.stringify({ players: [] }));
+    workspace = await Workspace.open(path.join(root, 'starter-game'), { watch: false });
+    expect(existsSync(old)).toBe(false);
+    expect(existsSync(path.join(root, '.trayful', 'players.json'))).toBe(true);
+    expect(workspace.notes).toEqual([expect.stringContaining('Moved the players')]);
   });
 
   it('refuses an empty folder and unknown projects', async () => {

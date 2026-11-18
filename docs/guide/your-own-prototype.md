@@ -24,7 +24,7 @@ To build components without writing YAML, pick **Design components** in the tool
 
 Keep the table open while you edit: every time you save a file, the table updates (new cards appear, changed text redraws, and the change is one step you can undo). If a file has a mistake, a bar on the table names the file, line and column, and the table keeps the last version that worked. `npx trayful validate my-game` checks a project from the command line.
 
-To keep several games together, put their folders in one folder and run `npx trayful play` on that folder; the table menu switches between them, and its **New project…** starts another game there from the starter template.
+The table menu switches between the games in the folder `my-game` is in, and its **New project…** starts another game there from the starter template. To keep your games apart from other files, give them a folder of their own and run `npx trayful play` on that folder.
 
 The [HOWTO guides](../howto/README.md) walk through adding a deck, designing components in the browser, loading cards from a spreadsheet, boards with drop areas, meeples and dice, your own images and tiled sheets, setups, designing with an agent and printing. Every key is documented in the [format reference](../reference/README.md).
 
