@@ -73,6 +73,12 @@ export class GitLink {
     return result;
   }
 
+  /** Commits and pushes the saved tables as they are now. False when none had changed. */
+  async snapshotTables(message?: string): Promise<boolean> {
+    await this.workspace.saveAll();
+    return this.repository.snapshotTables(message);
+  }
+
   status(): Promise<RepositoryStatus> {
     return this.repository.status();
   }

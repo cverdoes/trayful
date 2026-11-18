@@ -5,6 +5,7 @@ import path from 'node:path';
 import { MANIFEST_FILE } from '@trayful/formats';
 import { createProjectFolder } from '../projects/workspace.js';
 import { git, GitError, writeAskpass, type GitAuthor, type GitOptions } from './git.js';
+import { checkOutBranch, commitTables, listBranches, startBranch } from './branches.js';
 import { checkSettings, loadSettings, saveSettings, type RepositorySettings } from './settings.js';
 import {
   commitChanges,
@@ -227,6 +228,38 @@ export class Repository {
     });
   }
 
+  /** The repository's branches. */
+  branches(): Promise<string[]> {
+    this.connected();
+    return listBranches(this.run);
+  }
+
+  /**
+   * Syncs, then starts the branch `name` from where Trayful is, pushes it and works
+   * on it from now on: for an experiment, such as a second version of a deck.
+   */
+  createBranch(name: string): Promise<RepositorySettings> {
+    return this.moveBranch(name, (run) => startBranch(run, name));
+  }
+
+  /** Syncs, then works on the repository's branch `name` from now on. The tables reload. */
+  switchBranch(name: string): Promise<RepositorySettings> {
+    return this.moveBranch(name, async (run) => {
+      await checkOutBranch(run, name);
+      await this.changed();
+    });
+  }
+
+  /** Commits and pushes the saved tables, which syncs leave out. False when none had changed. */
+  snapshotTables(message = 'Trayful: save the tables'): Promise<boolean> {
+    return this.serial(async () => {
+      const settings = this.connected();
+      const committed = await commitTables(this.run, settings.path, message);
+      if (committed) await this.sync1(settings, message);
+      return committed;
+    });
+  }
+
   async status(): Promise<RepositoryStatus> {
     const settings = this.settingsNow;
     const known = {
@@ -273,6 +306,22 @@ export class Repository {
     } finally {
       this.lastSync = new Date();
     }
+  }
+
+  /** Syncs first, so nothing is left behind, then moves to another branch and remembers it. */
+  private moveBranch(name: string, move: (run: Run) => Promise<void>): Promise<RepositorySettings> {
+    return this.serial(async () => {
+      const settings = this.connected();
+      const synced = await this.sync1(settings, 'Trayful: save changes');
+      if (synced.conflict) {
+        throw new GitError('Settle the conflict with the repository before changing branch.');
+      }
+      await move(this.run);
+      const moved = { ...settings, branch: name };
+      await saveSettings(this.options.dataDir, moved);
+      this.settingsNow = moved;
+      return moved;
+    });
   }
 
   /** A conflict keeps its branch name until it is resolved, so later syncs update the same branch. */
