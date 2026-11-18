@@ -2,7 +2,7 @@
 title: Releasing
 kind: contributing
 order: 3
-summary: Publishing a version to npm from a tag, and keeping dependencies current.
+summary: Publishing a version to npm and ghcr.io from a tag, and keeping dependencies current.
 ---
 
 A version is published to npm by pushing a tag. Set the new version in `packages/cli/package.json`, add a section for it to [CHANGELOG.md](https://github.com/cverdoes/trayful/blob/main/CHANGELOG.md), merge that to `main`, then tag the merge commit:
@@ -12,6 +12,8 @@ git tag v0.2.0 && git push origin v0.2.0
 ```
 
 The Release workflow (`.github/workflows/release.yml`) builds the package, checks that the tag matches the version, runs `scripts/test-package.sh` on it, publishes it to npm and makes a GitHub release with the tarball and the version's CHANGELOG.md section as its notes (`scripts/release-notes.sh`; the workflow stops before publishing if the section is missing). A version with a suffix, such as `0.2.0-rc.1`, goes to the `next` tag, so `npx trayful` keeps the last full release and `npx trayful@next` tries the new one. npm accepts the upload through [trusted publishing](https://docs.npmjs.com/trusted-publishers): the package's settings on npmjs.com name this repository, `release.yml` and the GitHub environment `npm`, so no npm token is stored anywhere.
+
+Once npm has the version, the workflow's `image` job builds the Docker image for `linux/amd64` and `linux/arm64` and pushes it to the GitHub Container Registry as `ghcr.io/cverdoes/trayful`, signing in with the workflow's own `GITHUB_TOKEN`. A version such as `0.4.0` is tagged `0.4.0`, `0.4` and `latest`; one with a suffix gets only its own tag, so `latest` stays on the last full release. The image holds the same bundle as the npm package (`pnpm package`, built once, since it is plain JavaScript), plus git, and runs as the user `node`. A newly created package on ghcr.io is private: after the first release with an image, set it to public once under the package's settings (**Package settings → Change visibility**), and check that it is linked to this repository.
 
 ## Dependencies
 

@@ -11,4 +11,4 @@ Everything you need to make and play prototypes with the `trayful` package from 
 | [Make your own prototype](your-own-prototype.md) | The project folder, the designer, live reload and what components are |
 | [Upgrade an older project](upgrading.md)         | Move a `trayful/1` project to the current file format                 |
 | [Command line](command-line.md)                  | Every `trayful` command                                               |
-| [Run it in Docker](docker.md)                    | Keep the server in a container that sees only your project            |
+| [Run it in Docker](docker.md)                    | The ready-made image: a server that sees only your project            |

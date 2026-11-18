@@ -47,7 +47,7 @@ The limits are fixed (see [[concept:decisions]], entry 14): cognitive complexity
 
 ## Branches, pull requests and releases
 
-Work happens on branches and lands on `main` through pull requests once CI is green. Dependabot opens weekly updates for npm packages, GitHub Actions and the Docker base image. Pushing a `v*` tag runs the Release workflow, which tests the package and publishes it to npm with trusted publishing, so no npm token is stored anywhere. The Pages workflow publishes this overview from `main`.
+Work happens on branches and lands on `main` through pull requests once CI is green. Dependabot opens weekly updates for npm packages, GitHub Actions and the Docker base image. Pushing a `v*` tag runs the Release workflow, which tests the package and publishes it to npm with trusted publishing, so no npm token is stored anywhere, and then the Docker image to `ghcr.io/cverdoes/trayful`. The Pages workflow publishes this overview from `main`.
 
 Changes made by Claude sessions follow `CLAUDE.md`: run `pnpm check`, review the diff against `REVIEW.md` locally before opening a pull request, and never review or comment on pull requests on GitHub.
 
