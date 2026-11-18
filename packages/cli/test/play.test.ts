@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,8 +56,10 @@ describe('trayful play', () => {
   });
 
   it('asks before serving a busy folder for the first time, and only once', async () => {
-    // The examples folder also holds the referee engine, which is no project.
+    // The examples folder also holds the referee engine, which is no project. The
+    // repository marks it as a folder of projects; without that, Trayful asks.
     const examples = await scratchExamples();
+    await rm(path.join(examples, '.trayful'), { recursive: true });
     const options = parsePlayArgs([examples, '--port', '0', '--no-open']);
     // The tests run without a terminal, so nobody can answer.
     await expect(play(options, vi.fn(), { appDir })).rejects.toThrow(

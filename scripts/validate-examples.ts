@@ -7,7 +7,8 @@ import { formatDiagnostic, loadProject } from '@trayful/formats';
 const examples = fileURLToPath(new URL('../examples', import.meta.url));
 let failed = false;
 for (const entry of await readdir(examples, { withFileTypes: true })) {
-  if (!entry.isDirectory()) continue;
+  // `.trayful` is Trayful's own folder, which marks examples/ as a folder of projects.
+  if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
   // An example engine is a Node project that plays a game, not a game of its own.
   const engine = await access(path.join(examples, entry.name, 'package.json')).then(
     () => true,

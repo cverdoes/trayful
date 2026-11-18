@@ -1,3 +1,4 @@
+import { rm } from 'node:fs/promises';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -71,9 +72,9 @@ describe('trayful mcp', () => {
   });
 
   it('asks for --yes before opening a busy folder itself, since it cannot ask', async () => {
-    await expect(mcp({ dir: await scratchExamples(), port: 4395 }, vi.fn())).rejects.toThrow(
-      /add --yes/,
-    );
+    const examples = await scratchExamples();
+    await rm(path.join(examples, '.trayful'), { recursive: true });
+    await expect(mcp({ dir: examples, port: 4395 }, vi.fn())).rejects.toThrow(/add --yes/);
   });
 
   it('will not join a different folder on the same port', async () => {
