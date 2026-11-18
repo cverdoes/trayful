@@ -406,6 +406,39 @@ button:disabled {
   z-index: 20;
 }
 
+.repository-conflict {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(640px, calc(100% - 32px));
+  z-index: 21;
+}
+
+.repository-conflict-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tf-space-2);
+  margin-top: var(--tf-space-2);
+}
+
+/* The branch chip in the toolbar: a dot before the branch name says how it stands. */
+.repository-chip .ui-button::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tf-success);
+}
+
+.repository-pending .ui-button::before {
+  background: var(--tf-warning);
+}
+
+.repository-trouble .ui-button::before {
+  background: var(--tf-danger);
+}
+
 .problems pre {
   margin: var(--tf-space-2) 0 0;
   white-space: pre-wrap;

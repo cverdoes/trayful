@@ -120,15 +120,22 @@ async function takeIn(run: Run, theirs: string): Promise<{ pulled: boolean; file
   return { pulled: true };
 }
 
+/** What one sync is for: its commit message, whether to push, and where a conflict goes. */
+export interface SyncRequest {
+  message: string;
+  /** Push to the branch if there is anything to push. A conflict branch is pushed anyway. */
+  push: boolean;
+  conflictBranch: () => string;
+}
+
 /**
  * One sync: commit, fetch, take in, push. On a conflict Trayful's side is pushed to
- * `conflictBranch` instead, and the shared branch is left alone.
+ * the conflict branch instead, and the shared branch is left alone.
  */
 export async function syncOnce(
   run: Run,
   settings: RepositorySettings,
-  message: string,
-  conflictBranch: () => string,
+  { message, push, conflictBranch }: SyncRequest,
 ): Promise<SyncResult> {
   const committed = await commitChanges(run, settings, message);
   const theirs = await fetchBranch(run, settings.branch);
@@ -139,7 +146,7 @@ export async function syncOnce(
     await run(['push', '--quiet', '--force', 'origin', `HEAD:refs/heads/${conflict.branch}`]);
     return { committed, pulled, pushed: false, conflict };
   }
-  const pushed = head !== undefined && head !== theirs;
+  const pushed = push && head !== undefined && head !== theirs;
   if (pushed) await run(['push', '--quiet', 'origin', `HEAD:refs/heads/${settings.branch}`]);
   return { committed, pulled, pushed };
 }

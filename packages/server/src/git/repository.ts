@@ -5,6 +5,7 @@ import path from 'node:path';
 import { MANIFEST_FILE } from '@trayful/formats';
 import { createProjectFolder } from '../projects/workspace.js';
 import { git, GitError, writeAskpass, type GitAuthor, type GitOptions } from './git.js';
+import { checkOutBranch, commitTables, listBranches, startBranch } from './branches.js';
 import { checkSettings, loadSettings, saveSettings, type RepositorySettings } from './settings.js';
 import {
   commitChanges,
@@ -26,6 +27,8 @@ export interface RepositoryOptions {
   author?: GitAuthor;
   /** Lets git read repositories on this computer's disk. Only for tests. */
   allowLocalUrls?: boolean;
+  /** The secret a push webhook signs its events with. No webhook without one. */
+  webhookSecret?: string;
 }
 
 /** What connecting would make that is not in the repository yet. */
@@ -113,6 +116,10 @@ export class Repository {
     return this.settingsNow;
   }
 
+  get webhookSecret(): string | undefined {
+    return this.options.webhookSecret;
+  }
+
   get dataDir(): string {
     return this.options.dataDir;
   }
@@ -179,9 +186,21 @@ export class Repository {
     });
   }
 
-  /** Commits what changed, takes in the branch's new commits and pushes. */
-  sync(message = 'Trayful: save changes'): Promise<SyncResult> {
-    return this.serial(() => this.sync1(this.connected(), message));
+  /** Commits what changed, takes in the branch's new commits and, unless `push` is false, pushes. */
+  sync(message = 'Trayful: save changes', push = true): Promise<SyncResult> {
+    return this.serial(() => this.sync1(this.connected(), message, push));
+  }
+
+  /** Commits what changed, and nothing more. False when nothing had. */
+  save(message: string): Promise<boolean> {
+    return this.serial(async () => {
+      try {
+        return await commitChanges(this.run, this.connected(), message);
+      } catch (err) {
+        this.lastError = err instanceof Error ? err.message : String(err);
+        throw err;
+      }
+    });
   }
 
   /**
@@ -206,6 +225,38 @@ export class Repository {
       this.conflictNow = undefined;
       await this.changed();
       return { committed: false, pulled: true, pushed: false };
+    });
+  }
+
+  /** The repository's branches. */
+  branches(): Promise<string[]> {
+    this.connected();
+    return listBranches(this.run);
+  }
+
+  /**
+   * Syncs, then starts the branch `name` from where Trayful is, pushes it and works
+   * on it from now on: for an experiment, such as a second version of a deck.
+   */
+  createBranch(name: string): Promise<RepositorySettings> {
+    return this.moveBranch(name, (run) => startBranch(run, name));
+  }
+
+  /** Syncs, then works on the repository's branch `name` from now on. The tables reload. */
+  switchBranch(name: string): Promise<RepositorySettings> {
+    return this.moveBranch(name, async (run) => {
+      await checkOutBranch(run, name);
+      await this.changed();
+    });
+  }
+
+  /** Commits and pushes the saved tables, which syncs leave out. False when none had changed. */
+  snapshotTables(message = 'Trayful: save the tables'): Promise<boolean> {
+    return this.serial(async () => {
+      const settings = this.connected();
+      const committed = await commitTables(this.run, settings.path, message);
+      if (committed) await this.sync1(settings, message);
+      return committed;
     });
   }
 
@@ -234,9 +285,17 @@ export class Repository {
 
   // -------------------------------------------------------------------------
 
-  private async sync1(settings: RepositorySettings, message: string): Promise<SyncResult> {
+  private async sync1(
+    settings: RepositorySettings,
+    message: string,
+    push = true,
+  ): Promise<SyncResult> {
     try {
-      const result = await syncOnce(this.run, settings, message, () => this.conflictBranch());
+      const result = await syncOnce(this.run, settings, {
+        message,
+        push,
+        conflictBranch: () => this.conflictBranch(),
+      });
       this.conflictNow = result.conflict;
       this.lastError = undefined;
       if (result.pulled) await this.changed();
@@ -247,6 +306,22 @@ export class Repository {
     } finally {
       this.lastSync = new Date();
     }
+  }
+
+  /** Syncs first, so nothing is left behind, then moves to another branch and remembers it. */
+  private moveBranch(name: string, move: (run: Run) => Promise<void>): Promise<RepositorySettings> {
+    return this.serial(async () => {
+      const settings = this.connected();
+      const synced = await this.sync1(settings, 'Trayful: save changes');
+      if (synced.conflict) {
+        throw new GitError('Settle the conflict with the repository before changing branch.');
+      }
+      await move(this.run);
+      const moved = { ...settings, branch: name };
+      await saveSettings(this.options.dataDir, moved);
+      this.settingsNow = moved;
+      return moved;
+    });
   }
 
   /** A conflict keeps its branch name until it is resolved, so later syncs update the same branch. */

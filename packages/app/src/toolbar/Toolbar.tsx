@@ -2,6 +2,7 @@ import { selectionActions } from './actions';
 import { Mark } from '../Mark';
 import { PlayerList } from '../Players';
 import { useStore } from '../store';
+import { RepositoryChip } from '../repository/RepositoryChip';
 import { TableMenu } from './TableMenu';
 import { moreItems, selectionButtons, type ButtonProps } from './toolbarItems';
 import { sendTargets, toSurface } from '../table/surfaces';
@@ -18,12 +19,14 @@ import { Menu } from '../ui/Menu';
 export function Toolbar() {
   const name = useStore((s) => s.view?.name);
   const status = useStore((s) => s.status);
+  const host = useStore((s) => s.me?.host ?? false);
   return (
     <header className="toolbar table-toolbar">
       <div className="title">
         <Mark size={30} />
         <strong>{name ?? 'Trayful'}</strong>
         <TableMenu />
+        {host && <RepositoryChip />}
         <span
           className={`status status-${status}`}
           title={`Connection: ${status}`}

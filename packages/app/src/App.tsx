@@ -10,6 +10,8 @@ import { InviteDialog } from './toolbar/Invite';
 import { Designer } from './design/Designer';
 import { ClosedScreen, ExpiredInviteScreen, HandTray, JoinScreen } from './Players';
 import { Print } from './Print';
+import { ConflictBanner } from './repository/ConflictBanner';
+import { ConnectScreen } from './repository/ConnectScreen';
 import { Prompts } from './Prompts';
 import { RenderJob } from './render/Preview';
 import { route } from './route';
@@ -30,6 +32,7 @@ export function App() {
   if (fatal) return <div className="loading">{fatal}</div>;
   if (gate === 'closed') return <ClosedScreen />;
   if (gate === 'join') return <JoinScreen />;
+  if (gate === 'connect') return <ConnectScreen />;
   return <Page />;
 }
 
@@ -55,6 +58,7 @@ function TableApp() {
       <Prompts />
       {inviteOpen && <InviteDialog />}
       <Problems />
+      <ConflictBanner />
       <ErrorToast />
       <Activity />
       <RenderJob />
