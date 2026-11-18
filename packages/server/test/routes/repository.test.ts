@@ -227,6 +227,25 @@ describe('commit messages', () => {
     await call('sync_repository');
     expect(lastCommit()).toBe('Trayful: save changes');
   });
+  it('commits a project made from the table menu, and names it', async () => {
+    // At the top of the repository, the projects are its sub-folders.
+    await post('/api/repository/connect', { url: remote.url, path: '' });
+    const made = await post('/api/projects', { name: 'Moon Market' });
+    expect(await made.json()).toEqual({ id: 'moon-market', name: 'Moon Market' });
+    await call('sync_repository');
+    expect(lastCommit()).toMatch(/^Trayful: new project \(.+\)$/);
+    sh(remote.laptop, 'pull', '--quiet', 'origin', 'main');
+    expect(sh(remote.laptop, 'ls-files', 'moon-market/trayful.yaml')).toContain('trayful.yaml');
+  });
+
+  it('says how to have several projects when it works on just one', async () => {
+    await post('/api/repository/connect', { url: remote.url, path: 'prototype' });
+    const refused = await post('/api/projects', { name: 'Moon Market' });
+    expect(refused.status).toBe(400);
+    expect(((await refused.json()) as { error: string }).error).toMatch(
+      /one project in "prototype" of the repository/,
+    );
+  });
 });
 
 describe('the push webhook', () => {

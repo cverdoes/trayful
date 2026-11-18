@@ -4,6 +4,10 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 
 ## Unreleased
 
+### Table menu
+
+- **New project…** in the table menu starts a new game from the starter template, when Trayful runs on a folder of projects. On a git repository, it is committed and pushed like any other change.
+
 ### Host your own
 
 - Owner mode, for a Trayful on a server of your own: `trayful play --owner` takes an owner secret from `TRAYFUL_OWNER_SECRET`. Whoever signs in with it is the host from anywhere, and agents such as claude.ai connectors reach MCP through OAuth, or with the secret as a bearer token. Without `--owner`, nothing changes.

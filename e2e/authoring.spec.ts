@@ -138,6 +138,12 @@ test('the table menu switches projects and makes new tables', async ({ page }) =
 
   await menu.selectOption('harvest-moon/table-1');
   await page.waitForURL(/project=harvest-moon/);
+  await page.waitForFunction(() => window.__trayful?.store.getState().status === 'online');
+
+  await menu.selectOption({ label: 'New project…' });
+  await answer(page, 'Moon Market', 'Create');
+  await page.waitForURL(/project=moon-market/);
+  await expect(menu.locator('optgroup[label="Moon Market"] option')).not.toHaveCount(0);
 });
 
 test('print and play lays every component out at real size', async ({ page }) => {
