@@ -15,7 +15,7 @@ export interface BaseFolder {
 }
 
 /** Whether `dir` is a project folder: one with a `trayful.yaml`. */
-export function isProjectFolder(dir: string): boolean {
+function isProjectFolder(dir: string): boolean {
   return existsSync(path.join(dir, MANIFEST_FILE));
 }
 

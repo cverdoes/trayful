@@ -25,7 +25,9 @@ trayful play --data ~/trayful-data --repo https://github.com/me/my-game --branch
 
 - `--repo` is the repository's `https://` address, or an SSH address such as `git@github.com:me/my-game.git`.
 - `--branch` is the branch to work on, `main` if you leave it out. A branch that does not exist yet is made from the repository's default branch.
-- `--path` is the folder with the project, or with a folder of projects. Trayful checks out only that folder and the files at the top of the repository. A folder with no project in it gets the starter project, committed and pushed.
+- `--path` is the folder your projects are in: Trayful serves each of its sub-folders that has a `trayful.yaml`, as it does with a folder on your computer. Leave it out for the top of the repository. A project's own folder, such as `prototype`, works too: it stands for the folder it is in, and opens that project first. A project right at the top of the repository needs a folder of its own first.
+- Trayful checks out only the project folders and the files at the top of the repository, so the rest of a game repository, such as its art and code, stays out of the clone. Project folders pushed later, and those made with **New project…**, are checked out as they come.
+- A folder with no project in it gets the starter project in a folder of its own, named after the repository (`my-game/` for `me/my-game`), committed and pushed.
 
 On the command line a new branch or starter project is made as asked. The page and the `connect_repository` tool first say what is missing, and make it only once you confirm (the tool with `create: true`), so a typo in the branch or folder does not quietly start something new.
 

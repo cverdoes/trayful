@@ -8,8 +8,10 @@ export interface RepositorySettings {
   /** `https://…` or an SSH address such as `git@github.com:me/game.git`. */
   url: string;
   branch: string;
-  /** The folder in the repository with the project, or a folder of projects; `''` for the top. */
+  /** The folder in the repository whose sub-folders are the projects; `''` for the top. */
   path: string;
+  /** The project to open first, when the folder given was that project's own. */
+  project?: string;
 }
 
 const HTTPS = /^https:\/\/[^\s/@:]+(?::\d+)?\/[^\s]+$/;

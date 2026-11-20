@@ -1,6 +1,5 @@
 // Ties a repository to the workspace it feeds: connecting attaches the projects, syncing reloads them.
 import { FilePlayerStore } from '../play/players.js';
-import { isProjectFolder } from '../projects/base.js';
 import { Workspace, type OpenOptions } from '../projects/workspace.js';
 import { AutoSync, DEFAULT_SYNC_TIMES, type SyncTimes } from './autosync.js';
 import { Journal } from './journal.js';
@@ -45,9 +44,13 @@ export class GitLink {
   ): Promise<GitLink> {
     // Players stay with the server, never in the clone.
     const playerStore = FilePlayerStore.in(repository.dataDir);
-    const opened = { ...options, playerStore, noNewProjects: () => noNewProjects(repository) };
+    const opened = {
+      ...options,
+      playerStore,
+      beforeNewProject: (id: string) => repository.includeProject(id),
+    };
     const workspace = repository.settings
-      ? await Workspace.open(repository.projectRoot, opened)
+      ? await Workspace.open(repository.projectRoot, firstProject(repository, opened))
       : await Workspace.empty(opened);
     return new GitLink(repository, workspace, opened, times);
   }
@@ -55,7 +58,10 @@ export class GitLink {
   /** Connects the repository and opens its projects. */
   async connect(input: ConnectInput): Promise<RepositoryStatus> {
     await this.repository.connect(input);
-    await this.workspace.attach(this.repository.projectRoot, this.openOptions);
+    await this.workspace.attach(
+      this.repository.projectRoot,
+      firstProject(this.repository, this.openOptions),
+    );
     this.autoSync?.start();
     return this.repository.status();
   }
@@ -69,7 +75,10 @@ export class GitLink {
     const result = await this.syncNow(message, true);
     if (result.pushed) this.autoSync?.pushed();
     if (!this.workspace.ready) {
-      await this.workspace.attach(this.repository.projectRoot, this.openOptions);
+      await this.workspace.attach(
+        this.repository.projectRoot,
+        firstProject(this.repository, this.openOptions),
+      );
     }
     return result;
   }
@@ -99,12 +108,7 @@ export class GitLink {
   }
 }
 
-/**
- * Why a new project cannot be made, when the repository's folder is itself a project:
- * Trayful checks out and commits only that folder, so a project beside it would be lost.
- */
-function noNewProjects(repository: Repository): string | undefined {
-  const folder = repository.settings?.path;
-  if (folder === undefined || !isProjectFolder(repository.projectRoot)) return undefined;
-  return `Trayful works on the one project in ${folder ? `"${folder}"` : 'the top folder'} of the repository. To have several, start it with a new data folder connected to the folder that holds them.`;
+/** Opens the project asked for, or else the one the repository's folder named, if any. */
+function firstProject(repository: Repository, options: OpenOptions): OpenOptions {
+  return { ...options, project: options.project ?? repository.settings?.project };
 }
