@@ -40,7 +40,7 @@ describe('MCP prompt tools', () => {
       .map((o) => o.id);
 
   beforeEach(async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-prompts-'));
+    const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-prompts-')), 'game');
     await cp(examplePath('harvest-moon'), dir, {
       recursive: true,
       filter: (src) => path.basename(src) !== 'tables',

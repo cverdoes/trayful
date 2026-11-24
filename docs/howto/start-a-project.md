@@ -62,7 +62,7 @@ pnpm trayful validate ../my-game
 
 ## Keep several games together
 
-Put several project folders in one folder and play that folder:
+Put several project folders in one folder and play that folder, or any project in it:
 
 ```sh
 pnpm trayful new games/space-race

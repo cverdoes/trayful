@@ -15,7 +15,7 @@ let server: RunningServer;
 let host: string;
 
 beforeEach(async () => {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-engines-'));
+  const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-engines-')), 'game');
   await cp(examplePath('harvest-moon'), dir, {
     recursive: true,
     filter: (src) => path.basename(src) !== 'tables',

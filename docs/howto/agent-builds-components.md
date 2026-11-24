@@ -37,7 +37,7 @@ Every change is written to your project files, so you can read, edit or commit i
 - "Rename the dice image to die-faces, and add a sea blue colour." (`rename_image` changes every face that shows the image; `set_color` names a colour.)
 - "Remove the old trade cards." (The agent uses `set_inventory` with an empty list, then `remove_type`.)
 - "Make a new table called `playtest-2` with the default setup and deal everyone three cards." (`open_table`, then the play tools.)
-- "Start a new project called Moon Market." (`create_project`, when Trayful was started on a folder of projects.)
+- "Start a new project called Moon Market." (`create_project`, which puts it beside the other projects.)
 - "Update my old project to the new file format." (`migrate_project`, the same as [`trayful migrate`](../reference/versioning.md#moving-a-project-to-trayful2). The authoring tools refuse a project in `trayful/1` until it is migrated.)
 
 ## Tools for projects and tables

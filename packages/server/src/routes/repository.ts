@@ -20,6 +20,7 @@ const EDITING_ROUTES: [prefix: string, name: string][] = [
   ['/api/tray', 'Tray'],
   ['/api/assets', 'assets'],
   ['/api/migrate', 'migrate'],
+  ['/api/projects', 'new project'],
 ];
 
 /**

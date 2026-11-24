@@ -26,7 +26,7 @@ describe('MCP surface tools', () => {
   const piece = (id: string) => state().objects[id] as Piece;
 
   beforeEach(async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-surfaces-'));
+    const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-surfaces-')), 'game');
     const example = examplePath('harvest-moon');
     await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
     workspace = await Workspace.open(dir, { watch: false });

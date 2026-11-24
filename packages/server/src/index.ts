@@ -4,5 +4,12 @@ export * from './play/session.js';
 export * from './mcp/server.js';
 export * from './projects/workspace.js';
 export * from './projects/migrate.js';
+export {
+  markBase,
+  projectDirs,
+  resolveBase,
+  otherFilesIn,
+  type BaseFolder,
+} from './projects/base.js';
 export * from './shipped/skill.js';
 export { RESOURCE_SOURCES } from './shipped/resources.js';

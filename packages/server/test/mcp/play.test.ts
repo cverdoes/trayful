@@ -30,7 +30,7 @@ describe('MCP play tools', () => {
   const piece = (id: string) => session.engine.state.objects[id] as Piece;
 
   beforeEach(async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-play-'));
+    const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-play-')), 'game');
     await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
     workspace = await Workspace.open(dir, { seed: 3, setup: false, watch: false });
     session = workspace.active;

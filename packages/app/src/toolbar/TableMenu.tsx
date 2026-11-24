@@ -15,8 +15,9 @@ interface ProjectSummary {
 const NEW = '\u0000new';
 const DUPLICATE = '\u0000duplicate';
 const DELETE = '\u0000delete';
+const NEW_PROJECT = '\u0000new-project';
 
-/** Switches between the tables (and projects) of the workspace, and makes new ones. */
+/** Switches between the tables (and projects) of the workspace, and makes new ones of both. */
 export function TableMenu() {
   const view = useStore((s) => s.view);
   const host = useStore((s) => s.me?.host);
@@ -64,6 +65,11 @@ export function TableMenu() {
           <option value={DELETE}>Delete this table…</option>
         </optgroup>
       )}
+      {host && (
+        <optgroup label="Projects">
+          <option value={NEW_PROJECT}>New project…</option>
+        </optgroup>
+      )}
     </select>
   );
 }
@@ -72,6 +78,7 @@ export function TableMenu() {
 async function choose(value: string, view: ProjectView, tables: string[]): Promise<void> {
   if (value === NEW || value === DUPLICATE) await createTable(view, tables, value === DUPLICATE);
   else if (value === DELETE) await deleteTable(view, tables);
+  else if (value === NEW_PROJECT) await createProject();
   else {
     const [project, table] = value.split('/');
     go({ project: project!, table });
@@ -92,6 +99,19 @@ async function createTable(view: ProjectView, tables: string[], copy: boolean): 
     ...(copy ? { from: view.table } : {}),
   });
   go({ project: view.project, table: name });
+}
+
+/** A new project from the starter, opened at once on its first table. */
+async function createProject(): Promise<void> {
+  const name = await ask({
+    title: 'New project',
+    text: 'It starts from the starter: a card type, a deck and a token, ready to change.',
+    label: 'Name of the game',
+    action: 'Create',
+  });
+  if (!name) return;
+  const { id } = (await api('POST', '/api/projects', { name })) as { id: string };
+  go({ project: id });
 }
 
 async function deleteTable(view: ProjectView, tables: string[]): Promise<void> {

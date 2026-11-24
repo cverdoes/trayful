@@ -4,7 +4,7 @@ To keep the server apart from the rest of your computer, run it in a container. 
 
 ## The ready-made image
 
-Each release is published as an image, `ghcr.io/cverdoes/trayful`, for Intel and ARM computers alike (including Apple Silicon). It has Trayful and git, and runs as the user `node`, not as root. To play your own project, or folder of projects:
+Each release is published as an image, `ghcr.io/cverdoes/trayful`, for Intel and ARM computers alike (including Apple Silicon). It has Trayful and git, and runs as the user `node`, not as root. To play the folder that holds your projects:
 
 ```sh
 docker run --rm -it --init -p 127.0.0.1:4317:4317 \
@@ -12,7 +12,7 @@ docker run --rm -it --init -p 127.0.0.1:4317:4317 \
   ghcr.io/cverdoes/trayful
 ```
 
-Then open http://localhost:4317. `-v` gives the container your folder as `/projects`, the only one it can see, and `--user` saves tables as you, so the files stay yours. Leave both out to try the examples that come with the image; tables you save there are lost when the container stops. Stop it with Ctrl+C.
+Then open http://localhost:4317. `-v` gives the container your folder as `/projects`, the only one it can see; mount the folder your projects are in, not one project's own folder. `--user` saves tables as you, so the files stay yours. Leave both out to try the examples that come with the image; tables you save there are lost when the container stops. Stop it with Ctrl+C.
 
 | Tag                    | What it is                                                 |
 | ---------------------- | ---------------------------------------------------------- |
@@ -21,7 +21,7 @@ Then open http://localhost:4317. `-v` gives the container your folder as `/proje
 | `0.4.0`                | Exactly that version                                       |
 | `0.4.0-rc.1` and so on | A version to try before its release, as `npx trayful@next` |
 
-Everything after the image name is a `trayful` command in place of the usual `play /projects --container`. With the same `-v` and `--user`, ending the command with `new /projects/my-game` starts a project in your folder, and `play /projects/my-game --container` plays just that one. Keep `--container` on `play`: it tells Trayful where its host's requests come from. `docker pull ghcr.io/cverdoes/trayful` gets the newest release.
+Everything after the image name is a `trayful` command in place of the usual `play /projects --container`. With the same `-v` and `--user`, ending the command with `new /projects/my-game` starts a project in your folder, and `play /projects/my-game --container` opens on that one. Keep `--container` on `play`: it tells Trayful where its host's requests come from. `docker pull ghcr.io/cverdoes/trayful` gets the newest release.
 
 For a stricter container, add `--read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges`, as [`compose.yaml`](../../compose.yaml) does. To run it on a server of your own, with only the compose files and no clone, see [Host your own Trayful](../howto/host-your-own.md) and [Work on a git repository](../howto/git-backed.md).
 
@@ -31,18 +31,18 @@ To build the image yourself, from the code in a clone of this repository:
 
 ```sh
 scripts/docker.sh            # serves examples/
-scripts/docker.sh ~/games    # serves your own project, or folder of projects
+scripts/docker.sh ~/games    # serves your own folder of projects
 ```
 
 Then open http://localhost:4317. The script builds the image, starts the container on a read-only system, and saves tables as you, so the files stay yours. It runs `docker compose up --build` with the settings below, which you can also set yourself:
 
 | Setting            | What it does                                                        |
 | ------------------ | ------------------------------------------------------------------- |
-| `TRAYFUL_PROJECTS` | The folder to serve (default `./examples`); the only one it can see |
+| `TRAYFUL_PROJECTS` | The folder of projects (default `./examples`); the only one it sees |
 | `TRAYFUL_USER`     | The `uid:gid` to save files as (default `1000:1000`)                |
 | `TRAYFUL_PORT`     | The port on your computer (default 4317); open the table there      |
 
-Stop it with Ctrl+C, or `docker compose down`.
+Given one project's folder, the script serves the folder it is in. Stop it with Ctrl+C, or `docker compose down`.
 
 ## You are the host
 

@@ -18,7 +18,7 @@ const example = examplePath('harvest-moon');
 const DECK = 'deck:actions';
 
 async function scratchProject(): Promise<string> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-'));
+  const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-mcp-')), 'game');
   await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
   return dir;
 }
@@ -245,7 +245,7 @@ describe('MCP tools', () => {
     expect((await call(client, 'delete_table', { table: 'empty' })).text).toMatch(/open another/);
     expect((await call(client, 'delete_table', { table: 'copy' })).isError).toBeFalsy();
     expect((await call(client, 'create_project', { name: 'X' })).text).toMatch(
-      /folder of projects/,
+      /^Created project "x"/,
     );
     expect((await call(client, 'validate_project')).text).toMatch(/loads cleanly/);
   });

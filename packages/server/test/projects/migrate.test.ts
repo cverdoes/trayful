@@ -17,7 +17,7 @@ const current = examplePath('harvest-moon');
 
 /** A copy of a project folder to change. */
 async function copy(source: string): Promise<string> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-migrate-'));
+  const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-migrate-')), 'game');
   await cp(source, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
   return dir;
 }

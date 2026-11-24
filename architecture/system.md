@@ -29,7 +29,7 @@ summary: One Node process, a folder of files, and the browsers, agents and engin
 ## The parts
 
 - **The project folder is the database.** [[formats:loadProject]] reads it into a [[formats:ResolvedProject]]. Tables are saved as JSON next to it, in `tables/`, a quarter second after the last change ([[server/play/tableFiles.ts]]). There is no other storage.
-- **One process serves one workspace.** [[server:startServer]] opens a [[server:Workspace]] (a project, or a folder of projects), and serves everything on one port, 4317 by default. The workspace watches the project files, so a saved edit shows on open tables at once.
+- **One process serves one workspace.** [[server:startServer]] opens a [[server:Workspace]] on a folder of projects (given one project's folder, the folder it is in), and serves everything on one port, 4317 by default. The workspace watches the project files, so a saved edit shows on open tables at once.
 - **The server owns every table.** Each open table is a [[server:TableSession]] holding a [[core:TableEngine]]. Every change arrives as a [[core:Command]]; the session applies it, saves, and sends each connection its own [[core:TableView]].
 - **The browser app is static files.** [[app]] is built by Vite into `packages/app/dist` and served by the same process. It keeps no state of its own that matters: reload the page and the table comes back from the server.
 - **Agents speak MCP.** [[trayful:mcp]] runs an MCP server on stdin and stdout for a client such as Claude Code. If `trayful play` already has the project open, it relays to that server, so people and the agent share one table; otherwise it opens the table itself. [[route:POST /mcp]] offers the same tools over HTTP. See [[concept:an-agent-plays]].

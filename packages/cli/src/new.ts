@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { createProjectFolder } from '@trayful/server';
+import { createProjectFolder, markBase } from '@trayful/server';
 import { UsageError } from './errors.js';
 
 /** `trayful new`: copies the starter project into a new folder. */
@@ -10,7 +10,11 @@ export async function newProject(args: string[], out: (s: string) => void): Prom
   if (!dir) throw new UsageError('Give a folder for the new project.');
   if (nameAt >= 0 && !name) throw new UsageError('--name needs a name.');
   const title = name ?? titleFor(dir);
-  await createProjectFolder(path.resolve(dir), title);
+  const folder = path.resolve(dir);
+  await createProjectFolder(folder, title);
+  // Where someone starts a project is where they keep projects: no need to ask on play.
+  const parent = path.dirname(folder);
+  if (path.dirname(parent) !== parent) await markBase(parent);
   out(`Created "${title}" in ${dir}. Play it with: trayful play ${dir}`);
   return 0;
 }

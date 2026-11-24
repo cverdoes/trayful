@@ -12,7 +12,7 @@ Everyone at a Trayful table is a **player**: the host who runs `trayful play`, g
 
 A player id is made from the name: lowercase letters, digits and dashes, such as `bob` or `asa-oberg` (a second "Bob" becomes `bob-2`). A browser remembers its player in a cookie, so a guest who comes back with the same browser is the same player.
 
-Players, the tables each guest was invited to, and the invites are kept in `.trayful/players.json` in the folder Trayful serves. It holds no passwords, only fingerprints of the browser cookies; the starter's `.gitignore` leaves the folder out of version control. Deleting the file stops every invite link working and forgets every guest.
+Players, the tables each guest was invited to, and the invites are kept in `.trayful/players.json` in the folder of projects Trayful serves (with `--data`, in the data folder). It holds no passwords, only fingerprints of the browser cookies; the `.trayful/` folder leaves itself out of version control. Trayful 0.3 and earlier kept the file in the project when started on one project's folder; Trayful moves it the first time it starts there. Deleting the file stops every invite link working and forgets every guest.
 
 ## Hands
 

@@ -13,7 +13,7 @@ let workspace: Workspace;
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-rename-'));
+  dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-rename-')), 'game');
   await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
   workspace = await Workspace.open(dir, { seed: 1, watch: false });
 });

@@ -24,7 +24,7 @@ describe('the agent skill', () => {
   let pages: string;
 
   beforeAll(async () => {
-    const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-skill-'));
+    const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-skill-')), 'game');
     await cp(example, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
     workspace = await Workspace.open(dir, { setup: false, watch: false });
     const [a, b] = InMemoryTransport.createLinkedPair();

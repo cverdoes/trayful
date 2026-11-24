@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { GitError } from '../../src/git/git.js';
 import { FreshError, Repository } from '../../src/git/repository.js';
+import { createProjectFolder } from '../../src/projects/workspace.js';
 import { makeRemote, pushFromLaptop, sh, type Remote } from './remote.js';
 
 async function connected(
@@ -18,7 +19,7 @@ async function connected(
 }
 
 function manifest(repository: Repository): string {
-  return path.join(repository.projectRoot, 'trayful.yaml');
+  return path.join(repository.projectRoot, 'prototype', 'trayful.yaml');
 }
 
 describe('Repository', () => {
@@ -32,7 +33,9 @@ describe('Repository', () => {
     expect(status).toMatchObject({
       connected: true,
       branch: 'main',
-      path: 'prototype',
+      // The project's own folder is short for the folder it is in.
+      path: '',
+      project: 'prototype',
       unpushed: 0,
     });
     expect(status.changed).toEqual([]);
@@ -43,7 +46,12 @@ describe('Repository', () => {
     const repository = await connected(remote);
     const dataDir = path.dirname(repository.cloneDir);
     const again = await Repository.open({ dataDir, allowLocalUrls: true });
-    expect(again.settings).toEqual({ url: remote.url, branch: 'main', path: 'prototype' });
+    expect(again.settings).toEqual({
+      url: remote.url,
+      branch: 'main',
+      path: '',
+      project: 'prototype',
+    });
     await expect(again.connect({ url: remote.url })).rejects.toThrow(/already connected/);
   });
 
@@ -61,15 +69,29 @@ describe('Repository', () => {
     expect(existsSync(manifest(repository))).toBe(true);
   });
 
+  it('asks for a folder of its own for a project at the top of the repository', async () => {
+    const remote = await makeRemote({ empty: true });
+    await createProjectFolder(remote.laptop, 'At the top');
+    sh(remote.laptop, 'add', '--all');
+    sh(remote.laptop, 'commit', '--quiet', '-m', 'A project at the top');
+    sh(remote.laptop, 'push', '--quiet', 'origin', 'HEAD:refs/heads/main');
+    await expect(connected(remote, { path: '' })).rejects.toThrow(
+      /top of this repository is a Trayful project itself/,
+    );
+  });
+
   it('starts a project in an empty repository and pushes it to a new branch', async () => {
     const remote = await makeRemote({ empty: true });
     const repository = await connected(remote, {
       branch: 'prototype',
-      path: 'my-game',
+      path: 'games',
       create: true,
     });
-    expect(existsSync(manifest(repository))).toBe(true);
-    expect(await readFile(manifest(repository), 'utf8')).toContain('name: "My game"');
+    // The starter gets a folder of its own in the folder of projects, named after the repository.
+    const starter = path.join(repository.projectRoot, 'game', 'trayful.yaml');
+    expect(repository.projectRoot).toBe(path.join(repository.cloneDir, 'games'));
+    expect(await readFile(starter, 'utf8')).toContain('name: "Game"');
+    expect(repository.settings).toMatchObject({ path: 'games', project: 'game' });
     expect(sh(remote.root, '--git-dir', 'game.git', 'log', '--format=%s', 'prototype')).toContain(
       'Trayful: start a prototype',
     );
@@ -235,8 +257,9 @@ describe('Repository', () => {
     await pushFromLaptop(remote, 'prototype/.gitignore', (t) => t.replace('tables/\n', ''));
     const repository = await connected(remote);
     expect(await repository.snapshotTables()).toBe(false);
-    await mkdir(path.join(repository.projectRoot, 'tables'), { recursive: true });
-    await writeFile(path.join(repository.projectRoot, 'tables', 'table-1.json'), '{}\n');
+    const tables = path.join(repository.projectRoot, 'prototype', 'tables');
+    await mkdir(tables, { recursive: true });
+    await writeFile(path.join(tables, 'table-1.json'), '{}\n');
     expect(await repository.snapshotTables('End of playtest 1')).toBe(true);
     sh(remote.laptop, 'pull', '--quiet', 'origin', 'main');
     expect(sh(remote.laptop, 'log', '-1', '--format=%s')).toContain('End of playtest 1');
@@ -246,8 +269,9 @@ describe('Repository', () => {
   it('leaves tables out that the repository ignores, as the starter does', async () => {
     const remote = await makeRemote();
     const repository = await connected(remote);
-    await mkdir(path.join(repository.projectRoot, 'tables'), { recursive: true });
-    await writeFile(path.join(repository.projectRoot, 'tables', 'table-1.json'), '{}\n');
+    const tables = path.join(repository.projectRoot, 'prototype', 'tables');
+    await mkdir(tables, { recursive: true });
+    await writeFile(path.join(tables, 'table-1.json'), '{}\n');
     expect(await repository.snapshotTables()).toBe(false);
   });
 });

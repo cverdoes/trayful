@@ -23,9 +23,7 @@ function registerProjectViews({
       ok: true,
       project: workspace.active.project.manifest.name,
       table: workspace.active.tableName,
-      ...(isLocalRequest(request)
-        ? { projectDir: workspace.active.project.dir, root: workspace.root }
-        : {}),
+      ...(isLocalRequest(request) ? { root: workspace.root } : {}),
     };
   });
   app.get('/api/projects', async (request) => {
@@ -57,8 +55,16 @@ function registerProjectViews({
   });
 }
 
-/** New, duplicated and deleted tables, for the table menu in the browser. */
+/** New projects, and new, duplicated and deleted tables, for the table menu in the browser. */
 function registerTableMenu({ app, workspace, hostOnly }: RouteContext): void {
+  app.post<{ Body: { name?: string } | undefined }>('/api/projects', async (request, reply) => {
+    if (hostOnly(request, reply)) return;
+    const name = request.body?.name?.trim();
+    if (!name) return reply.code(400).send({ error: 'Give the new project a name.' });
+    const entry = await workspace.createProject(name);
+    return { id: entry.id, name };
+  });
+
   app.post<{
     Body: { project?: string; name?: string; from?: string; setup?: string | false } | undefined;
   }>('/api/tables', async (request, reply) => {

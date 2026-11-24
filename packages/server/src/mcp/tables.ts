@@ -120,7 +120,7 @@ function registerProjectTools(server: McpServer, ctx: ToolContext): void {
     {
       title: 'Create a project',
       description:
-        'Start a new prototype from the starter template (a card type, a deck and a token), in a new folder of the workspace. Only when Trayful was started on a folder of projects.',
+        'Start a new prototype from the starter template (a card type, a deck and a token), in a new folder beside the other projects.',
       inputSchema: { name: z.string().min(1).describe('Name of the game, such as "Moon Market".') },
     },
     async ({ name }) => {

@@ -10,6 +10,7 @@ describe('parsePlayArgs', () => {
       tunnel: false,
       container: false,
       owner: false,
+      yes: false,
       pace: true,
     });
   });
@@ -32,6 +33,7 @@ describe('parsePlayArgs', () => {
         '--share',
         '--tunnel',
         '--no-pace',
+        '--yes',
         '--owner',
         '--public-url',
         'https://trayful.example.com',
@@ -48,13 +50,18 @@ describe('parsePlayArgs', () => {
       tunnel: true,
       container: false,
       owner: true,
+      yes: true,
       publicUrl: 'https://trayful.example.com',
       pace: false,
     });
   });
 
-  it('runs in a container without opening a browser or sharing on the network', () => {
-    expect(parsePlayArgs(['--container'])).toMatchObject({ container: true, open: false });
+  it('runs in a container without opening a browser, asking, or sharing on the network', () => {
+    expect(parsePlayArgs(['--container'])).toMatchObject({
+      container: true,
+      open: false,
+      yes: true,
+    });
     expect(() => parsePlayArgs(['--container', '--share'])).toThrow(
       '--share does not work in a container',
     );
@@ -76,7 +83,7 @@ describe('parsePlayArgs', () => {
     expect(() => parsePlayArgs(['--port', '1.5'])).toThrow('--port needs a whole number.');
     expect(() => parsePlayArgs(['--setup'])).toThrow('--setup needs a setup name, or "none".');
     expect(() => parsePlayArgs(['--frob'])).toThrow('Unknown option "--frob".');
-    expect(() => parsePlayArgs(['a', 'b'])).toThrow('Give one project folder.');
+    expect(() => parsePlayArgs(['a', 'b'])).toThrow('Give one folder');
   });
 
   it('reads a git-backed start', () => {

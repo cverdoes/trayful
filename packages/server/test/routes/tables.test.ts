@@ -12,7 +12,7 @@ let server: RunningServer;
 
 /** Serves a copy of a project folder. */
 async function serve(source: string): Promise<RunningServer> {
-  const dir = await mkdtemp(path.join(os.tmpdir(), 'trayful-routes-'));
+  const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-routes-')), 'game');
   await cp(source, dir, { recursive: true, filter: (src) => path.basename(src) !== 'tables' });
   return startServer({ projectDir: dir, port: 0, appDir: path.join(dir, 'no-app') });
 }
@@ -43,6 +43,16 @@ describe('the table menu', () => {
     const deleted = await fetch(`${server.url}/api/tables?name=copy`, { method: 'DELETE' });
     expect(await deleted.json()).toEqual({ ok: true });
     expect(await server.workspace.tables(server.session.projectId)).toEqual(['empty', 'table-1']);
+  });
+
+  it('makes new projects beside the one it was started on', async () => {
+    expect((await post('/api/projects', { name: ' ' })).status).toBe(400);
+    const made = await post('/api/projects', { name: 'Moon Market' });
+    expect(await made.json()).toEqual({ id: 'moon-market', name: 'Moon Market' });
+    expect(server.workspace.projects().map((p) => p.id)).toEqual(['game', 'moon-market']);
+    expect(server.workspace.entry('moon-market').dir).toBe(
+      path.join(server.workspace.root, 'moon-market'),
+    );
   });
 
   it('lists every component for print-and-play', async () => {

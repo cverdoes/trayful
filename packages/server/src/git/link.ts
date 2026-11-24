@@ -44,9 +44,13 @@ export class GitLink {
   ): Promise<GitLink> {
     // Players stay with the server, never in the clone.
     const playerStore = FilePlayerStore.in(repository.dataDir);
-    const opened = { ...options, playerStore };
+    const opened = {
+      ...options,
+      playerStore,
+      beforeNewProject: (id: string) => repository.includeProject(id),
+    };
     const workspace = repository.settings
-      ? await Workspace.open(repository.projectRoot, opened)
+      ? await Workspace.open(repository.projectRoot, firstProject(repository, opened))
       : await Workspace.empty(opened);
     return new GitLink(repository, workspace, opened, times);
   }
@@ -54,7 +58,10 @@ export class GitLink {
   /** Connects the repository and opens its projects. */
   async connect(input: ConnectInput): Promise<RepositoryStatus> {
     await this.repository.connect(input);
-    await this.workspace.attach(this.repository.projectRoot, this.openOptions);
+    await this.workspace.attach(
+      this.repository.projectRoot,
+      firstProject(this.repository, this.openOptions),
+    );
     this.autoSync?.start();
     return this.repository.status();
   }
@@ -68,7 +75,10 @@ export class GitLink {
     const result = await this.syncNow(message, true);
     if (result.pushed) this.autoSync?.pushed();
     if (!this.workspace.ready) {
-      await this.workspace.attach(this.repository.projectRoot, this.openOptions);
+      await this.workspace.attach(
+        this.repository.projectRoot,
+        firstProject(this.repository, this.openOptions),
+      );
     }
     return result;
   }
@@ -96,4 +106,9 @@ export class GitLink {
   private async save(): Promise<void> {
     if (await this.repository.save(this.journal.message())) this.journal.clear();
   }
+}
+
+/** Opens the project asked for, or else the one the repository's folder named, if any. */
+function firstProject(repository: Repository, options: OpenOptions): OpenOptions {
+  return { ...options, project: options.project ?? repository.settings?.project };
 }
