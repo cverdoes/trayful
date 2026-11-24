@@ -1,25 +1,25 @@
 # Runs the Trayful server in a container, apart from the rest of your computer.
-# See "Run it in Docker" in the README; compose.yaml has the settings to run it with.
+# See docs/guide/docker.md; compose.yaml has the settings to run it with. The Release
+# workflow publishes it for amd64 and arm64 as ghcr.io/cverdoes/trayful.
 
-FROM node:22-slim AS build
+# Builds the same bundle as the npm package. It is plain JavaScript, the same on every
+# platform, so it is built once on the machine running the build.
+FROM --platform=$BUILDPLATFORM node:22-slim AS build
 WORKDIR /trayful
 RUN corepack enable
 COPY . .
-RUN pnpm install --frozen-lockfile && pnpm build
+RUN pnpm install --frozen-lockfile && pnpm package
 
 FROM node:22-slim
-WORKDIR /trayful
 # git for a git-backed Trayful (--data); certificates for its HTTPS remotes.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends git ca-certificates \
   && rm -rf /var/lib/apt/lists/*
-RUN corepack enable
-# Only what the server needs: the packages, and their runtime dependencies.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages packages
-COPY --from=build /trayful/packages/app/dist packages/app/dist
-RUN pnpm install --frozen-lockfile --prod && rm -rf /root/.cache /root/.local/share/pnpm
+# The bundle and what it ships with: the browser app, the starter project, docs and skill.
+COPY --from=build /trayful/packages/cli/dist /trayful
+# The examples, so a container started without a folder of its own has something to play.
+COPY --chown=node:node examples /projects
 USER node
 EXPOSE 4317
-ENTRYPOINT ["node", "packages/cli/bin/trayful.js"]
+ENTRYPOINT ["node", "/trayful/trayful.js"]
 CMD ["play", "/projects", "--container"]

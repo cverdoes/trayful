@@ -1,11 +1,15 @@
 # Owner mode: Trayful on a server of your own, behind HTTPS, used from anywhere.
 # See docs/howto/host-your-own.md. Start it with
 #
-#   docker compose -f compose.yaml -f compose.owner.yaml up -d --build
+#   docker compose -f compose.yaml -f compose.owner.yaml up -d
 #
 # with TRAYFUL_DOMAIN, TRAYFUL_OWNER_SECRET and TRAYFUL_PROJECTS set, such as in a .env file.
 services:
   trayful:
+    # The published image, so the server needs only the compose files, not a clone.
+    # Pin a version such as ghcr.io/cverdoes/trayful:0.4 in TRAYFUL_IMAGE to update on
+    # your own terms; set it to `trayful` to run an image built here with --build.
+    image: ${TRAYFUL_IMAGE:-ghcr.io/cverdoes/trayful:latest}
     command:
       - play
       - /projects
