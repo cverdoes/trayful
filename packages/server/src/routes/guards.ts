@@ -16,14 +16,19 @@ const OPEN = new Set(['/api/me', '/api/join', '/api/health', '/api/knock', WEBHO
  * that proves itself with a signature, so a request from another website gains
  * nothing a request from anywhere else would not.
  */
-const TOKEN_ONLY = new Set(['/mcp', '/oauth/register', '/oauth/token', WEBHOOK_ROUTE]);
+const TOKEN_ONLY = ['/mcp', WEBHOOK_ROUTE];
 
 /**
  * Error replies, and who may reach which route, checked before any route runs. A table,
  * its images and its socket are for the host and the guests invited to it. The page
- * itself is not secret; without an invite it shows how to get one.
+ * itself is not secret; without an invite it shows how to get one. Extensions name
+ * more routes that are called with a token in `tokenRoutes`.
  */
-export function registerGuards({ app, players, shareBases, target }: RouteContext): void {
+export function registerGuards(
+  { app, players, shareBases, target }: RouteContext,
+  tokenRoutes: readonly string[] = [],
+): void {
+  const tokenOnly = new Set([...TOKEN_ONLY, ...tokenRoutes]);
   app.setErrorHandler((err: Error, _request, reply) => {
     // A new branch or project to confirm says which, so the page can ask about each.
     const fresh = err instanceof FreshError ? { fresh: err.fresh } : {};
@@ -35,7 +40,7 @@ export function registerGuards({ app, players, shareBases, target }: RouteContex
     // Changes must come from a Trayful page, not from another website open in the browser.
     if (
       request.method !== 'GET' &&
-      !TOKEN_ONLY.has(route) &&
+      !tokenOnly.has(route) &&
       !isTrustedOrigin(request, shareBases)
     ) {
       return reply.code(403).send({ error: 'Origin not allowed' });

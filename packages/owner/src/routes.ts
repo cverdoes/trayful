@@ -1,4 +1,4 @@
-import type { FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   INVITE_COOKIE,
   PLAYER_COOKIE,
@@ -7,9 +7,8 @@ import {
   isHostRequest,
   parseCookies,
   type Access,
-} from '../play/access.js';
-import { Owner } from '../play/owner.js';
-import type { RouteContext } from './context.js';
+} from '@trayful/server';
+import { Owner } from './owner.js';
 import { OWNER_COOKIE, askForOwnerToken, registerOAuthRoutes } from './oauth.js';
 import { sendPage, signInPage } from './pages.js';
 
@@ -34,10 +33,9 @@ export function ownerAccess(owner: Owner, local: Access): Access {
 
 /**
  * Owner mode's routes: signing a browser in with the owner secret, and OAuth for the
- * owner's agents. Registered only when the server runs in owner mode.
+ * owner's agents.
  */
-export function registerOwnerRoutes(ctx: RouteContext, owner: Owner): void {
-  const { app } = ctx;
+export function registerOwnerRoutes(app: FastifyInstance, owner: Owner): void {
   // The sign-in and authorize pages post plain HTML forms.
   app.addContentTypeParser(
     'application/x-www-form-urlencoded',
@@ -70,7 +68,7 @@ export function registerOwnerRoutes(ctx: RouteContext, owner: Owner): void {
       .redirect(next, 303);
   });
 
-  registerOAuthRoutes(ctx, owner);
+  registerOAuthRoutes(app, owner);
 }
 
 function hasGuestCookie(request: FastifyRequest): boolean {

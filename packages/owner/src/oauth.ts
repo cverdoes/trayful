@@ -1,8 +1,7 @@
 // OAuth 2.1 for one person, so agents such as claude.ai's connectors can reach MCP in owner mode.
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import { cookie } from '../play/access.js';
-import type { OAuthClient, Owner } from '../play/owner.js';
-import type { RouteContext } from './context.js';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { cookie } from '@trayful/server';
+import type { OAuthClient, Owner } from './owner.js';
 import { allowPage, problemPage, sendPage } from './pages.js';
 
 type Form = Record<string, string | undefined>;
@@ -15,7 +14,7 @@ export const OWNER_COOKIE = 'trayful_owner';
  * RFC 8414), dynamic client registration (RFC 7591), and the authorization code flow
  * with PKCE. The owner allows each client once, on a page that asks for the secret.
  */
-export function registerOAuthRoutes({ app }: RouteContext, owner: Owner): void {
+export function registerOAuthRoutes(app: FastifyInstance, owner: Owner): void {
   const resourceMetadata = (request: FastifyRequest) => ({
     resource: `${publicBase(request)}/mcp`,
     authorization_servers: [publicBase(request)],

@@ -5,13 +5,13 @@ import {
   containerGateway,
   defaultAppDir,
   GitError,
-  OwnerError,
   Repository,
   startServer,
   type GitAuthor,
   type ContainerOptions,
   type RunningServer,
 } from '@trayful/server';
+import { OwnerError, ownerMode } from '@trayful/owner';
 import openBrowser from 'open';
 import { checkedBase, terminalConfirm, type Confirm } from './base.js';
 import { CliError } from './errors.js';
@@ -82,7 +82,7 @@ async function startTable(
       // Sharing on the network listens on every interface; a tunnel reaches us locally.
       host: options.share ? '0.0.0.0' : undefined,
       container: options.container ? inContainer() : undefined,
-      ownerSecret: options.owner ? ownerSecret() : undefined,
+      extensions: options.owner ? [ownerMode(ownerSecret())] : [],
       agentPace: options.pace,
     });
   } catch (e) {

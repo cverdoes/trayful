@@ -2,7 +2,6 @@ import os from 'node:os';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { isLocalOrigin, localAccess } from './play/access.js';
-import { Owner } from './play/owner.js';
 import { resourceDir } from './shipped/resources.js';
 import { routeContext, type TableQuery } from './routes/context.js';
 import { registerAssetRoutes } from './routes/assets.js';
@@ -12,7 +11,6 @@ import { registerEngineRoutes } from './routes/engines.js';
 import { registerFileRoutes } from './routes/files.js';
 import { registerGuards } from './routes/guards.js';
 import { registerMcp } from './routes/mcp.js';
-import { ownerAccess, registerOwnerRoutes } from './routes/owner.js';
 import { registerPlayerRoutes } from './routes/players.js';
 import { registerSocket } from './routes/socket.js';
 import { registerTableRoutes } from './routes/tables.js';
@@ -22,6 +20,7 @@ import { GitLink } from './git/link.js';
 import type { Repository } from './git/repository.js';
 import type { SyncTimes } from './git/autosync.js';
 import { registerRepositoryRoutes } from './routes/repository.js';
+import { accessWith, type Extension } from './extension.js';
 
 export const DEFAULT_PORT = 4317;
 
@@ -54,11 +53,10 @@ export interface ServerOptions {
   /** Running inside a container, such as with the repository's Docker setup. */
   container?: ContainerOptions;
   /**
-   * Owner mode, for a Trayful on a server somewhere: whoever signs in with this secret
-   * is the host, from anywhere, and their agents reach MCP with OAuth. At least 32
-   * characters. Leave it out to run as usual, where only this computer is the host.
+   * Additions to the server, such as owner mode for a Trayful on a server somewhere.
+   * Leave them out to run as usual, where only this computer is the host.
    */
-  ownerSecret?: string;
+  extensions?: readonly Extension[];
   /** Folder with the built browser app. Default: `packages/app/dist` in this repository. */
   appDir?: string;
   /** Seed for a newly created table. */
@@ -107,7 +105,6 @@ export interface RunningServer {
 }
 
 export { isLocalOrigin };
-export { Owner, OwnerError } from './play/owner.js';
 export { containerGateway } from './container.js';
 export {
   FreshError,
@@ -127,17 +124,20 @@ export function defaultAppDir(): string {
 
 /** Starts the local Trayful server for a project, or a folder of projects. */
 export async function startServer(options: ServerOptions): Promise<RunningServer> {
-  // Checked first, so a short secret stops the start before anything is opened.
-  const owner = options.ownerSecret === undefined ? undefined : new Owner(options.ownerSecret);
+  const extensions = options.extensions ?? [];
+  // Checked first, so a mistake stops the start before anything is opened.
+  const access = accessWith(extensions, localAccess(options.container?.hostAddresses));
   const { workspace, git } = await openWorkspace(options);
   const app = Fastify({ logger: options.logger ?? false });
-  const local = localAccess(options.container?.hostAddresses);
-  app.decorate('access', owner ? ownerAccess(owner, local) : local);
+  app.decorate('access', access);
   await app.register(fastifyWebsocket);
 
   const ctx = routeContext(app, workspace, git);
-  registerGuards(ctx);
-  if (owner) registerOwnerRoutes(ctx, owner);
+  registerGuards(
+    ctx,
+    extensions.flatMap((e) => e.tokenRoutes ?? []),
+  );
+  for (const extension of extensions) extension.register?.(app);
   if (git) registerRepositoryRoutes(ctx, git);
   registerPlayerRoutes(ctx);
   registerEngineRoutes(ctx);

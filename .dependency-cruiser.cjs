@@ -1,6 +1,6 @@
 /**
  * Architecture rules for the monorepo, checked by `pnpm lint:deps`.
- * Layers, lowest first: formats, core, then server and app, then cli.
+ * Layers, lowest first: formats, core, then server and app, then owner, then cli.
  * A package may import only from layers below it, and within a package the sub folders
  * named in `foldersPointDown` are ordered the same way.
  */
@@ -35,21 +35,32 @@ module.exports = {
       severity: 'error',
       comment: 'formats is the file format layer and depends on no other workspace package.',
       from: { path: pkg('formats') },
-      to: { path: '^packages/(core|server|app|cli)/' },
+      to: { path: '^packages/(core|server|app|owner|cli)/' },
     },
     {
       name: 'core-depends-only-on-formats',
       severity: 'error',
       comment: 'core is the pure engine; it must not know about the server, the UI or the CLI.',
       from: { path: pkg('core') },
-      to: { path: '^packages/(server|app|cli)/' },
+      to: { path: '^packages/(server|app|owner|cli)/' },
     },
     {
       name: 'server-and-app-are-independent',
       severity: 'error',
       comment: 'The server and the browser app talk over the wire, never through imports.',
       from: { path: '^packages/(server|app)/' },
-      to: { path: '^packages/(server|app|cli)/', pathNot: '^packages/$1/' },
+      to: { path: '^packages/(server|app|owner|cli)/', pathNot: '^packages/$1/' },
+    },
+    {
+      name: 'extensions-use-the-public-api',
+      severity: 'error',
+      comment:
+        "Owner mode is an extension: it may use only the server's public API (packages/server/src/index.ts), as an extension in another repository would.",
+      from: { path: pkg('owner') },
+      to: {
+        path: '^packages/(formats|core|server|app|cli|engine-client)/',
+        pathNot: '^packages/server/src/index\\.ts$',
+      },
     },
     {
       name: 'engine-client-stands-alone',
@@ -57,7 +68,7 @@ module.exports = {
       comment:
         'The engine client is published with its own type declarations, so it may import no other workspace package.',
       from: { path: '^packages/engine-client/src/' },
-      to: { path: '^packages/(formats|core|server|app|cli)/' },
+      to: { path: '^packages/(formats|core|server|app|owner|cli)/' },
     },
     {
       name: 'core-and-app-stay-off-node',

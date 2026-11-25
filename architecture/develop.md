@@ -33,6 +33,7 @@ Each package keeps its code in `src/` and its unit tests in `test/`, in the same
 | `packages/core`              | Table state, commands, snapping, setups, undo and seeded randomness                                               |
 | `packages/server`            | Local server: projects and tables, players and invites, live reload, WebSocket sync, MCP                          |
 | `packages/app`               | Browser table (React and Konva)                                                                                   |
+| `packages/owner`             | Owner mode for a Trayful on a server, as an extension that uses only the server's public API                      |
 | `packages/cli`               | The `trayful` command line                                                                                        |
 | `packages/engine-client`     | The client engines use to run a game at a table, published as `trayful/engine`                                    |
 | `examples/harvest-moon`      | Sample prototype that uses every file kind; validated in CI                                                       |

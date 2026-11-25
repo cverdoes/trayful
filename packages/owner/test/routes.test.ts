@@ -13,8 +13,9 @@ import type {
   OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { startServer, type RunningServer } from '../../src/server.js';
-import { examplePath } from '../paths.js';
+import { fileURLToPath } from 'node:url';
+import { startServer, type RunningServer } from '@trayful/server';
+import { ownerMode } from '../src/index.js';
 
 const SECRET = 'owner-secret-'.padEnd(40, 'x');
 /** Requests through the proxy in front of a hosted Trayful: from elsewhere, so not the host. */
@@ -25,7 +26,7 @@ let server: RunningServer;
 
 beforeEach(async () => {
   const dir = path.join(await mkdtemp(path.join(os.tmpdir(), 'trayful-owner-')), 'game');
-  await cp(examplePath('harvest-moon'), dir, {
+  await cp(fileURLToPath(new URL('../../../examples/harvest-moon', import.meta.url)), dir, {
     recursive: true,
     filter: (src) => path.basename(src) !== 'tables',
   });
@@ -33,7 +34,7 @@ beforeEach(async () => {
     projectDir: dir,
     port: 0,
     appDir: path.join(dir, 'no-app'),
-    ownerSecret: SECRET,
+    extensions: [ownerMode(SECRET)],
   });
 });
 

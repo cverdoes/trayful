@@ -1,0 +1,17 @@
+{
+  "name": "@trayful/owner",
+  "version": "0.0.0",
+  "private": true,
+  "license": "FSL-1.1-MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@trayful/server": "workspace:*",
+    "fastify": "^5.12.8"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2"
+  }
+}

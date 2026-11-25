@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { Owner } from '../../src/play/owner.js';
+import { Owner } from '../src/owner.js';
 
 const SECRET = 'a'.repeat(32);
 const CLIENT = { name: 'Claude', redirectUris: ['https://claude.ai/api/mcp/auth_callback'] };
