@@ -4,6 +4,7 @@
  */
 export * from './server.js';
 export type { Extension } from './extension.js';
+export type { Space, SpaceResolver } from './space.js';
 export {
   INVITE_COOKIE,
   PLAYER_COOKIE,

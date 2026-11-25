@@ -22,14 +22,14 @@ const IMAGE_POLICY =
 
 /** Images from project folders, and the browser app itself. */
 export async function registerFileRoutes(
-  { app, workspace }: RouteContext,
+  { app, spaceOf }: RouteContext,
   appDir: string,
 ): Promise<void> {
   // Images referenced by a project's libraries, served from its folder.
   app.get<{ Params: { project: string; '*': string } }>(
     '/project-files/:project/*',
     async (request, reply) => {
-      const entry = workspace.entry(request.params.project);
+      const entry = spaceOf(request).workspace.entry(request.params.project);
       const file = path.resolve(entry.dir, request.params['*']);
       const type = IMAGE_TYPES[path.extname(file).toLowerCase()];
       if (

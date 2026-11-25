@@ -3,7 +3,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { isLocalOrigin, localAccess } from './play/access.js';
 import { resourceDir } from './shipped/resources.js';
-import { routeContext, type TableQuery } from './routes/context.js';
+import { routeContext, targetIn, type TableQuery } from './routes/context.js';
 import { registerAssetRoutes } from './routes/assets.js';
 import { registerAuthoringRoutes } from './routes/authoring.js';
 import { registerTrayRoutes } from './routes/tray.js';
@@ -20,7 +20,8 @@ import { GitLink } from './git/link.js';
 import type { Repository } from './git/repository.js';
 import type { SyncTimes } from './git/autosync.js';
 import { registerRepositoryRoutes } from './routes/repository.js';
-import { accessWith, type Extension } from './extension.js';
+import { accessWith, spacesWith, type Extension } from './extension.js';
+import { openSpace } from './space.js';
 
 export const DEFAULT_PORT = 4317;
 
@@ -59,6 +60,8 @@ export interface ServerOptions {
   extensions?: readonly Extension[];
   /** Folder with the built browser app. Default: `packages/app/dist` in this repository. */
   appDir?: string;
+  /** What to call the host. Default: the account running the server. */
+  hostName?: string;
   /** Seed for a newly created table. */
   seed?: number;
   /** Setup for a newly created table. Default: the manifest's `setup`; `false` for none. */
@@ -128,17 +131,18 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   // Checked first, so a mistake stops the start before anything is opened.
   const access = accessWith(extensions, localAccess(options.container?.hostAddresses));
   const { workspace, git } = await openWorkspace(options);
+  const space = openSpace(workspace, git);
   const app = Fastify({ logger: options.logger ?? false });
   app.decorate('access', access);
   await app.register(fastifyWebsocket);
 
-  const ctx = routeContext(app, workspace, git);
+  const ctx = routeContext(app, spacesWith(extensions, space));
   registerGuards(
     ctx,
     extensions.flatMap((e) => e.tokenRoutes ?? []),
   );
   for (const extension of extensions) extension.register?.(app);
-  if (git) registerRepositoryRoutes(ctx, git);
+  registerRepositoryRoutes(ctx);
   registerPlayerRoutes(ctx);
   registerEngineRoutes(ctx);
   registerTableRoutes(ctx);
@@ -154,28 +158,29 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
     host: options.container ? '0.0.0.0' : (options.host ?? '127.0.0.1'),
   });
   // Listening on every interface, the table is still at localhost for the host.
-  ctx.url = address.replace(/\/\/(0\.0\.0\.0|\[::\])(?=:)/, '//localhost');
+  space.url = address.replace(/\/\/(0\.0\.0\.0|\[::\])(?=:)/, '//localhost');
 
   const port = new URL(address).port;
   if (options.host === '0.0.0.0' || options.host === '::') {
-    for (const ip of lanAddresses()) ctx.shareBases.push(`http://${ip}:${port}`);
+    for (const ip of lanAddresses()) space.shareBases.push(`http://${ip}:${port}`);
   }
 
   return {
-    url: ctx.url,
+    url: space.url,
     workspace,
     git,
     get session() {
       return workspace.active;
     },
     app,
-    shareBases: ctx.shareBases,
+    shareBases: space.shareBases,
     addShareBase(base: string) {
-      ctx.shareBases.unshift(withoutTrailingSlashes(base));
+      space.shareBases.unshift(withoutTrailingSlashes(base));
     },
     async inviteLinks(query: TableQuery = {}) {
-      const { project, table } = ctx.target(query);
-      return ctx.linksFor(await workspace.players.invite(project, table));
+      const { project, table } = targetIn(space, query);
+      const invite = await workspace.players.invite(project, table);
+      return space.shareBases.map((base) => `${base}/join/${invite.token}`);
     },
     async close() {
       git?.close();
@@ -196,6 +201,7 @@ async function openWorkspace(
     setup: options.setup,
     watch: options.watch,
     agentPace: options.agentPace,
+    hostName: options.hostName,
   };
   if (options.repository) {
     const git = await GitLink.open(options.repository, open, options.syncTimes);

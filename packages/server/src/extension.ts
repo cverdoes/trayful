@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { Access } from './play/access.js';
+import type { Space, SpaceResolver } from './space.js';
 
 /**
  * Adds to the server without changing its core, such as owner mode for a Trayful on a
@@ -13,6 +14,12 @@ export interface Extension {
    */
   access?: (local: Access) => Access;
   /**
+   * Finds the space each request is for, such as one per tenant, given the space the
+   * server was started on. At most one extension may bring one. Without it, every
+   * request is for the server's own space.
+   */
+  spaces?: (own: Space) => SpaceResolver;
+  /**
    * Routes that agents call with a token rather than a browser's cookies, so a request
    * from another website gains nothing by reaching them. They skip the check that a
    * change comes from a Trayful page.
@@ -24,9 +31,23 @@ export interface Extension {
 
 /** The access of a server with these extensions. */
 export function accessWith(extensions: readonly Extension[], local: Access): Access {
-  const deciding = extensions.filter((e) => e.access);
-  if (deciding.length > 1) {
-    throw new Error('Only one extension may decide who counts as the host.');
-  }
-  return deciding[0]?.access?.(local) ?? local;
+  const hook = onlyOne(extensions, 'access', 'who counts as the host');
+  return hook ? hook(local) : local;
+}
+
+/** How a server with these extensions finds the space of a request. */
+export function spacesWith(extensions: readonly Extension[], own: Space): SpaceResolver {
+  const hook = onlyOne(extensions, 'spaces', 'which space a request is for');
+  return hook ? hook(own) : () => own;
+}
+
+/** The one extension's hook of a kind, if any; two that both bring one are a mistake. */
+function onlyOne<K extends 'access' | 'spaces'>(
+  extensions: readonly Extension[],
+  kind: K,
+  decides: string,
+): Extension[K] {
+  const hooks = extensions.flatMap((e) => (e[kind] ? [e[kind]] : []));
+  if (hooks.length > 1) throw new Error(`Only one extension may decide ${decides}.`);
+  return hooks[0];
 }

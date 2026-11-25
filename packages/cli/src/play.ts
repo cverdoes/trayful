@@ -84,6 +84,8 @@ async function startTable(
       container: options.container ? inContainer() : undefined,
       extensions: options.owner ? [ownerMode(ownerSecret())] : [],
       agentPace: options.pace,
+      // In a container the account is not the person's, so compose.yaml names them.
+      hostName: process.env.TRAYFUL_HOST_NAME,
     });
   } catch (e) {
     if (e instanceof OwnerError) throw new CliError(e.message);

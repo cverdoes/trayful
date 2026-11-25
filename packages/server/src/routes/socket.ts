@@ -5,15 +5,9 @@ import { frameText } from './frames.js';
 import type { RouteContext, TableQuery } from './context.js';
 
 /** The live connection a browser plays a table over, and an engine runs the game over. */
-export function registerSocket({
-  app,
-  workspace,
-  shareBases,
-  sessionFor,
-  identify,
-  connections,
-}: RouteContext): void {
+export function registerSocket({ app, spaceOf, sessionFor, identify }: RouteContext): void {
   app.get<{ Querystring: TableQuery }>('/ws', { websocket: true }, (socket, request) => {
+    const { workspace, shareBases, connections } = spaceOf(request);
     // Only Trayful pages may drive the table; this stops other websites open in the
     // browser from connecting to the server.
     if (!isTrustedOrigin(request, shareBases)) {
@@ -21,7 +15,7 @@ export function registerSocket({
       return;
     }
     const send = (message: ServerMessage) => socket.send(JSON.stringify(message));
-    Promise.all([sessionFor(request.query), identify(request)]).then(
+    Promise.all([sessionFor(request, request.query), identify(request)]).then(
       ([session, { player }]) => {
         const viewer = player?.id;
         send(session.stateMessage(viewer));

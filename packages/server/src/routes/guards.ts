@@ -25,7 +25,7 @@ const TOKEN_ONLY = ['/mcp', WEBHOOK_ROUTE];
  * more routes that are called with a token in `tokenRoutes`.
  */
 export function registerGuards(
-  { app, players, shareBases, target }: RouteContext,
+  { app, spaceOf, target }: RouteContext,
   tokenRoutes: readonly string[] = [],
 ): void {
   const tokenOnly = new Set([...TOKEN_ONLY, ...tokenRoutes]);
@@ -41,14 +41,14 @@ export function registerGuards(
     if (
       request.method !== 'GET' &&
       !tokenOnly.has(route) &&
-      !isTrustedOrigin(request, shareBases)
+      !isTrustedOrigin(request, spaceOf(request).shareBases)
     ) {
       return reply.code(403).send({ error: 'Origin not allowed' });
     }
   });
   app.addHook('preHandler', async (request, reply) => {
     const route = request.url.split('?')[0]!;
-    const who = caller(request, players);
+    const who = caller(request, spaceOf(request).players);
     if (who.refused) {
       return reply
         .code(403)
@@ -56,7 +56,7 @@ export function registerGuards(
     }
     let ok = true;
     if (route === '/api/project' || route === '/api/table' || route === '/ws') {
-      const { project, table } = target(request.query as TableQuery);
+      const { project, table } = target(request, request.query as TableQuery);
       ok = allowed(who, project, table);
     } else if (route.startsWith('/project-files/')) {
       ok = allowedProject(who, (request.params as { project: string }).project);

@@ -1,23 +1,15 @@
 import { PlayerError } from '../play/players.js';
-import { KnockError, Knocks } from '../play/knocks.js';
+import { KnockError } from '../play/knocks.js';
 import type { RouteContext, TableQuery } from './context.js';
 
 /** Engines knocking to join a table, and the host sending one away. */
-export function registerEngineRoutes({
-  app,
-  players,
-  workspace,
-  target,
-  hostOnly,
-  connections,
-}: RouteContext): void {
-  const knocks = new Knocks(players);
-
+export function registerEngineRoutes({ app, spaceOf, target, hostOnly }: RouteContext): void {
   // An engine asks to join. The request waits for the host's answer, up to a minute and a half.
   app.post<{ Body: (TableQuery & { name?: string }) | undefined }>(
     '/api/knock',
     async (request, reply) => {
-      const { project, table } = target(request.body ?? {});
+      const { workspace, knocks } = spaceOf(request);
+      const { project, table } = target(request, request.body ?? {});
       const session = await workspace.table(project, table, { create: false });
       try {
         const outcome = await knocks.knock(session, request.body?.name ?? '', request.ip);
@@ -41,6 +33,7 @@ export function registerEngineRoutes({
   // The host sends an engine away: its secret stops working and its connections close.
   app.delete<{ Params: { id: string } }>('/api/engines/:id', async (request, reply) => {
     if (hostOnly(request, reply)) return;
+    const { workspace, connections } = spaceOf(request);
     await workspace.dismissEngine(request.params.id);
     connections.closeAll(request.params.id, 'The host sent this engine away.');
     return { ok: true };

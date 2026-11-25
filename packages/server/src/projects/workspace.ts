@@ -41,6 +41,8 @@ export interface WorkspaceOptions {
   agentPace?: boolean;
   /** Where players are kept. Default: `.trayful/players.json` in the base folder. */
   playerStore?: PlayerStore;
+  /** What to call the host. Default: the account running the server. */
+  hostName?: string;
   /**
    * Called with a new project's id before its folder is written, such as for a
    * git-backed Trayful to check the folder out.
@@ -134,7 +136,8 @@ export class Workspace {
       const note = project ? await adoptPlayers(base, project) : undefined;
       if (note) notes.push(note);
     }
-    const players = await Players.open(options.playerStore ?? FilePlayerStore.in(base));
+    const store = options.playerStore ?? FilePlayerStore.in(base);
+    const players = await Players.open(store, options.hostName);
     const workspace = new Workspace(options, players);
     workspace.notesNow = notes;
     await workspace.attach(base, { ...options, project });
@@ -146,7 +149,7 @@ export class Workspace {
    * repository. Tools and routes that need a table say so until `attach` gives it one.
    */
   static async empty(options: WorkspaceOptions & { playerStore: PlayerStore }): Promise<Workspace> {
-    return new Workspace(options, await Players.open(options.playerStore));
+    return new Workspace(options, await Players.open(options.playerStore, options.hostName));
   }
 
   /**

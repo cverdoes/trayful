@@ -3,7 +3,7 @@ import { addImage, removeImage, setColor, setImage } from '../projects/assets.js
 import { libraryFiles } from '../projects/authoring.js';
 import { renameImage } from '../projects/renaming.js';
 import type { RouteContext } from './context.js';
-import { newName, projectOf, type ProjectQuery, type RenameBody } from './authoring.js';
+import { newName, projectFor, type ProjectQuery, type RenameBody } from './authoring.js';
 
 /** Images arrive as base64, a third larger than the file. */
 const IMAGE_BODY_LIMIT = 20 * 1024 * 1024;
@@ -22,20 +22,21 @@ interface NameParams {
 
 /** The assets page of the designer: naming images, cutting them into tiles, and colours. */
 export function registerAssetRoutes(ctx: RouteContext): void {
-  const { app, workspace, hostOnly } = ctx;
+  const { app, hostOnly } = ctx;
   // A new image, saved under an unused path and named after its file.
   app.post<{ Querystring: ProjectQuery; Body: ImageBody | undefined }>(
     '/api/assets/images',
     { bodyLimit: IMAGE_BODY_LIMIT },
     async (request, reply) => {
       if (hostOnly(request, reply)) return;
+      const { workspace, projectId } = projectFor(ctx, request);
       const { file, base64 } = request.body ?? {};
       if (typeof file !== 'string' || typeof base64 !== 'string') {
         return badRequest(reply, 'Send the file name as "file" and its contents as "base64".');
       }
       const tiles = tilesOf(request.body, reply);
       if (!tiles) return;
-      return addImage(workspace, projectOf(ctx, request.query), { file, base64, ...tiles });
+      return addImage(workspace, projectId, { file, base64, ...tiles });
     },
   );
 
@@ -43,11 +44,12 @@ export function registerAssetRoutes(ctx: RouteContext): void {
     '/api/assets/images/:name',
     async (request, reply) => {
       if (hostOnly(request, reply)) return;
+      const { workspace, projectId } = projectFor(ctx, request);
       const { file } = request.body ?? {};
       if (typeof file !== 'string') return badRequest(reply, 'Send the image\'s path as "file".');
       const tiles = tilesOf(request.body, reply);
       if (!tiles) return;
-      await setImage(workspace, projectOf(ctx, request.query), request.params.name, {
+      await setImage(workspace, projectId, request.params.name, {
         file,
         ...tiles,
       });
@@ -57,7 +59,8 @@ export function registerAssetRoutes(ctx: RouteContext): void {
 
   app.delete<NameParams>('/api/assets/images/:name', async (request, reply) => {
     if (hostOnly(request, reply)) return;
-    await removeImage(workspace, projectOf(ctx, request.query), request.params.name);
+    const { workspace, projectId } = projectFor(ctx, request);
+    await removeImage(workspace, projectId, request.params.name);
     return { name: request.params.name };
   });
 
@@ -66,9 +69,9 @@ export function registerAssetRoutes(ctx: RouteContext): void {
     '/api/assets/images/:name/rename',
     async (request, reply) => {
       if (hostOnly(request, reply)) return;
+      const { workspace, projectId } = projectFor(ctx, request);
       const to = newName(request.body, reply);
       if (to === undefined) return;
-      const projectId = projectOf(ctx, request.query);
       const { name } = await renameImage(workspace, projectId, request.params.name, to);
       return { name, ...(await libraryFiles(workspace, projectId)) };
     },
@@ -78,18 +81,20 @@ export function registerAssetRoutes(ctx: RouteContext): void {
     '/api/assets/colors/:name',
     async (request, reply) => {
       if (hostOnly(request, reply)) return;
+      const { workspace, projectId } = projectFor(ctx, request);
       const color = request.body?.color;
       if (typeof color !== 'string' || !color) {
         return badRequest(reply, 'Send the colour as "color", such as "#d94b3d".');
       }
-      await setColor(workspace, projectOf(ctx, request.query), request.params.name, color);
+      await setColor(workspace, projectId, request.params.name, color);
       return { name: request.params.name };
     },
   );
 
   app.delete<NameParams>('/api/assets/colors/:name', async (request, reply) => {
     if (hostOnly(request, reply)) return;
-    await setColor(workspace, projectOf(ctx, request.query), request.params.name, undefined);
+    const { workspace, projectId } = projectFor(ctx, request);
+    await setColor(workspace, projectId, request.params.name, undefined);
     return { name: request.params.name };
   });
 }
