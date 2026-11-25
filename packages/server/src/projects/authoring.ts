@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, lstatSync, realpathSync } from 'node:fs';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
@@ -87,10 +87,28 @@ async function write(dir: string, changes: FileChange[]): Promise<void> {
 /** Resolves a project-relative path, refusing anything outside the project folder. */
 export function inside(dir: string, file: string): string {
   const full = path.resolve(dir, file);
-  if (!full.startsWith(dir + path.sep)) {
+  if (!full.startsWith(dir + path.sep) || !stillInside(dir, full)) {
     throw new AuthoringError(`"${file}" is outside the project folder.`);
   }
   return full;
+}
+
+/**
+ * Whether a path inside a folder stays inside once symbolic links are followed: a link
+ * in a project, such as one from a cloned repository, must not lead to files elsewhere.
+ * The path need not exist yet; its nearest existing folder decides. A link that leads
+ * nowhere is refused, since writing through it would create its target.
+ */
+function stillInside(dir: string, full: string): boolean {
+  let existing = full;
+  while (!lstatSync(existing, { throwIfNoEntry: false })) existing = path.dirname(existing);
+  try {
+    const root = realpathSync(dir);
+    const real = realpathSync(existing);
+    return real === root || real.startsWith(root + path.sep);
+  } catch {
+    return false;
+  }
 }
 
 export async function readDocument(dir: string, file: string): Promise<Document> {

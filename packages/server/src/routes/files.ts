@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import fastifyStatic from '@fastify/static';
+import { inside } from '../projects/authoring.js';
 import type { RouteContext } from './context.js';
 
 const IMAGE_TYPES: Record<string, string> = {
@@ -20,6 +21,15 @@ const IMAGE_TYPES: Record<string, string> = {
 const IMAGE_POLICY =
   "default-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:; sandbox";
 
+/** Whether a file is in a folder, also once symbolic links are followed. */
+function isInside(dir: string, file: string): boolean {
+  try {
+    return inside(dir, path.relative(dir, file)) === file;
+  } catch {
+    return false;
+  }
+}
+
 /** Images from project folders, and the browser app itself. */
 export async function registerFileRoutes(
   { app, spaceOf }: RouteContext,
@@ -32,11 +42,7 @@ export async function registerFileRoutes(
       const entry = spaceOf(request).workspace.entry(request.params.project);
       const file = path.resolve(entry.dir, request.params['*']);
       const type = IMAGE_TYPES[path.extname(file).toLowerCase()];
-      if (
-        !type ||
-        !file.startsWith(entry.dir + path.sep) ||
-        file.includes(`${path.sep}tables${path.sep}`)
-      ) {
+      if (!type || file.includes(`${path.sep}tables${path.sep}`) || !isInside(entry.dir, file)) {
         return reply.code(404).send({ error: 'Not found' });
       }
       try {
