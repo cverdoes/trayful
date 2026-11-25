@@ -7,7 +7,7 @@ import {
   isHostRequest,
   parseCookies,
   type Access,
-} from '@trayful/server';
+} from '@trayful/server/public';
 import { Owner } from './owner.js';
 import { OWNER_COOKIE, askForOwnerToken, registerOAuthRoutes } from './oauth.js';
 import { sendPage, signInPage } from './pages.js';

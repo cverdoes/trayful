@@ -1,6 +1,6 @@
 // OAuth 2.1 for one person, so agents such as claude.ai's connectors can reach MCP in owner mode.
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { cookie } from '@trayful/server';
+import { cookie } from '@trayful/server/public';
 import type { OAuthClient, Owner } from './owner.js';
 import { allowPage, problemPage, sendPage } from './pages.js';
 

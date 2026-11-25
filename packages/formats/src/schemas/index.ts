@@ -17,8 +17,18 @@ export * from './legacy.js';
 export * from './project.js';
 export * from './table.js';
 
-/** Every file kind with its schema, in the order the reference lists them. */
-export const FILE_KINDS = {
+/**
+ * Every file kind with its schema, in the order the reference lists them. Typed by
+ * hand so the declarations bundled for `trayful/server` can name it.
+ */
+export const FILE_KINDS: {
+  readonly manifest: typeof ManifestFile;
+  readonly library: typeof LibraryFile;
+  readonly assets: typeof AssetsFile;
+  readonly inventory: typeof InventoryFile;
+  readonly setup: typeof SetupFile;
+  readonly table: typeof TableFile;
+} = {
   manifest: ManifestFile,
   library: LibraryFile,
   assets: AssetsFile,

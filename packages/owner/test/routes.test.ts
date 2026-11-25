@@ -14,7 +14,7 @@ import type {
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
-import { startServer, type RunningServer } from '@trayful/server';
+import { startServer, type RunningServer } from '@trayful/server/public';
 import { ownerMode } from '../src/index.js';
 
 const SECRET = 'owner-secret-'.padEnd(40, 'x');

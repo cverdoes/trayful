@@ -1,20 +1,9 @@
 /**
- * The server's public API: starting it, table sessions, the MCP server, workspaces and
- * migration, and what extensions build on.
+ * The server for this repository's own packages: the CLI and the scripts. What other
+ * code may build on is `public.ts`, published as `trayful/server`.
  */
 export * from './server.js';
-export type { Extension } from './extension.js';
-export { openSpace, type Space, type SpaceResolver } from './space.js';
-export { LimitError, type Growth, type Limits } from './play/limits.js';
-export {
-  INVITE_COOKIE,
-  PLAYER_COOKIE,
-  bearer,
-  cookie,
-  isHostRequest,
-  parseCookies,
-  type Access,
-} from './play/access.js';
+export * from './public.js';
 export * from './play/session.js';
 export * from './mcp/server.js';
 export * from './projects/workspace.js';

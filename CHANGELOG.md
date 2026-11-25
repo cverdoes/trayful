@@ -27,6 +27,10 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 - Branches for experiments: `create_branch`, `switch_branch` and `list_branches`, or **New branch…** and **Switch branch…** in the toolbar. `snapshot_tables` (**Commit the tables**) commits and pushes the saved tables, which syncs leave out.
 - The token for HTTPS repositories comes from `TRAYFUL_GIT_TOKEN` or `TRAYFUL_GIT_TOKEN_FILE`, and is never written to disk. `compose.git.yaml` runs it on a server. See the new guide, `docs/howto/git-backed.md`.
 
+### Extensions
+
+- `trayful/server` is a new entry point of the npm package, for extensions in code of your own: `startServer` takes `extensions`, which can decide who counts as the host (`access`), which folder of projects a request is for (`spaces`) and how far each may grow (`limits`). Owner mode is now one such extension. Its types come with it, and `packages/server/public-api.md` in the repository lists all it exports. While Trayful is at 0.x, a minor version may change it.
+
 ### Docker
 
 - Each release is also published as a Docker image, `ghcr.io/cverdoes/trayful`, for amd64 and arm64: `docker run --rm -it --init -p 127.0.0.1:4317:4317 ghcr.io/cverdoes/trayful` plays the examples, and `-v ~/games:/projects --user "$(id -u):$(id -g)"` plays your own. It has git and runs as a non-root user. See `docs/guide/docker.md`.

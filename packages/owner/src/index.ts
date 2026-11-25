@@ -3,7 +3,7 @@
  * person. Whoever signs in with the owner secret is the host, from anywhere, and their
  * agents reach MCP with OAuth.
  */
-import type { Extension } from '@trayful/server';
+import type { Extension } from '@trayful/server/public';
 import { Owner } from './owner.js';
 import { ownerAccess, registerOwnerRoutes } from './routes.js';
 

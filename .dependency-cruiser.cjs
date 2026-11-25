@@ -55,11 +55,11 @@ module.exports = {
       name: 'extensions-use-the-public-api',
       severity: 'error',
       comment:
-        "Owner mode is an extension: it may use only the server's public API (packages/server/src/index.ts), as an extension in another repository would.",
+        "Owner mode is an extension: it may use only the server's public API (packages/server/src/public.ts, published as trayful/server), as an extension in another repository would.",
       from: { path: pkg('owner') },
       to: {
         path: '^packages/(formats|core|server|app|cli|engine-client)/',
-        pathNot: '^packages/server/src/index\\.ts$',
+        pathNot: '^packages/server/src/public\\.ts$',
       },
     },
     {
