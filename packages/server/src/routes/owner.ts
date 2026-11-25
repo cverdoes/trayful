@@ -1,15 +1,36 @@
 import type { FastifyRequest } from 'fastify';
 import {
   INVITE_COOKIE,
-  OWNER_COOKIE,
   PLAYER_COOKIE,
+  bearer,
   cookie,
   isHostRequest,
+  parseCookies,
+  type Access,
 } from '../play/access.js';
-import type { Owner } from '../play/owner.js';
+import { Owner } from '../play/owner.js';
 import type { RouteContext } from './context.js';
-import { registerOAuthRoutes } from './oauth.js';
+import { OWNER_COOKIE, askForOwnerToken, registerOAuthRoutes } from './oauth.js';
 import { sendPage, signInPage } from './pages.js';
+
+/**
+ * Owner mode's access: requests from this computer still count as the host, and so
+ * does the owner from anywhere, by the browser's cookie or an agent's token.
+ */
+export function ownerAccess(owner: Owner, local: Access): Access {
+  return {
+    fromHostComputer: local.fromHostComputer,
+    signedIn: (request) => {
+      const signedInCookie = parseCookies(request.headers.cookie)[OWNER_COOKIE];
+      return (
+        (signedInCookie !== undefined && owner.accepts(signedInCookie, 'web')) ||
+        owner.accepts(bearer(request), 'access')
+      );
+    },
+    issued: (credential) => Owner.isToken(credential),
+    refuseMcp: askForOwnerToken,
+  };
+}
 
 /**
  * Owner mode's routes: signing a browser in with the owner secret, and OAuth for the

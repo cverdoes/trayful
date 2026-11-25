@@ -1,7 +1,7 @@
 import os from 'node:os';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { isLocalOrigin } from './play/access.js';
+import { isLocalOrigin, localAccess } from './play/access.js';
 import { Owner } from './play/owner.js';
 import { resourceDir } from './shipped/resources.js';
 import { routeContext, type TableQuery } from './routes/context.js';
@@ -12,7 +12,7 @@ import { registerEngineRoutes } from './routes/engines.js';
 import { registerFileRoutes } from './routes/files.js';
 import { registerGuards } from './routes/guards.js';
 import { registerMcp } from './routes/mcp.js';
-import { registerOwnerRoutes } from './routes/owner.js';
+import { ownerAccess, registerOwnerRoutes } from './routes/owner.js';
 import { registerPlayerRoutes } from './routes/players.js';
 import { registerSocket } from './routes/socket.js';
 import { registerTableRoutes } from './routes/tables.js';
@@ -131,8 +131,8 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   const owner = options.ownerSecret === undefined ? undefined : new Owner(options.ownerSecret);
   const { workspace, git } = await openWorkspace(options);
   const app = Fastify({ logger: options.logger ?? false });
-  app.decorate('hostAddresses', new Set(options.container?.hostAddresses));
-  app.decorate('owner', owner);
+  const local = localAccess(options.container?.hostAddresses);
+  app.decorate('access', owner ? ownerAccess(owner, local) : local);
   await app.register(fastifyWebsocket);
 
   const ctx = routeContext(app, workspace, git);

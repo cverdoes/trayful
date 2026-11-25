@@ -46,7 +46,7 @@ export async function play(
   if (options.publicUrl) server.addShareBase(options.publicUrl);
   const tunnel = options.tunnel ? await openTunnel(server, out) : undefined;
   try {
-    await announce(server, out);
+    await announce(server, options.owner, out);
     // CI uses this to check that the server starts and serves the app, then exits.
     if (process.env.TRAYFUL_SMOKE_TEST) await smokeTest(server.url, out);
     else await serve(server.url, options.open, out, stopped);
@@ -184,7 +184,11 @@ async function openTunnel(server: RunningServer, out: (s: string) => void): Prom
 }
 
 /** Tells the person where the table is, where it saves, and how others can join. */
-async function announce(server: RunningServer, out: (s: string) => void): Promise<void> {
+async function announce(
+  server: RunningServer,
+  owner: boolean,
+  out: (s: string) => void,
+): Promise<void> {
   const { url, git } = server;
   if (!server.workspace.ready) {
     out(`Trayful is waiting for a repository at ${url}`);
@@ -204,7 +208,7 @@ async function announce(server: RunningServer, out: (s: string) => void): Promis
   if (projects > 1) {
     out(`${projects} projects in ${server.workspace.root}; switch between them in the browser.`);
   }
-  if (server.app.owner) {
+  if (owner) {
     const base = server.shareBases[0] ?? 'this server';
     out(`Owner mode: sign in at ${base}/sign-in, and connect agents to ${base}/mcp.`);
   }
