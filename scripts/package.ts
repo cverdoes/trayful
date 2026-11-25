@@ -8,6 +8,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { chmod, cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,13 +45,16 @@ await mkdir(out, { recursive: true });
 const metafile = await bundle();
 await bundleEngineClient();
 declareEngineClient();
-await declareServer();
+const typePeers = await declareServer();
 await writeLauncher();
 for (const [name, from] of Object.entries(RESOURCE_SOURCES)) {
   await cp(path.join(root, from), path.join(out, 'resources', name), { recursive: true });
 }
 const version = readJson(path.join(cli, 'package.json')).version as string;
-await writeFile(path.join(out, 'package.json'), JSON.stringify(manifest(version), null, 2) + '\n');
+await writeFile(
+  path.join(out, 'package.json'),
+  JSON.stringify(manifest(version, typePeers), null, 2) + '\n',
+);
 await cp(path.join(cli, 'npm/README.md'), path.join(out, 'README.md'));
 await cp(path.join(root, 'LICENSE.md'), path.join(out, 'LICENSE.md'));
 await writeFile(
@@ -132,8 +136,9 @@ function declareEngineClient(): void {
  * Type declarations for `trayful/server`, bundled into one file with the types of
  * core and formats, which are not published on their own. Types from other packages,
  * such as Fastify's, stay imports: an extension that uses them installs them itself.
+ * Returns those packages, each with the version range the bundle was built with.
  */
-async function declareServer(): Promise<void> {
+async function declareServer(): Promise<Record<string, string>> {
   const dependencies = readJson(path.join(root, 'packages/server/package.json'))
     .dependencies as Record<string, string>;
   const external = Object.keys(dependencies).filter((name) => !name.startsWith('@trayful/'));
@@ -143,8 +148,23 @@ async function declareServer(): Promise<void> {
     plugins: [dts({ tsconfig: path.join(root, 'tsconfig.json'), respectExternal: true })],
     logLevel: 'silent',
   });
-  await bundled.write({ file: path.join(out, 'server/index.d.ts'), format: 'es' });
+  const { output } = await bundled.write({
+    file: path.join(out, 'server/index.d.ts'),
+    format: 'es',
+  });
   await bundled.close();
+  const imported = output.flatMap((chunk) => (chunk.type === 'chunk' ? chunk.imports : []));
+  return Object.fromEntries(
+    external
+      .filter((name) => imported.some((id) => id === name || id.startsWith(`${name}/`)))
+      .map((name) => [name, `^${installedVersion(name)}`]),
+  );
+}
+
+/** The version of one of the server's dependencies that the bundle was built with. */
+function installedVersion(name: string): string {
+  const from = createRequire(path.join(root, 'packages/server/package.json'));
+  return readJson(from.resolve(`${name}/package.json`)).version as string;
 }
 
 /**
@@ -170,7 +190,12 @@ await import('./trayful.mjs');
   await chmod(launcher, 0o755);
 }
 
-function manifest(version: string): Record<string, unknown> {
+/**
+ * The published package.json. Everything it runs is bundled, so it has no dependencies.
+ * The packages whose types `trayful/server` names are optional peers: npm never installs
+ * them, but tells an extension's author which versions match the bundle.
+ */
+function manifest(version: string, typePeers: Record<string, string>): Record<string, unknown> {
   return {
     name: 'trayful',
     version,
@@ -184,6 +209,10 @@ function manifest(version: string): Record<string, unknown> {
       './server': { types: './server/index.d.ts', default: './server.mjs' },
       './package.json': './package.json',
     },
+    peerDependencies: typePeers,
+    peerDependenciesMeta: Object.fromEntries(
+      Object.keys(typePeers).map((name) => [name, { optional: true }]),
+    ),
     engines: { node: `>=${NODE.major}.${NODE.minor}` },
     repository: { type: 'git', url: 'git+https://github.com/cverdoes/trayful.git' },
     homepage: 'https://github.com/cverdoes/trayful#readme',

@@ -13,6 +13,8 @@ npm install
 npm start -- path/to/games 2
 ```
 
+To type-check it, also install TypeScript and the packages whose types `trayful/server` names. `trayful`'s `package.json` lists them, with their versions, as optional peer dependencies: `fastify` and `zod`.
+
 That plays the folder of projects `path/to/games`, allowing at most 2 of them. Open the address it prints.
 
 `trayful/server` comes with the `trayful` package in the first version after 0.3.0. Until that is out, it comes with the `next` prereleases, which `package.json` asks for. Once it is out, depend on an exact version instead, and let Dependabot raise it.

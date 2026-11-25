@@ -35,7 +35,10 @@ test -f node_modules/trayful/engine/index.d.ts
 # Extensions import the server from the package: the example extension, type-checked
 # against the published declarations, caps a folder of projects at one.
 cp "$examples/extension/extension.ts" .
-npm install --no-audit --no-fund --no-save typescript@~6.0 @types/node@22 fastify@5 zod@4
+# The packages its types name are optional peers: npm leaves them out until asked.
+test ! -e node_modules/fastify
+read -ra peers <<< "$(node -p "Object.entries(require('trayful/package.json').peerDependencies).map(([n, v]) => n + '@' + v).join(' ')")"
+npm install --no-audit --no-fund --no-save typescript@~6.0 @types/node@22 "${peers[@]}"
 npx tsc --strict --noEmit --skipLibCheck false --module nodenext --target es2023 \
   --types node extension.ts
 node --input-type=module -e "

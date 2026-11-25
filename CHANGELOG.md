@@ -29,7 +29,7 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 
 ### Extensions
 
-- `trayful/server` is a new entry point of the npm package, for extensions in code of your own: `startServer` takes `extensions`, which can decide who counts as the host (`access`), which folder of projects a request is for (`spaces`) and how far each may grow (`limits`). Owner mode is now one such extension. Its types come with it, and `packages/server/public-api.md` in the repository lists all it exports. While Trayful is at 0.x, a minor version may change it.
+- `trayful/server` is a new entry point of the npm package, for extensions in code of your own: `startServer` takes `extensions`, which can decide who counts as the host (`access`), which folder of projects a request is for (`spaces`) and how far each may grow (`limits`). Owner mode is now one such extension. Its types come with it, and `packages/server/public-api.md` in the repository lists all it exports. The types it takes from Fastify and zod need those packages installed; the package lists them as optional peer dependencies, at the versions it bundles. While Trayful is at 0.x, a minor version may change it.
 
 ### Docker
 

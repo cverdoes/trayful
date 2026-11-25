@@ -21,7 +21,7 @@ Besides the hooks, `register` adds routes of an extension's own, and `tokenRoute
 
 ## What `trayful/server` promises
 
-`packages/server/src/public.ts` is the whole public API. The npm package publishes it as `trayful/server`, bundled with the CLI so both share one copy of the server, with type declarations in `server/index.d.ts`. [[npm:rollup]] with [[npm:rollup-plugin-dts]] bundles those into one file, taking in the types of core and formats, which are not published on their own. Types from Fastify and zod stay imports there: an extension that names them installs them itself.
+`packages/server/src/public.ts` is the whole public API. The npm package publishes it as `trayful/server`, bundled with the CLI so both share one copy of the server, with type declarations in `server/index.d.ts`. [[npm:rollup]] with [[npm:rollup-plugin-dts]] bundles those into one file, taking in the types of core and formats, which are not published on their own. Types from Fastify and zod stay imports there, since copying in their own declarations would be large and fragile. The package lists both as optional peer dependencies, at the versions it bundles: npm never installs them by itself, but an extension that type-checks installs them as dev dependencies at those versions, so its types match the code that runs. Without them, `skipLibCheck` turns those types into `any`.
 
 `packages/server/public-api.md` lists every exported declaration. It is generated (`pnpm api`) and `pnpm check` fails when it is out of date, so a pull request that changes the API shows it in that file. Add to the API only when an extension needs something, and note every change in CHANGELOG.md. While Trayful is at 0.x, a minor version may change it.
 
