@@ -4,7 +4,8 @@
  */
 export * from './server.js';
 export type { Extension } from './extension.js';
-export type { Space, SpaceResolver } from './space.js';
+export { openSpace, type Space, type SpaceResolver } from './space.js';
+export { LimitError, type Growth, type Limits } from './play/limits.js';
 export {
   INVITE_COOKIE,
   PLAYER_COOKIE,

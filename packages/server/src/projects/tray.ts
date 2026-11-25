@@ -3,6 +3,7 @@
 // other authoring change.
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { checkLimits } from '../play/limits.js';
 import {
   componentFields,
   csvTable,
@@ -107,6 +108,8 @@ async function addCsv(
   csv: { name: string; text: string },
 ): Promise<Tray> {
   const project = workspace.project(projectId);
+  const bytes = Buffer.byteLength(csv.text);
+  await checkLimits(workspace.limits, { kind: 'file', project: projectId, bytes });
   const current = await readTray(workspace, projectId, type);
   const stem = slugify(path.basename(csv.name, path.extname(csv.name))) || type;
   const file = unusedPath(project.dir, `data/${stem}.csv`);

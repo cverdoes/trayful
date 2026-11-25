@@ -1,6 +1,7 @@
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import type { FastifyReply } from 'fastify';
 import { isHostRequest } from '../play/access.js';
+import { checkLimits } from '../play/limits.js';
 import { EDITING_TOOLS } from '../mcp/authoring.js';
 import { createMcpServer } from '../mcp/server.js';
 import type { RouteContext } from './context.js';
@@ -16,6 +17,7 @@ export function registerMcp(ctx: RouteContext): void {
     // network, except to the owner's agents in owner mode.
     if (!isHostRequest(request)) return app.access.refuseMcp(request, reply);
     const { workspace, url, git } = ctx.spaceOf(request);
+    await checkLimits(workspace.limits, { kind: 'agent' });
     const tool = calledTool(request.body);
     if (git && tool && EDITING_TOOLS.has(tool)) git.journal.note('agent', tool);
     const mcp = createMcpServer(workspace, { url, git });

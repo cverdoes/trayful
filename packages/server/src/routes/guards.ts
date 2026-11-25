@@ -3,6 +3,7 @@ import { allowed, allowedProject, caller, isTrustedOrigin } from '../play/access
 import { GitError } from '../git/git.js';
 import { FreshError } from '../git/repository.js';
 import { AuthoringError, ConflictError } from '../projects/authoring.js';
+import { LimitError } from '../play/limits.js';
 import { PlayerError } from '../play/players.js';
 import { ProjectLoadError } from '../play/session.js';
 import { WEBHOOK_ROUTE } from './repository.js';
@@ -70,6 +71,7 @@ export function registerGuards(
 /** The HTTP status for an error a route threw: the caller's mistake, a conflict, or ours. */
 function statusFor(err: Error): number {
   if (err instanceof ConflictError) return 409;
+  if (err instanceof LimitError) return 403;
   const known =
     err instanceof ProjectLoadError ||
     err instanceof SetupError ||

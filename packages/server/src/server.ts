@@ -20,7 +20,7 @@ import { GitLink } from './git/link.js';
 import type { Repository } from './git/repository.js';
 import type { SyncTimes } from './git/autosync.js';
 import { registerRepositoryRoutes } from './routes/repository.js';
-import { accessWith, spacesWith, type Extension } from './extension.js';
+import { accessWith, limitsWith, spacesWith, type Extension } from './extension.js';
 import { openSpace } from './space.js';
 
 export const DEFAULT_PORT = 4317;
@@ -131,7 +131,7 @@ export async function startServer(options: ServerOptions): Promise<RunningServer
   // Checked first, so a mistake stops the start before anything is opened.
   const access = accessWith(extensions, localAccess(options.container?.hostAddresses));
   const { workspace, git } = await openWorkspace(options);
-  const space = openSpace(workspace, git);
+  const space = openSpace(workspace, git, (own) => limitsWith(extensions, own));
   const app = Fastify({ logger: options.logger ?? false });
   app.decorate('access', access);
   await app.register(fastifyWebsocket);

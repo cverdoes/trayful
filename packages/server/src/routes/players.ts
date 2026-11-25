@@ -1,3 +1,4 @@
+import { checkLimits } from '../play/limits.js';
 import { addToken, caller, cookie, INVITE_COOKIE, PLAYER_COOKIE } from '../play/access.js';
 import { tableKey } from '../play/players.js';
 import { NOT_INVITED, type RouteContext, type TableQuery } from './context.js';
@@ -64,6 +65,7 @@ function registerInvites({ app, spaceOf, target, hostOnly, linksFor }: RouteCont
       const { workspace, players } = spaceOf(request);
       const { project, table } = target(request, request.body ?? {});
       await workspace.table(project, table, { create: false });
+      await checkLimits(workspace.limits, { kind: 'invite', project, table });
       const invite = await players.invite(project, table, request.body?.renew === true);
       return { project, table, links: linksFor(request, invite) };
     },

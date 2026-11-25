@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, realpathSync } from 'node:fs';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { checkLimits } from '../play/limits.js';
 import {
   ComponentType,
   InventoryEntry,
@@ -340,6 +341,7 @@ export async function addAsset(
   const data =
     content.text !== undefined ? Buffer.from(content.text) : Buffer.from(content.base64!, 'base64');
   inside(project.dir, file);
+  await checkLimits(workspace.limits, { kind: 'file', project: projectId, bytes: data.length });
   await commit(workspace, projectId, [{ file, content: data }]);
   return { file, bytes: data.length };
 }

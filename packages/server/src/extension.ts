@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { Access } from './play/access.js';
+import { noLimits, type Limits } from './play/limits.js';
 import type { Space, SpaceResolver } from './space.js';
 
 /**
@@ -19,6 +20,12 @@ export interface Extension {
    * request is for the server's own space.
    */
   spaces?: (own: Space) => SpaceResolver;
+  /**
+   * How far a space may grow, such as by the plan of whoever it belongs to. The server
+   * asks before a new project, table, invite, file, repository or agent request. At
+   * most one extension may bring them; without, nothing is limited.
+   */
+  limits?: (space: Space) => Limits;
   /**
    * Routes that agents call with a token rather than a browser's cookies, so a request
    * from another website gains nothing by reaching them. They skip the check that a
@@ -41,8 +48,14 @@ export function spacesWith(extensions: readonly Extension[], own: Space): SpaceR
   return hook ? hook(own) : () => own;
 }
 
+/** The limits of a space, as the extensions set them. */
+export function limitsWith(extensions: readonly Extension[], space: Space): Limits {
+  const hook = onlyOne(extensions, 'limits', 'how far a space may grow');
+  return hook ? hook(space) : noLimits;
+}
+
 /** The one extension's hook of a kind, if any; two that both bring one are a mistake. */
-function onlyOne<K extends 'access' | 'spaces'>(
+function onlyOne<K extends 'access' | 'spaces' | 'limits'>(
   extensions: readonly Extension[],
   kind: K,
   decides: string,

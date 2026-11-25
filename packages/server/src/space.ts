@@ -2,6 +2,7 @@ import type { FastifyRequest } from 'fastify';
 import type { GitLink } from './git/link.js';
 import { Connections } from './play/connections.js';
 import { Knocks } from './play/knocks.js';
+import type { Limits } from './play/limits.js';
 import type { Players } from './play/players.js';
 import type { Workspace } from './projects/workspace.js';
 
@@ -29,9 +30,16 @@ export interface Space {
 /** Finds the space a request is for. */
 export type SpaceResolver = (request: FastifyRequest) => Space;
 
-/** A space for a workspace, and its repository when it has one. */
-export function openSpace(workspace: Workspace, git?: GitLink): Space {
-  return {
+/**
+ * A space for a workspace, and its repository when it has one. `limits` say how far it
+ * may grow; left out, nothing is limited.
+ */
+export function openSpace(
+  workspace: Workspace,
+  git?: GitLink,
+  limits?: (space: Space) => Limits,
+): Space {
+  const space: Space = {
     workspace,
     get players() {
       return workspace.players;
@@ -42,4 +50,6 @@ export function openSpace(workspace: Workspace, git?: GitLink): Space {
     connections: new Connections(),
     knocks: new Knocks(workspace.players),
   };
+  if (limits) workspace.limits = limits(space);
+  return space;
 }

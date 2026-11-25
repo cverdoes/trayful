@@ -1,5 +1,6 @@
 // Ties a repository to the workspace it feeds: connecting attaches the projects, syncing reloads them.
 import { FilePlayerStore } from '../play/players.js';
+import { checkLimits } from '../play/limits.js';
 import { Workspace, type OpenOptions } from '../projects/workspace.js';
 import { AutoSync, DEFAULT_SYNC_TIMES, type SyncTimes } from './autosync.js';
 import { Journal } from './journal.js';
@@ -57,6 +58,7 @@ export class GitLink {
 
   /** Connects the repository and opens its projects. */
   async connect(input: ConnectInput): Promise<RepositoryStatus> {
+    await checkLimits(this.workspace.limits, { kind: 'repository' });
     await this.repository.connect(input);
     await this.workspace.attach(
       this.repository.projectRoot,
