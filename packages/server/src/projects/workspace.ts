@@ -15,6 +15,7 @@ import { adoptPlayers, markBase, projectDirs, resolveBase } from './base.js';
 import { FilePlayerStore, Players, type Player, type PlayerStore } from '../play/players.js';
 import { checkTableName, ProjectLoadError, TableSession, tableFile } from '../play/session.js';
 import { promptsFile, PROMPTS_SUFFIX } from '../play/tableFiles.js';
+import { checkLimits, noLimits, type Limits } from '../play/limits.js';
 
 /** One project folder in the workspace. */
 export interface ProjectEntry {
@@ -41,6 +42,8 @@ export interface WorkspaceOptions {
   agentPace?: boolean;
   /** Where players are kept. Default: `.trayful/players.json` in the base folder. */
   playerStore?: PlayerStore;
+  /** What to call the host. Default: the account running the server. */
+  hostName?: string;
   /**
    * Called with a new project's id before its folder is written, such as for a
    * git-backed Trayful to check the folder out.
@@ -89,6 +92,8 @@ export class Workspace {
   private listeners = new Set<(entry: ProjectEntry) => void>();
   private attachListeners = new Set<() => void>();
   private activeTable: TableSession | undefined;
+  /** How far this workspace may grow; see `Limits`. The server sets them with its space. */
+  limits: Limits = noLimits;
   private rootDir = '';
   private watched = new Set<string>();
   private notesNow: string[] = [];
@@ -134,7 +139,8 @@ export class Workspace {
       const note = project ? await adoptPlayers(base, project) : undefined;
       if (note) notes.push(note);
     }
-    const players = await Players.open(options.playerStore ?? FilePlayerStore.in(base));
+    const store = options.playerStore ?? FilePlayerStore.in(base);
+    const players = await Players.open(store, options.hostName);
     const workspace = new Workspace(options, players);
     workspace.notesNow = notes;
     await workspace.attach(base, { ...options, project });
@@ -146,7 +152,7 @@ export class Workspace {
    * repository. Tools and routes that need a table say so until `attach` gives it one.
    */
   static async empty(options: WorkspaceOptions & { playerStore: PlayerStore }): Promise<Workspace> {
-    return new Workspace(options, await Players.open(options.playerStore));
+    return new Workspace(options, await Players.open(options.playerStore, options.hostName));
   }
 
   /**
@@ -227,17 +233,7 @@ export class Workspace {
     const pending = this.opening.get(key);
     if (pending) return pending;
     const project = this.project(projectId);
-    if (options.create === false && !existsSync(tableFile(project, name))) {
-      throw new ProjectLoadError(`Project "${projectId}" has no table "${name}".`);
-    }
-    const opening = TableSession.create(project, name, {
-      seed: options.seed,
-      setup: options.setup,
-      saveDelayMs: this.options.saveDelayMs,
-      agentPace: this.options.agentPace,
-      version: this.entry(projectId).version,
-      players: this.players,
-    });
+    const opening = this.openTable(projectId, project, name, options);
     this.opening.set(key, opening);
     try {
       const session = await opening;
@@ -246,6 +242,29 @@ export class Workspace {
     } finally {
       this.opening.delete(key);
     }
+  }
+
+  /** Opens a table from its file, or makes it when it is new and the limits allow. */
+  private async openTable(
+    projectId: string,
+    project: ResolvedProject,
+    name: string,
+    options: { seed?: number; setup?: string | false; create?: boolean },
+  ): Promise<TableSession> {
+    if (!existsSync(tableFile(project, name))) {
+      if (options.create === false) {
+        throw new ProjectLoadError(`Project "${projectId}" has no table "${name}".`);
+      }
+      await checkLimits(this.limits, { kind: 'table', project: projectId });
+    }
+    return TableSession.create(project, name, {
+      seed: options.seed,
+      setup: options.setup,
+      saveDelayMs: this.options.saveDelayMs,
+      agentPace: this.options.agentPace,
+      version: this.entry(projectId).version,
+      players: this.players,
+    });
   }
 
   /** Saved and open tables of a project, sorted by name. */
@@ -276,6 +295,7 @@ export class Workspace {
     if (existsSync(tableFile(project, to)) || this.sessions.has(`${projectId}/${to}`)) {
       throw new ProjectLoadError(`Project "${projectId}" already has a table "${to}".`);
     }
+    await checkLimits(this.limits, { kind: 'table', project: projectId });
     const source = await this.table(projectId, from, { create: false });
     await source.save();
     const state = fromTableFile(JSON.parse(await readFile(source.file, 'utf8')));
@@ -314,6 +334,7 @@ export class Workspace {
     if (!id) throw new ProjectLoadError(`"${name}" does not make a usable folder name.`);
     const dir = path.join(this.root, id);
     if (existsSync(dir)) throw new ProjectLoadError(`There is already a folder "${id}".`);
+    await checkLimits(this.limits, { kind: 'project' });
     await this.options.beforeNewProject?.(id);
     await createProjectFolder(dir, name);
     const entry = await this.load(id, dir);

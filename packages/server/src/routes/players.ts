@@ -1,3 +1,4 @@
+import { checkLimits } from '../play/limits.js';
 import { addToken, caller, cookie, INVITE_COOKIE, PLAYER_COOKIE } from '../play/access.js';
 import { tableKey } from '../play/players.js';
 import { NOT_INVITED, type RouteContext, type TableQuery } from './context.js';
@@ -9,7 +10,7 @@ export function registerPlayerRoutes(ctx: RouteContext): void {
 }
 
 /** Who the caller is, renaming themselves, and joining as a guest. */
-function registerMe({ app, players, workspace, identify }: RouteContext): void {
+function registerMe({ app, spaceOf, identify }: RouteContext): void {
   app.get('/api/me', async (request) => {
     const { who, player } = await identify(request);
     return { player, host: who.local, invited: who.invited, joined: who.player !== undefined };
@@ -17,9 +18,11 @@ function registerMe({ app, players, workspace, identify }: RouteContext): void {
   app.post<{ Body: { name?: string } | undefined }>('/api/me', async (request, reply) => {
     const { player } = await identify(request);
     if (!player) return reply.code(403).send({ error: 'Join the table first.' });
+    const { workspace } = spaceOf(request);
     return { player: await workspace.renamePlayer(player.id, request.body?.name ?? '') };
   });
   app.post<{ Body: { name?: string } | undefined }>('/api/join', async (request, reply) => {
+    const { workspace, players } = spaceOf(request);
     const who = caller(request, players);
     if (!who.invited) return reply.code(403).send({ error: NOT_INVITED });
     let player = who.player;
@@ -39,15 +42,9 @@ function registerMe({ app, players, workspace, identify }: RouteContext): void {
 }
 
 /** Invite links: following one, and the host making or renewing one. */
-function registerInvites({
-  app,
-  players,
-  workspace,
-  target,
-  hostOnly,
-  linksFor,
-}: RouteContext): void {
+function registerInvites({ app, spaceOf, target, hostOnly, linksFor }: RouteContext): void {
   app.get<{ Params: { token: string } }>('/join/:token', async (request, reply) => {
+    const { players } = spaceOf(request);
     const invite = players.byToken(request.params.token);
     // The app says the link has expired, in the same look as the rest of Trayful.
     if (!invite) return reply.redirect('/?invite=expired');
@@ -65,10 +62,12 @@ function registerInvites({
     '/api/invites',
     async (request, reply) => {
       if (hostOnly(request, reply)) return;
-      const { project, table } = target(request.body ?? {});
+      const { workspace, players } = spaceOf(request);
+      const { project, table } = target(request, request.body ?? {});
       await workspace.table(project, table, { create: false });
+      await checkLimits(workspace.limits, { kind: 'invite', project, table });
       const invite = await players.invite(project, table, request.body?.renew === true);
-      return { project, table, links: linksFor(invite) };
+      return { project, table, links: linksFor(request, invite) };
     },
   );
 }

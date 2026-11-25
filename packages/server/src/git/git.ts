@@ -41,7 +41,8 @@ const MEGABYTE = 1024 * 1024;
 /**
  * Settings on every command, so a repository cannot make the server run code or read
  * its disk: no hooks, no `file://` or `ext::` transports, no submodules, no
- * credential helpers or file system monitors from the computer's own git config.
+ * credential helpers or file system monitors from the computer's own git config, and
+ * symbolic links checked out as plain files, so none can lead out of the clone.
  */
 function hardening(allowLocalUrls: boolean): string[] {
   return [
@@ -49,6 +50,7 @@ function hardening(allowLocalUrls: boolean): string[] {
     ['protocol.ext.allow', 'never'],
     ['core.hooksPath', '/dev/null'],
     ['core.fsmonitor', 'false'],
+    ['core.symlinks', 'false'],
     ['submodule.recurse', 'false'],
     ['credential.helper', ''],
     ['advice.detachedHead', 'false'],

@@ -37,7 +37,7 @@ summary: One Node process, a folder of files, and the browsers, agents and engin
 
 ## Who may connect
 
-The server listens on `127.0.0.1` unless told otherwise, so only this computer can reach it. A request from this computer is the **host**, who may do anything. Everyone else is a **guest** and needs an invite link to one table; `trayful play --share` listens on the local network and `--tunnel` opens a Cloudflare quick tunnel ([[cli/tunnel.ts]]). [[server/play/access.ts]] decides who a request comes from, and treats a request carrying proxy headers as remote even when it arrives on the loopback. In Docker, `--container` treats the container's gateway as this computer and the compose file publishes the port on the loopback only. On a server of your own, owner mode (`--owner`) also makes whoever signs in with the owner secret the host, and lets their agents reach MCP with OAuth ([[server/play/owner.ts]]).
+The server listens on `127.0.0.1` unless told otherwise, so only this computer can reach it. A request from this computer is the **host**, who may do anything. Everyone else is a **guest** and needs an invite link to one table; `trayful play --share` listens on the local network and `--tunnel` opens a Cloudflare quick tunnel ([[cli/tunnel.ts]]). [[server/play/access.ts]] decides who a request comes from, and treats a request carrying proxy headers as remote even when it arrives on the loopback. In Docker, `--container` treats the container's gateway as this computer and the compose file publishes the port on the loopback only. On a server of your own, owner mode (`--owner`) also makes whoever signs in with the owner secret the host, and lets their agents reach MCP with OAuth ([[owner/owner.ts]]).
 
 ## What runs where
 

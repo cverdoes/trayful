@@ -56,14 +56,14 @@ describe('trayful play', () => {
   });
 
   it('asks before serving a busy folder for the first time, and only once', async () => {
-    // The examples folder also holds the referee engine, which is no project. The
-    // repository marks it as a folder of projects; without that, Trayful asks.
+    // The examples folder also holds the referee engine and an extension, which are no
+    // projects. The repository marks it as a folder of projects; without that, Trayful asks.
     const examples = await scratchExamples();
     await rm(path.join(examples, '.trayful'), { recursive: true });
     const options = parsePlayArgs([examples, '--port', '0', '--no-open']);
     // The tests run without a terminal, so nobody can answer.
     await expect(play(options, vi.fn(), { appDir })).rejects.toThrow(
-      /holds 1 other file or folder besides Trayful projects[\s\S]*add --yes/,
+      /holds 2 other files and folders besides Trayful projects[\s\S]*add --yes/,
     );
     const no = vi.fn(() => Promise.resolve(false));
     await expect(play(options, vi.fn(), { appDir, confirm: no })).rejects.toThrow('Stopped');

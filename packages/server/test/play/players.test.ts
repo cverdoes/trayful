@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   AGENT_PLAYER,
   FilePlayerStore,
@@ -44,14 +44,9 @@ describe('Players', () => {
     await expect(players.join('   ', 'guest')).rejects.toThrow(/name/);
   });
 
-  it('names the host after TRAYFUL_HOST_NAME when it is set', async () => {
-    vi.stubEnv('TRAYFUL_HOST_NAME', 'claes');
-    try {
-      const players = await Players.open(new MemoryPlayerStore());
-      expect((await players.host()).name).toBe('Claes');
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  it('names the host as it is told', async () => {
+    const players = await Players.open(new MemoryPlayerStore(), 'claes');
+    expect((await players.host()).name).toBe('Claes');
   });
 
   it('makes one host, and keeps players and the invite between runs', async () => {

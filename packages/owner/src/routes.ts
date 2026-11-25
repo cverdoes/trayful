@@ -1,22 +1,41 @@
-import type { FastifyRequest } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   INVITE_COOKIE,
-  OWNER_COOKIE,
   PLAYER_COOKIE,
+  bearer,
   cookie,
   isHostRequest,
-} from '../play/access.js';
-import type { Owner } from '../play/owner.js';
-import type { RouteContext } from './context.js';
-import { registerOAuthRoutes } from './oauth.js';
+  parseCookies,
+  type Access,
+} from '@trayful/server/public';
+import { Owner } from './owner.js';
+import { OWNER_COOKIE, askForOwnerToken, registerOAuthRoutes } from './oauth.js';
 import { sendPage, signInPage } from './pages.js';
 
 /**
- * Owner mode's routes: signing a browser in with the owner secret, and OAuth for the
- * owner's agents. Registered only when the server runs in owner mode.
+ * Owner mode's access: requests from this computer still count as the host, and so
+ * does the owner from anywhere, by the browser's cookie or an agent's token.
  */
-export function registerOwnerRoutes(ctx: RouteContext, owner: Owner): void {
-  const { app } = ctx;
+export function ownerAccess(owner: Owner, local: Access): Access {
+  return {
+    fromHostComputer: local.fromHostComputer,
+    signedIn: (request) => {
+      const signedInCookie = parseCookies(request.headers.cookie)[OWNER_COOKIE];
+      return (
+        (signedInCookie !== undefined && owner.accepts(signedInCookie, 'web')) ||
+        owner.accepts(bearer(request), 'access')
+      );
+    },
+    issued: (credential) => Owner.isToken(credential),
+    refuseMcp: askForOwnerToken,
+  };
+}
+
+/**
+ * Owner mode's routes: signing a browser in with the owner secret, and OAuth for the
+ * owner's agents.
+ */
+export function registerOwnerRoutes(app: FastifyInstance, owner: Owner): void {
   // The sign-in and authorize pages post plain HTML forms.
   app.addContentTypeParser(
     'application/x-www-form-urlencoded',
@@ -49,7 +68,7 @@ export function registerOwnerRoutes(ctx: RouteContext, owner: Owner): void {
       .redirect(next, 303);
   });
 
-  registerOAuthRoutes(ctx, owner);
+  registerOAuthRoutes(app, owner);
 }
 
 function hasGuestCookie(request: FastifyRequest): boolean {

@@ -1,10 +1,9 @@
-// What the HTTP routes share: the workspace, finding the table a request names, and who is asking.
+// What the HTTP routes share: finding the space and table a request is for, and who is asking.
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import type { GitLink } from '../git/link.js';
 import { caller, isHostRequest, type Caller } from '../play/access.js';
-import type { Invite, Player, Players } from '../play/players.js';
+import type { Invite, Player } from '../play/players.js';
 import type { TableSession } from '../play/session.js';
-import type { Workspace } from '../projects/workspace.js';
+import type { Space, SpaceResolver } from '../space.js';
 
 /** A table named in a request; either part may be left out. */
 export interface TableQuery {
@@ -16,75 +15,39 @@ export const NOT_INVITED = 'Ask the host for an invite link to join this table.'
 
 export interface RouteContext {
   app: FastifyInstance;
-  workspace: Workspace;
-  players: Players;
-  /** The repository of a git-backed Trayful; undefined for a folder on this computer. */
-  git?: GitLink;
-  /** Addresses others reach this server at: the network's, and a tunnel's. */
-  shareBases: string[];
-  /** The server's own address, told to agents; set once the server listens. */
-  url: string;
-  /** The table a request names, or the one agents are playing on. */
-  target: (query: TableQuery) => { project: string; table: string };
-  sessionFor: (query: TableQuery) => Promise<TableSession>;
+  /** The space a request is for. Routes look it up for every request, never once. */
+  spaceOf: SpaceResolver;
+  /** The table a request names, or the one agents are playing on, in the request's space. */
+  target: (request: FastifyRequest, query: TableQuery) => { project: string; table: string };
+  sessionFor: (request: FastifyRequest, query: TableQuery) => Promise<TableSession>;
   /** Who a request is from. Requests from this computer without a cookie are the host. */
   identify: (request: FastifyRequest) => Promise<{ who: Caller; player: Player | undefined }>;
   /** Only the host may change which tables exist, or author. Replies 403 otherwise. */
   hostOnly: (request: FastifyRequest, reply: FastifyReply) => boolean;
-  /** The links to an invite, one per address others reach this server at. */
-  linksFor: (invite: Invite) => string[];
-  /** The live connections of each player, so one sent away can be cut off. */
-  connections: Connections;
+  /** The links to an invite, one per address others reach the request's space at. */
+  linksFor: (request: FastifyRequest, invite: Invite) => string[];
 }
 
-/** Something a player is connected by, such as a WebSocket. */
-interface Closable {
-  close(code?: number, reason?: string): void;
+/** The table a query names in a space, or the one agents are playing on. */
+export function targetIn(space: Space, query: TableQuery): { project: string; table: string } {
+  const { active } = space.workspace;
+  return query.project || query.table
+    ? { project: query.project ?? active.projectId, table: query.table ?? 'table-1' }
+    : { project: active.projectId, table: active.tableName };
 }
 
-/** The live connections of each player. */
-class Connections {
-  private byPlayer = new Map<string, Set<Closable>>();
-
-  /** Keeps a player's connection; the returned function forgets it again. */
-  add(player: string, connection: Closable): () => void {
-    const open = this.byPlayer.get(player) ?? new Set();
-    open.add(connection);
-    this.byPlayer.set(player, open);
-    return () => open.delete(connection);
-  }
-
-  /** Closes every connection of a player, saying why. */
-  closeAll(player: string, reason: string): void {
-    for (const connection of this.byPlayer.get(player) ?? []) connection.close(1008, reason);
-    this.byPlayer.delete(player);
-  }
-}
-
-export function routeContext(
-  app: FastifyInstance,
-  workspace: Workspace,
-  git?: GitLink,
-): RouteContext {
-  const { players } = workspace;
-  const shareBases: string[] = [];
-  const target = (query: TableQuery) =>
-    query.project || query.table
-      ? { project: query.project ?? workspace.active.projectId, table: query.table ?? 'table-1' }
-      : { project: workspace.active.projectId, table: workspace.active.tableName };
+export function routeContext(app: FastifyInstance, spaceOf: SpaceResolver): RouteContext {
+  const target = (request: FastifyRequest, query: TableQuery) => targetIn(spaceOf(request), query);
   return {
     app,
-    workspace,
-    players,
-    git,
-    shareBases,
-    url: '',
+    spaceOf,
     target,
-    sessionFor: (query) => {
-      const { project, table } = target(query);
-      return workspace.table(project, table);
+    sessionFor: (request, query) => {
+      const { project, table } = target(request, query);
+      return spaceOf(request).workspace.table(project, table);
     },
     identify: async (request) => {
+      const { players } = spaceOf(request);
       const who = caller(request, players);
       const player = who.player ?? (who.local ? await players.host() : undefined);
       return { who, player };
@@ -94,7 +57,7 @@ export function routeContext(
       void reply.code(403).send({ error: 'Only the host can do that.' });
       return true;
     },
-    linksFor: (invite) => shareBases.map((base) => `${base}/join/${invite.token}`),
-    connections: new Connections(),
+    linksFor: (request, invite) =>
+      spaceOf(request).shareBases.map((base) => `${base}/join/${invite.token}`),
   };
 }

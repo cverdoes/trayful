@@ -1,18 +1,20 @@
 // OAuth 2.1 for one person, so agents such as claude.ai's connectors can reach MCP in owner mode.
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import { OWNER_COOKIE, cookie, isOwnerRequest } from '../play/access.js';
-import type { OAuthClient, Owner } from '../play/owner.js';
-import type { RouteContext } from './context.js';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { cookie } from '@trayful/server/public';
+import type { OAuthClient, Owner } from './owner.js';
 import { allowPage, problemPage, sendPage } from './pages.js';
 
 type Form = Record<string, string | undefined>;
+
+/** Proves the browser signed in with the owner secret. */
+export const OWNER_COOKIE = 'trayful_owner';
 
 /**
  * The OAuth endpoints an MCP client finds and uses on its own: metadata (RFC 9728 and
  * RFC 8414), dynamic client registration (RFC 7591), and the authorization code flow
  * with PKCE. The owner allows each client once, on a page that asks for the secret.
  */
-export function registerOAuthRoutes({ app }: RouteContext, owner: Owner): void {
+export function registerOAuthRoutes(app: FastifyInstance, owner: Owner): void {
   const resourceMetadata = (request: FastifyRequest) => ({
     resource: `${publicBase(request)}/mcp`,
     authorization_servers: [publicBase(request)],
@@ -54,7 +56,7 @@ export function registerOAuthRoutes({ app }: RouteContext, owner: Owner): void {
     const problem = authorizationProblem(owner, params);
     if (problem) return sendPage(reply, problemPage(problem), 400);
     const asked = authorization(owner, params);
-    return sendPage(reply, allowPage(pageFor(asked, isOwnerRequest(request))));
+    return sendPage(reply, allowPage(pageFor(asked, request.server.access.signedIn(request))));
   });
 
   app.post('/oauth/authorize', async (request, reply) => {
@@ -65,7 +67,7 @@ export function registerOAuthRoutes({ app }: RouteContext, owner: Owner): void {
     if (form.answer !== 'allow') {
       return reply.redirect(backTo(asked, { error: 'access_denied' }), 303);
     }
-    const signedIn = isOwnerRequest(request);
+    const signedIn = request.server.access.signedIn(request);
     if (!signedIn && !owner.isSecret(form.secret ?? '')) {
       const page = allowPage({ ...pageFor(asked, false), error: 'That is not the owner secret.' });
       return sendPage(reply, page, 401);

@@ -10,13 +10,13 @@ export function registerTableRoutes(ctx: RouteContext): void {
 /** The projects, a table and its project as the browser loads them. */
 function registerProjectViews({
   app,
-  players,
-  workspace,
+  spaceOf,
   identify,
   sessionFor,
   hostOnly,
 }: RouteContext): void {
   app.get('/api/health', (request) => {
+    const { workspace } = spaceOf(request);
     // A git-backed Trayful waits with no project until a repository is connected.
     if (!workspace.ready) return { ok: true, waiting: true };
     return {
@@ -27,6 +27,7 @@ function registerProjectViews({
     };
   });
   app.get('/api/projects', async (request) => {
+    const { workspace, players } = spaceOf(request);
     const who = caller(request, players);
     const projects = await Promise.all(
       workspace.projects().map(async (entry) => ({
@@ -42,26 +43,26 @@ function registerProjectViews({
     return who.local ? projects : projects.filter((p) => p.tables.length);
   });
   app.get<{ Querystring: TableQuery }>('/api/project', async (request) =>
-    (await sessionFor(request.query)).view(),
+    (await sessionFor(request, request.query)).view(),
   );
   app.get<{ Querystring: TableQuery }>('/api/table', async (request) => {
     const { player } = await identify(request);
-    return (await sessionFor(request.query)).viewFor(player?.id);
+    return (await sessionFor(request, request.query)).viewFor(player?.id);
   });
   // Every component with its text, for print-and-play: the host's view only.
   app.get<{ Querystring: { project?: string } }>('/api/components', async (request, reply) => {
     if (hostOnly(request, reply)) return;
-    return workspace.project(request.query.project).components;
+    return spaceOf(request).workspace.project(request.query.project).components;
   });
 }
 
 /** New projects, and new, duplicated and deleted tables, for the table menu in the browser. */
-function registerTableMenu({ app, workspace, hostOnly }: RouteContext): void {
+function registerTableMenu({ app, spaceOf, hostOnly }: RouteContext): void {
   app.post<{ Body: { name?: string } | undefined }>('/api/projects', async (request, reply) => {
     if (hostOnly(request, reply)) return;
     const name = request.body?.name?.trim();
     if (!name) return reply.code(400).send({ error: 'Give the new project a name.' });
-    const entry = await workspace.createProject(name);
+    const entry = await spaceOf(request).workspace.createProject(name);
     return { id: entry.id, name };
   });
 
@@ -69,6 +70,7 @@ function registerTableMenu({ app, workspace, hostOnly }: RouteContext): void {
     Body: { project?: string; name?: string; from?: string; setup?: string | false } | undefined;
   }>('/api/tables', async (request, reply) => {
     if (hostOnly(request, reply)) return;
+    const { workspace } = spaceOf(request);
     const { project = workspace.active.projectId, name, from, setup } = request.body ?? {};
     if (!name) return reply.code(400).send({ error: 'Give the new table a name.' });
     if ((await workspace.tables(project)).includes(name)) {
@@ -83,6 +85,7 @@ function registerTableMenu({ app, workspace, hostOnly }: RouteContext): void {
     '/api/tables',
     async (request, reply) => {
       if (hostOnly(request, reply)) return;
+      const { workspace } = spaceOf(request);
       await workspace.deleteTable(
         request.query.project ?? workspace.active.projectId,
         request.query.name,

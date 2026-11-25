@@ -1,22 +1,27 @@
 /**
- * Builds the `trayful` npm package in `packages/cli/dist`: one bundled file with the
- * CLI, server, core and formats, a launcher that checks the Node version, the engine
- * client (`trayful/engine`) with its type declarations, and the resources the server
- * reads at run time (see packages/server/src/shipped/resources.ts).
+ * Builds the `trayful` npm package in `packages/cli/dist`: the CLI and the server's
+ * public API for extensions (`trayful/server`), bundled together with core and formats
+ * so both share one copy of the server code; a launcher that checks the Node version;
+ * the engine client (`trayful/engine`); type declarations for both; and the resources
+ * the server reads at run time (see packages/server/src/shipped/resources.ts).
  * Run it through `pnpm package`, which builds the browser app first.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { chmod, cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RESOURCE_SOURCES } from '@trayful/server';
 import { build, type Metafile } from 'esbuild';
+import { rollup } from 'rollup';
+import { dts } from 'rollup-plugin-dts';
 import ts from 'typescript';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const cli = path.join(root, 'packages/cli');
 const engineClient = path.join(root, 'packages/engine-client/src/index.ts');
+const serverApi = path.join(root, 'packages/server/src/public.ts');
 const out = path.join(cli, 'dist');
 
 /** The oldest Node.js the bundle runs on: `engines.node` in the root package.json. */
@@ -40,12 +45,16 @@ await mkdir(out, { recursive: true });
 const metafile = await bundle();
 await bundleEngineClient();
 declareEngineClient();
+const typePeers = await declareServer();
 await writeLauncher();
 for (const [name, from] of Object.entries(RESOURCE_SOURCES)) {
   await cp(path.join(root, from), path.join(out, 'resources', name), { recursive: true });
 }
 const version = readJson(path.join(cli, 'package.json')).version as string;
-await writeFile(path.join(out, 'package.json'), JSON.stringify(manifest(version), null, 2) + '\n');
+await writeFile(
+  path.join(out, 'package.json'),
+  JSON.stringify(manifest(version, typePeers), null, 2) + '\n',
+);
 await cp(path.join(cli, 'npm/README.md'), path.join(out, 'README.md'));
 await cp(path.join(root, 'LICENSE.md'), path.join(out, 'LICENSE.md'));
 await writeFile(
@@ -54,11 +63,19 @@ await writeFile(
 );
 console.log(`Built trayful ${version} in ${path.relative(root, out)}`);
 
-/** Bundles the CLI and everything it imports, except Node's own modules, into one file. */
+/**
+ * Bundles the CLI (`trayful.mjs`) and the server's public API (`server.mjs`) with
+ * everything they import, except Node's own modules. The code they share goes into
+ * chunks beside them, so an extension and the CLI run the same server code. Chunks
+ * sit next to the entries because the server finds its resources from its own file.
+ */
 async function bundle(): Promise<Metafile> {
   const result = await build({
-    entryPoints: [path.join(cli, 'src/main.ts')],
-    outfile: path.join(out, 'trayful.mjs'),
+    entryPoints: { trayful: path.join(cli, 'src/main.ts'), server: serverApi },
+    outdir: out,
+    outExtension: { '.js': '.mjs' },
+    chunkNames: 'shared-[hash]',
+    splitting: true,
     bundle: true,
     platform: 'node',
     format: 'esm',
@@ -116,6 +133,41 @@ function declareEngineClient(): void {
 }
 
 /**
+ * Type declarations for `trayful/server`, bundled into one file with the types of
+ * core and formats, which are not published on their own. Types from other packages,
+ * such as Fastify's, stay imports: an extension that uses them installs them itself.
+ * Returns those packages, each with the version range the bundle was built with.
+ */
+async function declareServer(): Promise<Record<string, string>> {
+  const dependencies = readJson(path.join(root, 'packages/server/package.json'))
+    .dependencies as Record<string, string>;
+  const external = Object.keys(dependencies).filter((name) => !name.startsWith('@trayful/'));
+  const bundled = await rollup({
+    input: serverApi,
+    external: (id) => external.some((name) => id === name || id.startsWith(`${name}/`)),
+    plugins: [dts({ tsconfig: path.join(root, 'tsconfig.json'), respectExternal: true })],
+    logLevel: 'silent',
+  });
+  const { output } = await bundled.write({
+    file: path.join(out, 'server/index.d.ts'),
+    format: 'es',
+  });
+  await bundled.close();
+  const imported = output.flatMap((chunk) => (chunk.type === 'chunk' ? chunk.imports : []));
+  return Object.fromEntries(
+    external
+      .filter((name) => imported.some((id) => id === name || id.startsWith(`${name}/`)))
+      .map((name) => [name, `^${installedVersion(name)}`]),
+  );
+}
+
+/** The version of one of the server's dependencies that the bundle was built with. */
+function installedVersion(name: string): string {
+  const from = createRequire(path.join(root, 'packages/server/package.json'));
+  return readJson(from.resolve(`${name}/package.json`)).version as string;
+}
+
+/**
  * The `trayful` command. It checks the Node version before loading the bundle, so an
  * old Node says what to install instead of failing somewhere inside.
  */
@@ -138,7 +190,12 @@ await import('./trayful.mjs');
   await chmod(launcher, 0o755);
 }
 
-function manifest(version: string): Record<string, unknown> {
+/**
+ * The published package.json. Everything it runs is bundled, so it has no dependencies.
+ * The packages whose types `trayful/server` names are optional peers: npm never installs
+ * them, but tells an extension's author which versions match the bundle.
+ */
+function manifest(version: string, typePeers: Record<string, string>): Record<string, unknown> {
   return {
     name: 'trayful',
     version,
@@ -149,8 +206,13 @@ function manifest(version: string): Record<string, unknown> {
     bin: { trayful: 'trayful.js' },
     exports: {
       './engine': { types: './engine/index.d.ts', default: './engine.mjs' },
+      './server': { types: './server/index.d.ts', default: './server.mjs' },
       './package.json': './package.json',
     },
+    peerDependencies: typePeers,
+    peerDependenciesMeta: Object.fromEntries(
+      Object.keys(typePeers).map((name) => [name, { optional: true }]),
+    ),
     engines: { node: `>=${NODE.major}.${NODE.minor}` },
     repository: { type: 'git', url: 'git+https://github.com/cverdoes/trayful.git' },
     homepage: 'https://github.com/cverdoes/trayful#readme',

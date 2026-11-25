@@ -119,7 +119,7 @@ Each entry is a short decision record: what was decided, why, what it costs, and
 
 **Where.** [[server/play/access.ts]], [[concept:join-by-invite]].
 
-**Later: owner mode.** On a server of your own nobody sits at the computer, so `trayful play --owner` adds one more way to be the host: sign in with an owner secret. Still no accounts: one owner, a secret instead of a password, and tokens signed with a key made from the secret, so the server stores none and changing the secret signs everyone out. Agents get in with OAuth (authorization code with PKCE and dynamic client registration), which is what claude.ai connectors speak. Without `--owner` nothing changes. See [[server/play/owner.ts]] and [[server/routes/oauth.ts]].
+**Later: owner mode.** On a server of your own nobody sits at the computer, so `trayful play --owner` adds one more way to be the host: sign in with an owner secret. Still no accounts: one owner, a secret instead of a password, and tokens signed with a key made from the secret, so the server stores none and changing the secret signs everyone out. Agents get in with OAuth (authorization code with PKCE and dynamic client registration), which is what claude.ai connectors speak. Without `--owner` nothing changes. See [[owner/owner.ts]] and [[owner/oauth.ts]].
 
 ## 12. Layers, enforced by tools
 

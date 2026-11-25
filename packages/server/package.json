@@ -5,7 +5,8 @@
   "license": "FSL-1.1-MIT",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./public": "./src/public.ts"
   },
   "dependencies": {
     "@fastify/static": "^10.1.9",

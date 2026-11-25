@@ -123,14 +123,19 @@ export class Players {
   private constructor(
     private data: PlayersData,
     private readonly store: PlayerStore,
+    private readonly hostName: string | undefined,
   ) {}
 
-  static async open(store: PlayerStore): Promise<Players> {
+  /**
+   * The players kept in a store. `hostName` names the host when they first join; left
+   * out or empty, the host is named after the account running the server.
+   */
+  static async open(store: PlayerStore, hostName?: string): Promise<Players> {
     // Files written before invites were per table have no `invites` list.
     const data: PlayersData = { invites: [], players: [], ...(await store.load()) };
     // Before invites were per table there was one for every table; it no longer works.
     delete (data as { invite?: string }).invite;
-    const players = new Players(data, store);
+    const players = new Players(data, store, hostName);
     if (!players.get(AGENT_PLAYER)) {
       data.players.push({
         id: AGENT_PLAYER,
@@ -244,7 +249,7 @@ export class Players {
     const host = this.data.players.find((p) => p.role === 'host');
     if (host) return Promise.resolve(publicPlayer(host));
     // The page and its socket ask at the same time; make one host, not two.
-    this.hosting ??= this.join(hostName(), 'host').then(({ player }) => player);
+    this.hosting ??= this.join(nameForHost(this.hostName), 'host').then(({ player }) => player);
     return this.hosting;
   }
 
@@ -267,11 +272,11 @@ export class Players {
 }
 
 /**
- * A name for the person running the server: `TRAYFUL_HOST_NAME` if set and not empty
- * (in a container the account is not theirs), else their account on this computer.
+ * A name for the person running the server: the one given if not empty (in a container
+ * the account is not theirs), else their account on this computer.
  */
-function hostName(): string {
-  const name = process.env.TRAYFUL_HOST_NAME?.trim();
+function nameForHost(given: string | undefined): string {
+  const name = given?.trim();
   return asHostName(name?.length ? name : accountName());
 }
 

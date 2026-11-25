@@ -3,11 +3,12 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   resolve: {
-    // The example engines import the client as `trayful/engine`, as they would from npm.
+    // The examples import `trayful/engine` and `trayful/server`, as they would from npm.
     alias: {
       'trayful/engine': fileURLToPath(
         new URL('packages/engine-client/src/index.ts', import.meta.url),
       ),
+      'trayful/server': fileURLToPath(new URL('packages/server/src/public.ts', import.meta.url)),
     },
   },
   test: {
@@ -35,6 +36,7 @@ export default defineConfig({
         'packages/core/src/**': { statements: 95, branches: 91, functions: 97, lines: 96 },
         'packages/formats/src/**': { statements: 95, branches: 93, functions: 97, lines: 96 },
         'packages/server/src/**': { statements: 91, branches: 83, functions: 94, lines: 94 },
+        'packages/owner/src/**': { statements: 90, branches: 77, functions: 93, lines: 93 },
         'packages/cli/src/**': { statements: 92, branches: 88, functions: 87, lines: 94 },
         'packages/engine-client/src/**': { statements: 92, branches: 88, functions: 91, lines: 95 },
         'packages/app/src/**': { statements: 81, branches: 80, functions: 81, lines: 82 },

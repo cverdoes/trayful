@@ -3,6 +3,7 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { checkLimits } from '../play/limits.js';
 import { ASSETS_FILE, freeTypeId, type ImageAsset } from '@trayful/formats';
 import { isMap, type Document } from 'yaml';
 import {
@@ -102,6 +103,8 @@ export const addImage = oneAtATime(
     // A picture never replaces artwork already in the project.
     const file = unusedPath(project.dir, upload.file);
     const content = Buffer.from(upload.base64, 'base64');
+    const grows = { kind: 'file', project: projectId, bytes: content.length } as const;
+    await checkLimits(workspace.limits, grows);
     await editAssets(
       workspace,
       projectId,

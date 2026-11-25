@@ -3,6 +3,7 @@ import { allowed, allowedProject, caller, isTrustedOrigin } from '../play/access
 import { GitError } from '../git/git.js';
 import { FreshError } from '../git/repository.js';
 import { AuthoringError, ConflictError } from '../projects/authoring.js';
+import { LimitError } from '../play/limits.js';
 import { PlayerError } from '../play/players.js';
 import { ProjectLoadError } from '../play/session.js';
 import { WEBHOOK_ROUTE } from './repository.js';
@@ -16,14 +17,19 @@ const OPEN = new Set(['/api/me', '/api/join', '/api/health', '/api/knock', WEBHO
  * that proves itself with a signature, so a request from another website gains
  * nothing a request from anywhere else would not.
  */
-const TOKEN_ONLY = new Set(['/mcp', '/oauth/register', '/oauth/token', WEBHOOK_ROUTE]);
+const TOKEN_ONLY = ['/mcp', WEBHOOK_ROUTE];
 
 /**
  * Error replies, and who may reach which route, checked before any route runs. A table,
  * its images and its socket are for the host and the guests invited to it. The page
- * itself is not secret; without an invite it shows how to get one.
+ * itself is not secret; without an invite it shows how to get one. Extensions name
+ * more routes that are called with a token in `tokenRoutes`.
  */
-export function registerGuards({ app, players, shareBases, target }: RouteContext): void {
+export function registerGuards(
+  { app, spaceOf, target }: RouteContext,
+  tokenRoutes: readonly string[] = [],
+): void {
+  const tokenOnly = new Set([...TOKEN_ONLY, ...tokenRoutes]);
   app.setErrorHandler((err: Error, _request, reply) => {
     // A new branch or project to confirm says which, so the page can ask about each.
     const fresh = err instanceof FreshError ? { fresh: err.fresh } : {};
@@ -35,15 +41,15 @@ export function registerGuards({ app, players, shareBases, target }: RouteContex
     // Changes must come from a Trayful page, not from another website open in the browser.
     if (
       request.method !== 'GET' &&
-      !TOKEN_ONLY.has(route) &&
-      !isTrustedOrigin(request, shareBases)
+      !tokenOnly.has(route) &&
+      !isTrustedOrigin(request, spaceOf(request).shareBases)
     ) {
       return reply.code(403).send({ error: 'Origin not allowed' });
     }
   });
   app.addHook('preHandler', async (request, reply) => {
     const route = request.url.split('?')[0]!;
-    const who = caller(request, players);
+    const who = caller(request, spaceOf(request).players);
     if (who.refused) {
       return reply
         .code(403)
@@ -51,7 +57,7 @@ export function registerGuards({ app, players, shareBases, target }: RouteContex
     }
     let ok = true;
     if (route === '/api/project' || route === '/api/table' || route === '/ws') {
-      const { project, table } = target(request.query as TableQuery);
+      const { project, table } = target(request, request.query as TableQuery);
       ok = allowed(who, project, table);
     } else if (route.startsWith('/project-files/')) {
       ok = allowedProject(who, (request.params as { project: string }).project);
@@ -65,6 +71,7 @@ export function registerGuards({ app, players, shareBases, target }: RouteContex
 /** The HTTP status for an error a route threw: the caller's mistake, a conflict, or ours. */
 function statusFor(err: Error): number {
   if (err instanceof ConflictError) return 409;
+  if (err instanceof LimitError) return 403;
   const known =
     err instanceof ProjectLoadError ||
     err instanceof SetupError ||

@@ -20,7 +20,9 @@ export const PACKAGES: { name: string; layer: number; column: number }[] = [
   { name: 'core', layer: 1, column: 0.5 },
   { name: 'server', layer: 2, column: 0.22 },
   { name: 'app', layer: 2, column: 0.78 },
-  { name: 'cli', layer: 3, column: 0.22 },
+  // Owner mode, an extension that uses only the server's public API.
+  { name: 'owner', layer: 3, column: 0.22 },
+  { name: 'cli', layer: 4, column: 0.22 },
   // Imports no other package: it talks to the server over the wire, as the app does.
   { name: 'engine-client', layer: 3, column: 0.78 },
 ];

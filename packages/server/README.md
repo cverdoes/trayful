@@ -35,7 +35,7 @@ await server.close(); // saves every open table first
 
 ## Players and access
 
-`play/players.ts` keeps the players of a workspace (`Players`): the host, guests and the agent player `claude`. The host is named after the account running the server, or `TRAYFUL_HOST_NAME` when set (as `compose.yaml` does, since a container's account is not yours). They are stored through a `PlayerStore`; `FilePlayerStore` writes `.trayful/players.json` in the served folder, and a hosted service could keep them elsewhere behind the same interface. Each guest proves who they are with a secret in an HttpOnly cookie; only its SHA-256 fingerprint is stored. The same file keeps one invite per table (`invite(project, table)`, made on first use; `renew` replaces its token), and the tables each guest was invited to (`grant`), so a guest keeps their tables when an invite is renewed.
+`play/players.ts` keeps the players of a workspace (`Players`): the host, guests and the agent player `claude`. The host is named after the account running the server, or the `hostName` the server is started with (the CLI takes it from `TRAYFUL_HOST_NAME`, which `compose.yaml` sets, since a container's account is not yours). They are stored through a `PlayerStore`; `FilePlayerStore` writes `.trayful/players.json` in the served folder, and a hosted service could keep them elsewhere behind the same interface. Each guest proves who they are with a secret in an HttpOnly cookie; only its SHA-256 fingerprint is stored. The same file keeps one invite per table (`invite(project, table)`, made on first use; `renew` replaces its token), and the tables each guest was invited to (`grant`), so a guest keeps their tables when an invite is renewed.
 
 `play/access.ts` decides who a request is from:
 
