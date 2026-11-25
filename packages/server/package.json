@@ -9,7 +9,7 @@
     "./public": "./src/public.ts"
   },
   "dependencies": {
-    "@fastify/static": "^10.1.9",
+    "@fastify/static": "^10.1.12",
     "@fastify/websocket": "^11.3.7",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@trayful/core": "workspace:*",
@@ -20,6 +20,6 @@
   },
   "devDependencies": {
     "@types/ws": "^8.18.2",
-    "ws": "^8.22.1"
+    "ws": "^8.23.0"
   }
 }
