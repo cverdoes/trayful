@@ -15,6 +15,10 @@ The Release workflow (`.github/workflows/release.yml`) builds the package, check
 
 Once npm has the version, the workflow's `image` job builds the Docker image for `linux/amd64` and `linux/arm64` and pushes it to the GitHub Container Registry as `ghcr.io/cverdoes/trayful`, signing in with the workflow's own `GITHUB_TOKEN`. A version such as `0.4.0` is tagged `0.4.0`, `0.4` and `latest`; one with a suffix gets only its own tag, so `latest` stays on the last full release. The image holds the same bundle as the npm package (`pnpm package`, built once, since it is plain JavaScript), plus git, and runs as the user `node`. A newly created package on ghcr.io is private: after the first release with an image, set it to public once under the package's settings (**Package settings → Change visibility**), and check that it is linked to this repository.
 
+## Prereleases for extensions
+
+Extensions in other repositories build on `trayful/server` (see [Extending the server](extending.md)). To let them try a change to it before a release, publish a prerelease: set the version to the coming one with a `-next.N` suffix, such as `0.4.0-next.1`, note it in CHANGELOG.md, merge, and tag it like any other version (`v0.4.0-next.1`). The Release workflow sends it to the `next` tag, so `npm install trayful@next` gets it and `npx trayful` keeps the last full release. Raise `N` for each one, and drop the suffix for the release itself.
+
 ## Dependencies
 
 Dependabot opens weekly pull requests for npm packages, GitHub Actions and the Docker base image (`.github/dependabot.yml`). The Audit workflow runs `pnpm audit` on every push and pull request and each Monday, and fails on any high or critical advisory; fix it by updating or replacing the package, not by ignoring the advisory.

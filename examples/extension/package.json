@@ -1,0 +1,15 @@
+{
+  "name": "trayful-project-cap",
+  "private": true,
+  "description": "An example extension: a Trayful whose folder holds at most a few projects.",
+  "type": "module",
+  "scripts": {
+    "start": "node serve.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "trayful": "next"
+  }
+}

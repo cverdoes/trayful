@@ -28,3 +28,5 @@ Besides the hooks, `register` adds routes of an extension's own, and `tokenRoute
 ## Building on it from another repository
 
 An extension in its own repository depends on an exact version of the `trayful` npm package and imports from `trayful/server`. Dependabot raises that version, and its tests show whether the new one still fits. To try a change before it is released, install a `next` prerelease (see [Releasing](releasing.md)), or link a local build with `pnpm link`.
+
+[examples/extension](https://github.com/cverdoes/trayful/tree/main/examples/extension) is a small one. CI type-checks it against the packed package's declarations and runs it there, so a change that would break an extension in another repository fails here first.

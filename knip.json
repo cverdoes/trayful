@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["scripts/*.ts"],
+      "entry": ["scripts/*.ts", "examples/extension/serve.ts"],
       "ignore": ["eslint.config.d.ts"]
     },
     "packages/*": {}
