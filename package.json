@@ -50,7 +50,7 @@
     "eslint-plugin-sonarjs": "4.2.2",
     "jscpd": "^5.4.2",
     "knip": "^6.44.1",
-    "marked": "^16.4.2",
+    "marked": "^18.2.1",
     "prettier": "^3.9.10",
     "rollup": "^4.68.8",
     "rollup-plugin-dts": "^6.5.1",
