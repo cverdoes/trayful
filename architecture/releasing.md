@@ -5,11 +5,13 @@ order: 3
 summary: Publishing a version to npm and ghcr.io from a tag, and keeping dependencies current.
 ---
 
-A version is published to npm by pushing a tag. Set the new version in `packages/cli/package.json`, add a section for it to [CHANGELOG.md](https://github.com/cverdoes/trayful/blob/main/CHANGELOG.md), merge that to `main`, then tag the merge commit:
+Each pull request that changes what users get adds a line to the `## Unreleased` section at the top of [CHANGELOG.md](https://github.com/cverdoes/trayful/blob/main/CHANGELOG.md) (start the section if a release just used it up). A version is published to npm by pushing a tag. Set the new version in `packages/cli/package.json`, rename `## Unreleased` to the version and fill any gaps, merge that to `main`, then tag the merge commit:
 
 ```sh
 git tag v0.2.0 && git push origin v0.2.0
 ```
+
+Only the maintainer pushes release tags. Version 0.1.0 was published by hand before the workflow existed, so there is no `v0.1.0` tag; never create one, as it would try to publish 0.1.0 again.
 
 The Release workflow (`.github/workflows/release.yml`) builds the package, checks that the tag matches the version, runs `scripts/test-package.sh` on it, publishes it to npm and makes a GitHub release with the tarball and the version's CHANGELOG.md section as its notes (`scripts/release-notes.sh`; the workflow stops before publishing if the section is missing). A version with a suffix, such as `0.2.0-rc.1`, goes to the `next` tag, so `npx trayful` keeps the last full release and `npx trayful@next` tries the new one. npm accepts the upload through [trusted publishing](https://docs.npmjs.com/trusted-publishers): the package's settings on npmjs.com name this repository, `release.yml` and the GitHub environment `npm`, so no npm token is stored anywhere.
 
