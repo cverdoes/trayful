@@ -2,7 +2,9 @@
 
 What changed in each version of the `trayful` npm package. The Release workflow uses the section for a version as the notes of its GitHub release.
 
-## Unreleased
+## 0.4.0
+
+Projects saved with 0.3.0 open unchanged in 0.4.0, and invite links keep working. What changes is how Trayful is started: it always serves a folder of projects, so `trayful play my-game` also lists the games beside `my-game`, and the first time it serves a folder that holds other files too, it asks before going on (see below).
 
 ### Always a folder of projects
 
@@ -30,6 +32,15 @@ What changed in each version of the `trayful` npm package. The Release workflow 
 ### Extensions
 
 - `trayful/server` is a new entry point of the npm package, for extensions in code of your own: `startServer` takes `extensions`, which can decide who counts as the host (`access`), which folder of projects a request is for (`spaces`) and how far each may grow (`limits`). Owner mode is now one such extension. Its types come with it, and `packages/server/public-api.md` in the repository lists all it exports. The types it takes from Fastify and zod need those packages installed; the package lists them as optional peer dependencies, at the versions it bundles. While Trayful is at 0.x, a minor version may change it.
+
+### Designer
+
+- A rectangle or cube shape layer takes `corner` for rounded corners, shown as **Corner (mm)** on the Drawing page. **Radius** only shows for the shapes it applies to (circles, discs, hexes and triangles), and the selection outline, resizing and rotating no longer measure a rectangle by a radius it ignores.
+- Changing a layer's shape, or setting or clearing its radius, keeps it where it was.
+
+### Docs
+
+- The user guide is in `docs/guide/`, which ships with the npm package so agents can read it, and the README is a short start. The documentation site at https://cverdoes.github.io/trayful/ has a landing page with the user guide, HOWTO guides and format reference on one side and the contributors' pages on the other.
 
 ### Docker
 

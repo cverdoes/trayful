@@ -17,7 +17,7 @@ To type-check it, also install TypeScript and the packages whose types `trayful/
 
 That plays the folder of projects `path/to/games`, allowing at most 2 of them. Open the address it prints.
 
-`trayful/server` comes with the `trayful` package in the first version after 0.3.0. Until that is out, it comes with the `next` prereleases, which `package.json` asks for. Once it is out, depend on an exact version instead, and let Dependabot raise it.
+`trayful/server` comes with the `trayful` package from 0.4.0 on. `package.json` asks for an exact version: while Trayful is at 0.x a minor version may change `trayful/server`, so raise it on purpose (Dependabot can open the pull request) and run the test. To try a change before it is released, ask for `trayful@next` instead.
 
 ## Test it
 
