@@ -150,3 +150,23 @@ Each entry is a short decision record: what was decided, why, what it costs, and
 **Cost.** Sometimes a function must be split where one long one would read fine.
 
 **Where.** `eslint.config.js`, `vitest.config.ts`, [[concept:how-we-work]].
+
+## 15. Pieces lock; nothing is fixed
+
+**Decision.** There is no kind of component that is fixed to the table. Any placed piece can be locked and unlocked, from the table (**L**) or by a setup step (`lock: true`), with the [[command:lock]] command. A locked piece cannot be moved, turned or flipped, but a locked board or other container still takes drops, and a locked sheet can still be marked.
+
+**Why.** Whether a board stays put is a choice made at the table, not a property of its type: a designer sometimes wants to slide the board over. Locking keeps a board out of the way during play without taking that away.
+
+**Cost.** Every command that moves or turns a piece must check the lock, and drop handling must not.
+
+**Where.** [[core/commands/pieces.ts]], [[format:setup]], [[format:snapping]].
+
+## 16. Tables follow the inventory
+
+**Decision.** The inventory says what is in the box. When the project files change, each table is brought in line, when it opens and while it is open: pieces take the new data, new ones are put on the table and removed ones are taken off. There is no "add a piece to this table" action.
+
+**Why.** One place says what exists, so a table never holds a piece the project does not have, and an agent or designer changes the game in one file.
+
+**Cost.** A renamed piece is a removal and an addition on tables already saved.
+
+**Where.** [[core:syncTable]], [[format:inventory]].
