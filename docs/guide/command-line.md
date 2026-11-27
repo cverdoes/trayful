@@ -7,7 +7,7 @@
 | `trayful mcp [folder]`                    | MCP server on stdio, for agents                                       |
 | `trayful validate <project-dir> [--json]` | Check a project and report problems with file, line and column        |
 | `trayful migrate <project-dir>`           | Rewrite a `trayful/1` project in the current file format              |
-| `trayful skill [repo-dir]`                | Add the agent skill to a repository, for Claude Code                  |
+| `trayful skill [repo-dir]`                | Copy the agent skill into a repository, for agents without MCP skills |
 
 Run them as `npx trayful …`, or as `pnpm trayful …` from a clone of this repository. See the [CLI README](../../packages/cli/README.md) for every option.
 

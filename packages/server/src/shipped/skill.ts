@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { cp } from 'node:fs/promises';
+import { cp, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { resourceDir } from './resources.js';
 
@@ -23,4 +23,22 @@ export async function installSkill(repository: string): Promise<InstalledSkill> 
   const updated = existsSync(dir);
   await cp(resourceDir('skill'), dir, { recursive: true, force: true });
   return { dir, updated };
+}
+
+/**
+ * The skill's files, as `/`-separated paths from its folder, SKILL.md first. These
+ * are the files `installSkill` copies and the MCP server serves.
+ */
+export async function skillFiles(): Promise<string[]> {
+  const dir = resourceDir('skill');
+  const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((e) => e.isFile())
+    .map((e) => path.relative(dir, path.join(e.parentPath, e.name)).split(path.sep).join('/'))
+    .sort((a, b) => Number(b === 'SKILL.md') - Number(a === 'SKILL.md') || a.localeCompare(b));
+}
+
+/** One file of the skill, by a path `skillFiles` gave. */
+export async function readSkillFile(file: string): Promise<Buffer> {
+  return readFile(path.join(resourceDir('skill'), file));
 }

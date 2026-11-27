@@ -46,7 +46,7 @@ Agents can aim moves at board spots by name, such as `main-board/fields/3`, or d
 
 Agents can also build your prototype with you: ask Claude for "an event card with a title, a rule text and a season band, and a deck of six events", and it writes the component into your library, puts the cards in the box and looks at a picture of the result, while the new deck appears on your table. Every change is checked first, so an agent cannot leave your project broken. See [Let an agent build components](../howto/agent-builds-components.md).
 
-When your game lives in a repository of its own, `npx trayful skill` in that repository adds a [skill](../../skills/trayful/SKILL.md) that teaches Claude Code how to work with Trayful: the design loop, recipes for decks, tracks and boards, and the things that trip agents up. See [Use Trayful from your game's repository](../howto/game-repository.md).
+Trayful also serves a [skill](../../skills/trayful/SKILL.md) that teaches agents how to work with it: the design loop, recipes for decks, tracks and boards, and the things that trip agents up. Agents that support skills over MCP find it on their own, as `skill://trayful/SKILL.md`, always in the version of the Trayful they are connected to; the server instructions point other agents to it. For agents that do neither, `npx trayful skill` copies it into your game's repository. See [Use Trayful from your game's repository](../howto/game-repository.md).
 
 | Projects and authoring tools                                              | What they do                                                      |
 | ------------------------------------------------------------------------- | ----------------------------------------------------------------- |

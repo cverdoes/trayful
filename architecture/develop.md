@@ -43,7 +43,7 @@ Each package keeps its code in `src/` and its unit tests in `test/`, in the same
 | `examples/referee`           | An example engine: a referee that runs a buying game at a Harvest Moon table, tested against a real table         |
 | `docs`                       | The user guide, the HOWTO guides and the format reference (partly generated); ships in the npm package            |
 | `architecture`               | These pages: working on Trayful, onboarding, interaction walkthroughs and concepts                                |
-| `skills/trayful`             | The agent skill `trayful skill` installs: how to design and play over MCP; a test keeps it true to the tools      |
+| `skills/trayful`             | The agent skill, served over MCP as `skill://trayful/` and copied by `trayful skill`; a test keeps it true        |
 | `e2e`                        | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players                           |
 | `scripts`                    | Code generation, example validation and the dev server                                                            |
 | `Dockerfile`, `compose.yaml` | Running the server in a container; `scripts/docker.sh` starts it                                                  |

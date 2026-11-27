@@ -5,6 +5,7 @@ import { registerPlayTools } from './play.js';
 import { registerPromptTools } from './prompts.js';
 import { registerReadingTools } from './reading.js';
 import { registerResources } from './resources.js';
+import { registerSkills, SKILL_URI } from './skills.js';
 import { registerStarters } from './starters.js';
 import { registerSurfaceTools } from './surfaces.js';
 import { registerTableTools } from './tables.js';
@@ -35,6 +36,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
     {
       instructions: [
         `Trayful is a tabletop for boardgame prototypes. ${whereWeAre(workspace)}${options.url ? ` People can watch at ${options.url}.` : ''} list_projects shows every project and table; open_table switches.`,
+        `Before designing components or playing, read the Trayful skill at ${SKILL_URI} (and the files it links to), unless it is already loaded.`,
         'To play, start with describe_table. Positions are piece centres in millimetres, y grows downwards. Stacks (piles and decks) hold cards bottom to top; draw and deal take from the top.',
         'Boards declare snap targets (card slots, action spaces, tracks). Use them as `to` in move, draw and deal, e.g. `main-board/fields/3`; pieces in a spot ride along when the board moves.',
         'Face-down cards are hidden: their fields (apart from those printed on the back) and the order of piles only show with reveal: true, which is like peeking, so only use it when the game allows.',
@@ -54,6 +56,7 @@ export function createMcpServer(workspace: Workspace, options: McpOptions = {}):
   registerPromptTools(server, ctx);
   registerAuthoringTools(server, ctx);
   registerResources(server, ctx);
+  registerSkills(server);
   registerStarters(server);
   if (options.git) registerRepositoryTools(server, options.git);
   return server;

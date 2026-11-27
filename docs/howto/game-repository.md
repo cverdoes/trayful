@@ -21,7 +21,7 @@ Everything else in `prototype/` is plain text and images, so the prototype is ve
 
 ## Add the Trayful skill
 
-From the root of your repository:
+Trayful's MCP server serves its skill as `skill://trayful/SKILL.md`, so an agent that supports skills over MCP gets it as soon as it connects, always matching the Trayful it is connected to. You only need a copy in the repository for agents that don't. From the root of your repository:
 
 ```sh
 npx trayful skill
