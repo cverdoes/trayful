@@ -11,7 +11,7 @@ Trayful does not know any game's rules. You bring them, usually from the game's 
 
 ## Before you start
 
-- **Check the connection.** If no `trayful` tools are available, ask the person to start the table (`npx trayful play <project-folder>`) and connect it once with `claude mcp add --transport http trayful http://127.0.0.1:4317/mcp`. Do not try to start it yourself in the background.
+- **Check the connection.** If no `trayful` tools are available (only possible when this skill was installed into the repository rather than served by Trayful), ask the person to start the table (`npx trayful play <project-folder>`) and connect it once with `claude mcp add --transport http trayful http://127.0.0.1:4317/mcp`. Do not try to start it yourself in the background.
 - **Find the project.** `list_projects` shows every project and table, and any problems in their files. The tools act on the active table. `open_table` switches to another one, or starts a new table under a new name; `duplicate_table` and `delete_table` copy and remove tables, and `create_project` starts a project from the starter template, beside the others.
 - **Read the docs you need.** `trayful://docs` lists the guides and the format reference. Read the page for the task before writing YAML, such as `trayful://docs/howto/add-a-deck.md`, `trayful://docs/reference/library.md` or `trayful://docs/reference/snapping.md`. The reference is generated from the schemas, so it is the truth when this skill and your memory disagree.
 - **Old projects.** If a tool says the project is in `trayful/1`, run `migrate_project` first (after asking, since it rewrites files).

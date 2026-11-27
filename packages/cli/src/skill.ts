@@ -7,7 +7,8 @@ export async function skill(args: string[], out: (s: string) => void): Promise<n
   const result = await installSkill(path.resolve(repository));
   out(
     `${result.updated ? 'Updated' : 'Added'} the Trayful skill in ${path.relative(process.cwd(), result.dir)}. ` +
-      'Claude Code uses it in this repository from its next session. Run this again after updating Trayful.',
+      'Claude Code uses it in this repository from its next session. Run this again after updating Trayful. ' +
+      'Agents that support skills over MCP get the skill from Trayful itself and need no copy.',
   );
   return 0;
 }

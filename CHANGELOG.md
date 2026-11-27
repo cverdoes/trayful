@@ -2,6 +2,10 @@
 
 What changed in each version of the `trayful` npm package. The Release workflow uses the section for a version as the notes of its GitHub release.
 
+## Unreleased
+
+- Trayful's MCP server serves the agent skill as `skill://trayful/SKILL.md` and its recipes, using the skills over MCP extension (`io.modelcontextprotocol/skills`). Agents that support it get the skill as soon as they connect, always in the version of the Trayful they talk to. Other agents can read the same files as resources, and the server instructions point to them. `trayful skill` still copies the skill into a repository for agents that need it there.
+
 ## 0.4.0
 
 Projects saved with 0.3.0 open unchanged in 0.4.0, and invite links keep working. What changes is how Trayful is started: it always serves a folder of projects, so `trayful play my-game` also lists the games beside `my-game`, and the first time it serves a folder that holds other files too, it asks before going on (see below).
