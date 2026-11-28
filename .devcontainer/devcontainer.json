@@ -1,0 +1,36 @@
+// A container for developing Trayful, not for running it (the Dockerfile and
+// compose.yaml at the root do that). Steps: architecture/develop.md.
+{
+  "name": "Trayful development",
+  "build": { "dockerfile": "Dockerfile", "context": ".." },
+  "remoteUser": "vscode",
+  "containerEnv": {
+    // pnpm comes from corepack at the version in package.json, without asking.
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0",
+    // Keep all of Claude Code's settings and its login in the volume below.
+    "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
+    // The workspace is a mount of its own, where pnpm would otherwise put its
+    // store (.pnpm-store in the repository); keep it in a volume instead.
+    "npm_config_store_dir": "/home/vscode/.local/share/pnpm/store"
+  },
+  // Logins and the pnpm store live in volumes, never in the image, and survive
+  // a rebuild.
+  "mounts": [
+    "source=trayful-claude-${devcontainerId},target=/home/vscode/.claude,type=volume",
+    "source=trayful-gh-${devcontainerId},target=/home/vscode/.config/gh,type=volume",
+    "source=trayful-pnpm-store,target=/home/vscode/.local/share/pnpm,type=volume"
+  ],
+  // Chromium and its system libraries at the Playwright version in package.json.
+  "postCreateCommand": "pnpm install && pnpm exec playwright install --with-deps chromium",
+  // `pnpm dev` serves the app on 5173; `pnpm trayful play` serves the table on 4317.
+  "forwardPorts": [5173, 4317],
+  "portsAttributes": {
+    "5173": { "label": "Trayful app", "onAutoForward": "openBrowser" },
+    "4317": { "label": "Trayful server", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode", "ms-playwright.playwright"]
+    }
+  }
+}
