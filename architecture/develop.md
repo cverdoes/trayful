@@ -23,6 +23,20 @@ pnpm trayful play examples/harvest-moon
 
 `validate` should end with `✓ Harvest Moon: 6 types, 26 components, 1 deck, 1 setup`. `play` starts a local server at http://127.0.0.1:4317 and opens the table in your browser; press Ctrl+C to stop it. The README has the same commands, and CI runs them from there on a clean checkout, so they stay correct.
 
+## Develop in a container
+
+The `.devcontainer/` folder describes a container with everything a change needs: Node at the version in `.nvmrc`, pnpm, git, the GitHub CLI `gh`, Claude Code, and Chromium for the browser tests. It is for working on Trayful; to run Trayful in a container, see `scripts/docker.sh`. You need Docker, and one of the clients that open a dev container: [VS Code](https://code.visualstudio.com/) with the Dev Containers extension, or the [`devcontainer` command line](https://github.com/devcontainers/cli) (`npm install -g @devcontainers/cli`).
+
+1. Clone the repository: `git clone https://github.com/cverdoes/trayful.git`.
+2. Open it in the container. In VS Code, open the folder and choose **Reopen in Container**. On the command line, run `devcontainer up --workspace-folder .` in the clone, then `devcontainer exec --workspace-folder . bash` for a shell inside it. The first build takes a few minutes; it ends with `pnpm install` and Playwright's Chromium.
+3. Tell git who you are. VS Code copies your own git settings into the container. On the command line, run `git config --global user.name "Your Name"` and `git config --global user.email you@example.com` inside it.
+4. Sign in to GitHub. VS Code passes your git credentials and SSH agent through, so pushing works as it does on your machine. Otherwise run `gh auth login` once; git then pushes with that login.
+5. Sign in to Claude Code. Run `claude` and log in once, or `export ANTHROPIC_API_KEY=…` in the container's shell if you use an API key.
+6. Check that everything works: `pnpm check`, then `pnpm build` and `pnpm test:e2e`.
+7. Develop as usual. `pnpm dev` serves the app on port 5173, and VS Code forwards it to your browser. The command line does not forward ports, so open the table from VS Code or run Trayful outside the container to see it.
+
+Your logins (Claude Code in `~/.claude`, `gh` in `~/.config/gh`) and pnpm's package store live in Docker volumes, not in the image, so they stay when the container is rebuilt. Nothing from your machine goes into the image. To start over, delete the `trayful-claude-…` and `trayful-gh-…` volumes with `docker volume rm`.
+
 ## Repository layout
 
 Each package keeps its code in `src/` and its unit tests in `test/`, in the same folders as the code they test.
@@ -47,6 +61,7 @@ Each package keeps its code in `src/` and its unit tests in `test/`, in the same
 | `e2e`                        | Browser tests (Playwright): playing, snapping, agents, authoring, printing, two players                           |
 | `scripts`                    | Code generation, example validation and the dev server                                                            |
 | `Dockerfile`, `compose.yaml` | Running the server in a container; `scripts/docker.sh` starts it                                                  |
+| `.devcontainer`              | A container for developing Trayful, with Node, pnpm, git, `gh`, Claude Code and Chromium                          |
 
 ## Commands
 
